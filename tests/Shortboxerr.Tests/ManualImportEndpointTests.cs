@@ -1,15 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Shortboxerr.Tests;
 
-public class ManualImportEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public class ManualImportEndpointTests : IClassFixture<CustomWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly CustomWebApplicationFactory _factory;
 
-    public ManualImportEndpointTests(WebApplicationFactory<Program> factory)
+    public ManualImportEndpointTests(CustomWebApplicationFactory factory)
     {
         _factory = factory;
     }

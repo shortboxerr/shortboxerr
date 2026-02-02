@@ -91,6 +91,7 @@ app.MapSeriesEndpoints();
 app.MapEditionEndpoints();
 app.MapManualImportEndpoints();
 app.MapDecisionEngineEndpoints();
+app.MapProviderEndpoints();
 
 app.Run();
 

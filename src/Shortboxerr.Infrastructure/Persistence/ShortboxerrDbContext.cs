@@ -17,6 +17,7 @@ public class ShortboxerrDbContext : DbContext
     public DbSet<EditionContent> EditionContents => Set<EditionContent>();
     public DbSet<FileAsset> FileAssets => Set<FileAsset>();
     public DbSet<HistoryEvent> HistoryEvents => Set<HistoryEvent>();
+    public DbSet<ProviderDefinition> Providers => Set<ProviderDefinition>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -151,6 +152,25 @@ public class ShortboxerrDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.EditionTitleId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ProviderDefinition
+        modelBuilder.Entity<ProviderDefinition>(entity =>
+        {
+            entity.ToTable("Providers");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.Implementation).IsRequired().HasMaxLength(128);
+            entity.Property(e => e.Settings).HasMaxLength(8192);
+            entity.Property(e => e.BaseUrl).HasMaxLength(1024);
+            entity.Property(e => e.ApiKey).HasMaxLength(512);
+            entity.Property(e => e.Username).HasMaxLength(256);
+            entity.Property(e => e.Password).HasMaxLength(512);
+            entity.Property(e => e.LastError).HasMaxLength(2048);
+            entity.Property(e => e.Tags).HasMaxLength(512);
+            entity.HasIndex(e => e.Name);
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => new { e.Category, e.Priority });
         });
     }
 }

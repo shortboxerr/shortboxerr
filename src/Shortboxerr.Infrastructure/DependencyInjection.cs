@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shortboxerr.Core.Models;
+using Shortboxerr.Core.Providers;
 using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.Persistence;
+using Shortboxerr.Infrastructure.Providers;
 using Shortboxerr.Infrastructure.Services;
 
 namespace Shortboxerr.Infrastructure;
@@ -18,6 +20,10 @@ public static class DependencyInjection
         services.AddSingleton<IFilenameParser, FilenameParser>();
         services.AddScoped<IStagingService, StagingService>();
         services.AddSingleton<IDecisionEngine, DecisionEngine>();
+
+        // Provider system
+        services.AddSingleton<IProviderFactory, ProviderFactory>();
+        services.AddScoped<IProviderManager, ProviderManager>();
 
         // Settings (can be overridden via configuration)
         services.Configure<DecisionEngineSettings>(options =>

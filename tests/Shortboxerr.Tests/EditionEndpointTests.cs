@@ -1,15 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Shortboxerr.Tests;
 
-public class EditionEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public class EditionEndpointTests : IClassFixture<CustomWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly CustomWebApplicationFactory _factory;
 
-    public EditionEndpointTests(WebApplicationFactory<Program> factory)
+    public EditionEndpointTests(CustomWebApplicationFactory factory)
     {
         _factory = factory;
     }

@@ -1,19 +1,18 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Shortboxerr.Tests;
 
-public class SeriesEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public class SeriesEndpointTests : IClassFixture<CustomWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly CustomWebApplicationFactory _factory;
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
 
-    public SeriesEndpointTests(WebApplicationFactory<Program> factory)
+    public SeriesEndpointTests(CustomWebApplicationFactory factory)
     {
         _factory = factory;
     }
