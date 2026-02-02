@@ -48,9 +48,13 @@ public partial class FilenameParser : IFilenameParser
         var yearMatch = YearPattern().Match(working);
         if (yearMatch.Success)
         {
-            info.Year = int.Parse(yearMatch.Groups[1].Value);
-            working = working.Replace(yearMatch.Value, " ").Trim();
-            confidence += 10;
+            var yearGroup = yearMatch.Groups[1].Success ? yearMatch.Groups[1].Value : yearMatch.Groups[2].Value;
+            if (int.TryParse(yearGroup, out var year))
+            {
+                info.Year = year;
+                working = working.Replace(yearMatch.Value, " ").Trim();
+                confidence += 10;
+            }
         }
 
         // Extract publisher
