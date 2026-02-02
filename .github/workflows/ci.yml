@@ -51,7 +51,7 @@ jobs:
 
     - name: Test Docker image health endpoint
       run: |
-        docker run -d --name test-container -p 7878:7878 shortboxerr:${{ github.sha }}
+        docker run -d --name test-container -p 8585:8585 shortboxerr:${{ github.sha }}
         sleep 5
-        curl -f http://localhost:7878/health || exit 1
+        curl -f http://localhost:8585/health || exit 1
         docker stop test-container
