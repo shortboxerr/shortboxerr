@@ -54,6 +54,47 @@ public interface ISettingsService
     /// Sets general settings.
     /// </summary>
     Task SetGeneralSettingsAsync(GeneralSettings settings, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the API key info (masked by default).
+    /// </summary>
+    Task<ApiKeyInfo> GetApiKeyAsync(bool includeFull = false, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Regenerates the API key.
+    /// </summary>
+    Task<ApiKeyInfo> RegenerateApiKeyAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Validates an API key.
+    /// </summary>
+    Task<bool> ValidateApiKeyAsync(string apiKey, CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// API key information.
+/// </summary>
+public class ApiKeyInfo
+{
+    /// <summary>
+    /// The masked API key (shows first 4 and last 4 characters).
+    /// </summary>
+    public string MaskedKey { get; set; } = "";
+
+    /// <summary>
+    /// The full API key (only included when explicitly requested).
+    /// </summary>
+    public string? FullKey { get; set; }
+
+    /// <summary>
+    /// When the API key was created.
+    /// </summary>
+    public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// When the API key was last used (null if never used).
+    /// </summary>
+    public DateTime? LastUsedAt { get; set; }
 }
 
 /// <summary>

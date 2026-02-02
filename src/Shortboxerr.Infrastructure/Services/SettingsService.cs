@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Shortboxerr.Core.Entities;
@@ -30,6 +31,11 @@ public class SettingsService : ISettingsService
     private const string GeneralDownloadFolderKey = "general.downloadFolder";
     private const string GeneralStagingFolderKey = "general.stagingFolder";
     private const string GeneralAutoMoveToStagingKey = "general.autoMoveToStaging";
+    
+    // API key settings
+    private const string ApiKeyValueKey = "security.apiKey";
+    private const string ApiKeyCreatedAtKey = "security.apiKeyCreatedAt";
+    private const string ApiKeyLastUsedAtKey = "security.apiKeyLastUsedAt";
 
     public SettingsService(ShortboxerrDbContext context)
     {
@@ -177,6 +183,93 @@ public class SettingsService : ISettingsService
         await SetAsync(GeneralDownloadFolderKey, settings.DownloadFolder, cancellationToken);
         await SetAsync(GeneralStagingFolderKey, settings.StagingFolder, cancellationToken);
         await SetAsync<bool>(GeneralAutoMoveToStagingKey, settings.AutoMoveToStaging, cancellationToken);
+    }
+
+    public async Task<ApiKeyInfo> GetApiKeyAsync(bool includeFull = false, CancellationToken cancellationToken = default)
+    {
+        var apiKey = await GetAsync(ApiKeyValueKey, cancellationToken);
+        
+        // Generate a new key if none exists
+        if (string.IsNullOrEmpty(apiKey))
+        {
+            return await RegenerateApiKeyAsync(cancellationToken);
+        }
+
+        var createdAtStr = await GetAsync(ApiKeyCreatedAtKey, cancellationToken);
+        var lastUsedAtStr = await GetAsync(ApiKeyLastUsedAtKey, cancellationToken);
+
+        return new ApiKeyInfo
+        {
+            MaskedKey = MaskApiKey(apiKey),
+            FullKey = includeFull ? apiKey : null,
+            CreatedAt = DateTime.TryParse(createdAtStr, out var createdAt) ? createdAt : DateTime.UtcNow,
+            LastUsedAt = DateTime.TryParse(lastUsedAtStr, out var lastUsed) ? lastUsed : null
+        };
+    }
+
+    public async Task<ApiKeyInfo> RegenerateApiKeyAsync(CancellationToken cancellationToken = default)
+    {
+        var newKey = GenerateApiKey();
+        var createdAt = DateTime.UtcNow;
+
+        await SetAsync(ApiKeyValueKey, newKey, cancellationToken);
+        await SetAsync(ApiKeyCreatedAtKey, createdAt.ToString("O"), cancellationToken);
+        await DeleteAsync(ApiKeyLastUsedAtKey, cancellationToken); // Reset last used
+
+        return new ApiKeyInfo
+        {
+            MaskedKey = MaskApiKey(newKey),
+            FullKey = newKey, // Return full key on regenerate so user can copy it
+            CreatedAt = createdAt,
+            LastUsedAt = null
+        };
+    }
+
+    public async Task<bool> ValidateApiKeyAsync(string apiKey, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(apiKey))
+            return false;
+
+        var storedKey = await GetAsync(ApiKeyValueKey, cancellationToken);
+        if (string.IsNullOrEmpty(storedKey))
+            return false;
+
+        var isValid = string.Equals(apiKey, storedKey, StringComparison.Ordinal);
+
+        if (isValid)
+        {
+            // Update last used timestamp
+            await SetAsync(ApiKeyLastUsedAtKey, DateTime.UtcNow.ToString("O"), cancellationToken);
+        }
+
+        return isValid;
+    }
+
+    /// <summary>
+    /// Generates a cryptographically secure API key.
+    /// Format: sk_live_{32 random hex chars}
+    /// </summary>
+    private static string GenerateApiKey()
+    {
+        var bytes = new byte[16]; // 16 bytes = 32 hex characters
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(bytes);
+        return $"sk_live_{Convert.ToHexString(bytes).ToLowerInvariant()}";
+    }
+
+    /// <summary>
+    /// Masks an API key, showing only first 7 and last 4 characters.
+    /// Example: sk_live_abc...wxyz
+    /// </summary>
+    private static string MaskApiKey(string apiKey)
+    {
+        if (string.IsNullOrEmpty(apiKey) || apiKey.Length < 12)
+            return "****";
+
+        // Show "sk_live_" prefix (8 chars) and last 4 chars
+        var prefix = apiKey[..8];
+        var suffix = apiKey[^4..];
+        return $"{prefix}...{suffix}";
     }
 }
 

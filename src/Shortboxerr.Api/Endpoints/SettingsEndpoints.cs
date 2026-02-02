@@ -48,6 +48,22 @@ public static class SettingsEndpoints
             .WithOpenApi()
             .Produces<NamingTokensResponse>(200);
 
+        // API Key Management
+        group.MapGet("/apikey", GetApiKey)
+            .WithName("GetApiKey")
+            .WithOpenApi()
+            .Produces<ApiKeyResponse>(200);
+
+        group.MapGet("/apikey/full", GetApiKeyFull)
+            .WithName("GetApiKeyFull")
+            .WithOpenApi()
+            .Produces<ApiKeyResponse>(200);
+
+        group.MapPost("/apikey/regenerate", RegenerateApiKey)
+            .WithName("RegenerateApiKey")
+            .WithOpenApi()
+            .Produces<ApiKeyResponse>(200);
+
         // Generic key-value access
         group.MapGet("/{key}", GetSetting)
             .WithName("GetSetting")
@@ -183,6 +199,43 @@ public static class SettingsEndpoints
         });
     }
 
+    private static async Task<IResult> GetApiKey(ISettingsService settingsService, CancellationToken cancellationToken)
+    {
+        var keyInfo = await settingsService.GetApiKeyAsync(includeFull: false, cancellationToken);
+        return Results.Ok(new ApiKeyResponse
+        {
+            MaskedKey = keyInfo.MaskedKey,
+            FullKey = null, // Never return full key on regular get
+            CreatedAt = keyInfo.CreatedAt,
+            LastUsedAt = keyInfo.LastUsedAt
+        });
+    }
+
+    private static async Task<IResult> GetApiKeyFull(ISettingsService settingsService, CancellationToken cancellationToken)
+    {
+        var keyInfo = await settingsService.GetApiKeyAsync(includeFull: true, cancellationToken);
+        return Results.Ok(new ApiKeyResponse
+        {
+            MaskedKey = keyInfo.MaskedKey,
+            FullKey = keyInfo.FullKey,
+            CreatedAt = keyInfo.CreatedAt,
+            LastUsedAt = keyInfo.LastUsedAt
+        });
+    }
+
+    private static async Task<IResult> RegenerateApiKey(ISettingsService settingsService, CancellationToken cancellationToken)
+    {
+        var keyInfo = await settingsService.RegenerateApiKeyAsync(cancellationToken);
+        return Results.Ok(new ApiKeyResponse
+        {
+            MaskedKey = keyInfo.MaskedKey,
+            FullKey = keyInfo.FullKey, // Return full key on regenerate
+            CreatedAt = keyInfo.CreatedAt,
+            LastUsedAt = keyInfo.LastUsedAt,
+            IsNewKey = true
+        });
+    }
+
     private static async Task<IResult> GetSetting(string key, ISettingsService settingsService, CancellationToken cancellationToken)
     {
         var value = await settingsService.GetAsync(key, cancellationToken);
@@ -251,5 +304,33 @@ public class SettingResponse
 public class SetSettingRequest
 {
     public string Value { get; set; } = "";
+}
+
+public class ApiKeyResponse
+{
+    /// <summary>
+    /// The masked API key (shows prefix and last 4 characters).
+    /// </summary>
+    public string MaskedKey { get; set; } = "";
+
+    /// <summary>
+    /// The full API key (only returned when explicitly requested or on regenerate).
+    /// </summary>
+    public string? FullKey { get; set; }
+
+    /// <summary>
+    /// When the API key was created.
+    /// </summary>
+    public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// When the API key was last used (null if never used).
+    /// </summary>
+    public DateTime? LastUsedAt { get; set; }
+
+    /// <summary>
+    /// True if this is a newly generated key (on regenerate).
+    /// </summary>
+    public bool IsNewKey { get; set; }
 }
 
