@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Shortboxerr.Api.Endpoints;
-using Shortboxerr.Api.Middleware;
 using Shortboxerr.Infrastructure;
 using Shortboxerr.Infrastructure.Persistence;
 using System.Text.Json;
@@ -51,7 +50,6 @@ using (var scope = app.Services.CreateScope())
 
 // Configure the HTTP request pipeline
 app.UseCors(); // Enable CORS for development
-app.UseApiAccessControl(); // Enforce API enabled setting
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
