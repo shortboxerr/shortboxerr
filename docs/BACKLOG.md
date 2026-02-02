@@ -178,7 +178,17 @@ Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests sec
 - [x] Collections list page
 - [x] Activity + Manual Import pages (thin but functional)
 
-## EPIC 6: Mylar3 Migration (BEHAVIORAL PARITY SETUP)
+## EPIC 6: Settings Persistence
+- [ ] **Theme persistence**
+  - AC: Save selected theme (dark/light/system) to database
+  - AC: Load theme preference on app start
+  - AC: API endpoint: GET/PUT /api/v1/settings/ui
+- [ ] **General settings persistence**
+  - AC: Save naming patterns, root folders to database
+  - AC: Settings entity with key-value storage
+  - AC: Settings API endpoints for all categories
+
+## EPIC 7: Mylar3 Migration (BEHAVIORAL PARITY SETUP)
 - [ ] Read Mylar3 SQLite DB (read-only)
 - [ ] Transform to intermediate JSON snapshot
 - [ ] Import into Shortboxerr DB
