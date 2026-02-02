@@ -1,4 +1,4 @@
-# Self Check (Iteration 001)
+# Self Check (Iteration 001 - Final)
 
 ## Must Pass
 | Check | Status | Notes |
@@ -7,6 +7,14 @@
 | dotnet test succeeds | ✅ PASS | 4/4 tests passing |
 | API starts and /health returns 200 | ✅ PASS | Health endpoint with JSON response |
 | DB migrations apply cleanly (SQLite) | ✅ PASS | InitialCreate migration verified |
+
+## Hygiene (EPIC 0)
+| Check | Status | Notes |
+|-------|--------|-------|
+| Makefile present and functional | ✅ PASS | `make build`, `make test` work in Dev Container |
+| commit-msg hook installed | ✅ PASS | Enforces conventional commits (feat/fix/chore/test) |
+| Hook rejects invalid messages | ✅ PASS | Tested with invalid message format |
+| .gitignore excludes bin/obj | ✅ PASS | Build artifacts not tracked |
 
 ## Should Pass
 | Check | Status | Notes |
@@ -24,23 +32,23 @@
 ## Summary
 - **Build**: GREEN ✅
 - **Tests**: 4 passing, 0 failing
-- **Epic Status**: EPIC 0 COMPLETED
+- **Epic Status**: EPIC 0 COMPLETED ✅
 - **Next**: EPIC 1 - Domain + Persistence
 
-## Commands to Verify
+## Verification Commands
 ```bash
-# Build
-dotnet build
+# Build via Makefile
+make build
 
-# Test
-dotnet test
+# Test via Makefile
+make test
 
-# Run locally
-dotnet run --project src/Shortboxerr.Api
+# Test commit-msg hook (should pass)
+echo "feat: test" > /tmp/msg && .git/hooks/commit-msg /tmp/msg && echo "PASS"
 
-# Verify endpoints
-curl http://localhost:5000/health
-curl http://localhost:5000/ping
-curl http://localhost:5000/api/v1/system/status
-curl http://localhost:5000/swagger/v1/swagger.json
+# Test commit-msg hook (should fail)
+echo "bad msg" > /tmp/msg && .git/hooks/commit-msg /tmp/msg || echo "Correctly rejected"
+
+# Run API
+make run
 ```
