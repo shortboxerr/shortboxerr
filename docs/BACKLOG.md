@@ -1,16 +1,16 @@
 # Backlog
 
-## EPIC 0: Repo Skeleton (FOUNDATION)
-- [ ] Create .NET solution structure:
+## EPIC 0: Repo Skeleton (FOUNDATION) ✅ COMPLETED
+- [x] Create .NET solution structure:
   - src/Shortboxerr.Api
   - src/Shortboxerr.Core
   - src/Shortboxerr.Infrastructure
   - tests/Shortboxerr.Tests
-- [ ] Health endpoint + Swagger
-- [ ] SQLite migrations scaffold
-- [ ] Dockerfile + docker-compose
-- [ ] CI workflow (build + test)
-- [ ] Dev Container config (verify dotnet build/test run inside container)
+- [x] Health endpoint + Swagger
+- [x] SQLite migrations scaffold
+- [x] Dockerfile + docker-compose
+- [x] CI workflow (build + test)
+- [x] Dev Container config (verify dotnet build/test run inside container)
 
 ## EPIC 1: Domain + Persistence (MINIMUM DATA MODEL)
 - [ ] Entities: Series, Issue, EditionTitle (Collections), FileAsset, HistoryEvent
