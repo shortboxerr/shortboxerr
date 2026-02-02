@@ -1,32 +1,34 @@
 # Self-Check (Living Document)
 
-## Current Iteration: 009 - EPIC 4.2.4 DDL → Import Handoff
+## Current Iteration: 010 - EPIC 4.3 DDL Configuration & Mylar3 Import
 
 ### Status: ✅ COMPLETED
 
 | Criterion | Status | Notes |
 |-----------|--------|-------|
 | Solution builds | ✅ | `dotnet build` succeeds |
-| All tests pass | ✅ | 247 passing (18 new) |
-| Vertical slice complete | ✅ | Import service + API + tests |
+| All tests pass | ✅ | 266 passing (19 new) |
+| Vertical slice complete | ✅ | Settings + importer + API + tests |
 | Git commits logical | ✅ | 2 commits this iteration |
 | Docs updated | ✅ | API.md, BACKLOG, WORKLOG |
 
 ### Deliverables Checklist
 
-- [x] IDdlImportService interface
-- [x] DdlImportService implementation
-- [x] File verification (magic bytes, HTML detection)
-- [x] Auto-match series/issue
-- [x] Auto-import vs manual review settings
-- [x] Pending import queue management
-- [x] History events for imports
-- [x] API endpoints (8 total)
-- [x] Unit tests (18 new tests)
+- [x] DdlProviderSettings model
+- [x] IMylar3ConfigImporter interface
+- [x] Mylar3ConfigImporter implementation
+- [x] INI section parsing
+- [x] Site type inference
+- [x] Credential handling
+- [x] Validation workflow
+- [x] Import execution
+- [x] API endpoints (6 total)
+- [x] Updated defaults.mylar3.json
+- [x] Unit tests (19 new tests)
 
 ### Test Summary
 ```
-Passed!  - Failed: 0, Passed: 247, Skipped: 0, Total: 247
+Passed!  - Failed: 0, Passed: 266, Skipped: 0, Total: 266
 ```
 
 ---
@@ -44,26 +46,29 @@ Passed!  - Failed: 0, Passed: 247, Skipped: 0, Total: 247
 | EPIC 4.2.1: DDL Discovery & Search | ✅ COMPLETED | 214 |
 | EPIC 4.2.3: DDL Download Execution | ✅ COMPLETED | 229 |
 | EPIC 4.2.4: DDL → Import Handoff | ✅ COMPLETED | 247 |
+| EPIC 4.3: DDL Configuration & Mylar3 Import | ✅ COMPLETED | 266 |
 
 ### Next Up
-- EPIC 4.3: DDL Configuration & Mylar3 Import
 - EPIC 4.4: DDL Conformance Tests
 - EPIC 4.5: DDL UI
+- EPIC 4.6: Generic Indexer/Download Client Support
 
 ---
 
-## DDL Pipeline Complete!
+## DDL Provider System Complete!
 
-With EPIC 4.2.4 complete, the full DDL pipeline is now operational:
+With EPIC 4.3 complete, the full DDL provider system is now operational:
 
-1. **Discovery & Search** (4.2.1): Multi-site search with adapters
+1. **Provider Abstractions** (4.1): Base interfaces and factory
 2. **Candidate Normalization** (4.2.2): Mylar3-compatible parsing
-3. **Download Execution** (4.2.3): HTTP downloads with retry logic
-4. **Import Handoff** (4.2.4): Auto-match and import to library
+3. **Discovery & Search** (4.2.1): Multi-site search with adapters
+4. **Download Execution** (4.2.3): HTTP downloads with retry logic
+5. **Import Handoff** (4.2.4): Auto-match and import to library
+6. **Configuration & Import** (4.3): Mylar3 config import
 
-The pipeline supports:
-- Automatic series/issue matching
-- Configurable auto-import thresholds
-- Manual review queue for low-confidence matches
-- Full history tracking from download to import
-- File format verification and HTML error page detection
+The system supports:
+- Full Mylar3 config.ini import
+- DDL-specific settings (rate limits, timeouts, auth)
+- Multiple site types (GettyComics, ReadComicOnline, etc.)
+- Credential handling with validation
+- Mylar3-equivalent defaults

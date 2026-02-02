@@ -991,6 +991,210 @@ Rejects a pending import and optionally deletes the file.
 
 ---
 
+## Mylar3 Import Service (EPIC 4.3)
+
+The Mylar3 Import Service handles parsing and importing Mylar3 config.ini files to create DDL provider configurations.
+
+### Parse Mylar3 Config
+```
+POST /api/v1/mylar3/parse
+Content-Type: application/json
+
+{
+  "configContent": "[DDL-1]\nname = My Provider\nsite_type = GettyComics\nurl = https://example.com\nenabled = true"
+}
+```
+Parses Mylar3 config.ini content and extracts DDL provider configurations.
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "ddlProviders": [
+    {
+      "name": "My Provider",
+      "siteType": "GettyComics",
+      "baseUrl": "https://example.com",
+      "isEnabled": true,
+      "priority": 1,
+      "hasPassword": false,
+      "hasApiKey": false,
+      "settings": {
+        "siteType": "GettyComics",
+        "rateLimitPerMinute": 10,
+        "timeoutSeconds": 30,
+        "maxRetries": 3
+      }
+    }
+  ],
+  "generalSettings": null,
+  "unmappedSections": [],
+  "unmappedSettings": {},
+  "warnings": []
+}
+```
+
+### Parse Config from File
+```
+POST /api/v1/mylar3/parse/file
+Content-Type: application/json
+
+{
+  "filePath": "/path/to/mylar3/config.ini"
+}
+```
+
+### Validate Import
+```
+POST /api/v1/mylar3/validate
+Content-Type: application/json
+
+{
+  "configContent": "..."
+}
+```
+Validates Mylar3 config import against current system state.
+
+**Response (200 OK)**
+```json
+{
+  "isValid": true,
+  "errors": [],
+  "warnings": ["Provider 'Existing' already exists"],
+  "providersToCreate": ["New Provider"],
+  "existingProviders": ["Existing"],
+  "settingDeviations": ["New Provider: Custom rate limit 5/min (default: 10)"]
+}
+```
+
+### Execute Import
+```
+POST /api/v1/mylar3/import
+Content-Type: application/json
+
+{
+  "configContent": "...",
+  "overwriteExisting": false,
+  "importDisabled": true,
+  "importCredentials": true,
+  "namePrefix": "[Mylar3] ",
+  "validateFirst": true
+}
+```
+Executes Mylar3 config import, creating DDL providers in the database.
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "providersCreated": 2,
+  "providersUpdated": 0,
+  "providersSkipped": 1,
+  "createdProviderIds": [5, 6],
+  "details": [
+    { "name": "[Mylar3] Provider One", "action": "Created", "providerId": 5 },
+    { "name": "[Mylar3] Provider Two", "action": "Created", "providerId": 6 },
+    { "name": "[Mylar3] Existing", "action": "Skipped" }
+  ]
+}
+```
+
+### Get DDL Provider Defaults
+```
+GET /api/v1/mylar3/defaults
+```
+Returns Mylar3-compatible default settings for all supported DDL site types.
+
+**Response (200 OK)**
+```json
+[
+  {
+    "siteType": "GettyComics",
+    "settings": {
+      "siteType": "GettyComics",
+      "rateLimitPerMinute": 10,
+      "timeoutSeconds": 30,
+      "downloadTimeoutSeconds": 300,
+      "maxRetries": 3,
+      "retryDelayMs": 1000,
+      "useExponentialBackoff": true,
+      "requiresAuth": false,
+      "enableCookies": true
+    }
+  },
+  {
+    "siteType": "ReadComicOnline",
+    "settings": {
+      "siteType": "ReadComicOnline",
+      "rateLimitPerMinute": 5,
+      "timeoutSeconds": 45,
+      "downloadTimeoutSeconds": 600,
+      "maxRetries": 3
+    }
+  }
+]
+```
+
+### Get Defaults for Site Type
+```
+GET /api/v1/mylar3/defaults/{siteType}
+```
+Returns Mylar3-compatible default settings for a specific DDL site type.
+
+---
+
+## DDL Provider Settings
+
+### DdlProviderSettings Model
+```json
+{
+  "siteType": "GettyComics",
+  "rateLimitPerMinute": 10,
+  "timeoutSeconds": 30,
+  "downloadTimeoutSeconds": 300,
+  "maxRetries": 3,
+  "retryDelayMs": 1000,
+  "useExponentialBackoff": true,
+  "userAgent": null,
+  "enableCookies": true,
+  "customCookies": null,
+  "customHeaders": null,
+  "requiresAuth": false,
+  "authMethod": "None",
+  "loginUrl": null,
+  "autoGrabEnabled": true,
+  "autoGrabMinScore": 80,
+  "searchCollections": true,
+  "searchSingles": true,
+  "formatPreference": ["cbz", "cbr"],
+  "bannedWords": ["sample", "preview"],
+  "requiredWords": [],
+  "minSizeSingles": 1000000,
+  "maxSizeSingles": 200000000,
+  "minSizeCollections": 5000000,
+  "maxSizeCollections": 2000000000
+}
+```
+
+### DDL Auth Methods (Enum)
+| Value | Name | Description |
+|-------|------|-------------|
+| 0 | None | No authentication |
+| 1 | Basic | HTTP Basic auth |
+| 2 | Cookie | Cookie-based (login form) |
+| 3 | ApiKey | API key auth |
+| 4 | OAuth2 | OAuth2 auth |
+
+### Supported Site Types
+| Site Type | Default Rate Limit | Auth Required | Notes |
+|-----------|-------------------|---------------|-------|
+| GettyComics | 10/min | No | Standard defaults |
+| ReadComicOnline | 5/min | No | More restrictive |
+| GetComics | 10/min | No | Standard defaults |
+| Generic | 10/min | Varies | Fallback type |
+
+---
+
 ## OpenAPI / Swagger
 
 - **Swagger UI**: `GET /swagger`

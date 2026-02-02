@@ -99,16 +99,16 @@ The DDL (Direct Download) provider must achieve behavioral parity with Mylar3's 
   - AC: Respect "auto-import" vs "manual review" setting (match Mylar3)
   - AC: Create HistoryEvent linking download → import
 
-### 4.3 DDL Configuration & Mylar3 Import
-- [ ] **DDL provider entity + settings**
+### 4.3 DDL Configuration & Mylar3 Import ✅ COMPLETED
+- [x] **DDL provider entity + settings**
   - AC: Entity: DdlProvider (Name, SiteType, BaseUrl, Credentials, Enabled, Priority)
   - AC: Per-provider settings: RateLimit, Timeout, RetryCount, UserAgent
-- [ ] **Mylar3 DDL settings import**
+- [x] **Mylar3 DDL settings import**
   - AC: Parse Mylar3 config.ini DDL sections
   - AC: Map DDL provider configs to Shortboxerr DdlProvider entities
   - AC: Import DDL-specific credentials securely
   - AC: Validation report showing mapped vs. unsupported settings
-- [ ] **DDL provider defaults**
+- [x] **DDL provider defaults**
   - AC: Ship with Mylar3-equivalent default settings in config/defaults.mylar3.json
   - AC: Document any deviations from Mylar3 behavior
 
