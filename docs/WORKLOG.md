@@ -1,5 +1,59 @@
 # Worklog
 
+## Iteration 017 (2026-02-02)
+**EPIC 6: API Key Management - COMPLETED**
+
+### Commits
+1. `feat: add API key management backend (EPIC 6)`
+2. `feat: add API key management UI (EPIC 6)`
+3. `test: add API key endpoint tests (EPIC 6)`
+4. `docs: update API.md and complete iteration 017`
+
+### Deliverables
+- ✅ API Key Generation:
+  - Cryptographically secure key generation using RandomNumberGenerator
+  - Format: `sk_live_{32 hex characters}` (40 chars total)
+  - Stored securely in SystemSettings table
+  - Creation timestamp tracked
+  - Last used timestamp tracked (updated on validation)
+- ✅ API Key Endpoints:
+  - GET /api/v1/settings/apikey (returns masked key: `sk_live_...xxxx`)
+  - GET /api/v1/settings/apikey/full (returns full key for copying)
+  - POST /api/v1/settings/apikey/regenerate (creates new key, returns full)
+  - ValidateApiKeyAsync for future authentication middleware
+- ✅ Security Settings UI:
+  - Display masked API key by default
+  - Show/hide toggle to reveal full key (fetched on demand)
+  - Copy button with visual feedback ("Copied!")
+  - Regenerate button with confirmation dialog
+  - Warning about invalidating existing integrations
+  - Display creation date and last used date
+- ✅ Tests (5 new, 19 total settings tests):
+  - GetApiKey_ReturnsMaskedKey
+  - GetApiKeyFull_ReturnsFullKey
+  - RegenerateApiKey_CreatesNewKey
+  - RegenerateApiKey_ResetslastUsedAt
+  - ApiKey_MaskedFormat_CorrectStructure
+
+### New/Modified Files
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Core/Services/ISettingsService.cs` | Added ApiKeyInfo, Get/Regenerate/Validate methods |
+| `src/Shortboxerr.Infrastructure/Services/SettingsService.cs` | API key implementation |
+| `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` | API key endpoints |
+| `ui/src/api/client.ts` | ApiKeyInfo interface, API functions |
+| `ui/src/pages/SettingsPage.tsx` | SecuritySettings with real API key UI |
+| `tests/Shortboxerr.Tests/SettingsEndpointTests.cs` | API key tests |
+| `docs/API.md` | API key endpoint documentation |
+
+### Notes
+- Full API key only returned on explicit request or regenerate (security)
+- Regenerate shows confirmation dialog warning about invalidation
+- Copy triggers browser clipboard API with success feedback
+- Auto-generates key on first access if none exists
+
+---
+
 ## Iteration 016 (2026-02-02)
 **EPIC 6: Settings Persistence & UI Enhancements - PARTIAL**
 

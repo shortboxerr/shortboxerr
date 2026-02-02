@@ -1,75 +1,47 @@
-# Self-Check Rubric - Iteration 016
-
-## Iteration Goal
-EPIC 6: Settings Persistence & UI Enhancements (Theme Persistence, General Settings, Folder Settings, Naming Tokens)
+# Self-Check (Iteration 017)
 
 ## Checklist
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Vertical slice implemented | ✅ | Settings service + API + UI theme persistence |
-| At least one API endpoint | ✅ | 8 new settings endpoints |
-| Associated service layer logic | ✅ | ISettingsService + SettingsService |
-| Persistence change (if needed) | ✅ | Uses existing SystemSetting entity |
-| Unit/integration test | ✅ | 14 new tests, 373 total passing |
-| docs/API.md updated | ✅ | Settings endpoints documented |
-| docs/WORKLOG.md updated | ✅ | Iteration 016 entry added |
-| docs/BACKLOG.md updated | ✅ | Theme, general settings, folders, tokens marked complete |
-| Repo builds | ✅ | `dotnet build` succeeds |
-| Tests pass | ✅ | 373 tests passing |
-| Commits at breakpoints | ✅ | 2 commits (feature + tests) |
+| Vertical slice complete? | ✅ | API key backend + UI + tests |
+| Tests pass? | ✅ | 19 settings tests pass (5 new API key tests) |
+| Build green? | ✅ | `dotnet build` succeeds |
+| UI builds? | ✅ | `npm run build` succeeds |
+| Docs updated? | ✅ | API.md, WORKLOG.md, BACKLOG.md |
+| Commits atomic? | ✅ | 4 logical commits |
+| No scope creep? | ✅ | Only API key management |
 
-## New Endpoints
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/api/v1/settings/ui` | GET | Get UI settings |
-| `/api/v1/settings/ui` | PUT | Update UI settings |
-| `/api/v1/settings/general` | GET | Get general settings |
-| `/api/v1/settings/general` | PUT | Update general settings |
-| `/api/v1/settings/folders` | GET | Get folder settings |
-| `/api/v1/settings/folders` | PUT | Update folder settings |
-| `/api/v1/settings/naming/tokens` | GET | Get naming format tokens |
-| `/api/v1/settings/{key}` | GET | Get setting by key |
-| `/api/v1/settings/{key}` | PUT | Set setting by key |
-| `/api/v1/settings/{key}` | DELETE | Delete setting by key |
+## EPIC 6 Status: COMPLETED ✅
+
+All items in EPIC 6 (Settings Persistence & UI Enhancements) are now complete:
+
+| Task | Status |
+|------|--------|
+| Theme persistence | ✅ Completed (Iteration 016) |
+| General settings persistence | ✅ Completed (Iteration 016) |
+| API key management | ✅ Completed (Iteration 017) |
+| Naming format token helper | ✅ Completed (Iteration 016) |
+| Separate Download and Staging folders | ✅ Completed (Iteration 016) |
+
+## Iteration 017 Deliverables
+
+### API Key Management (EPIC 6)
+- ✅ Backend: ISettingsService extended with API key methods
+- ✅ Cryptographic key generation (`sk_live_{32 hex}`)
+- ✅ GET /api/v1/settings/apikey (masked)
+- ✅ GET /api/v1/settings/apikey/full (full key)
+- ✅ POST /api/v1/settings/apikey/regenerate
+- ✅ UI: SecuritySettings with show/hide, copy, regenerate
+- ✅ Confirmation dialog for regeneration
+- ✅ Creation date and last used tracking
+- ✅ 5 new integration tests
 
 ## Test Summary
-- Settings endpoint tests: 14 new tests
-- Total tests: 373 passing
+```
+Passed!  - Failed: 0, Passed: 19, Skipped: 0
+```
 
-## Features Implemented
-1. **Theme Persistence**
-   - Theme saved to database (dark/light/system)
-   - Theme loaded on app startup
-   - ThemeContext React provider
-   - Light/dark mode CSS variables
-
-2. **General Settings Persistence**
-   - Naming formats (series folder, issue file, collection file)
-   - Comic library path
-   - Download and staging folders
-
-3. **Folder Settings**
-   - Separate download and staging folders
-   - Auto-move from download to staging option
-   - Partial update support
-
-4. **Naming Format Token Helper (UI)**
-   - Clickable token pills below each format input
-   - Tokens insert at cursor position
-   - Live preview with sample data
-   - Tokens loaded from API
-
-5. **Bug Fixes**
-   - API client uses relative URLs (Vite proxy compatible)
-   - CORS enabled for development (localhost:3000, :5173)
-
-## Items Remaining in EPIC 6
-- [ ] API key management (display, copy, regenerate)
-
-## Stop Criteria Check
-- [x] Build is green
-- [x] No more than 2 consecutive fix attempts needed
-- [x] Scope stayed within epic/story AC
-- [x] No refactor temptation acted on
-- [x] No flaky tests observed
+## Next Steps
+- EPIC 6 is complete
+- Proceed to EPIC 7 (Mylar3 Migration) or EPIC 8 (DDL Site Adapters)

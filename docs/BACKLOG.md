@@ -187,7 +187,7 @@ Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests sec
   - AC: Save naming patterns, root folders to database
   - AC: Settings entity with key-value storage
   - AC: Settings API endpoints for all categories
-- [ ] **API key management**
+- [x] **API key management** ✅
   - AC: Display API key in Settings > Security (masked by default)
   - AC: "Show" toggle to reveal full API key
   - AC: "Copy" button to copy API key to clipboard

@@ -1360,6 +1360,67 @@ Removes a setting. Returns 204 on success, 404 if not found.
 
 ---
 
+## API Key Management
+
+### Get API Key (Masked)
+```
+GET /api/v1/settings/apikey
+```
+Returns the API key in masked format (shows prefix and last 4 characters only).
+
+**Response (200 OK)**
+```json
+{
+  "maskedKey": "sk_live_...f1a9",
+  "fullKey": null,
+  "createdAt": "2026-02-02T10:00:00Z",
+  "lastUsedAt": "2026-02-02T12:30:00Z",
+  "isNewKey": false
+}
+```
+
+### Get Full API Key
+```
+GET /api/v1/settings/apikey/full
+```
+Returns the full API key. Use with caution - this should only be called when the user explicitly requests to see the full key.
+
+**Response (200 OK)**
+```json
+{
+  "maskedKey": "sk_live_...f1a9",
+  "fullKey": "sk_live_abc123def456ghi789012345678f1a9",
+  "createdAt": "2026-02-02T10:00:00Z",
+  "lastUsedAt": "2026-02-02T12:30:00Z",
+  "isNewKey": false
+}
+```
+
+### Regenerate API Key
+```
+POST /api/v1/settings/apikey/regenerate
+```
+Generates a new API key. The previous key is immediately invalidated. Always returns the full new key.
+
+**Response (200 OK)**
+```json
+{
+  "maskedKey": "sk_live_...b7c2",
+  "fullKey": "sk_live_xyz789abc012def345678901234b7c2",
+  "createdAt": "2026-02-02T14:00:00Z",
+  "lastUsedAt": null,
+  "isNewKey": true
+}
+```
+
+### API Key Format
+- Format: `sk_live_{32 hex characters}`
+- Total length: 40 characters
+- Masked format: `sk_live_...{last 4 chars}`
+- Generated using cryptographically secure random bytes
+
+---
+
 ## OpenAPI / Swagger
 
 - **Swagger UI**: `GET /swagger`
