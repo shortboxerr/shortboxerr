@@ -1,0 +1,352 @@
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8585';
+
+interface PagedResult<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
+
+interface SystemStatus {
+  version: string;
+  seriesCount: number;
+  collectionsCount: number;
+  issuesCount: number;
+  filesCount: number;
+  databaseStatus: string;
+  indexerStatus: string;
+  enabledIndexers: number;
+  queuedDownloads: number;
+}
+
+interface Activity {
+  id: string;
+  title: string;
+  type: 'success' | 'warning' | 'info' | 'danger';
+  timestamp: string;
+}
+
+interface Series {
+  id: number;
+  title: string;
+  year: number | null;
+  publisher: string | null;
+  status: string;
+  issueCount: number;
+  filesCount: number;
+}
+
+interface Edition {
+  id: number;
+  title: string;
+  seriesTitle: string;
+  editionType: string;
+  volumeNumber: number | null;
+  year: number | null;
+  publisher: string | null;
+  hasFile: boolean;
+}
+
+interface QueueItem {
+  id: string;
+  title: string;
+  series: string;
+  status: 'downloading' | 'queued' | 'paused' | 'failed';
+  progress: number;
+  size: string;
+  timeRemaining: string | null;
+  provider: string;
+}
+
+interface WantedItem {
+  id: number;
+  type: 'issue' | 'collection';
+  title: string;
+  series: string;
+  issueNumber?: number;
+  volumeNumber?: number;
+  editionType?: string;
+  dateAdded: string;
+}
+
+interface HistoryEvent {
+  id: number;
+  type: 'grabbed' | 'imported' | 'deleted' | 'failed' | 'renamed';
+  title: string;
+  series: string;
+  details: string;
+  timestamp: string;
+  source: string | null;
+}
+
+interface StagedFile {
+  id: string;
+  filename: string;
+  path: string;
+  size: string;
+  parsed: {
+    series: string | null;
+    issue: number | null;
+    year: number | null;
+    format: string | null;
+    isCollection: boolean;
+    editionType: string | null;
+    confidence: number;
+  };
+  match: {
+    seriesId: number | null;
+    seriesTitle: string | null;
+    issueId: number | null;
+    editionId: number | null;
+    confidence: number;
+  } | null;
+  status: 'pending' | 'matched' | 'unmatched' | 'error';
+}
+
+async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export const api = {
+  // System
+  getSystemStatus: async (): Promise<SystemStatus> => {
+    try {
+      const status = await fetchApi<any>('/api/v1/system/status');
+      return {
+        version: status.version ?? '1.0.0',
+        seriesCount: status.seriesCount ?? 0,
+        collectionsCount: status.collectionsCount ?? 0,
+        issuesCount: status.issuesCount ?? 0,
+        filesCount: status.filesCount ?? 0,
+        databaseStatus: status.databaseStatus ?? 'Connected',
+        indexerStatus: status.indexerStatus ?? 'healthy',
+        enabledIndexers: status.enabledIndexers ?? 0,
+        queuedDownloads: status.queuedDownloads ?? 0,
+      };
+    } catch {
+      // Return defaults if API is not available
+      return {
+        version: '1.0.0',
+        seriesCount: 0,
+        collectionsCount: 0,
+        issuesCount: 0,
+        filesCount: 0,
+        databaseStatus: 'Connected',
+        indexerStatus: 'healthy',
+        enabledIndexers: 0,
+        queuedDownloads: 0,
+      };
+    }
+  },
+
+  getRecentActivity: async (limit: number): Promise<Activity[]> => {
+    try {
+      const response = await fetchApi<any[]>(`/api/v1/history?pageSize=${limit}`);
+      return response.map((e: any) => ({
+        id: String(e.id),
+        title: e.description ?? e.sourceTitle ?? 'Unknown event',
+        type: mapEventType(e.eventType),
+        timestamp: formatTimestamp(e.timestamp),
+      }));
+    } catch {
+      return [];
+    }
+  },
+
+  // Series
+  getSeries: async (params: { search?: string; page?: number; pageSize?: number }): Promise<PagedResult<Series>> => {
+    const query = new URLSearchParams();
+    if (params.search) query.set('search', params.search);
+    if (params.page) query.set('page', String(params.page));
+    if (params.pageSize) query.set('pageSize', String(params.pageSize));
+
+    try {
+      return await fetchApi<PagedResult<Series>>(`/api/v1/series?${query}`);
+    } catch {
+      return { items: [], page: 1, pageSize: 50, totalCount: 0, totalPages: 0 };
+    }
+  },
+
+  deleteSeries: async (id: number): Promise<void> => {
+    await fetchApi(`/api/v1/series/${id}`, { method: 'DELETE' });
+  },
+
+  // Editions (Collections)
+  getEditions: async (params: { search?: string; page?: number; pageSize?: number }): Promise<PagedResult<Edition>> => {
+    const query = new URLSearchParams();
+    if (params.search) query.set('search', params.search);
+    if (params.page) query.set('page', String(params.page));
+    if (params.pageSize) query.set('pageSize', String(params.pageSize));
+
+    try {
+      return await fetchApi<PagedResult<Edition>>(`/api/v1/editions?${query}`);
+    } catch {
+      return { items: [], page: 1, pageSize: 50, totalCount: 0, totalPages: 0 };
+    }
+  },
+
+  deleteEdition: async (id: number): Promise<void> => {
+    await fetchApi(`/api/v1/editions/${id}`, { method: 'DELETE' });
+  },
+
+  // Activity
+  getActivityQueue: async (): Promise<QueueItem[]> => {
+    // This would connect to a real queue endpoint
+    // For now, return empty as there's no queue implementation
+    return [];
+  },
+
+  // Wanted
+  getWanted: async (_params: { type: string; search?: string }): Promise<PagedResult<WantedItem>> => {
+    // This would filter series/editions without files
+    return { items: [], page: 1, pageSize: 50, totalCount: 0, totalPages: 0 };
+  },
+
+  // History
+  getHistory: async (params: { type?: string; search?: string }): Promise<PagedResult<HistoryEvent>> => {
+    const query = new URLSearchParams();
+    if (params.type && params.type !== 'all') query.set('type', params.type);
+    if (params.search) query.set('search', params.search);
+
+    try {
+      const response = await fetchApi<any[]>(`/api/v1/history?${query}`);
+      return {
+        items: response.map((e: any) => ({
+          id: e.id,
+          type: mapHistoryType(e.eventType),
+          title: e.sourceTitle ?? 'Unknown',
+          series: e.description ?? '',
+          details: e.data ?? '',
+          timestamp: formatTimestamp(e.timestamp),
+          source: e.downloadClient ?? null,
+        })),
+        page: 1,
+        pageSize: 50,
+        totalCount: response.length,
+        totalPages: 1,
+      };
+    } catch {
+      return { items: [], page: 1, pageSize: 50, totalCount: 0, totalPages: 0 };
+    }
+  },
+
+  // Staged Files
+  getStagedFiles: async (): Promise<PagedResult<StagedFile>> => {
+    try {
+      const response = await fetchApi<any[]>('/api/v1/manualimport/staged');
+      return {
+        items: response.map((f: any) => ({
+          id: f.path,
+          filename: f.filename,
+          path: f.path,
+          size: formatSize(f.size),
+          parsed: {
+            series: f.parsedInfo?.seriesTitle ?? null,
+            issue: f.parsedInfo?.issueNumber ?? null,
+            year: f.parsedInfo?.year ?? null,
+            format: f.parsedInfo?.format ?? null,
+            isCollection: f.parsedInfo?.isCollection ?? false,
+            editionType: f.parsedInfo?.editionType ?? null,
+            confidence: f.parsedInfo?.confidence ?? 0,
+          },
+          match: f.suggestedSeries ? {
+            seriesId: f.suggestedSeries.id,
+            seriesTitle: f.suggestedSeries.title,
+            issueId: null,
+            editionId: null,
+            confidence: f.matchConfidence ?? 0,
+          } : null,
+          status: f.suggestedSeries ? 'matched' : 'unmatched',
+        })),
+        page: 1,
+        pageSize: 100,
+        totalCount: response.length,
+        totalPages: 1,
+      };
+    } catch {
+      return { items: [], page: 1, pageSize: 100, totalCount: 0, totalPages: 0 };
+    }
+  },
+
+  importFiles: async (ids: string[]): Promise<void> => {
+    await fetchApi('/api/v1/manualimport/import', {
+      method: 'POST',
+      body: JSON.stringify({ files: ids }),
+    });
+  },
+};
+
+function mapEventType(type: string): 'success' | 'warning' | 'info' | 'danger' {
+  switch (type?.toLowerCase()) {
+    case 'grabbed':
+    case 'downloadcomplete':
+      return 'success';
+    case 'downloadfailed':
+      return 'danger';
+    case 'renamed':
+    case 'imported':
+      return 'info';
+    default:
+      return 'info';
+  }
+}
+
+function mapHistoryType(type: string): 'grabbed' | 'imported' | 'deleted' | 'failed' | 'renamed' {
+  switch (type?.toLowerCase()) {
+    case 'grabbed':
+      return 'grabbed';
+    case 'imported':
+    case 'downloadcomplete':
+      return 'imported';
+    case 'deleted':
+      return 'deleted';
+    case 'downloadfailed':
+      return 'failed';
+    case 'renamed':
+      return 'renamed';
+    default:
+      return 'imported';
+  }
+}
+
+function formatTimestamp(timestamp: string): string {
+  if (!timestamp) return '';
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+}
+
+function formatSize(bytes: number | undefined): string {
+  if (!bytes) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let size = bytes;
+  let unitIndex = 0;
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex++;
+  }
+  return `${size.toFixed(1)} ${units[unitIndex]}`;
+}
+

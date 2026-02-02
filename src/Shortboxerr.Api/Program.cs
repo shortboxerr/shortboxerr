@@ -45,6 +45,10 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "swagger";
 });
 
+// Serve static files from wwwroot (React UI)
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 // Health check endpoint
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
@@ -94,6 +98,9 @@ app.MapDecisionEngineEndpoints();
 app.MapProviderEndpoints();
 app.MapDdlImportEndpoints();
 app.MapMylar3ImportEndpoints();
+
+// SPA fallback - serve index.html for client-side routes
+app.MapFallbackToFile("index.html");
 
 app.Run();
 
