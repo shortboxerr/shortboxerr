@@ -375,6 +375,80 @@ public class SettingsEndpointTests : IClassFixture<CustomWebApplicationFactory>
         Assert.NotNull(enabledResult);
         Assert.True(enabledResult.IsEnabled);
     }
+
+    [Fact]
+    public async Task ApiDisabled_BlocksOtherApiEndpoints()
+    {
+        // First, disable API
+        var disableRequest = new { enabled = false };
+        await _client.PutAsJsonAsync("/api/v1/settings/apikey/enabled", disableRequest);
+
+        try
+        {
+            // Try to call another API endpoint (series)
+            var response = await _client.GetAsync("/api/v1/series");
+            
+            // Should return 503 Service Unavailable
+            Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+            
+            var content = await response.Content.ReadAsStringAsync();
+            Assert.Contains("API_DISABLED", content);
+        }
+        finally
+        {
+            // Re-enable API for other tests
+            var enableRequest = new { enabled = true };
+            await _client.PutAsJsonAsync("/api/v1/settings/apikey/enabled", enableRequest);
+        }
+    }
+
+    [Fact]
+    public async Task ApiDisabled_AllowsSettingsEndpoints()
+    {
+        // First, disable API
+        var disableRequest = new { enabled = false };
+        await _client.PutAsJsonAsync("/api/v1/settings/apikey/enabled", disableRequest);
+
+        try
+        {
+            // Settings endpoints should still work to allow re-enabling
+            var response = await _client.GetAsync("/api/v1/settings/apikey");
+            response.EnsureSuccessStatusCode();
+
+            var uiResponse = await _client.GetAsync("/api/v1/settings/ui");
+            uiResponse.EnsureSuccessStatusCode();
+        }
+        finally
+        {
+            // Re-enable API for other tests
+            var enableRequest = new { enabled = true };
+            await _client.PutAsJsonAsync("/api/v1/settings/apikey/enabled", enableRequest);
+        }
+    }
+
+    [Fact]
+    public async Task ApiDisabled_AllowsHealthAndPing()
+    {
+        // First, disable API
+        var disableRequest = new { enabled = false };
+        await _client.PutAsJsonAsync("/api/v1/settings/apikey/enabled", disableRequest);
+
+        try
+        {
+            // Health and ping endpoints should always work
+            var healthResponse = await _client.GetAsync("/health");
+            healthResponse.EnsureSuccessStatusCode();
+
+            var pingResponse = await _client.GetAsync("/ping");
+            pingResponse.EnsureSuccessStatusCode();
+        }
+        finally
+        {
+            // Re-enable API for other tests
+            var enableRequest = new { enabled = true };
+            await _client.PutAsJsonAsync("/api/v1/settings/apikey/enabled", enableRequest);
+        }
+    }
 }
 
 // Response DTOs for deserialization
