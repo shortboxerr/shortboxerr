@@ -29,3 +29,9 @@
 /workspaces/shortboxerr/src/Shortboxerr.Api/obj/Debug/net8.0/Shortboxerr.Api.pdb
 /workspaces/shortboxerr/src/Shortboxerr.Api/obj/Debug/net8.0/Shortboxerr.Api.genruntimeconfig.cache
 /workspaces/shortboxerr/src/Shortboxerr.Api/obj/Debug/net8.0/ref/Shortboxerr.Api.dll
+/workspaces/shortboxerr/src/Shortboxerr.Api/obj/Debug/net8.0/Shortboxerr.Api.MvcApplicationPartsAssemblyInfo.cs
+/workspaces/shortboxerr/src/Shortboxerr.Api/bin/Debug/net8.0/Microsoft.AspNetCore.OpenApi.dll
+/workspaces/shortboxerr/src/Shortboxerr.Api/bin/Debug/net8.0/Microsoft.OpenApi.dll
+/workspaces/shortboxerr/src/Shortboxerr.Api/bin/Debug/net8.0/Swashbuckle.AspNetCore.Swagger.dll
+/workspaces/shortboxerr/src/Shortboxerr.Api/bin/Debug/net8.0/Swashbuckle.AspNetCore.SwaggerGen.dll
+/workspaces/shortboxerr/src/Shortboxerr.Api/bin/Debug/net8.0/Swashbuckle.AspNetCore.SwaggerUI.dll

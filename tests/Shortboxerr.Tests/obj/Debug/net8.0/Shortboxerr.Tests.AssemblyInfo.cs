@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Shortboxerr.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c5f95a98968053524e49f8b45c5b6f70d63dfd78")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+898c4d8a0a78ebb1f377b9d01efce3d110e8eb85")]
 [assembly: System.Reflection.AssemblyProductAttribute("Shortboxerr.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Shortboxerr.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

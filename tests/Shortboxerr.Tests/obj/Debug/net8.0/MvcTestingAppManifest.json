@@ -1,0 +1,5 @@
+{
+  "Shortboxerr.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "\/workspaces\/shortboxerr\/src\/Shortboxerr.Api",
+  "Shortboxerr.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "\/workspaces\/shortboxerr\/src\/Shortboxerr.Core",
+  "Shortboxerr.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "\/workspaces\/shortboxerr\/src\/Shortboxerr.Infrastructure"
+}
