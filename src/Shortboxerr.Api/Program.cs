@@ -8,7 +8,8 @@ using System.Text.Json;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+var connectionString = Environment.GetEnvironmentVariable("SHORTBOXERR_DB")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection")
     ?? "Data Source=shortboxerr.db";
 builder.Services.AddInfrastructure(connectionString);
 
