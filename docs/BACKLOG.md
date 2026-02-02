@@ -195,6 +195,52 @@ Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests sec
 - [ ] Post-migration scan job
 - [ ] Migration report
 
+## EPIC 8: DDL Site Adapters (Mylar3 Parity)
+Implement real DDL site adapters matching Mylar3's supported sites.
+
+### 8.1 GetComics.org Adapter
+- [ ] **HTML scraping for GetComics**
+  - AC: Parse search results page for release links
+  - AC: Extract download links (MediaFire, Mega, Zippyshare, etc.)
+  - AC: Handle pagination for search results
+  - AC: Parse release details (title, size, date posted)
+- [ ] **GetComics search integration**
+  - AC: Search by series name, issue number
+  - AC: Search by keyword/tag
+  - AC: RSS feed polling for new releases
+- [ ] **GetComics link resolution**
+  - AC: Follow redirects to actual download URLs
+  - AC: Handle multiple mirror options
+  - AC: Detect dead/expired links
+
+### 8.2 Additional DDL Sites
+- [ ] **ReadComicOnline adapter** (if supported by Mylar3)
+  - AC: Site-specific HTML parsing
+  - AC: Authentication handling if required
+- [ ] **Generic DDL adapter template**
+  - AC: Base class for rapid new site implementation
+  - AC: Configurable CSS selectors for common patterns
+  - AC: Documentation for adding new sites
+
+### 8.3 DDL Site Health Monitoring
+- [ ] **Site availability checks**
+  - AC: Periodic health checks for each configured site
+  - AC: Detect site changes that break scraping
+  - AC: Alert/disable adapter on repeated failures
+- [ ] **Rate limiting per site**
+  - AC: Respect site-specific rate limits
+  - AC: Configurable delays between requests
+  - AC: Request queuing to prevent bans
+
+### 8.4 DDL Site Adapter Tests
+- [ ] **GetComics fixture tests**
+  - AC: Mock HTML responses for search results
+  - AC: Mock HTML responses for release pages
+  - AC: Verify correct link extraction
+- [ ] **Integration tests with real responses**
+  - AC: Cached real responses for regression testing
+  - AC: End-to-end: search → parse → candidates
+
 ---
 
 ## Story Ordering Notes
@@ -215,3 +261,4 @@ Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests sec
 - 4.2.* depends on EPIC 3 (DecisionEngine) for candidate ranking
 - 4.2.4 depends on EPIC 2 (Import Pipeline) for handoff
 - 4.5 depends on EPIC 5 UI shell ✅ (can now be implemented)
+- EPIC 8 depends on EPIC 4.2 (DDL Provider interfaces and services)
