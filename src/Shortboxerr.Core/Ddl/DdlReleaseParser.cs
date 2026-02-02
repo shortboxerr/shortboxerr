@@ -27,8 +27,8 @@ public partial class DdlReleaseParser : IDdlReleaseParser
     private static readonly string[] QualityTags = new[]
     {
         "Digital", "Digital Edition",
-        "Webrip", "Web-Rip",
-        "Scan", "Scanned",
+        "Webrip", "Web-Rip", "Web Rip",
+        "Scan", "Scanned", "c2c-Scan", "c2c",
         "HD", "HQ",
         "Proper", "Repack"
     };
@@ -49,7 +49,8 @@ public partial class DdlReleaseParser : IDdlReleaseParser
         "Aftershock",
         "AWA", "AWA Studios",
         "Titan", "Titan Comics",
-        "Zenescope"
+        "Zenescope",
+        "Cartoon Books"
     };
 
     public DdlParsedInfo Parse(string releaseTitle)
@@ -71,8 +72,15 @@ public partial class DdlReleaseParser : IDdlReleaseParser
             confidence += 10;
         }
         
+        // Pre-process: normalize separators (underscores, periods) to spaces
+        // This enables parsing of titles like "Wonder_Woman_001_(DC)_(2023)" and "Aquaman.001.2023.Digital"
+        workingTitle = NormalizeSeparators(workingTitle);
+        
         // Tokenize
         info.Tokens.AddRange(Tokenize(workingTitle));
+        
+        // Extract all parenthetical groups for later processing
+        var parenGroups = ExtractAllParenGroups(workingTitle);
         
         // Extract year (commonly in parentheses or at end)
         var (year, titleAfterYear) = ExtractYear(workingTitle);
@@ -81,6 +89,39 @@ public partial class DdlReleaseParser : IDdlReleaseParser
             info.Year = year;
             workingTitle = titleAfterYear;
             confidence += 10;
+        }
+        
+        // Extract publisher from parenthetical groups (before other processing)
+        // This handles cases like "Wolverine 0001 (Marvel) (2024).cbz" where publisher precedes year
+        var (publisherFromParens, titleAfterPubParens) = ExtractPublisherFromParenGroups(workingTitle, parenGroups);
+        if (!string.IsNullOrEmpty(publisherFromParens))
+        {
+            info.Publisher = publisherFromParens;
+            workingTitle = titleAfterPubParens;
+            confidence += 5;
+        }
+        
+        // Extract quality from parenthetical groups
+        // This handles cases like "Action Comics 1050 (2023) (Webrip).cbz"
+        var (qualityFromParens, titleAfterQualParens) = ExtractQualityFromParenGroups(workingTitle, parenGroups);
+        if (!string.IsNullOrEmpty(qualityFromParens))
+        {
+            info.Quality = qualityFromParens;
+            workingTitle = titleAfterQualParens;
+            confidence += 5;
+        }
+        
+        // Extract quality (early, if not found in parens) for scene-style naming like "Aquaman 001 2023 Digital"
+        // This must happen before issue extraction so "001" isn't hidden by trailing "Digital"
+        if (string.IsNullOrEmpty(info.Quality))
+        {
+            var (qualityEarly, titleAfterQualEarly) = ExtractQuality(workingTitle);
+            if (!string.IsNullOrEmpty(qualityEarly))
+            {
+                info.Quality = qualityEarly;
+                workingTitle = titleAfterQualEarly;
+                confidence += 5;
+            }
         }
         
         // Check for collection types
@@ -125,23 +166,20 @@ public partial class DdlReleaseParser : IDdlReleaseParser
             }
         }
         
-        // Extract publisher
-        var (publisher, titleAfterPublisher) = ExtractPublisher(workingTitle);
-        if (!string.IsNullOrEmpty(publisher))
+        // Extract publisher (if not already found from parens)
+        if (string.IsNullOrEmpty(info.Publisher))
         {
-            info.Publisher = publisher;
-            workingTitle = titleAfterPublisher;
-            confidence += 5;
+            var (publisher, titleAfterPublisher) = ExtractPublisher(workingTitle);
+            if (!string.IsNullOrEmpty(publisher))
+            {
+                info.Publisher = publisher;
+                workingTitle = titleAfterPublisher;
+                confidence += 5;
+            }
         }
         
-        // Extract quality
-        var (quality, titleAfterQuality) = ExtractQuality(workingTitle);
-        if (!string.IsNullOrEmpty(quality))
-        {
-            info.Quality = quality;
-            workingTitle = titleAfterQuality;
-            confidence += 5;
-        }
+        // Note: Quality extraction moved earlier in the pipeline (before issue extraction)
+        // for proper handling of scene-style naming
         
         // Extract release group (typically at end after hyphen)
         var (releaseGroup, titleAfterGroup) = ExtractReleaseGroup(workingTitle);
@@ -151,6 +189,9 @@ public partial class DdlReleaseParser : IDdlReleaseParser
             workingTitle = titleAfterGroup;
             confidence += 5;
         }
+        
+        // Handle hyphen-separated subtitles: "Star Wars - Darth Vader" -> preserve full title
+        workingTitle = HandleHyphenSubtitle(workingTitle);
         
         // What remains is the series title
         info.SeriesTitle = CleanSeriesTitle(workingTitle);
@@ -162,6 +203,131 @@ public partial class DdlReleaseParser : IDdlReleaseParser
         info.Confidence = Math.Min(100, confidence);
         
         return info;
+    }
+
+    /// <summary>
+    /// Normalize separators (underscores, periods) to spaces.
+    /// Preserves periods in file extensions and decimal issue numbers.
+    /// </summary>
+    private static string NormalizeSeparators(string title)
+    {
+        // Replace underscores with spaces
+        var normalized = title.Replace('_', ' ');
+        
+        // Replace periods with spaces for scene-style naming like "Aquaman.001.2023.Digital"
+        // but preserve periods in:
+        // 1. Decimal issue numbers like "1.5" or "#1.5" (small decimal, not year-like)
+        // 2. "Vol." patterns
+        
+        // First, protect "Vol." patterns
+        normalized = Regex.Replace(normalized, @"\bVol\.", "Vol<DOT>", RegexOptions.IgnoreCase);
+        
+        // Protect decimal issue numbers - only small decimals like "1.5" not "001.2023"
+        // Pattern: digit(s).single_digit where total < 4 digits before decimal
+        // This protects 1.5, 01.5, 001.5 but NOT 001.2023 or 2023.01
+        normalized = Regex.Replace(normalized, @"(\d{1,3})\.(\d)(?!\d{2})", "$1<DECIMAL>$2");
+        
+        // Now replace all remaining periods with spaces
+        normalized = normalized.Replace('.', ' ');
+        
+        // Restore protected patterns
+        normalized = normalized.Replace("Vol<DOT>", "Vol.");
+        normalized = normalized.Replace("<DECIMAL>", ".");
+        
+        // Clean up multiple spaces
+        normalized = MultipleSpacesRegex().Replace(normalized, " ");
+        
+        return normalized.Trim();
+    }
+
+    /// <summary>
+    /// Handle hyphen-separated subtitles like "Star Wars - Darth Vader".
+    /// Preserves the full title including subtitle.
+    /// </summary>
+    private static string HandleHyphenSubtitle(string title)
+    {
+        // If there's a " - " pattern followed by text, it's likely a subtitle
+        // We want to keep this as part of the series title
+        // Just clean up extra spaces around hyphens
+        var cleaned = Regex.Replace(title, @"\s+-\s+", " - ");
+        return cleaned;
+    }
+
+    /// <summary>
+    /// Extract all parenthetical groups from the title for processing.
+    /// </summary>
+    private static List<string> ExtractAllParenGroups(string title)
+    {
+        var groups = new List<string>();
+        var matches = AllParenGroupsRegex().Matches(title);
+        foreach (Match match in matches)
+        {
+            groups.Add(match.Groups[1].Value);
+        }
+        return groups;
+    }
+
+    /// <summary>
+    /// Extract publisher from parenthetical groups.
+    /// Handles cases like "Wolverine 0001 (Marvel) (2024).cbz"
+    /// </summary>
+    private static (string? publisher, string remainingTitle) ExtractPublisherFromParenGroups(string title, List<string> parenGroups)
+    {
+        foreach (var group in parenGroups)
+        {
+            // Check if this group is a known publisher
+            var matchedPublisher = KnownPublishers
+                .FirstOrDefault(p => p.Equals(group, StringComparison.OrdinalIgnoreCase));
+            
+            if (matchedPublisher != null)
+            {
+                // Remove this parenthetical group from the title
+                var pattern = $@"\({Regex.Escape(group)}\)";
+                var remaining = Regex.Replace(title, pattern, "", RegexOptions.IgnoreCase).Trim();
+                remaining = MultipleSpacesRegex().Replace(remaining, " ");
+                return (matchedPublisher, remaining);
+            }
+        }
+        
+        return (null, title);
+    }
+
+    /// <summary>
+    /// Extract quality from parenthetical groups.
+    /// Handles cases like "Action Comics 1050 (2023) (Webrip).cbz"
+    /// </summary>
+    private static (string? quality, string remainingTitle) ExtractQualityFromParenGroups(string title, List<string> parenGroups)
+    {
+        foreach (var group in parenGroups)
+        {
+            // Check if this group is a known quality tag
+            var matchedQuality = QualityTags
+                .FirstOrDefault(q => q.Equals(group, StringComparison.OrdinalIgnoreCase));
+            
+            if (matchedQuality != null)
+            {
+                // Remove this parenthetical group from the title
+                var pattern = $@"\({Regex.Escape(group)}\)";
+                var remaining = Regex.Replace(title, pattern, "", RegexOptions.IgnoreCase).Trim();
+                remaining = MultipleSpacesRegex().Replace(remaining, " ");
+                return (matchedQuality, remaining);
+            }
+            
+            // Also check for quality tags within compound groups like "Digital-Empire"
+            foreach (var qualityTag in QualityTags)
+            {
+                if (group.StartsWith(qualityTag, StringComparison.OrdinalIgnoreCase) ||
+                    group.EndsWith(qualityTag, StringComparison.OrdinalIgnoreCase) ||
+                    group.Contains($"-{qualityTag}", StringComparison.OrdinalIgnoreCase) ||
+                    group.Contains($"{qualityTag}-", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Don't remove the group, just extract the quality
+                    return (qualityTag, title);
+                }
+            }
+        }
+        
+        return (null, title);
     }
 
     public string? ExtractFormat(string title)
@@ -239,6 +405,18 @@ public partial class DdlReleaseParser : IDdlReleaseParser
             {
                 var remaining = title[..endMatch.Index].Trim();
                 return (endYear, remaining);
+            }
+        }
+        
+        // Match standalone year anywhere in title (for scene-style naming like "Aquaman 001 2023 Digital")
+        var anywhereMatch = YearAnywhereRegex().Match(title);
+        if (anywhereMatch.Success && int.TryParse(anywhereMatch.Groups[1].Value, out var anyYear))
+        {
+            if (anyYear >= 1900 && anyYear <= DateTime.Now.Year + 1)
+            {
+                var remaining = title.Remove(anywhereMatch.Index, anywhereMatch.Length).Trim();
+                remaining = MultipleSpacesRegex().Replace(remaining, " ");
+                return (anyYear, remaining);
             }
         }
         
@@ -328,18 +506,7 @@ public partial class DdlReleaseParser : IDdlReleaseParser
             return (issueNum, remaining);
         }
         
-        // Match standalone 3-digit number (common pattern): "Batman 001" or "Amazing Spider-Man 001"
-        var threeDigitMatch = ThreeDigitNumberRegex().Match(title);
-        if (threeDigitMatch.Success && decimal.TryParse(threeDigitMatch.Groups[1].Value, out var threeDigitNum))
-        {
-            if (threeDigitNum > 0 && threeDigitNum < 2000)
-            {
-                var remaining = title[..threeDigitMatch.Index].Trim();
-                return (threeDigitNum, remaining);
-            }
-        }
-        
-        // Match standalone number at end (common pattern): "Batman 1"
+        // Match standalone number at end (common pattern): "Batman 1" or "Aquaman 001"
         var endNumMatch = NumberAtEndRegex().Match(title);
         if (endNumMatch.Success && decimal.TryParse(endNumMatch.Groups[1].Value, out var endNum))
         {
@@ -348,6 +515,17 @@ public partial class DdlReleaseParser : IDdlReleaseParser
             {
                 var remaining = title[..endNumMatch.Index].Trim();
                 return (endNum, remaining);
+            }
+        }
+        
+        // Match standalone 3-digit number before parentheses: "Batman 001 (2023)"
+        var threeDigitMatch = ThreeDigitNumberRegex().Match(title);
+        if (threeDigitMatch.Success && decimal.TryParse(threeDigitMatch.Groups[1].Value, out var threeDigitNum))
+        {
+            if (threeDigitNum > 0 && threeDigitNum < 2000)
+            {
+                var remaining = title[..threeDigitMatch.Index].Trim();
+                return (threeDigitNum, remaining);
             }
         }
         
@@ -523,6 +701,9 @@ public partial class DdlReleaseParser : IDdlReleaseParser
     [GeneratedRegex(@"\b(\d{4})\s*$")]
     private static partial Regex YearAtEndRegex();
     
+    [GeneratedRegex(@"\b(19\d{2}|20\d{2})\b")]
+    private static partial Regex YearAnywhereRegex();
+    
     [GeneratedRegex(@"\bVol(?:ume)?\.?\s*(\d+)", RegexOptions.IgnoreCase)]
     private static partial Regex VolumeRegex();
     
@@ -561,5 +742,7 @@ public partial class DdlReleaseParser : IDdlReleaseParser
     
     [GeneratedRegex(@"[\s\-_\.]+")]
     private static partial Regex TokenizeRegex();
+    
+    [GeneratedRegex(@"\(([^)]+)\)")]
+    private static partial Regex AllParenGroupsRegex();
 }
-

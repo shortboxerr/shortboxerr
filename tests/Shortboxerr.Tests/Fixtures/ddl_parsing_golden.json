@@ -1,6 +1,6 @@
 {
   "description": "Golden test fixtures for DDL release title parsing. Must achieve Mylar3 parity.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "mylar3Parity": true,
   "testCases": [
     {
@@ -280,38 +280,66 @@
         "format": "cbz",
         "isCollection": false
       }
-    }
-  ],
-  "aspirationalTests": {
-    "description": "Tests for future parser enhancements. These document Mylar3 behavior that is not yet fully supported.",
-    "testCases": [
-      {
-        "id": "publisher_in_parens_with_other_metadata",
-        "title": "Wolverine 0001 (Marvel) (2024).cbz",
-        "note": "Parser currently has difficulty extracting publisher when followed by year",
-        "expectedPublisher": "Marvel"
-      },
-      {
-        "id": "quality_extraction",
-        "title": "Action Comics 1050 (2023) (Webrip).cbz",
-        "note": "Quality tag extraction could be improved",
-        "expectedQuality": "Webrip"
-      },
-      {
-        "id": "underscore_separator",
-        "title": "Wonder_Woman_001_(DC)_(2023).cbz",
-        "note": "Underscore normalization needed before parsing"
-      },
-      {
-        "id": "period_separator",
-        "title": "Aquaman.001.2023.Digital.cbz",
-        "note": "Period separator normalization needed"
-      },
-      {
-        "id": "colon_title_extraction",
-        "title": "Star Wars - Darth Vader 001 (Marvel) (2020).cbz",
-        "note": "Hyphen-separated subtitles need special handling"
+    },
+    {
+      "id": "publisher_in_parens_with_year",
+      "title": "Wolverine 0001 (Marvel) (2024).cbz",
+      "expected": {
+        "seriesTitle": "Wolverine",
+        "issueNumber": 1,
+        "publisher": "Marvel",
+        "year": 2024,
+        "format": "cbz",
+        "isCollection": false
       }
-    ]
-  }
+    },
+    {
+      "id": "quality_extraction_webrip",
+      "title": "Action Comics 1050 (2023) (Webrip).cbz",
+      "expected": {
+        "seriesTitle": "Action Comics",
+        "issueNumber": 1050,
+        "year": 2023,
+        "quality": "Webrip",
+        "format": "cbz",
+        "isCollection": false
+      }
+    },
+    {
+      "id": "underscore_separator",
+      "title": "Wonder_Woman_001_(DC)_(2023).cbz",
+      "expected": {
+        "seriesTitleContains": "Wonder Woman",
+        "issueNumber": 1,
+        "publisher": "DC",
+        "year": 2023,
+        "format": "cbz",
+        "isCollection": false
+      }
+    },
+    {
+      "id": "period_separator",
+      "title": "Aquaman.001.2023.Digital.cbz",
+      "expected": {
+        "seriesTitleContains": "Aquaman",
+        "issueNumber": 1,
+        "year": 2023,
+        "quality": "Digital",
+        "format": "cbz",
+        "isCollection": false
+      }
+    },
+    {
+      "id": "hyphen_subtitle",
+      "title": "Star Wars - Darth Vader 001 (Marvel) (2020).cbz",
+      "expected": {
+        "seriesTitleContains": "Darth Vader",
+        "issueNumber": 1,
+        "publisher": "Marvel",
+        "year": 2020,
+        "format": "cbz",
+        "isCollection": false
+      }
+    }
+  ]
 }
