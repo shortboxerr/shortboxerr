@@ -1,101 +1,70 @@
-# Self-Check: Iteration 013
+# Self-Check: Iteration 014
 
-## Rubric
+## Iteration Goal
+EPIC 5: UI (ARR-LIKE UI) - Complete React SPA with all main pages
 
-| Criterion | Status | Evidence |
-|-----------|--------|----------|
-| Tests pass | ✅ | 359 tests, 0 failures |
-| Build succeeds | ✅ | `dotnet build` clean |
-| Commits conventional | ✅ | `feat:` prefix, descriptive body |
-| Backlog updated | ✅ | EPIC 4.6 marked complete |
-| Worklog updated | ✅ | Iteration 013 entry added |
+## Checklist
 
-## Deliverable Summary
+### Code Quality
+- [x] All new code compiles without errors
+- [x] TypeScript strict mode passes
+- [x] No linter warnings in UI code
+- [x] 359 backend tests passing
+- [x] UI builds successfully (Vite production build)
 
-### EPIC 4.6: Generic Indexer/Download Client Support
+### Vertical Slice Completeness
+- [x] UI shell with sidebar navigation
+- [x] Dashboard with stats and activity
+- [x] Series page with table and bulk actions
+- [x] Collections page with table and filters
+- [x] Wanted page with tabs
+- [x] Activity page with queue display
+- [x] History page with event filtering
+- [x] Manual Import page with staged files
+- [x] Settings page with tabbed configuration
+- [x] API client with React Query integration
+- [x] Dark theme with CSS variables
+- [x] SPA fallback routing in backend
 
-| Feature | Status | Test Coverage |
-|---------|--------|---------------|
-| RSS/Atom indexer | ✅ | 10 tests |
-| HTTP download client | ✅ | 12 tests |
-| Torrent client abstraction | ✅ | Interface only (per spec) |
+### Documentation
+- [x] BACKLOG.md updated (EPIC 5 marked complete)
+- [x] WORKLOG.md updated (iteration 014 entry added)
+- [x] UI_SPEC.md updated (comprehensive documentation)
+- [x] SELF_CHECK.md updated (this file)
 
-## Test Results
+### Git Hygiene
+- [x] Commits follow conventional format (feat:, chore:)
+- [x] Logical breakpoints (1 commit for UI shell)
+- [x] No build artifacts in commits (wwwroot excluded from source)
 
-```
-Passed!  - Failed: 0, Passed: 359, Skipped: 0, Total: 359, Duration: 1s
-```
+## Summary
 
-### New Test Files
+| Metric | Value |
+|--------|-------|
+| Backend Tests | 359 passing |
+| UI Components | 8 pages + 1 layout |
+| CSS Lines | ~450 |
+| API Client Functions | 12 |
+| New Dependencies | 4 npm packages |
 
-| File | Test Count | Description |
-|------|------------|-------------|
-| RssIndexerTests.cs | 10 | RSS/Atom feed parsing |
-| HttpDownloadClientTests.cs | 12 | HTTP download operations |
+## EPIC Status
 
-## Implementation Details
-
-### RSS Indexer Features
-- ✅ RSS 2.0 and Atom 1.0 support
-- ✅ Feed polling with configurable interval
-- ✅ Category filtering
-- ✅ Basic authentication
-- ✅ Enclosure/direct link extraction
-- ✅ Candidate conversion using FilenameParser
-
-### HTTP Download Client Features
-- ✅ Simple URL-to-file download
-- ✅ Retry with exponential backoff
-- ✅ Concurrent download limit
-- ✅ Resume partial downloads
-- ✅ Progress reporting
-- ✅ Custom headers/cookies/auth
-- ✅ File size checking (HEAD)
-- ✅ Reachability checking
-
-### Torrent Client (Interface Only)
-- ✅ ITorrentClient interface defined
-- ✅ Add magnet/torrent file/URL methods
-- ✅ Status, pause, resume, remove operations
-- ✅ Configuration types defined
-- ✅ No implementation (placeholder per spec)
-
-## Files Changed
-
-- `src/Shortboxerr.Core/Indexers/IRssIndexer.cs` - New interface
-- `src/Shortboxerr.Core/DownloadClients/IHttpDownloadClient.cs` - New interface
-- `src/Shortboxerr.Core/DownloadClients/ITorrentClient.cs` - New interface
-- `src/Shortboxerr.Infrastructure/Indexers/RssIndexer.cs` - New implementation
-- `src/Shortboxerr.Infrastructure/DownloadClients/HttpDownloadClient.cs` - New implementation
-- `tests/Shortboxerr.Tests/RssIndexerTests.cs` - New tests
-- `tests/Shortboxerr.Tests/HttpDownloadClientTests.cs` - New tests
-- `docs/BACKLOG.md` - EPIC 4.6 marked complete
-- `docs/WORKLOG.md` - Iteration 013 entry added
-
-## Stop Criteria Met
-
-- [x] All tests green (359/359)
-- [x] Build succeeds
-- [x] Backlog item completed
-- [x] Worklog updated
-- [x] Commits follow conventional format
-- [x] No new assumptions needed
-
-## EPIC 4 Status
-
-| Section | Status |
-|---------|--------|
-| 4.1 Provider Abstractions | ✅ Complete |
-| 4.2.1 DDL Discovery & Search | ✅ Complete |
-| 4.2.2 DDL Candidate Normalization | ✅ Complete |
-| 4.2.3 DDL Download Execution | ✅ Complete |
-| 4.2.4 DDL → Import Handoff | ✅ Complete |
-| 4.3 DDL Configuration & Mylar3 Import | ✅ Complete |
-| 4.4 DDL Conformance Tests | ✅ Complete |
-| 4.5 DDL UI (Arr-Style) | ⏳ Pending (depends on EPIC 5) |
-| 4.6 Generic Indexer/Download Client | ✅ Complete |
-| 4.7 DDL Parser Enhancements | ✅ Complete |
+| EPIC | Status |
+|------|--------|
+| EPIC 0: Repo Skeleton | ✅ Complete |
+| EPIC 1: Domain + Persistence | ✅ Complete |
+| EPIC 2: Import Pipeline | ✅ Complete |
+| EPIC 3: Decision Engine | ✅ Complete |
+| EPIC 4.1: Provider Abstractions | ✅ Complete |
+| EPIC 4.2: DDL Provider | ✅ Complete |
+| EPIC 4.3: DDL Configuration | ✅ Complete |
+| EPIC 4.4: DDL Conformance Tests | ✅ Complete |
+| EPIC 4.5: DDL UI | 🔲 Ready (dependency resolved) |
+| EPIC 4.6: Generic Indexers | ✅ Complete |
+| EPIC 4.7: DDL Parser Enhancements | ✅ Complete |
+| EPIC 5: UI Shell | ✅ Complete |
+| EPIC 6: Mylar3 Migration | 🔲 Not Started |
 
 ## Next Steps
-
-Ready for: EPIC 4.5: DDL UI (Arr-Style) or EPIC 5: UI Shell
+- EPIC 4.5: DDL UI (Arr-Style) - DDL provider management pages
+- EPIC 6: Mylar3 Migration - Database import functionality

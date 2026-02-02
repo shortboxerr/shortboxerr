@@ -1,5 +1,96 @@
 # Worklog
 
+## Iteration 014 (2026-02-02)
+**EPIC 5: UI (ARR-LIKE UI) - COMPLETED**
+
+### Commits
+1. `feat: add React UI shell with Arr-style navigation`
+
+### Deliverables
+- ✅ React SPA Setup:
+  - Vite + React 18 + TypeScript
+  - React Query for data fetching
+  - React Router v6 for navigation
+  - Lucide React for icons
+  - Custom CSS with CSS variables (no framework)
+- ✅ UI Shell + Navigation:
+  - Sidebar with collapsible sections
+  - Dark theme inspired by Sonarr/Radarr
+  - Inter font family (Google Fonts)
+  - Responsive layout
+- ✅ Dashboard Page:
+  - Stats cards (Series, Collections, Issues, Files)
+  - System status cards (Database, Indexers, Queue)
+  - Recent activity feed
+- ✅ Series Page:
+  - Table with search and pagination
+  - Bulk selection and delete
+  - Status badges (Continuing, Ended, Hiatus)
+  - Row actions (Edit, More)
+- ✅ Collections Page:
+  - Table with search and filters
+  - Type badges (TPB, HC, Omnibus, Deluxe)
+  - Status badges (Have, Missing)
+- ✅ Wanted Page:
+  - Tab toggle: Issues / Collections
+  - Search for download actions
+- ✅ Activity Page:
+  - Download queue with progress bars
+  - Pause/Resume/Remove controls
+- ✅ History Page:
+  - Event type filter dropdown
+  - Color-coded event icons
+- ✅ Manual Import Page:
+  - Stats summary (total, matched, needs review)
+  - Parsed info ↔ Match preview
+  - Bulk import selected files
+- ✅ Settings Page:
+  - Tabbed navigation (General, Indexers, Download, Import, UI, Security)
+  - Form fields with labels and descriptions
+- ✅ API Client:
+  - Typed fetch wrapper
+  - Graceful error handling
+  - Relative time formatting
+- ✅ Build Configuration:
+  - Dev server on :3000 with API proxy to :8585
+  - Production build outputs to wwwroot
+  - SPA fallback routing in ASP.NET
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `ui/` | React frontend project |
+| `ui/src/App.tsx` | Main app with routing |
+| `ui/src/App.css` | Global styles with CSS variables |
+| `ui/src/components/Layout.tsx` | Sidebar navigation layout |
+| `ui/src/pages/Dashboard.tsx` | Dashboard with stats |
+| `ui/src/pages/SeriesPage.tsx` | Series table with bulk actions |
+| `ui/src/pages/CollectionsPage.tsx` | Collections table |
+| `ui/src/pages/WantedPage.tsx` | Wanted issues/collections |
+| `ui/src/pages/ActivityPage.tsx` | Download queue |
+| `ui/src/pages/HistoryPage.tsx` | Event history |
+| `ui/src/pages/ManualImportPage.tsx` | Staged file review |
+| `ui/src/pages/SettingsPage.tsx` | Tabbed settings |
+| `ui/src/api/client.ts` | API client with React Query |
+| `src/Shortboxerr.Api/wwwroot/` | Built UI assets |
+
+### Dependencies Added
+- `react-router-dom` - Client-side routing
+- `@tanstack/react-query` - Data fetching and caching
+- `lucide-react` - Icon library
+- `clsx` - Class name utility
+
+### Assumptions Made
+- None new (used existing assumptions from docs/ASSUMPTIONS.md)
+
+### Notes
+- UI connects to backend API at :8585 (configurable via VITE_API_URL)
+- Dark theme only for now (light theme can be added later)
+- Settings page is UI-only (no backend persistence yet)
+- EPIC 4.5 DDL UI can now be implemented (dependency on EPIC 5 resolved)
+
+---
+
 ## Iteration 013 (2026-02-02)
 **EPIC 4.6: Generic Indexer/Download Client Support - COMPLETED**
 

@@ -172,11 +172,11 @@ Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests sec
   - AC: Move all aspirationalTests to main testCases array
   - AC: All tests must pass (100% parity)
 
-## EPIC 5: UI (ARR-LIKE UI)
-- [ ] UI shell + nav map (Dashboard/Series/Collections/Wanted/Activity/History/Manual Import/Settings)
-- [ ] Series list page (table + bulk actions)
-- [ ] Collections list page
-- [ ] Activity + Manual Import pages (thin but functional)
+## EPIC 5: UI (ARR-LIKE UI) ✅ COMPLETED
+- [x] UI shell + nav map (Dashboard/Series/Collections/Wanted/Activity/History/Manual Import/Settings)
+- [x] Series list page (table + bulk actions)
+- [x] Collections list page
+- [x] Activity + Manual Import pages (thin but functional)
 
 ## EPIC 6: Mylar3 Migration (BEHAVIORAL PARITY SETUP)
 - [ ] Read Mylar3 SQLite DB (read-only)
@@ -204,4 +204,4 @@ Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests sec
 **Dependencies:**
 - 4.2.* depends on EPIC 3 (DecisionEngine) for candidate ranking
 - 4.2.4 depends on EPIC 2 (Import Pipeline) for handoff
-- 4.5 depends on EPIC 5 UI shell (can be implemented in parallel)
+- 4.5 depends on EPIC 5 UI shell ✅ (can now be implemented)
