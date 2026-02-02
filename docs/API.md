@@ -190,6 +190,111 @@ DELETE /api/v1/editions/{id}
 
 ---
 
+## Manual Import Endpoints
+
+### Scan Staging Folder
+```
+GET /api/v1/manualimport
+```
+Scans the staging folder and returns all importable files with parsed metadata.
+
+**Response (200 OK)**
+```json
+[
+  {
+    "path": "/data/staging/Batman #001.cbz",
+    "fileName": "Batman #001.cbz",
+    "size": 52428800,
+    "extension": "cbz",
+    "lastModified": "2026-02-02T03:00:00Z",
+    "parsedInfo": {
+      "seriesTitle": "Batman",
+      "issueNumber": 1,
+      "volumeNumber": null,
+      "year": null,
+      "publisher": null,
+      "editionIndicator": null,
+      "issueRange": null,
+      "tags": []
+    },
+    "parseConfidence": 45,
+    "suggestedSeriesId": 1,
+    "suggestedEditionId": null,
+    "isCollection": false,
+    "rejectionReason": null
+  }
+]
+```
+
+### Get Import Preview
+```
+POST /api/v1/manualimport/preview
+Content-Type: application/json
+
+{
+  "sourcePath": "/data/staging/Batman #001.cbz",
+  "seriesId": 1,
+  "issueId": 1,
+  "editionId": null
+}
+```
+Returns a preview of the import operation.
+
+**Response (200 OK)**
+```json
+{
+  "sourcePath": "/data/staging/Batman #001.cbz",
+  "destinationPath": "/data/library/Batman/Batman #001.cbz",
+  "newFileName": "Batman #001.cbz",
+  "willRename": false,
+  "willMove": true,
+  "seriesId": 1,
+  "seriesTitle": "Batman",
+  "issueId": 1,
+  "issueNumber": 1,
+  "editionId": null,
+  "editionTitle": null,
+  "isCollection": false,
+  "warnings": [],
+  "canImport": true,
+  "blockReason": null
+}
+```
+
+### Execute Import
+```
+POST /api/v1/manualimport
+Content-Type: application/json
+
+{
+  "sourcePath": "/data/staging/Batman #001.cbz",
+  "seriesId": 1,
+  "issueId": 1,
+  "editionId": null
+}
+```
+Executes the import, moving file to library and creating database records.
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "sourcePath": "/data/staging/Batman #001.cbz",
+  "destinationPath": "/data/library/Batman/Batman #001.cbz",
+  "errorMessage": null,
+  "fileAssetId": 1,
+  "historyEventId": 1
+}
+```
+
+### Move to Failed
+```
+POST /api/v1/manualimport/failed?sourcePath=/data/staging/bad.cbz&reason=Corrupt file
+```
+Moves a file to the failed folder with a reason.
+
+---
+
 ## Edition Types (Enum)
 - 0: TradesPaperback
 - 1: Hardcover

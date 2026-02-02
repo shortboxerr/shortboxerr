@@ -18,12 +18,12 @@
 - [x] CRUD endpoints for Series + Collections
 - [x] Filtering/paging conventions aligned with Arr APIs
 
-## EPIC 2: Import Pipeline (MYLAR3-LIKE)
-- [ ] Staging folder model + endpoints
-- [ ] Filename parser (singles + collections)
-- [ ] Manual Import endpoints and basic UI contract
-- [ ] Atomic move/rename preview
-- [ ] History events for pipeline steps
+## EPIC 2: Import Pipeline (MYLAR3-LIKE) ✅ COMPLETED
+- [x] Staging folder model + endpoints
+- [x] Filename parser (singles + collections)
+- [x] Manual Import endpoints and basic UI contract
+- [x] Atomic move/rename preview
+- [x] History events for pipeline steps
 
 ## EPIC 3: DecisionEngine (MYLAR3-LIKE SELECTION)
 - [ ] Candidate model + rejection reasons

@@ -1,12 +1,12 @@
-# Self Check (Iteration 002)
+# Self Check (Iteration 003)
 
 ## Must Pass
 | Check | Status | Notes |
 |-------|--------|-------|
 | dotnet build succeeds | ✅ PASS | All 4 projects build successfully |
-| dotnet test succeeds | ✅ PASS | 16/16 tests passing |
+| dotnet test succeeds | ✅ PASS | 45/45 tests passing |
 | API starts and /health returns 200 | ✅ PASS | Health endpoint with DB check |
-| DB migrations apply cleanly (SQLite) | ✅ PASS | 2 migrations (Initial + AddDomainEntities) |
+| DB migrations apply cleanly (SQLite) | ✅ PASS | 2 migrations applied |
 
 ## Hygiene
 | Check | Status | Notes |
@@ -15,27 +15,28 @@
 | commit-msg hook installed | ✅ PASS | Enforces conventional commits |
 | .gitignore excludes bin/obj | ✅ PASS | Build artifacts not tracked |
 
-## EPIC 1 Deliverables
+## EPIC 2 Deliverables
 | Check | Status | Notes |
 |-------|--------|-------|
-| Domain entities created | ✅ PASS | Series, Issue, EditionTitle, EditionContent, FileAsset, HistoryEvent |
-| EF Core mappings complete | ✅ PASS | Full relationship config with indexes |
-| CRUD for Series | ✅ PASS | GET/POST/PUT/DELETE with paging |
-| CRUD for Editions | ✅ PASS | GET/POST/PUT/DELETE with filtering |
-| Tests for endpoints | ✅ PASS | 12 endpoint tests |
+| Staging folder model | ✅ PASS | StagedItem, ParsedComicInfo models |
+| Filename parser | ✅ PASS | Singles + collections detection |
+| Manual import endpoints | ✅ PASS | scan/preview/import/failed |
+| Atomic move/rename | ✅ PASS | File.Move with preview |
+| History events | ✅ PASS | FileImported, FileMoved events |
+| Tests | ✅ PASS | 29 new tests for parser + endpoints |
 
 ## Documentation
 | Check | Status | Notes |
 |-------|--------|-------|
-| API.md updated | ✅ PASS | All CRUD endpoints documented |
-| BACKLOG.md updated | ✅ PASS | EPIC 1 marked complete |
-| WORKLOG.md updated | ✅ PASS | Iteration 002 logged |
+| API.md updated | ✅ PASS | Manual import endpoints documented |
+| BACKLOG.md updated | ✅ PASS | EPIC 2 marked complete |
+| WORKLOG.md updated | ✅ PASS | Iteration 003 logged |
 
 ## Summary
 - **Build**: GREEN ✅
-- **Tests**: 16 passing, 0 failing
-- **Epic Status**: EPIC 0 ✅, EPIC 1 ✅
-- **Next**: EPIC 2 - Import Pipeline
+- **Tests**: 45 passing, 0 failing
+- **Epic Status**: EPIC 0 ✅, EPIC 1 ✅, EPIC 2 ✅
+- **Next**: EPIC 3 - DecisionEngine
 
 ## Verification Commands
 ```bash
@@ -48,7 +49,9 @@ make test
 # Run API
 make run
 
-# Test endpoints
-curl http://localhost:5000/api/v1/series
-curl http://localhost:5000/api/v1/editions
+# Test manual import endpoints
+curl http://localhost:8585/api/v1/manualimport
+curl -X POST http://localhost:8585/api/v1/manualimport/preview \
+  -H "Content-Type: application/json" \
+  -d '{"sourcePath": "/data/staging/test.cbz"}'
 ```

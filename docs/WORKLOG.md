@@ -1,5 +1,38 @@
 # Worklog
 
+## Iteration 003 (2026-02-02)
+**EPIC 2: Import Pipeline - COMPLETED**
+
+### Commits
+1. `chore: change default port from 7878 to 8585`
+2. `chore: update CI workflow port from 7878 to 8585`
+3. `feat: add staging folder service and manual import endpoints (EPIC 2)`
+4. `test: add filename parser and manual import endpoint tests`
+5. `chore: update docs for iteration 003 completion`
+
+### Deliverables
+- ✅ Core Models:
+  - StagedItem (file in staging folder)
+  - ParsedComicInfo (metadata from filename)
+  - ImportPreview/ImportResult (import operation models)
+- ✅ Services:
+  - FilenameParser: parses comic filenames for singles and collections
+  - StagingService: scans staging folder, previews, executes imports
+- ✅ Manual Import Endpoints:
+  - GET /api/v1/manualimport (scan staging)
+  - POST /api/v1/manualimport/preview
+  - POST /api/v1/manualimport (execute)
+  - POST /api/v1/manualimport/failed
+- ✅ Features:
+  - Filename parsing (issue numbers, volumes, years, publishers)
+  - Collection detection (TPB, HC, Omnibus, etc.)
+  - Automatic series matching
+  - Atomic file moves
+  - History event logging
+- ✅ 45 passing tests (29 new tests)
+
+---
+
 ## Iteration 002 (2026-02-02)
 **EPIC 1: Domain + Persistence - COMPLETED**
 
