@@ -1195,6 +1195,171 @@ Returns Mylar3-compatible default settings for a specific DDL site type.
 
 ---
 
+## Settings Endpoints
+
+### Get UI Settings
+```
+GET /api/v1/settings/ui
+```
+Returns UI-specific settings including theme preferences.
+
+**Response (200 OK)**
+```json
+{
+  "theme": "dark",
+  "pageSize": 50,
+  "showFileSizes": true,
+  "relativeTimestamps": true
+}
+```
+
+### Update UI Settings
+```
+PUT /api/v1/settings/ui
+Content-Type: application/json
+
+{
+  "theme": "light",
+  "pageSize": 100,
+  "showFileSizes": true,
+  "relativeTimestamps": true
+}
+```
+Valid theme values: `dark`, `light`, `system`
+Valid pageSize range: 10-500
+
+### Get General Settings
+```
+GET /api/v1/settings/general
+```
+Returns general application settings including naming formats and folder paths.
+
+**Response (200 OK)**
+```json
+{
+  "seriesFolderFormat": "{Series Title} ({Year})",
+  "issueFileFormat": "{Series Title} #{Issue} ({Year})",
+  "collectionFileFormat": "{Series Title} - {Edition Type} Vol. {Volume} ({Year})",
+  "comicLibraryPath": "/comics",
+  "downloadFolder": "/downloads",
+  "stagingFolder": "/staging",
+  "autoMoveToStaging": true
+}
+```
+
+### Update General Settings
+```
+PUT /api/v1/settings/general
+Content-Type: application/json
+
+{
+  "seriesFolderFormat": "{Publisher}/{Series Title}",
+  "issueFileFormat": "{Series Title} - #{Issue}",
+  "collectionFileFormat": "{Series Title} - {Edition Type}",
+  "comicLibraryPath": "/my/comics",
+  "downloadFolder": "/my/downloads",
+  "stagingFolder": "/my/staging",
+  "autoMoveToStaging": false
+}
+```
+
+### Get Folder Settings
+```
+GET /api/v1/settings/folders
+```
+Returns folder-specific settings as a convenience endpoint.
+
+**Response (200 OK)**
+```json
+{
+  "comicLibraryPath": "/comics",
+  "downloadFolder": "/downloads",
+  "stagingFolder": "/staging",
+  "autoMoveToStaging": true
+}
+```
+
+### Update Folder Settings
+```
+PUT /api/v1/settings/folders
+Content-Type: application/json
+
+{
+  "downloadFolder": "/new/downloads",
+  "autoMoveToStaging": false
+}
+```
+Supports partial updates - only specified fields are changed.
+
+### Get Naming Format Tokens
+```
+GET /api/v1/settings/naming/tokens
+```
+Returns available tokens for naming format configuration.
+
+**Response (200 OK)**
+```json
+{
+  "seriesFolderTokens": [
+    { "token": "{Series Title}", "description": "The title of the series", "example": "Batman" },
+    { "token": "{Series Year}", "description": "The year the series started", "example": "2020" },
+    { "token": "{Publisher}", "description": "The publisher name", "example": "DC" },
+    { "token": "{Status}", "description": "Series status (Continuing, Ended, Hiatus)", "example": "Continuing" }
+  ],
+  "issueFileTokens": [
+    { "token": "{Series Title}", "description": "The title of the series", "example": "Batman" },
+    { "token": "{Issue}", "description": "Issue number (padded)", "example": "001" },
+    { "token": "{Issue Title}", "description": "Title of the specific issue", "example": "The Court of Owls" },
+    { "token": "{Year}", "description": "Release year of the issue", "example": "2020" },
+    { "token": "{Publisher}", "description": "The publisher name", "example": "DC" },
+    { "token": "{Quality}", "description": "Quality tag (Digital, Webrip, etc.)", "example": "Digital" }
+  ],
+  "collectionFileTokens": [
+    { "token": "{Series Title}", "description": "The title of the series", "example": "Batman" },
+    { "token": "{Edition Type}", "description": "Type of collection (TPB, HC, Omnibus)", "example": "TPB" },
+    { "token": "{Volume}", "description": "Volume number", "example": "01" },
+    { "token": "{Collection Title}", "description": "Title of the collection", "example": "Court of Owls" },
+    { "token": "{Year}", "description": "Release year of the collection", "example": "2020" },
+    { "token": "{Publisher}", "description": "The publisher name", "example": "DC" }
+  ]
+}
+```
+
+### Get Setting by Key
+```
+GET /api/v1/settings/{key}
+```
+Returns a specific setting value by key.
+
+**Response (200 OK)**
+```json
+{
+  "key": "custom.setting.key",
+  "value": "setting-value"
+}
+```
+
+**Response (404 Not Found)** if setting doesn't exist.
+
+### Set Setting by Key
+```
+PUT /api/v1/settings/{key}
+Content-Type: application/json
+
+{
+  "value": "new-value"
+}
+```
+Creates or updates a setting.
+
+### Delete Setting by Key
+```
+DELETE /api/v1/settings/{key}
+```
+Removes a setting. Returns 204 on success, 404 if not found.
+
+---
+
 ## OpenAPI / Swagger
 
 - **Swagger UI**: `GET /swagger`

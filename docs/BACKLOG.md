@@ -179,11 +179,11 @@ Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests sec
 - [x] Activity + Manual Import pages (thin but functional)
 
 ## EPIC 6: Settings Persistence & UI Enhancements
-- [ ] **Theme persistence**
+- [x] **Theme persistence** ✅
   - AC: Save selected theme (dark/light/system) to database
   - AC: Load theme preference on app start
   - AC: API endpoint: GET/PUT /api/v1/settings/ui
-- [ ] **General settings persistence**
+- [x] **General settings persistence** ✅
   - AC: Save naming patterns, root folders to database
   - AC: Settings entity with key-value storage
   - AC: Settings API endpoints for all categories
@@ -193,14 +193,14 @@ Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests sec
   - AC: "Copy" button to copy API key to clipboard
   - AC: "Regenerate" button with confirmation dialog
   - AC: API endpoint: GET /api/v1/settings/apikey (returns masked), POST /api/v1/settings/apikey/regenerate
-- [ ] **Naming format token helper**
+- [x] **Naming format token helper** ✅
   - AC: Display available tokens for Series Folder Format: `{Series Title}`, `{Series Year}`, `{Publisher}`, `{Status}`
   - AC: Display available tokens for Issue File Format: `{Series Title}`, `{Issue}`, `{Issue Title}`, `{Year}`, `{Publisher}`, `{Quality}`
   - AC: Display available tokens for Collection File Format: `{Series Title}`, `{Edition Type}`, `{Volume}`, `{Year}`, `{Publisher}`
   - AC: Clickable tokens that insert into the format input field
   - AC: Live preview showing example output with sample data
   - AC: API endpoint: GET /api/v1/settings/naming/tokens (returns available tokens per format type)
-- [ ] **Separate Download and Staging folders**
+- [x] **Separate Download and Staging folders** ✅
   - AC: Add "Download Folder" setting - where files are initially downloaded
   - AC: Add "Staging Folder" setting - where files go for import review
   - AC: Download folder can be different from staging folder

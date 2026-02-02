@@ -1,66 +1,69 @@
-# Self-Check: Iteration 015
+# Self-Check Rubric - Iteration 016
 
 ## Iteration Goal
-EPIC 4.5: DDL UI (Arr-Style) - Complete DDL provider management and activity feed
+EPIC 6: Settings Persistence & UI Enhancements (Theme Persistence, General Settings, Folder Settings, Naming Tokens)
 
 ## Checklist
 
-### Code Quality
-- [x] All new code compiles without errors
-- [x] TypeScript strict mode passes
-- [x] No linter warnings in UI code
-- [x] 359 backend tests passing
-- [x] UI builds successfully (Vite production build)
+| Item | Status | Notes |
+|------|--------|-------|
+| Vertical slice implemented | ✅ | Settings service + API + UI theme persistence |
+| At least one API endpoint | ✅ | 8 new settings endpoints |
+| Associated service layer logic | ✅ | ISettingsService + SettingsService |
+| Persistence change (if needed) | ✅ | Uses existing SystemSetting entity |
+| Unit/integration test | ✅ | 14 new tests, 373 total passing |
+| docs/API.md updated | ✅ | Settings endpoints documented |
+| docs/WORKLOG.md updated | ✅ | Iteration 016 entry added |
+| docs/BACKLOG.md updated | ✅ | Theme, general settings, folders, tokens marked complete |
+| Repo builds | ✅ | `dotnet build` succeeds |
+| Tests pass | ✅ | 373 tests passing |
+| Commits at breakpoints | ✅ | 2 commits (feature + tests) |
 
-### Vertical Slice Completeness
-- [x] DDL provider list page with status/toggle
-- [x] DDL provider add/edit modal with form fields
-- [x] Test button with connection validation
-- [x] DDL activity feed with filtering
-- [x] API client functions for provider management
-- [x] Settings UI improvements (API key, folder rename)
+## New Endpoints
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/settings/ui` | GET | Get UI settings |
+| `/api/v1/settings/ui` | PUT | Update UI settings |
+| `/api/v1/settings/general` | GET | Get general settings |
+| `/api/v1/settings/general` | PUT | Update general settings |
+| `/api/v1/settings/folders` | GET | Get folder settings |
+| `/api/v1/settings/folders` | PUT | Update folder settings |
+| `/api/v1/settings/naming/tokens` | GET | Get naming format tokens |
+| `/api/v1/settings/{key}` | GET | Get setting by key |
+| `/api/v1/settings/{key}` | PUT | Set setting by key |
+| `/api/v1/settings/{key}` | DELETE | Delete setting by key |
 
-### Documentation
-- [x] BACKLOG.md updated (EPIC 4.5 marked complete)
-- [x] WORKLOG.md updated (iteration 015 entry added)
-- [x] SELF_CHECK.md updated (this file)
+## Test Summary
+- Settings endpoint tests: 14 new tests
+- Total tests: 373 passing
 
-### Git Hygiene
-- [x] Commits follow conventional format (feat:, chore:)
-- [x] Logical breakpoints (2 commits for UI features)
-- [x] No build artifacts in commits
+## Features Implemented
+1. **Theme Persistence**
+   - Theme saved to database (dark/light/system)
+   - Theme loaded on app startup
+   - ThemeContext React provider
+   - Light/dark mode CSS variables
 
-## Summary
+2. **General Settings Persistence**
+   - Naming formats (series folder, issue file, collection file)
+   - Comic library path
+   - Download and staging folders
 
-| Metric | Value |
-|--------|-------|
-| Backend Tests | 359 passing |
-| UI Components | 10+ new components |
-| API Client Functions | 12 new functions |
-| Commits | 2 |
+3. **Folder Settings**
+   - Separate download and staging folders
+   - Auto-move from download to staging option
+   - Partial update support
 
-## EPIC Status
+4. **Naming Tokens API**
+   - Available tokens for each format type
+   - Token, description, and example provided
 
-| EPIC | Status |
-|------|--------|
-| EPIC 0: Repo Skeleton | ✅ Complete |
-| EPIC 1: Domain + Persistence | ✅ Complete |
-| EPIC 2: Import Pipeline | ✅ Complete |
-| EPIC 3: Decision Engine | ✅ Complete |
-| EPIC 4.1: Provider Abstractions | ✅ Complete |
-| EPIC 4.2: DDL Provider | ✅ Complete |
-| EPIC 4.3: DDL Configuration | ✅ Complete |
-| EPIC 4.4: DDL Conformance Tests | ✅ Complete |
-| EPIC 4.5: DDL UI | ✅ Complete |
-| EPIC 4.6: Generic Indexers | ✅ Complete |
-| EPIC 4.7: DDL Parser Enhancements | ✅ Complete |
-| **EPIC 4: COMPLETE** | ✅ **100%** |
-| EPIC 5: UI Shell | ✅ Complete |
-| EPIC 6: Settings Persistence | 🔲 Not Started |
-| EPIC 7: Mylar3 Migration | 🔲 Not Started |
-| EPIC 8: DDL Site Adapters | 🔲 Not Started |
+## Items Remaining in EPIC 6
+- [ ] API key management (display, copy, regenerate)
 
-## Next Steps
-- EPIC 6: Settings Persistence - Theme, naming tokens, API key management
-- EPIC 7: Mylar3 Migration - Database import
-- EPIC 8: DDL Site Adapters - GetComics, 32P, download hosts
+## Stop Criteria Check
+- [x] Build is green
+- [x] No more than 2 consecutive fix attempts needed
+- [x] Scope stayed within epic/story AC
+- [x] No refactor temptation acted on
+- [x] No flaky tests observed

@@ -1,5 +1,68 @@
 # Worklog
 
+## Iteration 016 (2026-02-02)
+**EPIC 6: Settings Persistence & UI Enhancements - PARTIAL**
+
+### Commits
+1. `feat: add settings persistence with theme support (EPIC 6)`
+2. `test: add settings endpoint tests (14 new tests)`
+
+### Deliverables
+- ✅ Settings Service:
+  - ISettingsService interface with key-value storage
+  - SettingsService implementation using SystemSetting entity
+  - Generic Get/Set/Delete operations for any key
+  - Typed helpers for UiSettings and GeneralSettings
+- ✅ Theme Persistence:
+  - Theme stored in database: "dark", "light", "system"
+  - Loaded on app startup via React Query
+  - ThemeContext provider with useTheme hook
+  - CSS variables dynamically applied for light/dark modes
+  - System theme detection via matchMedia
+- ✅ UI Settings API:
+  - GET /api/v1/settings/ui (returns theme, pageSize, showFileSizes, relativeTimestamps)
+  - PUT /api/v1/settings/ui (validates theme and pageSize)
+- ✅ General Settings API:
+  - GET /api/v1/settings/general (naming formats, folder paths)
+  - PUT /api/v1/settings/general
+- ✅ Folder Settings API (convenience endpoints):
+  - GET /api/v1/settings/folders
+  - PUT /api/v1/settings/folders (partial updates supported)
+  - Separate downloadFolder and stagingFolder
+  - autoMoveToStaging flag
+- ✅ Naming Format Tokens API:
+  - GET /api/v1/settings/naming/tokens
+  - Returns available tokens for Series, Issue, and Collection formats
+  - Includes description and example for each token
+- ✅ Generic Settings API:
+  - GET /api/v1/settings/{key}
+  - PUT /api/v1/settings/{key}
+  - DELETE /api/v1/settings/{key}
+- ✅ 373 tests passing (14 new settings tests)
+
+### New/Modified Files
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Core/Services/ISettingsService.cs` | Settings service interface |
+| `src/Shortboxerr.Infrastructure/Services/SettingsService.cs` | Settings service implementation |
+| `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` | Settings API endpoints |
+| `ui/src/App.tsx` | ThemeContext and theme provider |
+| `ui/src/api/client.ts` | Settings API client functions |
+| `ui/src/pages/SettingsPage.tsx` | Theme dropdown with persistence |
+| `tests/Shortboxerr.Tests/SettingsEndpointTests.cs` | Settings endpoint tests |
+| `docs/API.md` | Settings endpoint documentation |
+
+### Remaining in EPIC 6
+- API key management (display, copy, regenerate)
+
+### Notes
+- Theme changes are saved to database and apply immediately
+- Light theme uses CSS variables for colors (invertable)
+- Folder settings support partial updates for flexibility
+- Naming tokens API ready for UI token picker implementation
+
+---
+
 ## Iteration 015 (2026-02-02)
 **EPIC 4.5: DDL UI (Arr-Style) - COMPLETED**
 
