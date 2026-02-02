@@ -286,6 +286,8 @@ function GeneralSettings() {
   const [seriesFolderFormat, setSeriesFolderFormat] = useState('{Series Title} ({Year})');
   const [issueFileFormat, setIssueFileFormat] = useState('{Series Title} #{Issue} ({Year})');
   const [collectionFileFormat, setCollectionFileFormat] = useState('{Series Title} - {Edition Type} Vol. {Volume} ({Year})');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const saveTimeoutRef = useRef<number | null>(null);
   
   const seriesInputRef = useRef<HTMLInputElement>(null);
   const issueInputRef = useRef<HTMLInputElement>(null);
@@ -311,6 +313,51 @@ function GeneralSettings() {
       setCollectionFileFormat(generalSettings.collectionFileFormat);
     }
   }, [generalSettings]);
+
+  // Auto-save with debounce when formats change
+  const saveFormats = async (series: string, issue: string, collection: string) => {
+    setSaveStatus('saving');
+    try {
+      await api.updateGeneralSettings({
+        seriesFolderFormat: series,
+        issueFileFormat: issue,
+        collectionFileFormat: collection,
+      });
+      setSaveStatus('saved');
+      // Reset to idle after 2 seconds
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } catch (e) {
+      console.error('Failed to save naming formats:', e);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    }
+  };
+
+  // Debounced save - triggers 500ms after last change
+  const debouncedSave = (series: string, issue: string, collection: string) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = window.setTimeout(() => {
+      saveFormats(series, issue, collection);
+    }, 500);
+  };
+
+  // Wrapper functions that update state and trigger save
+  const handleSeriesFormatChange = (value: string) => {
+    setSeriesFolderFormat(value);
+    debouncedSave(value, issueFileFormat, collectionFileFormat);
+  };
+
+  const handleIssueFormatChange = (value: string) => {
+    setIssueFileFormat(value);
+    debouncedSave(seriesFolderFormat, value, collectionFileFormat);
+  };
+
+  const handleCollectionFormatChange = (value: string) => {
+    setCollectionFileFormat(value);
+    debouncedSave(seriesFolderFormat, issueFileFormat, value);
+  };
 
   // Default tokens if API hasn't loaded
   const defaultTokens: NamingTokensResponse = {
@@ -343,11 +390,37 @@ function GeneralSettings() {
   return (
     <>
       <SettingsSection title="Naming">
+        {saveStatus !== 'idle' && (
+          <div style={{
+            padding: '8px 12px',
+            marginBottom: '16px',
+            borderRadius: 'var(--radius-sm)',
+            fontSize: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: saveStatus === 'saving' ? 'var(--bg-tertiary)' :
+                       saveStatus === 'saved' ? 'rgba(92, 184, 92, 0.1)' :
+                       'rgba(217, 83, 79, 0.1)',
+            border: `1px solid ${
+              saveStatus === 'saving' ? 'var(--border-color)' :
+              saveStatus === 'saved' ? 'var(--accent-success)' :
+              'var(--accent-danger)'
+            }`,
+            color: saveStatus === 'saving' ? 'var(--text-secondary)' :
+                   saveStatus === 'saved' ? 'var(--accent-success)' :
+                   'var(--accent-danger)',
+          }}>
+            {saveStatus === 'saving' && <><div className="spinner" style={{ width: '12px', height: '12px' }} /> Saving...</>}
+            {saveStatus === 'saved' && <><CheckCircle size={14} /> Saved</>}
+            {saveStatus === 'error' && <><AlertCircle size={14} /> Failed to save</>}
+          </div>
+        )}
         <NamingFormatField
           label="Series Folder Format"
           description="Pattern for organizing series folders"
           value={seriesFolderFormat}
-          onChange={setSeriesFolderFormat}
+          onChange={handleSeriesFormatChange}
           tokens={namingTokens.seriesFolderTokens}
           inputRef={seriesInputRef}
         />
@@ -356,7 +429,7 @@ function GeneralSettings() {
           label="Issue File Format"
           description="Pattern for naming issue files"
           value={issueFileFormat}
-          onChange={setIssueFileFormat}
+          onChange={handleIssueFormatChange}
           tokens={namingTokens.issueFileTokens}
           inputRef={issueInputRef}
         />
@@ -365,7 +438,7 @@ function GeneralSettings() {
           label="Collection File Format"
           description="Pattern for naming collection files"
           value={collectionFileFormat}
-          onChange={setCollectionFileFormat}
+          onChange={handleCollectionFormatChange}
           tokens={namingTokens.collectionFileTokens}
           inputRef={collectionInputRef}
         />
