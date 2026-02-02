@@ -8,6 +8,17 @@ using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add CORS for development
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("http://localhost:3000", "http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 // Add services to the container
 var connectionString = Environment.GetEnvironmentVariable("SHORTBOXERR_DB")
     ?? builder.Configuration.GetConnectionString("DefaultConnection")
@@ -38,6 +49,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline
+app.UseCors(); // Enable CORS for development
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
