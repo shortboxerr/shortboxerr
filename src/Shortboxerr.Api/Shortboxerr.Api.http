@@ -1,0 +1,6 @@
+@Shortboxerr.Api_HostAddress = http://localhost:5004
+
+GET {{Shortboxerr.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
