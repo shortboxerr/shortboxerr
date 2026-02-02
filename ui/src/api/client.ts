@@ -104,6 +104,56 @@ interface StagedFile {
   status: 'pending' | 'matched' | 'unmatched' | 'error';
 }
 
+export interface Provider {
+  id: number;
+  name: string;
+  implementation: string;
+  category: 'Indexer' | 'DownloadClient';
+  type: string;
+  isEnabled: boolean;
+  priority: number;
+  baseUrl: string | null;
+  apiKey: string | null;
+  username: string | null;
+  settings: string | null;
+  tags: string | null;
+  lastHealthStatus: 'Unknown' | 'Healthy' | 'Unhealthy' | 'Warning';
+  lastHealthCheck: string | null;
+  lastError: string | null;
+  failureCount: number;
+}
+
+export interface ProviderImplementation {
+  name: string;
+  displayName: string;
+  description: string;
+  category: string;
+  type: string;
+  requiresBaseUrl: boolean;
+  requiresApiKey: boolean;
+  requiresCredentials: boolean;
+  settingsSchema: string | null;
+}
+
+export interface ProviderTestResult {
+  success: boolean;
+  message: string;
+  errors: string[];
+  latencyMs: number;
+}
+
+export interface CreateProviderRequest {
+  name: string;
+  implementation: string;
+  isEnabled: boolean;
+  baseUrl?: string;
+  apiKey?: string;
+  username?: string;
+  password?: string;
+  settings?: string;
+  tags?: string;
+}
+
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
@@ -285,6 +335,85 @@ export const api = {
     await fetchApi('/api/v1/manualimport/import', {
       method: 'POST',
       body: JSON.stringify({ files: ids }),
+    });
+  },
+
+  // Providers
+  getIndexers: async (): Promise<Provider[]> => {
+    try {
+      return await fetchApi<Provider[]>('/api/v1/providers/indexers');
+    } catch {
+      return [];
+    }
+  },
+
+  getDownloadClients: async (): Promise<Provider[]> => {
+    try {
+      return await fetchApi<Provider[]>('/api/v1/providers/downloadclients');
+    } catch {
+      return [];
+    }
+  },
+
+  getProviderImplementations: async (): Promise<ProviderImplementation[]> => {
+    try {
+      return await fetchApi<ProviderImplementation[]>('/api/v1/providers/implementations');
+    } catch {
+      return [];
+    }
+  },
+
+  createIndexer: async (request: CreateProviderRequest): Promise<Provider> => {
+    return await fetchApi<Provider>('/api/v1/providers/indexers', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+
+  createDownloadClient: async (request: CreateProviderRequest): Promise<Provider> => {
+    return await fetchApi<Provider>('/api/v1/providers/downloadclients', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+
+  updateProvider: async (id: number, updates: Partial<CreateProviderRequest>): Promise<Provider> => {
+    return await fetchApi<Provider>(`/api/v1/providers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  deleteProvider: async (id: number): Promise<void> => {
+    await fetchApi(`/api/v1/providers/${id}`, { method: 'DELETE' });
+  },
+
+  setProviderEnabled: async (id: number, enabled: boolean): Promise<void> => {
+    await fetchApi(`/api/v1/providers/${id}/enable?enabled=${enabled}`, { method: 'POST' });
+  },
+
+  reorderIndexers: async (orderedIds: number[]): Promise<void> => {
+    await fetchApi('/api/v1/providers/indexers/reorder', {
+      method: 'POST',
+      body: JSON.stringify({ orderedIds }),
+    });
+  },
+
+  reorderDownloadClients: async (orderedIds: number[]): Promise<void> => {
+    await fetchApi('/api/v1/providers/downloadclients/reorder', {
+      method: 'POST',
+      body: JSON.stringify({ orderedIds }),
+    });
+  },
+
+  testProvider: async (id: number): Promise<ProviderTestResult> => {
+    return await fetchApi<ProviderTestResult>(`/api/v1/providers/${id}/test`, { method: 'POST' });
+  },
+
+  testNewProvider: async (request: CreateProviderRequest): Promise<ProviderTestResult> => {
+    return await fetchApi<ProviderTestResult>('/api/v1/providers/test', {
+      method: 'POST',
+      body: JSON.stringify(request),
     });
   },
 };

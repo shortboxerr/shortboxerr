@@ -1,8 +1,13 @@
 import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Settings, Server, Download, Shield, 
-  FolderOpen, Plug, Save
+  FolderOpen, Plug, Save, Plus, Edit, Trash2, 
+  CheckCircle, XCircle, AlertCircle, Play, GripVertical,
+  Eye, EyeOff, Copy, RefreshCw, X
 } from 'lucide-react';
+import { api } from '../api/client';
+import type { Provider, CreateProviderRequest, ProviderTestResult } from '../api/client';
 
 type SettingsTab = 'general' | 'indexers' | 'download' | 'import' | 'ui' | 'security';
 
@@ -61,7 +66,7 @@ export function SettingsPage() {
           <div style={{ flex: 1 }}>
             {activeTab === 'general' && <GeneralSettings />}
             {activeTab === 'indexers' && <IndexersSettings />}
-            {activeTab === 'download' && <DownloadSettings />}
+            {activeTab === 'download' && <DownloadClientsSettings />}
             {activeTab === 'import' && <ImportSettings />}
             {activeTab === 'ui' && <UISettings />}
             {activeTab === 'security' && <SecuritySettings />}
@@ -174,14 +179,14 @@ function GeneralSettings() {
         </SettingsField>
         
         <SettingsField 
-          label="Staging Folder" 
-          description="Where downloaded files are placed for review"
+          label="Download Folder" 
+          description="Where downloaded files are placed before import"
         >
           <div style={{ display: 'flex', gap: '8px' }}>
             <input 
               className="input" 
               style={{ flex: 1 }}
-              defaultValue="/staging"
+              defaultValue="/downloads"
             />
             <button className="btn btn-secondary">Browse</button>
           </div>
@@ -191,39 +196,192 @@ function GeneralSettings() {
   );
 }
 
+// ============== INDEXERS SETTINGS ==============
+
 function IndexersSettings() {
+  const [showModal, setShowModal] = useState(false);
+  const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
+  const queryClient = useQueryClient();
+
+  const { data: indexers, isLoading, refetch } = useQuery({
+    queryKey: ['indexers'],
+    queryFn: api.getIndexers,
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: ({ id, enabled }: { id: number; enabled: boolean }) => 
+      api.setProviderEnabled(id, enabled),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['indexers'] }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: api.deleteProvider,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['indexers'] }),
+  });
+
+  const handleAdd = () => {
+    setEditingProvider(null);
+    setShowModal(true);
+  };
+
+  const handleEdit = (provider: Provider) => {
+    setEditingProvider(provider);
+    setShowModal(true);
+  };
+
+  const handleDelete = (provider: Provider) => {
+    if (confirm(`Delete indexer "${provider.name}"? This cannot be undone.`)) {
+      deleteMutation.mutate(provider.id);
+    }
+  };
+
+  const handleModalClose = () => {
+    setShowModal(false);
+    setEditingProvider(null);
+  };
+
+  const handleModalSave = () => {
+    queryClient.invalidateQueries({ queryKey: ['indexers'] });
+    handleModalClose();
+  };
+
   return (
-    <SettingsSection title="Indexers">
-      <div className="empty-state" style={{ padding: '40px 20px' }}>
-        <Plug size={48} />
-        <div className="empty-state-title">No indexers configured</div>
-        <div className="empty-state-text">
-          Add DDL providers, RSS feeds, or other indexers to discover new comics.
+    <>
+      <SettingsSection title="DDL Indexers">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
+            Configure DDL providers to discover and download comics.
+          </p>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button className="btn btn-icon" onClick={() => refetch()} title="Refresh">
+              <RefreshCw size={16} />
+            </button>
+            <button className="btn btn-primary" onClick={handleAdd}>
+              <Plus size={16} />
+              Add Indexer
+            </button>
+          </div>
         </div>
-        <button className="btn btn-primary" style={{ marginTop: '16px' }}>
-          Add Indexer
-        </button>
-      </div>
-    </SettingsSection>
+
+        {isLoading ? (
+          <div className="loading"><div className="spinner" /></div>
+        ) : !indexers?.length ? (
+          <div className="empty-state" style={{ padding: '40px 20px' }}>
+            <Plug size={48} />
+            <div className="empty-state-title">No indexers configured</div>
+            <div className="empty-state-text">
+              Add DDL providers like GetComics to discover new comics.
+            </div>
+          </div>
+        ) : (
+          <ProviderTable
+            providers={indexers}
+            onToggle={(id, enabled) => toggleMutation.mutate({ id, enabled })}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        )}
+      </SettingsSection>
+
+      {showModal && (
+        <ProviderModal
+          provider={editingProvider}
+          category="Indexer"
+          onClose={handleModalClose}
+          onSave={handleModalSave}
+        />
+      )}
+    </>
   );
 }
 
-function DownloadSettings() {
+// ============== DOWNLOAD CLIENTS SETTINGS ==============
+
+function DownloadClientsSettings() {
+  const [showModal, setShowModal] = useState(false);
+  const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
+  const queryClient = useQueryClient();
+
+  const { data: clients, isLoading, refetch } = useQuery({
+    queryKey: ['downloadclients'],
+    queryFn: api.getDownloadClients,
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: ({ id, enabled }: { id: number; enabled: boolean }) => 
+      api.setProviderEnabled(id, enabled),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['downloadclients'] }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: api.deleteProvider,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['downloadclients'] }),
+  });
+
+  const handleAdd = () => {
+    setEditingProvider(null);
+    setShowModal(true);
+  };
+
+  const handleEdit = (provider: Provider) => {
+    setEditingProvider(provider);
+    setShowModal(true);
+  };
+
+  const handleDelete = (provider: Provider) => {
+    if (confirm(`Delete download client "${provider.name}"? This cannot be undone.`)) {
+      deleteMutation.mutate(provider.id);
+    }
+  };
+
+  const handleModalClose = () => {
+    setShowModal(false);
+    setEditingProvider(null);
+  };
+
+  const handleModalSave = () => {
+    queryClient.invalidateQueries({ queryKey: ['downloadclients'] });
+    handleModalClose();
+  };
+
   return (
     <>
       <SettingsSection title="Download Clients">
-        <div className="empty-state" style={{ padding: '40px 20px' }}>
-          <Download size={48} />
-          <div className="empty-state-title">No download clients configured</div>
-          <div className="empty-state-text">
-            Add HTTP, torrent, or other download clients.
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
+            Configure HTTP or other download clients.
+          </p>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button className="btn btn-icon" onClick={() => refetch()} title="Refresh">
+              <RefreshCw size={16} />
+            </button>
+            <button className="btn btn-primary" onClick={handleAdd}>
+              <Plus size={16} />
+              Add Download Client
+            </button>
           </div>
-          <button className="btn btn-primary" style={{ marginTop: '16px' }}>
-            Add Download Client
-          </button>
         </div>
+
+        {isLoading ? (
+          <div className="loading"><div className="spinner" /></div>
+        ) : !clients?.length ? (
+          <div className="empty-state" style={{ padding: '40px 20px' }}>
+            <Download size={48} />
+            <div className="empty-state-title">No download clients configured</div>
+            <div className="empty-state-text">
+              Add HTTP or other download clients.
+            </div>
+          </div>
+        ) : (
+          <ProviderTable
+            providers={clients}
+            onToggle={(id, enabled) => toggleMutation.mutate({ id, enabled })}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        )}
       </SettingsSection>
-      
+
       <SettingsSection title="Download Settings">
         <SettingsField 
           label="Maximum Concurrent Downloads" 
@@ -259,9 +417,442 @@ function DownloadSettings() {
           </label>
         </SettingsField>
       </SettingsSection>
+
+      {showModal && (
+        <ProviderModal
+          provider={editingProvider}
+          category="DownloadClient"
+          onClose={handleModalClose}
+          onSave={handleModalSave}
+        />
+      )}
     </>
   );
 }
+
+// ============== SHARED PROVIDER COMPONENTS ==============
+
+function ProviderTable({ 
+  providers, 
+  onToggle, 
+  onEdit, 
+  onDelete 
+}: { 
+  providers: Provider[];
+  onToggle: (id: number, enabled: boolean) => void;
+  onEdit: (provider: Provider) => void;
+  onDelete: (provider: Provider) => void;
+}) {
+  const [testingId, setTestingId] = useState<number | null>(null);
+  const [testResult, setTestResult] = useState<{ id: number; result: ProviderTestResult } | null>(null);
+
+  const handleTest = async (provider: Provider) => {
+    setTestingId(provider.id);
+    setTestResult(null);
+    try {
+      const result = await api.testProvider(provider.id);
+      setTestResult({ id: provider.id, result });
+    } catch (e) {
+      setTestResult({ 
+        id: provider.id, 
+        result: { success: false, message: 'Test failed', errors: [String(e)], latencyMs: 0 }
+      });
+    } finally {
+      setTestingId(null);
+    }
+  };
+
+  return (
+    <div className="table-container">
+      <table className="table">
+        <thead>
+          <tr>
+            <th style={{ width: '40px' }}></th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Priority</th>
+            <th className="table-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {providers.map((provider) => (
+            <tr key={provider.id}>
+              <td>
+                <GripVertical size={16} style={{ color: 'var(--text-muted)', cursor: 'grab' }} />
+              </td>
+              <td>
+                <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{provider.name}</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  {provider.baseUrl || provider.implementation}
+                </div>
+              </td>
+              <td>
+                <span className="badge badge-info">{provider.implementation}</span>
+              </td>
+              <td>
+                <ProviderStatusBadge 
+                  status={provider.lastHealthStatus} 
+                  isEnabled={provider.isEnabled}
+                  lastError={provider.lastError}
+                />
+                {testResult?.id === provider.id && (
+                  <div style={{ marginTop: '4px' }}>
+                    <span className={`badge badge-${testResult.result.success ? 'success' : 'danger'}`}>
+                      {testResult.result.success ? 'Test passed' : 'Test failed'}
+                    </span>
+                    {testResult.result.latencyMs > 0 && (
+                      <span style={{ marginLeft: '8px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                        {testResult.result.latencyMs}ms
+                      </span>
+                    )}
+                  </div>
+                )}
+              </td>
+              <td>{provider.priority}</td>
+              <td className="table-actions">
+                <button 
+                  className="btn btn-icon" 
+                  onClick={() => onToggle(provider.id, !provider.isEnabled)}
+                  title={provider.isEnabled ? 'Disable' : 'Enable'}
+                >
+                  {provider.isEnabled ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                </button>
+                <button 
+                  className="btn btn-icon" 
+                  onClick={() => handleTest(provider)}
+                  disabled={testingId === provider.id}
+                  title="Test"
+                >
+                  {testingId === provider.id ? (
+                    <div className="spinner" style={{ width: '16px', height: '16px' }} />
+                  ) : (
+                    <Play size={16} />
+                  )}
+                </button>
+                <button className="btn btn-icon" onClick={() => onEdit(provider)} title="Edit">
+                  <Edit size={16} />
+                </button>
+                <button className="btn btn-icon" onClick={() => onDelete(provider)} title="Delete">
+                  <Trash2 size={16} />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ProviderStatusBadge({ 
+  status, 
+  isEnabled,
+  lastError 
+}: { 
+  status: string; 
+  isEnabled: boolean;
+  lastError: string | null;
+}) {
+  if (!isEnabled) {
+    return <span className="badge badge-muted">Disabled</span>;
+  }
+
+  switch (status) {
+    case 'Healthy':
+      return <span className="badge badge-success">Healthy</span>;
+    case 'Unhealthy':
+      return (
+        <span className="badge badge-danger" title={lastError || 'Unknown error'}>
+          Unhealthy
+        </span>
+      );
+    case 'Warning':
+      return <span className="badge badge-warning">Warning</span>;
+    default:
+      return <span className="badge badge-muted">Unknown</span>;
+  }
+}
+
+function ProviderModal({ 
+  provider, 
+  category,
+  onClose, 
+  onSave 
+}: { 
+  provider: Provider | null;
+  category: 'Indexer' | 'DownloadClient';
+  onClose: () => void;
+  onSave: () => void;
+}) {
+  const [formData, setFormData] = useState<CreateProviderRequest>({
+    name: provider?.name ?? '',
+    implementation: provider?.implementation ?? '',
+    isEnabled: provider?.isEnabled ?? true,
+    baseUrl: provider?.baseUrl ?? '',
+    apiKey: provider?.apiKey ?? '',
+    username: provider?.username ?? '',
+    password: '',
+    settings: provider?.settings ?? '',
+  });
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<ProviderTestResult | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const { data: implementations } = useQuery({
+    queryKey: ['provider-implementations'],
+    queryFn: api.getProviderImplementations,
+  });
+
+  const filteredImplementations = implementations?.filter(
+    i => i.category === category
+  ) ?? [];
+
+  const selectedImpl = filteredImplementations.find(i => i.name === formData.implementation);
+
+  const handleTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const result = provider
+        ? await api.testProvider(provider.id)
+        : await api.testNewProvider(formData);
+      setTestResult(result);
+    } catch (e) {
+      setTestResult({ success: false, message: 'Test failed', errors: [String(e)], latencyMs: 0 });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      if (provider) {
+        await api.updateProvider(provider.id, formData);
+      } else if (category === 'Indexer') {
+        await api.createIndexer(formData);
+      } else {
+        await api.createDownloadClient(formData);
+      }
+      onSave();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0, 0, 0, 0.7)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+    }}>
+      <div style={{
+        background: 'var(--bg-secondary)',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border-color)',
+        width: '100%',
+        maxWidth: '500px',
+        maxHeight: '90vh',
+        overflow: 'auto',
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-color)',
+        }}>
+          <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
+            {provider ? `Edit ${category}` : `Add ${category}`}
+          </h2>
+          <button className="btn btn-icon" onClick={onClose}>
+            <X size={18} />
+          </button>
+        </div>
+
+        <div style={{ padding: '20px' }}>
+          <SettingsField label="Name">
+            <input
+              className="input"
+              style={{ width: '100%' }}
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="My DDL Provider"
+            />
+          </SettingsField>
+
+          <SettingsField label="Implementation">
+            <select
+              className="input"
+              style={{ width: '100%' }}
+              value={formData.implementation}
+              onChange={(e) => setFormData({ ...formData, implementation: e.target.value })}
+              disabled={!!provider}
+            >
+              <option value="">Select type...</option>
+              {filteredImplementations.map((impl) => (
+                <option key={impl.name} value={impl.name}>
+                  {impl.displayName}
+                </option>
+              ))}
+            </select>
+            {selectedImpl?.description && (
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                {selectedImpl.description}
+              </div>
+            )}
+          </SettingsField>
+
+          {selectedImpl?.requiresBaseUrl && (
+            <SettingsField label="Base URL">
+              <input
+                className="input"
+                style={{ width: '100%' }}
+                value={formData.baseUrl}
+                onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
+                placeholder="https://example.com"
+              />
+            </SettingsField>
+          )}
+
+          {selectedImpl?.requiresApiKey && (
+            <SettingsField label="API Key">
+              <input
+                className="input"
+                style={{ width: '100%' }}
+                value={formData.apiKey}
+                onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
+                placeholder="Your API key"
+              />
+            </SettingsField>
+          )}
+
+          {selectedImpl?.requiresCredentials && (
+            <>
+              <SettingsField label="Username">
+                <input
+                  className="input"
+                  style={{ width: '100%' }}
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                />
+              </SettingsField>
+              <SettingsField label="Password">
+                <input
+                  className="input"
+                  type="password"
+                  style={{ width: '100%' }}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder={provider ? '(unchanged)' : ''}
+                />
+              </SettingsField>
+            </>
+          )}
+
+          <SettingsField label="Enabled">
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="checkbox"
+                checked={formData.isEnabled}
+                onChange={(e) => setFormData({ ...formData, isEnabled: e.target.checked })}
+              />
+              <span style={{ fontSize: '13px' }}>Enable this {category.toLowerCase()}</span>
+            </label>
+          </SettingsField>
+
+          {testResult && (
+            <div style={{
+              padding: '12px',
+              borderRadius: 'var(--radius-md)',
+              background: testResult.success ? 'rgba(92, 184, 92, 0.1)' : 'rgba(217, 83, 79, 0.1)',
+              border: `1px solid ${testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)'}`,
+              marginBottom: '16px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                {testResult.success ? (
+                  <CheckCircle size={16} style={{ color: 'var(--accent-success)' }} />
+                ) : (
+                  <AlertCircle size={16} style={{ color: 'var(--accent-danger)' }} />
+                )}
+                <span style={{ fontWeight: 500, color: testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)' }}>
+                  {testResult.success ? 'Connection successful' : 'Connection failed'}
+                </span>
+              </div>
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                {testResult.message}
+                {testResult.latencyMs > 0 && ` (${testResult.latencyMs}ms)`}
+              </div>
+              {testResult.errors?.length > 0 && (
+                <ul style={{ margin: '8px 0 0 0', padding: '0 0 0 20px', fontSize: '12px', color: 'var(--accent-danger)' }}>
+                  {testResult.errors.map((err, i) => (
+                    <li key={i}>{err}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          {error && (
+            <div style={{
+              padding: '12px',
+              borderRadius: 'var(--radius-md)',
+              background: 'rgba(217, 83, 79, 0.1)',
+              border: '1px solid var(--accent-danger)',
+              color: 'var(--accent-danger)',
+              fontSize: '13px',
+              marginBottom: '16px',
+            }}>
+              {error}
+            </div>
+          )}
+        </div>
+
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          borderTop: '1px solid var(--border-color)',
+        }}>
+          <button 
+            className="btn btn-secondary" 
+            onClick={handleTest}
+            disabled={testing || !formData.implementation}
+          >
+            {testing ? (
+              <><div className="spinner" style={{ width: '14px', height: '14px' }} /> Testing...</>
+            ) : (
+              <><Play size={14} /> Test</>
+            )}
+          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button className="btn btn-secondary" onClick={onClose}>
+              Cancel
+            </button>
+            <button 
+              className="btn btn-primary" 
+              onClick={handleSave}
+              disabled={saving || !formData.name || !formData.implementation}
+            >
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============== OTHER SETTINGS ==============
 
 function ImportSettings() {
   return (
@@ -353,6 +944,13 @@ function UISettings() {
 }
 
 function SecuritySettings() {
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [apiKey] = useState('sk_live_abc123def456ghi789jkl012mno345pqr678');
+
+  const handleCopyApiKey = () => {
+    navigator.clipboard.writeText(apiKey);
+  };
+
   return (
     <>
       <SettingsSection title="Authentication">
@@ -381,9 +979,23 @@ function SecuritySettings() {
             <input 
               className="input" 
               style={{ flex: 1, fontFamily: 'var(--font-mono)' }}
-              defaultValue="********************************"
+              value={showApiKey ? apiKey : '•'.repeat(40)}
               readOnly
             />
+            <button 
+              className="btn btn-icon" 
+              onClick={() => setShowApiKey(!showApiKey)}
+              title={showApiKey ? 'Hide' : 'Show'}
+            >
+              {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+            <button 
+              className="btn btn-icon" 
+              onClick={handleCopyApiKey}
+              title="Copy"
+            >
+              <Copy size={16} />
+            </button>
             <button className="btn btn-secondary">Regenerate</button>
           </div>
         </SettingsField>
@@ -391,4 +1003,3 @@ function SecuritySettings() {
     </>
   );
 }
-
