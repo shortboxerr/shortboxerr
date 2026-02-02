@@ -200,11 +200,13 @@ Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests sec
   - AC: Clickable tokens that insert into the format input field
   - AC: Live preview showing example output with sample data
   - AC: API endpoint: GET /api/v1/settings/naming/tokens (returns available tokens per format type)
-- [ ] **Rename Staging folder to Download folder**
-  - AC: Update Settings UI label from "Staging Folder" to "Download Folder"
-  - AC: Update Settings UI description to reflect download destination
-  - AC: Update API documentation to use "download folder" terminology
-  - AC: Maintain backward compatibility (internal code can keep "staging" references)
+- [ ] **Separate Download and Staging folders**
+  - AC: Add "Download Folder" setting - where files are initially downloaded
+  - AC: Add "Staging Folder" setting - where files go for import review
+  - AC: Download folder can be different from staging folder
+  - AC: Option to auto-move from download to staging after completion
+  - AC: API endpoints: GET/PUT /api/v1/settings/folders
+  - AC: Validation that both paths exist and are writable
 
 ## EPIC 7: Mylar3 Migration (BEHAVIORAL PARITY SETUP)
 - [ ] Read Mylar3 SQLite DB (read-only)
