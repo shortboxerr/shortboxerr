@@ -50,7 +50,7 @@ The DDL (Direct Download) provider must achieve behavioral parity with Mylar3's 
 - [ ] **DDL site adapter interface (IDdlSiteAdapter)**
   - AC: Each supported DDL site has its own adapter implementing parsing logic
   - AC: Adapters handle site-specific HTML/JSON parsing
-  - AC: Must support: GettyComics, ReadComicOnline, and extensible for others
+  - AC: Must support: GetComics, ReadComicOnline, and extensible for others
 - [ ] **DDL search endpoint polling**
   - AC: Configurable poll interval (default matches Mylar3)
   - AC: Supports series-specific and global searches

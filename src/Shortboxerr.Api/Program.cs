@@ -90,6 +90,7 @@ app.MapGet("/api/v1/system/status", () => Results.Ok(new
 app.MapSeriesEndpoints();
 app.MapEditionEndpoints();
 app.MapManualImportEndpoints();
+app.MapDecisionEngineEndpoints();
 
 app.Run();
 
