@@ -60,14 +60,14 @@ The DDL (Direct Download) provider must achieve behavioral parity with Mylar3's 
   - AC: Handle multi-part releases
   - AC: Detect and skip dead/expired links
 
-#### 4.2.2 DDL Candidate Normalization
-- [ ] **DDL release parser**
+#### 4.2.2 DDL Candidate Normalization ✅ COMPLETED
+- [x] **DDL release parser**
   - AC: Parse release names into structured candidates (series, issue, year, format, quality)
   - AC: Must match Mylar3 parsing rules exactly (fixture tests required)
-- [ ] **DDL candidate model**
+- [x] **DDL candidate model**
   - AC: Fields: SourceSite, ReleaseTitle, ParsedInfo, DownloadLinks[], Size, DateFound
   - AC: Quality scoring aligned with DecisionEngine
-- [ ] **DDL filtering rules**
+- [x] **DDL filtering rules**
   - AC: Banned words filter (match Mylar3 defaults: sample, preview, etc.)
   - AC: Required words filter
   - AC: Size limits (min/max for singles and collections)

@@ -1,11 +1,61 @@
 # Worklog
 
+## Iteration 006 (2026-02-02)
+**EPIC 4.2.2: DDL Candidate Normalization - COMPLETED**
+
+### Commits
+1. `feat: add DDL candidate normalization (EPIC 4.2.2)`
+2. `test: add golden test fixtures for DDL parsing (EPIC 4.2.2)`
+3. `chore: update docs for iteration 006 completion`
+
+### Deliverables
+- ✅ Core Models:
+  - DdlCandidate (release candidate with DDL-specific fields)
+  - DdlParsedInfo (structured metadata from release titles)
+  - DdlDownloadLink (download links with type and priority)
+  - DdlFilterSettings (configurable filtering rules)
+- ✅ DDL Release Parser:
+  - Series title extraction (handles hyphenated names)
+  - Issue number extraction (#001, 001, Issue 1)
+  - Volume number extraction (Vol. 1, v1)
+  - Year extraction (parentheses and trailing)
+  - Collection detection (TPB, HC, Omnibus, Deluxe, etc.)
+  - Publisher detection (Marvel, DC, Image, etc.)
+  - Quality tags (Digital, Webrip, etc.)
+  - Release group extraction
+  - Confidence scoring
+- ✅ DDL Filtering (Mylar3 Defaults):
+  - Banned words (sample, preview)
+  - Required words enforcement
+  - Format filtering (blocked/preferred)
+  - Size limits (singles: 1-200MB, collections: 5MB-2GB)
+  - Parse confidence threshold
+  - Series title requirement
+  - Blocked release groups
+- ✅ Services Registered:
+  - IDdlReleaseParser / DdlReleaseParser
+  - IDdlFilter / DdlFilter
+- ✅ Golden Test Fixtures:
+  - 14 parsing test cases (Mylar3 parity)
+  - 10 filtering test cases
+- ✅ 183 tests passing (86 new DDL tests)
+
+### DDL Link Types
+| Type | Value | Description |
+|------|-------|-------------|
+| Direct | 0 | Direct download to file |
+| Redirect | 1 | Redirect to actual download |
+| Hoster | 2 | File hosting service |
+| Magnet | 3 | Magnet link (future) |
+
+---
+
 ## Iteration 005 (2026-02-02)
 **EPIC 4.1: Provider Abstractions - COMPLETED**
 
 ### Commits
 1. `feat: add provider abstractions and CRUD endpoints (EPIC 4.1)`
-2. `chore: update docs for iteration 005 completion` (pending)
+2. `chore: update docs for iteration 005 completion (EPIC 4.1)`
 
 ### Deliverables
 - ✅ Core Interfaces:

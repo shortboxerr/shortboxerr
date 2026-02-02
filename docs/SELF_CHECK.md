@@ -1,46 +1,90 @@
-# Self-Check (Iteration 005)
+# Self-Check Rubric
 
-## Protocol Compliance
+## Iteration 006: EPIC 4.2.2 - DDL Candidate Normalization ✅ COMPLETED
 
+### Core Requirements
 | Check | Status |
 |-------|--------|
-| Pulled READY items from BACKLOG.md | ✅ |
-| Implemented vertical slice (code + tests + docs) | ✅ |
-| Tests pass (`dotnet test`) | ✅ 97 passing |
-| Build succeeds (`dotnet build`) | ✅ |
-| Committed at logical breakpoints | ✅ 1 commit |
-| Updated WORKLOG.md | ✅ |
-| Updated BACKLOG.md | ✅ EPIC 4.1 marked complete |
-| No uncommitted changes | ✅ |
-| Conventional commit messages | ✅ feat:, chore: |
+| DDL release parser implemented | ✅ |
+| DDL candidate model defined | ✅ |
+| DDL filtering rules implemented | ✅ |
+| Golden parsing fixtures created | ✅ |
+| Golden filtering fixtures created | ✅ |
+| Services registered in DI | ✅ |
+| All tests passing | ✅ (183 tests) |
+| Build succeeds | ✅ |
+| Documentation updated | ✅ |
 
-## Deliverables
+### DDL Parsing Features
+| Feature | Status |
+|---------|--------|
+| Series title extraction | ✅ |
+| Issue number (#001, 001, Issue 1) | ✅ |
+| Decimal issues (#1.5) | ✅ |
+| Volume number (Vol. 1, v1) | ✅ |
+| Year (parentheses, trailing) | ✅ |
+| Collection detection (TPB, HC, Omnibus, Deluxe) | ✅ |
+| Publisher detection (Marvel, DC, Image, etc.) | ✅ |
+| Quality tags (Digital, Webrip, Scan) | ✅ |
+| Release group extraction | ✅ |
+| Confidence scoring | ✅ |
+| Title normalization | ✅ |
 
-| Deliverable | Status | Notes |
-|-------------|--------|-------|
-| IProvider interface | ✅ | Name, Type, IsEnabled, Test, GetHealth |
-| IIndexerProvider | ✅ | Search, GetLatest, SupportsRss |
-| IDownloadProvider | ✅ | Download, GetStatus, Cancel |
-| ProviderManager | ✅ | CRUD, priority, enable/disable |
-| ProviderDefinition entity | ✅ | Full persistence with EF Core |
-| Provider API endpoints | ✅ | 14 endpoints |
-| Provider endpoint tests | ✅ | 14 integration tests |
+### DDL Filtering Features (Mylar3 Defaults)
+| Feature | Default Value | Status |
+|---------|---------------|--------|
+| Banned words | sample, preview | ✅ |
+| Required words | (configurable) | ✅ |
+| Min size singles | 1MB | ✅ |
+| Max size singles | 200MB | ✅ |
+| Min size collections | 5MB | ✅ |
+| Max size collections | 2GB | ✅ |
+| Blocked formats | pdf | ✅ |
+| Preferred formats | cbz, cbr | ✅ |
+| Parse confidence threshold | 20 | ✅ |
+| Blocked release groups | (configurable) | ✅ |
 
-## Test Summary
+### Golden Test Coverage
+| Fixture | Test Cases | Status |
+|---------|------------|--------|
+| ddl_parsing_golden.json | 14 | ✅ |
+| ddl_filtering_golden.json | 10 | ✅ |
 
-```
-Total:    97 tests
-Passed:   97
-Failed:   0
-Skipped:  0
-```
+### Test Counts
+| Category | Count |
+|----------|-------|
+| DDL Parser tests | 48 |
+| DDL Filter tests | 38 |
+| Golden parsing tests | 14 |
+| Golden filtering tests | 10 |
+| **Total new tests** | 86 (approx) |
+| **Total tests** | 183 |
 
-## Commit History (This Iteration)
+### Files Created/Modified
+- `src/Shortboxerr.Core/Ddl/DdlCandidate.cs` ✅
+- `src/Shortboxerr.Core/Ddl/DdlReleaseParser.cs` ✅
+- `src/Shortboxerr.Core/Ddl/IDdlReleaseParser.cs` ✅
+- `src/Shortboxerr.Core/Ddl/DdlFilter.cs` ✅
+- `src/Shortboxerr.Core/Ddl/IDdlFilter.cs` ✅
+- `src/Shortboxerr.Infrastructure/DependencyInjection.cs` ✅
+- `tests/Shortboxerr.Tests/DdlReleaseParserTests.cs` ✅
+- `tests/Shortboxerr.Tests/DdlFilterTests.cs` ✅
+- `tests/Shortboxerr.Tests/DdlParsingGoldenTests.cs` ✅
+- `tests/Shortboxerr.Tests/DdlFilteringGoldenTests.cs` ✅
+- `tests/Shortboxerr.Tests/Fixtures/ddl_parsing_golden.json` ✅
+- `tests/Shortboxerr.Tests/Fixtures/ddl_filtering_golden.json` ✅
+- `docs/API.md` ✅
+- `docs/WORKLOG.md` ✅
+- `docs/BACKLOG.md` ✅
 
-1. `feat: add provider abstractions and CRUD endpoints (EPIC 4.1)`
-2. `chore: update docs for iteration 005 completion` (pending)
+### Commits
+1. `feat: add DDL candidate normalization (EPIC 4.2.2)` ✅
+2. `test: add golden test fixtures for DDL parsing (EPIC 4.2.2)` ✅
+3. `chore: update docs for iteration 006 completion` (pending)
 
-## EPIC Status
+---
+
+## Progress Summary
 
 | Epic | Status |
 |------|--------|
@@ -49,13 +93,5 @@ Skipped:  0
 | EPIC 2: Import Pipeline | ✅ COMPLETED |
 | EPIC 3: DecisionEngine | ✅ COMPLETED |
 | EPIC 4.1: Provider Abstractions | ✅ COMPLETED |
-| EPIC 4.2: DDL Provider | 🔜 Next |
-| EPIC 5: UI | ⏳ Pending |
-| EPIC 6: Mylar3 Migration | ⏳ Pending |
-
-## Notes
-
-- Provider system follows Arr-style patterns for familiarity
-- Placeholder implementations allow CRUD operations while real providers are developed
-- Test infrastructure improved with in-memory SQLite for isolated parallel tests
-- Ready for DDL Provider implementation in EPIC 4.2
+| EPIC 4.2.2: DDL Candidate Normalization | ✅ COMPLETED |
+| EPIC 4.2.1: DDL Discovery & Search | 🔜 Next |

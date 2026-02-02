@@ -587,6 +587,65 @@ Content-Type: application/json
 
 ---
 
+## DDL Candidate Normalization (Internal)
+
+### DdlCandidate Model
+DDL candidates represent releases discovered from DDL sites:
+
+```json
+{
+  "id": "unique-id",
+  "releaseTitle": "Amazing Spider-Man 001 (2022) (Digital) (Zone-Empire).cbz",
+  "sourceSite": "GettyComics",
+  "sourceUrl": "https://example.com/page/12345",
+  "parsedInfo": {
+    "seriesTitle": "Amazing Spider-Man",
+    "issueNumber": 1,
+    "volumeNumber": null,
+    "year": 2022,
+    "publisher": null,
+    "format": "cbz",
+    "isCollection": false,
+    "editionType": null,
+    "issueRange": null,
+    "releaseGroup": "Zone-Empire",
+    "quality": "Digital",
+    "confidence": 75
+  },
+  "downloadLinks": [
+    {
+      "url": "https://download.example.com/file.cbz",
+      "linkType": 0,
+      "hostName": null,
+      "isVerified": false,
+      "priority": 0
+    }
+  ],
+  "size": 15000000,
+  "dateFound": "2026-02-02T04:00:00Z",
+  "qualityScore": 75,
+  "tags": ["Digital", "2022"],
+  "isFiltered": false,
+  "filterReason": null
+}
+```
+
+### DDL Filtering Rules (Mylar3 Defaults)
+- **Banned Words**: sample, preview (instant rejection)
+- **Size Limits**:
+  - Singles: 1MB - 200MB
+  - Collections: 5MB - 2GB
+- **Blocked Formats**: pdf
+- **Preferred Formats**: cbz, cbr
+
+### DDL Link Types (Enum)
+- 0: Direct
+- 1: Redirect
+- 2: Hoster
+- 3: Magnet (future)
+
+---
+
 ## OpenAPI / Swagger
 
 - **Swagger UI**: `GET /swagger`
