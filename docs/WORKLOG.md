@@ -1,5 +1,82 @@
 # Worklog
 
+## Iteration 009 (2026-02-02)
+**EPIC 4.2.4: DDL → Import Handoff - COMPLETED**
+
+### Commits
+1. `feat: add DDL import service with auto-match and manual review (EPIC 4.2.4)`
+2. `chore: update docs for iteration 009 completion`
+
+### Deliverables
+- ✅ Import Service Interface:
+  - IDdlImportService: Post-download processing and import handoff
+  - ProcessDownloadAsync: Full pipeline from download to import
+  - VerifyFileAsync: File validation (magic bytes, size, HTML detection)
+  - MoveToStagingAsync: Move verified files to staging
+  - AutoMatchAsync: Match candidates to series/issue
+  - ExecuteImportAsync: Import to library with history events
+- ✅ Post-Download Verification:
+  - Magic bytes detection (ZIP/CBZ, RAR/CBR, PDF, 7z)
+  - HTML error page detection (prevents saving error pages as comics)
+  - File size validation (minimum thresholds for singles/collections)
+  - Empty file detection
+- ✅ Auto-Match System:
+  - Series matching by normalized title
+  - Issue matching by number
+  - Edition matching for collections
+  - Confidence scoring with reduction reasons
+  - Year and publisher bonuses
+- ✅ Auto-Import vs Manual Review:
+  - Configurable auto-import threshold (default: 80%)
+  - RequireSeriesMatch setting
+  - RequireIssueMatch setting (for singles)
+  - Pending import queue for manual review
+- ✅ Pending Import Management:
+  - GetPendingImportsAsync: List all pending
+  - ApprovePendingImportAsync: Approve with series/issue override
+  - RejectPendingImportAsync: Reject with optional file deletion
+- ✅ History Integration:
+  - FileAsset creation on import
+  - HistoryEvent (DdlImportCompleted) on success
+  - Download→Import chain tracking
+- ✅ API Endpoints:
+  - POST /api/v1/ddl/import/process
+  - POST /api/v1/ddl/import/verify
+  - POST /api/v1/ddl/import/stage
+  - POST /api/v1/ddl/import/match
+  - POST /api/v1/ddl/import/execute
+  - GET /api/v1/ddl/import/pending
+  - POST /api/v1/ddl/import/pending/{id}/approve
+  - POST /api/v1/ddl/import/pending/{id}/reject
+- ✅ 247 tests passing (18 new)
+
+### Import States
+| State | Value | Description |
+|-------|-------|-------------|
+| Pending | 0 | Initial state |
+| Verifying | 1 | Verifying downloaded file |
+| MovingToStaging | 2 | Moving to staging folder |
+| Matching | 3 | Matching to series/issue |
+| PendingReview | 4 | Awaiting manual review |
+| Importing | 5 | Importing to library |
+| Completed | 10 | Successfully imported |
+| VerificationFailed | 20 | Verification failed |
+| StagingFailed | 21 | Staging failed |
+| MatchingFailed | 22 | Matching failed |
+| ImportFailed | 23 | Import failed |
+| Rejected | 30 | Rejected by user |
+
+### File Format Detection
+| Format | Magic Bytes | Supported |
+|--------|-------------|-----------|
+| CBZ/ZIP | 50 4B | ✅ |
+| CBR/RAR | 52 61 72 | ✅ |
+| CB7/7z | 37 7A BC AF | ✅ |
+| PDF | 25 50 44 46 | ❌ |
+| HTML | <!doctype, <html | ❌ (rejected) |
+
+---
+
 ## Iteration 008 (2026-02-02)
 **EPIC 4.2.3: DDL Download Execution - COMPLETED**
 

@@ -89,12 +89,12 @@ The DDL (Direct Download) provider must achieve behavioral parity with Mylar3's 
   - AC: Quarantine repeated failures (configurable threshold)
   - AC: History event for all download attempts
 
-#### 4.2.4 DDL → Import Handoff
-- [ ] **DDL post-download processing**
+#### 4.2.4 DDL → Import Handoff ✅ COMPLETED
+- [x] **DDL post-download processing**
   - AC: Verify downloaded file (size, magic bytes, not HTML error page)
   - AC: Move to staging folder on success
   - AC: Trigger import pipeline (or queue for manual review based on config)
-- [ ] **DDL import integration**
+- [x] **DDL import integration**
   - AC: Auto-match to series/issue using parsed candidate info
   - AC: Respect "auto-import" vs "manual review" setting (match Mylar3)
   - AC: Create HistoryEvent linking download → import

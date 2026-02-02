@@ -1,110 +1,69 @@
-# Self-Check Rubric
+# Self-Check (Living Document)
 
-## Iteration 008: EPIC 4.2.3 - DDL Download Execution ✅ COMPLETED
+## Current Iteration: 009 - EPIC 4.2.4 DDL → Import Handoff
 
-### Core Requirements
-| Check | Status |
-|-------|--------|
-| IDdlDownloadService interface defined | ✅ |
-| DdlDownloadService implementation | ✅ |
-| Download from candidate | ✅ |
-| Download from URL | ✅ |
-| Configurable timeouts (Mylar3 default) | ✅ |
-| User-Agent configuration | ✅ |
-| Cookie/session handling | ✅ |
-| Resume support (Range headers) | ✅ |
-| Retry count (default: 3) | ✅ |
-| Exponential backoff | ✅ |
-| Mirror fallback | ✅ |
-| Failure tracking | ✅ |
-| History events | ✅ |
-| Services registered in DI | ✅ |
-| All tests passing | ✅ (229 tests) |
-| Build succeeds | ✅ |
-| Documentation updated | ✅ |
+### Status: ✅ COMPLETED
 
-### Download Features
-| Feature | Status |
-|---------|--------|
-| HTTP GET downloads | ✅ |
-| Progress tracking | ✅ |
-| ETA calculation | ✅ |
-| Active download list | ✅ |
-| Download cancellation | ✅ |
-| Download history | ✅ |
-| Partial file support (.partial) | ✅ |
-| Range request resume | ✅ |
+| Criterion | Status | Notes |
+|-----------|--------|-------|
+| Solution builds | ✅ | `dotnet build` succeeds |
+| All tests pass | ✅ | 247 passing (18 new) |
+| Vertical slice complete | ✅ | Import service + API + tests |
+| Git commits logical | ✅ | 2 commits this iteration |
+| Docs updated | ✅ | API.md, BACKLOG, WORKLOG |
 
-### Retry Semantics
-| Feature | Default | Status |
-|---------|---------|--------|
-| Max retries | 3 | ✅ |
-| Base retry delay | 1000ms | ✅ |
-| Max retry delay | 30000ms | ✅ |
-| Exponential backoff | 2^n | ✅ |
-| Jitter | ±25% | ✅ |
-| Mirror fallback | Yes | ✅ |
+### Deliverables Checklist
 
-### Failure Handling
-| Failure Type | Code | Retryable | Status |
-|--------------|------|-----------|--------|
-| Timeout | 10 | Yes | ✅ |
-| ConnectionFailed | 11 | Yes | ✅ |
-| DnsFailure | 12 | Yes | ✅ |
-| NotFound (404) | 20 | No | ✅ |
-| Unauthorized (401/403) | 21 | No | ✅ |
-| RateLimited (429) | 22 | Yes | ✅ |
-| ServerError (5xx) | 23 | Yes | ✅ |
-| EmptyFile | 30 | No | ✅ |
-| FileTooSmall | 31 | No | ✅ |
-| FileTooLarge | 32 | No | ✅ |
-| HtmlErrorPage | 33 | No | ✅ |
-| VerificationFailed | 34 | No | ✅ |
-| DiskError | 40 | No | ✅ |
-| Cancelled | 50 | No | ✅ |
-| MaxRetriesExceeded | 60 | No | ✅ |
-| NoValidLinks | 70 | No | ✅ |
+- [x] IDdlImportService interface
+- [x] DdlImportService implementation
+- [x] File verification (magic bytes, HTML detection)
+- [x] Auto-match series/issue
+- [x] Auto-import vs manual review settings
+- [x] Pending import queue management
+- [x] History events for imports
+- [x] API endpoints (8 total)
+- [x] Unit tests (18 new tests)
 
-### Verification Features
-| Check | Status |
-|-------|--------|
-| File size validation | ✅ |
-| Magic bytes check | ✅ |
-| HTML error page detection | ✅ |
-| CBZ/CBR/PDF/7z format detection | ✅ |
-
-### Test Coverage
-| Test Class | Tests |
-|------------|-------|
-| DdlDownloadServiceTests | 15 |
-| **Total new tests** | 15 |
-| **Total tests** | 229 |
-
-### Files Created/Modified
-- `src/Shortboxerr.Core/Ddl/IDdlDownloadService.cs` ✅
-- `src/Shortboxerr.Infrastructure/Ddl/DdlDownloadService.cs` ✅
-- `src/Shortboxerr.Infrastructure/DependencyInjection.cs` ✅
-- `tests/Shortboxerr.Tests/DdlDownloadServiceTests.cs` ✅
-- `docs/API.md` ✅
-- `docs/WORKLOG.md` ✅
-- `docs/BACKLOG.md` ✅
-
-### Commits
-1. `feat: add DDL download service with retry logic (EPIC 4.2.3)` ✅
-2. `chore: update docs for iteration 008 completion` (pending)
+### Test Summary
+```
+Passed!  - Failed: 0, Passed: 247, Skipped: 0, Total: 247
+```
 
 ---
 
 ## Progress Summary
 
-| Epic | Status |
-|------|--------|
-| EPIC 0: Repo Skeleton | ✅ COMPLETED |
-| EPIC 1: Domain + Persistence | ✅ COMPLETED |
-| EPIC 2: Import Pipeline | ✅ COMPLETED |
-| EPIC 3: DecisionEngine | ✅ COMPLETED |
-| EPIC 4.1: Provider Abstractions | ✅ COMPLETED |
-| EPIC 4.2.2: DDL Candidate Normalization | ✅ COMPLETED |
-| EPIC 4.2.1: DDL Discovery & Search | ✅ COMPLETED |
-| EPIC 4.2.3: DDL Download Execution | ✅ COMPLETED |
-| EPIC 4.2.4: DDL → Import Handoff | 🔜 Next |
+| Epic | Status | Tests |
+|------|--------|-------|
+| EPIC 0: Repo Skeleton | ✅ COMPLETED | 4 |
+| EPIC 1: Domain + Persistence | ✅ COMPLETED | 16 |
+| EPIC 2: Import Pipeline | ✅ COMPLETED | 45 |
+| EPIC 3: DecisionEngine | ✅ COMPLETED | 83 |
+| EPIC 4.1: Provider Abstractions | ✅ COMPLETED | 97 |
+| EPIC 4.2.2: DDL Candidate Normalization | ✅ COMPLETED | 183 |
+| EPIC 4.2.1: DDL Discovery & Search | ✅ COMPLETED | 214 |
+| EPIC 4.2.3: DDL Download Execution | ✅ COMPLETED | 229 |
+| EPIC 4.2.4: DDL → Import Handoff | ✅ COMPLETED | 247 |
+
+### Next Up
+- EPIC 4.3: DDL Configuration & Mylar3 Import
+- EPIC 4.4: DDL Conformance Tests
+- EPIC 4.5: DDL UI
+
+---
+
+## DDL Pipeline Complete!
+
+With EPIC 4.2.4 complete, the full DDL pipeline is now operational:
+
+1. **Discovery & Search** (4.2.1): Multi-site search with adapters
+2. **Candidate Normalization** (4.2.2): Mylar3-compatible parsing
+3. **Download Execution** (4.2.3): HTTP downloads with retry logic
+4. **Import Handoff** (4.2.4): Auto-match and import to library
+
+The pipeline supports:
+- Automatic series/issue matching
+- Configurable auto-import thresholds
+- Manual review queue for low-confidence matches
+- Full history tracking from download to import
+- File format verification and HTML error page detection

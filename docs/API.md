@@ -793,6 +793,204 @@ DDL site adapters provide site-specific parsing for comic DDL sources.
 
 ---
 
+## DDL Import Service (EPIC 4.2.4)
+
+The DDL Import Service handles post-download processing and import handoff, bridging the DDL download pipeline to the import pipeline.
+
+### Process Download
+```
+POST /api/v1/ddl/import/process
+Content-Type: application/json
+
+{
+  "filePath": "/downloads/Batman_001.cbz",
+  "candidate": {
+    "id": "candidate-123",
+    "releaseTitle": "Batman 001 (2016) (Digital).cbz",
+    "sourceSite": "GettyComics",
+    "parsedInfo": {
+      "seriesTitle": "Batman",
+      "issueNumber": 1,
+      "year": 2016,
+      "format": "cbz",
+      "isCollection": false
+    }
+  },
+  "options": {
+    "autoImportEnabled": true,
+    "autoImportMinConfidence": 80,
+    "requireSeriesMatch": true,
+    "requireIssueMatch": true
+  }
+}
+```
+Processes a completed download: verifies file, moves to staging, auto-matches to series/issue, and either auto-imports or queues for manual review.
+
+**Response (200 OK)**
+```json
+{
+  "importId": "import-456",
+  "success": true,
+  "state": "Completed",
+  "libraryPath": "/library/Batman/Batman_001.cbz",
+  "seriesId": 1,
+  "seriesTitle": "Batman",
+  "issueId": 1,
+  "issueNumber": 1,
+  "fileAssetId": 1,
+  "historyEventId": 1,
+  "matchConfidence": 95,
+  "pendingManualReview": false,
+  "processedAt": "2026-02-02T05:00:00Z"
+}
+```
+
+### Verify File
+```
+POST /api/v1/ddl/import/verify
+Content-Type: application/json
+
+{
+  "filePath": "/downloads/Batman_001.cbz",
+  "candidate": { ... }
+}
+```
+Verifies a downloaded file is valid for import (checks magic bytes, size, detects HTML error pages).
+
+**Response (200 OK)**
+```json
+{
+  "isValid": true,
+  "filePath": "/downloads/Batman_001.cbz",
+  "fileSize": 52428800,
+  "detectedFormat": "cbz",
+  "formatSupported": true,
+  "errorMessage": null,
+  "warnings": []
+}
+```
+
+### Move to Staging
+```
+POST /api/v1/ddl/import/stage
+Content-Type: application/json
+
+{
+  "sourcePath": "/downloads/Batman_001.cbz",
+  "candidate": { ... }
+}
+```
+Moves a verified file to the staging folder.
+
+### Auto-Match Candidate
+```
+POST /api/v1/ddl/import/match
+Content-Type: application/json
+
+{
+  "candidate": { ... }
+}
+```
+Auto-matches a candidate to existing series/issue in the database.
+
+**Response (200 OK)**
+```json
+{
+  "matchFound": true,
+  "confidence": 95,
+  "seriesId": 1,
+  "seriesTitle": "Batman",
+  "issueId": 1,
+  "issueNumber": 1,
+  "isCollection": false,
+  "explanation": "Matched to issue: Batman #1",
+  "confidenceReductions": []
+}
+```
+
+### Execute Import
+```
+POST /api/v1/ddl/import/execute
+Content-Type: application/json
+
+{
+  "stagedFilePath": "/staging/Batman_001.cbz",
+  "candidate": { ... },
+  "seriesId": 1,
+  "issueId": 1
+}
+```
+Executes import for a staged file with manually specified series/issue.
+
+### Get Pending Imports
+```
+GET /api/v1/ddl/import/pending
+```
+Returns all imports awaiting manual review.
+
+**Response (200 OK)**
+```json
+[
+  {
+    "id": "pending-789",
+    "stagingPath": "/staging/Unknown_Comic.cbz",
+    "filename": "Unknown_Comic.cbz",
+    "fileSize": 25000000,
+    "suggestedSeriesId": null,
+    "suggestedSeriesTitle": null,
+    "isCollection": false,
+    "stagedAt": "2026-02-02T04:30:00Z",
+    "reviewReason": "No series found matching 'Unknown Comic'"
+  }
+]
+```
+
+### Approve Pending Import
+```
+POST /api/v1/ddl/import/pending/{id}/approve
+Content-Type: application/json
+
+{
+  "pendingImportId": "pending-789",
+  "seriesId": 1,
+  "issueId": 1
+}
+```
+Approves a pending import with specified series/issue mapping.
+
+### Reject Pending Import
+```
+POST /api/v1/ddl/import/pending/{id}/reject
+Content-Type: application/json
+
+{
+  "pendingImportId": "pending-789",
+  "reason": "Not wanted",
+  "deleteFile": true
+}
+```
+Rejects a pending import and optionally deletes the file.
+
+---
+
+## Import States (Enum)
+| Value | Name | Description |
+|-------|------|-------------|
+| 0 | Pending | Initial state |
+| 1 | Verifying | Verifying downloaded file |
+| 2 | MovingToStaging | Moving to staging folder |
+| 3 | Matching | Matching to series/issue |
+| 4 | PendingReview | Awaiting manual review |
+| 5 | Importing | Importing to library |
+| 10 | Completed | Import completed successfully |
+| 20 | VerificationFailed | Verification failed |
+| 21 | StagingFailed | Staging failed |
+| 22 | MatchingFailed | Matching failed |
+| 23 | ImportFailed | Import failed |
+| 30 | Rejected | Rejected by user |
+
+---
+
 ## OpenAPI / Swagger
 
 - **Swagger UI**: `GET /swagger`
