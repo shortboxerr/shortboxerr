@@ -25,11 +25,11 @@
 - [x] Atomic move/rename preview
 - [x] History events for pipeline steps
 
-## EPIC 3: DecisionEngine (MYLAR3-LIKE SELECTION)
-- [ ] Candidate model + rejection reasons
-- [ ] Ranking/scoring + deterministic tie-break
-- [ ] Explanation report surfaced to API
-- [ ] Golden test harness skeleton
+## EPIC 3: DecisionEngine (MYLAR3-LIKE SELECTION) ✅ COMPLETED
+- [x] Candidate model + rejection reasons
+- [x] Ranking/scoring + deterministic tie-break
+- [x] Explanation report surfaced to API
+- [x] Golden test harness skeleton
 
 ## EPIC 4: Indexers + Download Clients (ARR-LIKE SHAPE)
 
@@ -50,7 +50,7 @@ The DDL (Direct Download) provider must achieve behavioral parity with Mylar3's 
 - [ ] **DDL site adapter interface (IDdlSiteAdapter)**
   - AC: Each supported DDL site has its own adapter implementing parsing logic
   - AC: Adapters handle site-specific HTML/JSON parsing
-  - AC: Must support: GetComics, ReadComicOnline, and extensible for others
+  - AC: Must support: GettyComics, ReadComicOnline, and extensible for others
 - [ ] **DDL search endpoint polling**
   - AC: Configurable poll interval (default matches Mylar3)
   - AC: Supports series-specific and global searches

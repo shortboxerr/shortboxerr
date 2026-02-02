@@ -295,6 +295,119 @@ Moves a file to the failed folder with a reason.
 
 ---
 
+## Decision Engine Endpoints
+
+### Evaluate Candidates
+```
+POST /api/v1/decision/evaluate
+Content-Type: application/json
+
+{
+  "candidates": [
+    {
+      "id": "candidate-1",
+      "releaseTitle": "Amazing Spider-Man #001 (2022).cbz",
+      "source": "preferred-source",
+      "seriesTitle": "Amazing Spider-Man",
+      "issueNumber": 1,
+      "year": 2022,
+      "format": "cbz",
+      "size": 15000000,
+      "isCollection": false
+    }
+  ],
+  "target": {
+    "seriesTitle": "Amazing Spider-Man",
+    "issueNumber": 1,
+    "year": 2022,
+    "isCollection": false
+  }
+}
+```
+Evaluates and ranks candidates against a target. Returns ranked list with detailed explanations.
+
+**Response (200 OK)**
+```json
+{
+  "rankedCandidates": [
+    {
+      "candidate": { ... },
+      "accepted": true,
+      "score": 95,
+      "rejectionReason": null,
+      "explanation": {
+        "summary": "Accepted with score 95 (base: 95, penalties: 0)",
+        "baseScore": 95,
+        "penalties": 0,
+        "finalScore": 95,
+        "scoringFactors": [
+          { "name": "Format", "points": 20, "reason": "Preferred format: cbz" },
+          { "name": "SeriesMatch", "points": 30, "reason": "Exact series title match" },
+          { "name": "IssueMatch", "points": 25, "reason": "Exact issue match: #1" },
+          { "name": "YearMatch", "points": 10, "reason": "Year match: 2022" }
+        ],
+        "checks": [
+          { "checkName": "BannedWords", "passed": true, "details": "No banned words found" },
+          { "checkName": "Size", "passed": true, "details": "Size 15.0MB within limits" }
+        ]
+      }
+    }
+  ],
+  "bestCandidate": { ... },
+  "shouldAutoGrab": true,
+  "autoGrabReason": "Auto-grab approved with score 95",
+  "totalCandidates": 1,
+  "acceptedCandidates": 1,
+  "rejectedCandidates": 0
+}
+```
+
+### Evaluate Single Candidate
+```
+POST /api/v1/decision/evaluate/single
+Content-Type: application/json
+
+{
+  "candidate": { ... },
+  "target": { ... }
+}
+```
+Evaluates a single candidate against a target. Returns detailed explanation.
+
+### Explain Decisions
+```
+POST /api/v1/decision/explain
+Content-Type: application/json
+
+{
+  "candidates": [ ... ],
+  "target": { ... }
+}
+```
+Returns verbose explanations for all candidate evaluations (debugging).
+
+---
+
+## Rejection Reasons (Enum)
+- 10: UnsupportedFormat
+- 11: FormatNotPreferred
+- 20: TooSmall
+- 21: TooLarge
+- 30: BannedWordFound
+- 31: MissingRequiredWord
+- 40: SeriesMismatch
+- 41: IssueMismatch
+- 42: YearMismatch
+- 50: QualityTooLow
+- 51: DuplicateExists
+- 52: BetterVersionExists
+- 60: SourceDisabled
+- 61: SourceNotTrusted
+- 90: ManuallyRejected
+- 99: Unknown
+
+---
+
 ## Edition Types (Enum)
 - 0: TradesPaperback
 - 1: Hardcover

@@ -1,5 +1,60 @@
 # Worklog
 
+## Iteration 004 (2026-02-02)
+**EPIC 3: DecisionEngine - COMPLETED**
+
+### Commits
+1. `feat: add DecisionEngine with candidate evaluation and ranking (EPIC 3)`
+2. `test: add golden test harness for DecisionEngine (EPIC 3)`
+3. `chore: update docs for iteration 004 completion`
+
+### Deliverables
+- ✅ Core Models:
+  - Candidate (release candidate with metadata)
+  - CandidateEvaluation (evaluation result with score)
+  - CandidateTarget (what we're matching against)
+  - RejectionReason (enum of all rejection types)
+  - DecisionExplanation (detailed scoring breakdown)
+  - ScoringFactor/CheckResult (individual evaluation components)
+  - DecisionEngineSettings (configurable thresholds and preferences)
+- ✅ Decision Engine Service:
+  - Evaluate(): Single candidate evaluation
+  - EvaluateAndRank(): Batch evaluation with deterministic ranking
+  - GetBestCandidate(): Returns top acceptable candidate
+  - CheckAutoGrab(): Threshold and margin checks
+- ✅ Rejection Checks:
+  - Banned words filter (sample, preview)
+  - Required words enforcement
+  - Format validation (cbz, cbr)
+  - Size limits (min/max for singles and collections)
+- ✅ Scoring Factors:
+  - Format preference (cbz > cbr, configurable order)
+  - Exact/partial series match
+  - Exact issue number match
+  - Year match (exact and close)
+  - Source priority (configurable priority list)
+- ✅ API Endpoints:
+  - POST /api/v1/decision/evaluate (batch evaluate)
+  - POST /api/v1/decision/evaluate/single
+  - POST /api/v1/decision/explain (verbose explanations)
+- ✅ Golden Test Harness:
+  - Fixture-based testing with JSON test cases
+  - Individual tests for each golden scenario
+  - Settings configurable per fixture file
+- ✅ 83 passing tests (38 new DecisionEngine tests)
+
+### Configuration (DecisionEngineSettings)
+| Setting | Default | Description |
+|---------|---------|-------------|
+| AutoGrabThreshold | 80 | Min score for auto-grab |
+| ManualChoiceMargin | 10 | Score gap requiring manual review |
+| FormatPreferenceOrder | [cbz, cbr] | Format ranking |
+| BannedWords | [sample, preview] | Reject if found |
+| MinSizeBytesSingles | 1MB | Min file size |
+| MaxSizeBytesSingles | 200MB | Max file size |
+
+---
+
 ## Iteration 003 (2026-02-02)
 **EPIC 2: Import Pipeline - COMPLETED**
 
