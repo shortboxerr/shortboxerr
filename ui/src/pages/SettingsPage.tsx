@@ -4,7 +4,7 @@ import {
   Settings, Server, Download, Shield, 
   FolderOpen, Plug, Save, Plus, Edit, Trash2, 
   CheckCircle, XCircle, AlertCircle, Play, GripVertical,
-  Eye, EyeOff, Copy, RefreshCw, X
+  Copy, RefreshCw, X
 } from 'lucide-react';
 import { api } from '../api/client';
 import type { Provider, CreateProviderRequest, ProviderTestResult } from '../api/client';
@@ -1232,64 +1232,31 @@ function UISettings() {
 }
 
 function SecuritySettings() {
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [fullKey, setFullKey] = useState<string | null>(null);
-  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
-  const [isLoadingFullKey, setIsLoadingFullKey] = useState(false);
   const queryClient = useQueryClient();
 
+  // Always fetch the full API key (no masking)
   const { data: apiKeyInfo, isLoading } = useQuery({
-    queryKey: ['apiKey'],
-    queryFn: api.getApiKey,
+    queryKey: ['apiKeyFull'],
+    queryFn: api.getApiKeyFull,
   });
 
-  const regenerateMutation = useMutation({
+  const resetMutation = useMutation({
     mutationFn: api.regenerateApiKey,
     onSuccess: () => {
-      setShowRegenerateConfirm(false);
-      setFullKey(null);
-      setShowApiKey(false);
-      queryClient.invalidateQueries({ queryKey: ['apiKey'] });
+      setShowResetConfirm(false);
+      queryClient.invalidateQueries({ queryKey: ['apiKeyFull'] });
     },
   });
 
-  const handleShowKey = async () => {
-    if (showApiKey) {
-      setShowApiKey(false);
-    } else {
-      if (!fullKey) {
-        setIsLoadingFullKey(true);
-        try {
-          const data = await api.getApiKeyFull();
-          setFullKey(data.fullKey);
-          setShowApiKey(true);
-        } catch (error) {
-          console.error('Failed to fetch full API key:', error);
-        } finally {
-          setIsLoadingFullKey(false);
-        }
-      } else {
-        setShowApiKey(true);
-      }
-    }
-  };
-
   const handleCopyApiKey = async () => {
-    let keyToCopy = fullKey;
-    if (!keyToCopy) {
-      const data = await api.getApiKeyFull();
-      keyToCopy = data.fullKey;
-      setFullKey(keyToCopy);
-    }
-    if (keyToCopy) {
-      await navigator.clipboard.writeText(keyToCopy);
+    if (apiKeyInfo?.fullKey) {
+      await navigator.clipboard.writeText(apiKeyInfo.fullKey);
       setCopyFeedback(true);
       setTimeout(() => setCopyFeedback(false), 2000);
     }
   };
-
-  const displayValue = showApiKey && fullKey ? fullKey : (apiKeyInfo?.maskedKey || '...');
 
   return (
     <>
@@ -1312,56 +1279,36 @@ function SecuritySettings() {
             <input 
               className="input" 
               style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: '13px', maxWidth: '400px' }}
-              value={isLoading ? 'Loading...' : displayValue}
+              value={isLoading ? 'Loading...' : (apiKeyInfo?.fullKey || '')}
               readOnly
             />
             <button 
               className="btn btn-icon" 
-              onClick={handleShowKey}
-              title={showApiKey ? 'Hide' : 'Show'}
-              disabled={isLoading || isLoadingFullKey}
-            >
-              {isLoadingFullKey ? (
-                <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
-              ) : showApiKey ? (
-                <EyeOff size={16} />
-              ) : (
-                <Eye size={16} />
-              )}
-            </button>
-            <button 
-              className="btn btn-secondary" 
               onClick={handleCopyApiKey}
+              title={copyFeedback ? 'Copied!' : 'Copy to clipboard'}
               disabled={isLoading}
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '6px',
-                ...(copyFeedback ? { color: 'var(--accent-success)', borderColor: 'var(--accent-success)' } : {})
-              }}
+              style={copyFeedback ? { color: 'var(--accent-success)' } : undefined}
             >
-              {copyFeedback ? <CheckCircle size={14} /> : <Copy size={14} />}
-              {copyFeedback ? 'Copied!' : 'Copy'}
+              {copyFeedback ? <CheckCircle size={16} /> : <Copy size={16} />}
             </button>
             <button 
-              className="btn btn-secondary"
-              onClick={() => setShowRegenerateConfirm(true)}
-              disabled={isLoading || regenerateMutation.isPending}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              className="btn btn-icon"
+              onClick={() => setShowResetConfirm(true)}
+              title="Reset API Key"
+              disabled={isLoading || resetMutation.isPending}
             >
-              {regenerateMutation.isPending ? (
-                <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} />
+              {resetMutation.isPending ? (
+                <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
               ) : (
-                <RefreshCw size={14} />
+                <RefreshCw size={16} />
               )}
-              {regenerateMutation.isPending ? 'Resetting...' : 'Reset'}
             </button>
           </div>
         </SettingsField>
       </SettingsSection>
 
       {/* Reset API Key Confirmation Modal */}
-      {showRegenerateConfirm && (
+      {showResetConfirm && (
         <div style={{
           position: 'fixed',
           top: 0,
@@ -1393,17 +1340,17 @@ function SecuritySettings() {
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
               <button 
                 className="btn btn-secondary" 
-                onClick={() => setShowRegenerateConfirm(false)}
+                onClick={() => setShowResetConfirm(false)}
               >
                 Cancel
               </button>
               <button 
                 className="btn btn-primary" 
                 style={{ background: 'var(--accent-warning)' }}
-                onClick={() => regenerateMutation.mutate()}
-                disabled={regenerateMutation.isPending}
+                onClick={() => resetMutation.mutate()}
+                disabled={resetMutation.isPending}
               >
-                {regenerateMutation.isPending ? 'Resetting...' : 'Reset'}
+                {resetMutation.isPending ? 'Resetting...' : 'Reset'}
               </button>
             </div>
           </div>
