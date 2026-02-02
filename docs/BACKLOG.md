@@ -195,51 +195,136 @@ Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests sec
 - [ ] Post-migration scan job
 - [ ] Migration report
 
-## EPIC 8: DDL Site Adapters (Mylar3 Parity)
-Implement real DDL site adapters matching Mylar3's supported sites.
+## EPIC 8: DDL Site Adapters & Download Hosts (Mylar3 Parity)
+Implement real DDL site adapters and download host resolvers matching Mylar3's supported providers.
 
-### 8.1 GetComics.org Adapter
+### 8.1 DDL Site Indexers (Comic Discovery)
+
+#### 8.1.1 GetComics.org Adapter (Primary)
 - [ ] **HTML scraping for GetComics**
   - AC: Parse search results page for release links
-  - AC: Extract download links (MediaFire, Mega, Zippyshare, etc.)
+  - AC: Extract all download host links from release pages
   - AC: Handle pagination for search results
-  - AC: Parse release details (title, size, date posted)
+  - AC: Parse release details (title, size, date posted, tags)
 - [ ] **GetComics search integration**
   - AC: Search by series name, issue number
-  - AC: Search by keyword/tag
-  - AC: RSS feed polling for new releases
+  - AC: Search by keyword/tag/category
+  - AC: RSS feed polling for new releases (/feed/)
+  - AC: Category browsing (DC, Marvel, Image, etc.)
 - [ ] **GetComics link resolution**
   - AC: Follow redirects to actual download URLs
-  - AC: Handle multiple mirror options
-  - AC: Detect dead/expired links
+  - AC: Handle multiple mirror options with priority
+  - AC: Detect dead/expired links and skip
 
-### 8.2 Additional DDL Sites
-- [ ] **ReadComicOnline adapter** (if supported by Mylar3)
-  - AC: Site-specific HTML parsing
-  - AC: Authentication handling if required
+#### 8.1.2 32P (32 Pages) Adapter
+- [ ] **32P authentication**
+  - AC: Login with username/password
+  - AC: Session/cookie persistence
+  - AC: Handle invite-only registration status
+- [ ] **32P search and browse**
+  - AC: Search API integration
+  - AC: Browse by category/group
+  - AC: Parse torrent and DDL options
+- [ ] **32P notifications/RSS**
+  - AC: Personal notification feed
+  - AC: New releases feed
+
+#### 8.1.3 Additional DDL Sites
+- [ ] **Libgen/Library Genesis adapter** (comics section)
+  - AC: Search by title/author
+  - AC: Mirror selection
 - [ ] **Generic DDL adapter template**
   - AC: Base class for rapid new site implementation
-  - AC: Configurable CSS selectors for common patterns
+  - AC: Configurable CSS/XPath selectors
   - AC: Documentation for adding new sites
 
-### 8.3 DDL Site Health Monitoring
+### 8.2 Download Host Resolvers (File Acquisition)
+
+#### 8.2.1 Direct/Main Server Downloads
+- [ ] **Direct HTTP downloads**
+  - AC: Standard HTTP GET with resume support
+  - AC: Handle Content-Disposition filename
+  - AC: Verify file integrity (size, magic bytes)
+
+#### 8.2.2 MediaFire Resolver
+- [ ] **MediaFire link handling**
+  - AC: Parse MediaFire share page
+  - AC: Extract direct download URL
+  - AC: Handle "Download" button extraction
+  - AC: Detect expired/removed files
+
+#### 8.2.3 Mega.nz Resolver
+- [ ] **Mega link handling**
+  - AC: Parse mega.nz/#! and mega.nz/file/ URLs
+  - AC: Handle Mega's encryption (MEGAcmd or API)
+  - AC: Support folder links with file selection
+  - AC: Rate limit awareness (free tier limits)
+
+#### 8.2.4 Pixeldrain Resolver
+- [ ] **Pixeldrain link handling**
+  - AC: Extract file ID from URL
+  - AC: Use Pixeldrain API for direct download
+  - AC: Handle bandwidth limits
+
+#### 8.2.5 Dropbox Resolver
+- [ ] **Dropbox link handling**
+  - AC: Convert share links to direct download URLs
+  - AC: Handle dl=0 to dl=1 conversion
+  - AC: Support folder links
+
+#### 8.2.6 Google Drive Resolver
+- [ ] **Google Drive link handling**
+  - AC: Parse drive.google.com share links
+  - AC: Handle virus scan warning bypass
+  - AC: Extract confirmation token for large files
+  - AC: Support folder links with file listing
+
+#### 8.2.7 Legacy/Additional Hosts
+- [ ] **Zippyshare resolver** (defunct, legacy support)
+  - AC: Detect and skip defunct links gracefully
+- [ ] **Rapidgator/Uploaded resolver** (premium)
+  - AC: Support premium account credentials
+  - AC: Free tier with wait times (optional)
+- [ ] **1fichier resolver**
+  - AC: Parse download page
+  - AC: Handle wait times for free users
+- [ ] **Usenet/NZB integration**
+  - AC: NZB file download from DDL sites
+  - AC: Pass to configured Usenet downloader (SABnzbd, NZBGet)
+
+### 8.3 Download Host Priority & Fallback
+- [ ] **Host priority configuration**
+  - AC: User-configurable host preference order
+  - AC: Default priority: Direct > Mega > MediaFire > Pixeldrain > GDrive > Others
+- [ ] **Automatic fallback**
+  - AC: Try next host on failure
+  - AC: Track host reliability per DDL site
+  - AC: Blacklist consistently failing hosts temporarily
+
+### 8.4 DDL Site Health Monitoring
 - [ ] **Site availability checks**
   - AC: Periodic health checks for each configured site
-  - AC: Detect site changes that break scraping
+  - AC: Detect site changes that break scraping (CSS/HTML changes)
   - AC: Alert/disable adapter on repeated failures
+  - AC: Version detection for known site layouts
 - [ ] **Rate limiting per site**
   - AC: Respect site-specific rate limits
   - AC: Configurable delays between requests
   - AC: Request queuing to prevent bans
+  - AC: Cloudflare challenge handling
 
-### 8.4 DDL Site Adapter Tests
+### 8.5 DDL Adapter Tests
 - [ ] **GetComics fixture tests**
   - AC: Mock HTML responses for search results
   - AC: Mock HTML responses for release pages
-  - AC: Verify correct link extraction
-- [ ] **Integration tests with real responses**
+  - AC: Verify correct link extraction for all host types
+- [ ] **Download host resolver tests**
+  - AC: Mock responses for each host type
+  - AC: Test redirect following and URL extraction
+  - AC: Test failure scenarios (expired, removed, rate limited)
+- [ ] **Integration tests**
   - AC: Cached real responses for regression testing
-  - AC: End-to-end: search → parse → candidates
+  - AC: End-to-end: search → parse → resolve → download
 
 ---
 
