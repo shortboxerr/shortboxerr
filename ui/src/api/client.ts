@@ -1,4 +1,6 @@
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8585';
+// In development, use empty string so Vite proxy handles /api requests
+// In production, the UI is served from the same origin as the API
+const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
 interface PagedResult<T> {
   items: T[];
