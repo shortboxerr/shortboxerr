@@ -152,6 +152,26 @@ The DDL (Direct Download) provider must achieve behavioral parity with Mylar3's 
 - [ ] **Torrent client abstraction** (placeholder for future)
   - AC: Interface only, no implementation in EPIC 4
 
+### 4.7 DDL Parser Enhancements (Aspirational Tests)
+Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests section.
+
+- [ ] **Publisher extraction improvement**
+  - AC: Extract publisher from parentheses when followed by year: `Wolverine 0001 (Marvel) (2024).cbz`
+  - AC: Handle multiple parenthetical metadata groups in any order
+- [ ] **Quality tag extraction**
+  - AC: Extract quality tags (Webrip, Digital, Scan) reliably: `Action Comics 1050 (2023) (Webrip).cbz`
+  - AC: Handle quality tags in parentheses and as standalone tokens
+- [ ] **Separator normalization**
+  - AC: Normalize underscores to spaces before parsing: `Wonder_Woman_001_(DC)_(2023).cbz`
+  - AC: Normalize periods to spaces (except file extension): `Aquaman.001.2023.Digital.cbz`
+  - AC: Pre-processing step preserves file extension
+- [ ] **Hyphen-separated subtitles**
+  - AC: Handle `Series - Subtitle` patterns: `Star Wars - Darth Vader 001 (Marvel) (2020).cbz`
+  - AC: Preserve subtitle in series title or extract as separate field
+- [ ] **Aspirational tests promoted to main tests**
+  - AC: Move all aspirationalTests to main testCases array
+  - AC: All tests must pass (100% parity)
+
 ## EPIC 5: UI (ARR-LIKE UI)
 - [ ] UI shell + nav map (Dashboard/Series/Collections/Wanted/Activity/History/Manual Import/Settings)
 - [ ] Series list page (table + bulk actions)
@@ -179,6 +199,7 @@ The DDL (Direct Download) provider must achieve behavioral parity with Mylar3's 
 7. 4.4 DDL Conformance Tests
 8. 4.5 DDL UI
 9. 4.6 Generic Indexer/Download Client Support
+10. 4.7 DDL Parser Enhancements (can be done anytime after 4.4)
 
 **Dependencies:**
 - 4.2.* depends on EPIC 3 (DecisionEngine) for candidate ranking
