@@ -54,9 +54,15 @@ EPIC 6: Settings Persistence & UI Enhancements (Theme Persistence, General Setti
    - Auto-move from download to staging option
    - Partial update support
 
-4. **Naming Tokens API**
-   - Available tokens for each format type
-   - Token, description, and example provided
+4. **Naming Format Token Helper (UI)**
+   - Clickable token pills below each format input
+   - Tokens insert at cursor position
+   - Live preview with sample data
+   - Tokens loaded from API
+
+5. **Bug Fixes**
+   - API client uses relative URLs (Vite proxy compatible)
+   - CORS enabled for development (localhost:3000, :5173)
 
 ## Items Remaining in EPIC 6
 - [ ] API key management (display, copy, regenerate)

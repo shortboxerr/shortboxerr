@@ -52,6 +52,17 @@
 | `tests/Shortboxerr.Tests/SettingsEndpointTests.cs` | Settings endpoint tests |
 | `docs/API.md` | Settings endpoint documentation |
 
+### Additional Commits (Bug Fixes)
+3. `fix: use relative API URLs to support Vite proxy`
+4. `fix: add CORS support for development`
+5. `feat: add naming format token helper UI (EPIC 6)`
+
+### Naming Format Token Helper (Complete)
+- ✅ Clickable token pills below each format input
+- ✅ Clicking a token inserts it at cursor position
+- ✅ Live preview with sample data (Batman, Issue 001, TPB Vol. 01)
+- ✅ Tokens loaded from API endpoint
+
 ### Remaining in EPIC 6
 - API key management (display, copy, regenerate)
 
@@ -59,7 +70,8 @@
 - Theme changes are saved to database and apply immediately
 - Light theme uses CSS variables for colors (invertable)
 - Folder settings support partial updates for flexibility
-- Naming tokens API ready for UI token picker implementation
+- API client uses relative URLs for Vite proxy compatibility
+- CORS enabled for localhost:3000 and localhost:5173
 
 ---
 
