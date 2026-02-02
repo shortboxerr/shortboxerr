@@ -1,5 +1,44 @@
 # Worklog
 
+## Iteration 007 (2026-02-02)
+**EPIC 4.2.1: DDL Discovery & Search - COMPLETED**
+
+### Commits
+1. `feat: add DDL site adapters and search service (EPIC 4.2.1)`
+2. `chore: update docs for iteration 007 completion`
+
+### Deliverables
+- ✅ Site Adapter System:
+  - IDdlSiteAdapter: Interface for site-specific adapters
+  - BaseDdlSiteAdapter: Common HTTP client, rate limiting, configuration
+  - MockDdlSiteAdapter: Testing adapter with sample data
+  - GettyComicsSiteAdapter: Real-site adapter pattern implementation
+- ✅ Search Service:
+  - IDdlSearchService: Multi-site search coordination
+  - DdlSearchService: Aggregation, deduplication, rate limiting
+  - Site-specific and global search support
+  - Link extraction and verification
+- ✅ Supporting Types:
+  - DdlSearchQuery: Series, issue, year, collections filter
+  - DdlSearchResult: Candidates, pagination, errors
+  - DdlAggregatedSearchResult: Multi-site merged results
+  - DdlSiteConfiguration: URL, auth, rate limits, timeout
+  - DdlSiteCredentials: Username, password, API key, cookies
+  - DdlSiteTestResult: Connection health testing
+- ✅ Adapter Factory:
+  - IDdlSiteAdapterFactory: Registry interface
+  - DdlSiteAdapterFactory: Built-in adapter registration
+  - Site type detection from URLs
+- ✅ 214 tests passing (31 new)
+
+### Site Adapters
+| Adapter | Site Type | Rate Limit | Auth Required |
+|---------|-----------|------------|---------------|
+| MockDdlSiteAdapter | MockDdl | 60/min | No |
+| GettyComicsSiteAdapter | GettyComics | 10/min | No |
+
+---
+
 ## Iteration 006 (2026-02-02)
 **EPIC 4.2.2: DDL Candidate Normalization - COMPLETED**
 

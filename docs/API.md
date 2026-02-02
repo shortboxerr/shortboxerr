@@ -646,6 +646,76 @@ DDL candidates represent releases discovered from DDL sites:
 
 ---
 
+## DDL Search Service (Internal)
+
+### Site Adapter System
+DDL site adapters provide site-specific parsing for comic DDL sources.
+
+#### Registered Adapters
+| Adapter | Site Type | Default Rate Limit |
+|---------|-----------|-------------------|
+| MockDdlSiteAdapter | MockDdl | 60/min |
+| GettyComicsSiteAdapter | GettyComics | 10/min |
+
+### Search Query
+```json
+{
+  "seriesTitle": "Amazing Spider-Man",
+  "issueNumber": 1,
+  "volumeNumber": null,
+  "year": 2022,
+  "rawQuery": null,
+  "collectionsOnly": false,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+### Search Result
+```json
+{
+  "candidates": [...],
+  "success": true,
+  "errorMessage": null,
+  "totalResults": 25,
+  "hasMore": false,
+  "duration": "00:00:01.234",
+  "sourceSite": "MockDdl"
+}
+```
+
+### Aggregated Search Result (Multi-Site)
+```json
+{
+  "allCandidates": [...],
+  "resultsBySite": {
+    "MockDdl": {...},
+    "GettyComics": {...}
+  },
+  "successfulSites": ["MockDdl"],
+  "failedSites": ["GettyComics"],
+  "totalRawCandidates": 30,
+  "duplicatesRemoved": 5,
+  "totalDuration": "00:00:02.500",
+  "warnings": []
+}
+```
+
+### Site Test Result
+```json
+{
+  "success": true,
+  "message": "Connection successful",
+  "authenticationPassed": null,
+  "sampleResultCount": 10,
+  "latencyMs": 245,
+  "warnings": [],
+  "errorDetails": null
+}
+```
+
+---
+
 ## OpenAPI / Swagger
 
 - **Swagger UI**: `GET /swagger`

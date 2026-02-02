@@ -46,16 +46,16 @@
 ### 4.2 DDL Provider (Mylar3-Compatible) - FIRST-CLASS PROVIDER TYPE
 The DDL (Direct Download) provider must achieve behavioral parity with Mylar3's DDL functionality.
 
-#### 4.2.1 DDL Discovery & Search
-- [ ] **DDL site adapter interface (IDdlSiteAdapter)**
+#### 4.2.1 DDL Discovery & Search ✅ COMPLETED
+- [x] **DDL site adapter interface (IDdlSiteAdapter)**
   - AC: Each supported DDL site has its own adapter implementing parsing logic
   - AC: Adapters handle site-specific HTML/JSON parsing
   - AC: Must support: GettyComics, ReadComicOnline, and extensible for others
-- [ ] **DDL search endpoint polling**
+- [x] **DDL search endpoint polling**
   - AC: Configurable poll interval (default matches Mylar3)
   - AC: Supports series-specific and global searches
   - AC: Rate limiting per site (match Mylar3 defaults)
-- [ ] **DDL link discovery**
+- [x] **DDL link discovery**
   - AC: Extract download links from pages (direct links, redirects, hosters)
   - AC: Handle multi-part releases
   - AC: Detect and skip dead/expired links
