@@ -1385,11 +1385,16 @@ function SecuritySettings() {
                 {copyFeedback ? <CheckCircle size={16} /> : <Copy size={16} />}
               </button>
               <button 
-                className="btn btn-secondary"
+                className="btn btn-icon"
                 onClick={() => setShowRegenerateConfirm(true)}
+                title="Regenerate API Key"
                 disabled={isLoading || regenerateMutation.isPending}
               >
-                {regenerateMutation.isPending ? 'Regenerating...' : 'Regenerate'}
+                {regenerateMutation.isPending ? (
+                  <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                ) : (
+                  <RefreshCw size={16} />
+                )}
               </button>
             </div>
             {apiKeyInfo?.createdAt && (
