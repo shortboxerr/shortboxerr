@@ -289,9 +289,14 @@ function GeneralSettings() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const saveTimeoutRef = useRef<number | null>(null);
   
+  // API Key state
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState(false);
+  
   const seriesInputRef = useRef<HTMLInputElement>(null);
   const issueInputRef = useRef<HTMLInputElement>(null);
   const collectionInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
 
   // Load tokens from API
   const { data: tokens } = useQuery({
@@ -304,6 +309,28 @@ function GeneralSettings() {
     queryKey: ['generalSettings'],
     queryFn: api.getGeneralSettings,
   });
+
+  // Always fetch the full API key (no masking)
+  const { data: apiKeyInfo, isLoading: isLoadingApiKey } = useQuery({
+    queryKey: ['apiKeyFull'],
+    queryFn: api.getApiKeyFull,
+  });
+
+  const resetApiKeyMutation = useMutation({
+    mutationFn: api.regenerateApiKey,
+    onSuccess: () => {
+      setShowResetConfirm(false);
+      queryClient.invalidateQueries({ queryKey: ['apiKeyFull'] });
+    },
+  });
+
+  const handleCopyApiKey = async () => {
+    if (apiKeyInfo?.fullKey) {
+      await navigator.clipboard.writeText(apiKeyInfo.fullKey);
+      setCopyFeedback(true);
+      setTimeout(() => setCopyFeedback(false), 2000);
+    }
+  };
 
   // Update local state when settings load
   useEffect(() => {
@@ -473,6 +500,93 @@ function GeneralSettings() {
           </div>
         </SettingsField>
       </SettingsSection>
+
+      <SettingsSection title="API Key">
+        <SettingsField 
+          label="API Key" 
+          description="API Key for external app access"
+        >
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <input 
+              className="input" 
+              style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: '13px', maxWidth: '400px' }}
+              value={isLoadingApiKey ? 'Loading...' : (apiKeyInfo?.fullKey || '')}
+              readOnly
+            />
+            <button 
+              className="btn btn-icon" 
+              onClick={handleCopyApiKey}
+              title={copyFeedback ? 'Copied!' : 'Copy to clipboard'}
+              disabled={isLoadingApiKey}
+              style={copyFeedback ? { color: 'var(--accent-success)' } : undefined}
+            >
+              {copyFeedback ? <CheckCircle size={16} /> : <Copy size={16} />}
+            </button>
+            <button 
+              className="btn btn-icon"
+              onClick={() => setShowResetConfirm(true)}
+              title="Reset API Key"
+              disabled={isLoadingApiKey || resetApiKeyMutation.isPending}
+            >
+              {resetApiKeyMutation.isPending ? (
+                <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
+              ) : (
+                <RefreshCw size={16} />
+              )}
+            </button>
+          </div>
+        </SettingsField>
+      </SettingsSection>
+
+      {/* Reset API Key Confirmation Modal */}
+      {showResetConfirm && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            background: 'var(--bg-secondary)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '24px',
+            maxWidth: '400px',
+            width: '90%',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <AlertCircle size={24} style={{ color: 'var(--accent-warning)' }} />
+              <h3 style={{ margin: 0 }}>Reset API Key?</h3>
+            </div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: '0 0 20px 0' }}>
+              This will invalidate your current API key. Any applications or integrations using
+              the current key will stop working until updated with the new key.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => setShowResetConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-primary" 
+                style={{ background: 'var(--accent-warning)' }}
+                onClick={() => resetApiKeyMutation.mutate()}
+                disabled={resetApiKeyMutation.isPending}
+              >
+                {resetApiKeyMutation.isPending ? 'Resetting...' : 'Reset'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -1232,130 +1346,15 @@ function UISettings() {
 }
 
 function SecuritySettings() {
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [copyFeedback, setCopyFeedback] = useState(false);
-  const queryClient = useQueryClient();
-
-  // Always fetch the full API key (no masking)
-  const { data: apiKeyInfo, isLoading } = useQuery({
-    queryKey: ['apiKeyFull'],
-    queryFn: api.getApiKeyFull,
-  });
-
-  const resetMutation = useMutation({
-    mutationFn: api.regenerateApiKey,
-    onSuccess: () => {
-      setShowResetConfirm(false);
-      queryClient.invalidateQueries({ queryKey: ['apiKeyFull'] });
-    },
-  });
-
-  const handleCopyApiKey = async () => {
-    if (apiKeyInfo?.fullKey) {
-      await navigator.clipboard.writeText(apiKeyInfo.fullKey);
-      setCopyFeedback(true);
-      setTimeout(() => setCopyFeedback(false), 2000);
-    }
-  };
-
   return (
-    <>
-      <SettingsSection title="Security">
-        <SettingsField label="Authentication" description="Authentication method for accessing the UI">
-          <select className="input" style={{ width: '200px' }}>
-            <option value="none">None</option>
-            <option value="basic">Basic (Browser popup)</option>
-            <option value="forms">Forms (Login page)</option>
-          </select>
-        </SettingsField>
-      </SettingsSection>
-      
-      <SettingsSection title="API Key">
-        <SettingsField 
-          label="API Key" 
-          description="API Key for external app access"
-        >
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <input 
-              className="input" 
-              style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: '13px', maxWidth: '400px' }}
-              value={isLoading ? 'Loading...' : (apiKeyInfo?.fullKey || '')}
-              readOnly
-            />
-            <button 
-              className="btn btn-icon" 
-              onClick={handleCopyApiKey}
-              title={copyFeedback ? 'Copied!' : 'Copy to clipboard'}
-              disabled={isLoading}
-              style={copyFeedback ? { color: 'var(--accent-success)' } : undefined}
-            >
-              {copyFeedback ? <CheckCircle size={16} /> : <Copy size={16} />}
-            </button>
-            <button 
-              className="btn btn-icon"
-              onClick={() => setShowResetConfirm(true)}
-              title="Reset API Key"
-              disabled={isLoading || resetMutation.isPending}
-            >
-              {resetMutation.isPending ? (
-                <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
-              ) : (
-                <RefreshCw size={16} />
-              )}
-            </button>
-          </div>
-        </SettingsField>
-      </SettingsSection>
-
-      {/* Reset API Key Confirmation Modal */}
-      {showResetConfirm && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.6)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-        }}>
-          <div style={{
-            background: 'var(--bg-secondary)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '24px',
-            maxWidth: '400px',
-            width: '90%',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <AlertCircle size={24} style={{ color: 'var(--accent-warning)' }} />
-              <h3 style={{ margin: 0 }}>Reset API Key?</h3>
-            </div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: '0 0 20px 0' }}>
-              This will invalidate your current API key. Any applications or integrations using
-              the current key will stop working until updated with the new key.
-            </p>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              <button 
-                className="btn btn-secondary" 
-                onClick={() => setShowResetConfirm(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                className="btn btn-primary" 
-                style={{ background: 'var(--accent-warning)' }}
-                onClick={() => resetMutation.mutate()}
-                disabled={resetMutation.isPending}
-              >
-                {resetMutation.isPending ? 'Resetting...' : 'Reset'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+    <SettingsSection title="Security">
+      <SettingsField label="Authentication" description="Authentication method for accessing the UI">
+        <select className="input" style={{ width: '200px' }}>
+          <option value="none">None</option>
+          <option value="basic">Basic (Browser popup)</option>
+          <option value="forms">Forms (Login page)</option>
+        </select>
+      </SettingsField>
+    </SettingsSection>
   );
 }
