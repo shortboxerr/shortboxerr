@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Shortboxerr.Api.Endpoints;
 using Shortboxerr.Infrastructure;
 using Shortboxerr.Infrastructure.Persistence;
 using System.Text.Json;
@@ -84,6 +85,10 @@ app.MapGet("/api/v1/system/status", () => Results.Ok(new
 }))
     .WithName("SystemStatus")
     .WithOpenApi();
+
+// Domain endpoints
+app.MapSeriesEndpoints();
+app.MapEditionEndpoints();
 
 app.Run();
 
