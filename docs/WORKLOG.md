@@ -1,5 +1,38 @@
 # Worklog
 
+## Iteration 002 (2026-02-02)
+**EPIC 1: Domain + Persistence - COMPLETED**
+
+### Commits
+1. `chore: verify EPIC 0 hygiene (Makefile + commit-msg hook)`
+2. `feat: add domain entities for EPIC 1`
+3. `feat: add CRUD endpoints for Series and Editions`
+4. `chore: update docs for iteration 002 completion`
+
+### Deliverables
+- ✅ Domain Entities:
+  - Series (comic book series with metadata)
+  - Issue (single issues with release tracking)
+  - EditionTitle (collected editions as first-class entities)
+  - EditionContent (maps issues to editions)
+  - FileAsset (file on disk with hash tracking)
+  - HistoryEvent (audit log)
+- ✅ EF Core mappings with full relationship configuration
+- ✅ AddDomainEntities migration
+- ✅ CRUD endpoints:
+  - GET/POST/PUT/DELETE /api/v1/series
+  - GET/POST/PUT/DELETE /api/v1/editions
+- ✅ Paged results (Arr-like pattern)
+- ✅ Sorting and filtering support
+- ✅ DTOs with entity mapping
+- ✅ 16 passing tests (12 new endpoint tests)
+
+### EPIC 0 Hygiene Verification
+- ✅ Makefile functional (`make build`, `make test`)
+- ✅ commit-msg hook enforcing conventional commits
+
+---
+
 ## Iteration 001 (2026-02-02)
 **EPIC 0: Repo Skeleton - COMPLETED**
 

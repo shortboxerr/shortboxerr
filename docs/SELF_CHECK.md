@@ -1,54 +1,54 @@
-# Self Check (Iteration 001 - Final)
+# Self Check (Iteration 002)
 
 ## Must Pass
 | Check | Status | Notes |
 |-------|--------|-------|
 | dotnet build succeeds | ✅ PASS | All 4 projects build successfully |
-| dotnet test succeeds | ✅ PASS | 4/4 tests passing |
-| API starts and /health returns 200 | ✅ PASS | Health endpoint with JSON response |
-| DB migrations apply cleanly (SQLite) | ✅ PASS | InitialCreate migration verified |
+| dotnet test succeeds | ✅ PASS | 16/16 tests passing |
+| API starts and /health returns 200 | ✅ PASS | Health endpoint with DB check |
+| DB migrations apply cleanly (SQLite) | ✅ PASS | 2 migrations (Initial + AddDomainEntities) |
 
-## Hygiene (EPIC 0)
+## Hygiene
 | Check | Status | Notes |
 |-------|--------|-------|
-| Makefile present and functional | ✅ PASS | `make build`, `make test` work in Dev Container |
-| commit-msg hook installed | ✅ PASS | Enforces conventional commits (feat/fix/chore/test) |
-| Hook rejects invalid messages | ✅ PASS | Tested with invalid message format |
+| Makefile present and functional | ✅ PASS | `make build`, `make test` work |
+| commit-msg hook installed | ✅ PASS | Enforces conventional commits |
 | .gitignore excludes bin/obj | ✅ PASS | Build artifacts not tracked |
 
-## Should Pass
+## EPIC 1 Deliverables
 | Check | Status | Notes |
 |-------|--------|-------|
-| At least one vertical slice exists | ✅ PASS | Health/Status endpoints with tests |
-| Logging is structured | ⏳ N/A | Default ASP.NET Core logging (sufficient for EPIC 0) |
-| DecisionEngine outputs rejection reasons | ⏳ N/A | Not yet implemented (EPIC 3) |
+| Domain entities created | ✅ PASS | Series, Issue, EditionTitle, EditionContent, FileAsset, HistoryEvent |
+| EF Core mappings complete | ✅ PASS | Full relationship config with indexes |
+| CRUD for Series | ✅ PASS | GET/POST/PUT/DELETE with paging |
+| CRUD for Editions | ✅ PASS | GET/POST/PUT/DELETE with filtering |
+| Tests for endpoints | ✅ PASS | 12 endpoint tests |
 
 ## Documentation
 | Check | Status | Notes |
 |-------|--------|-------|
-| New endpoints listed in docs/API.md | ✅ PASS | All endpoints documented |
-| New configs in env.example | ✅ PASS | Existing env.example sufficient for MVP |
+| API.md updated | ✅ PASS | All CRUD endpoints documented |
+| BACKLOG.md updated | ✅ PASS | EPIC 1 marked complete |
+| WORKLOG.md updated | ✅ PASS | Iteration 002 logged |
 
 ## Summary
 - **Build**: GREEN ✅
-- **Tests**: 4 passing, 0 failing
-- **Epic Status**: EPIC 0 COMPLETED ✅
-- **Next**: EPIC 1 - Domain + Persistence
+- **Tests**: 16 passing, 0 failing
+- **Epic Status**: EPIC 0 ✅, EPIC 1 ✅
+- **Next**: EPIC 2 - Import Pipeline
 
 ## Verification Commands
 ```bash
-# Build via Makefile
+# Build
 make build
 
-# Test via Makefile
+# Test
 make test
-
-# Test commit-msg hook (should pass)
-echo "feat: test" > /tmp/msg && .git/hooks/commit-msg /tmp/msg && echo "PASS"
-
-# Test commit-msg hook (should fail)
-echo "bad msg" > /tmp/msg && .git/hooks/commit-msg /tmp/msg || echo "Correctly rejected"
 
 # Run API
 make run
+
+# Test endpoints
+curl http://localhost:5000/api/v1/series
+curl http://localhost:5000/api/v1/editions
 ```

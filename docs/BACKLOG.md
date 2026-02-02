@@ -12,11 +12,11 @@
 - [x] CI workflow (build + test)
 - [x] Dev Container config (verify dotnet build/test run inside container)
 
-## EPIC 1: Domain + Persistence (MINIMUM DATA MODEL)
-- [ ] Entities: Series, Issue, EditionTitle (Collections), FileAsset, HistoryEvent
-- [ ] Repositories + EF Core mappings (SQLite)
-- [ ] CRUD endpoints for Series + Collections
-- [ ] Filtering/paging conventions aligned with Arr APIs
+## EPIC 1: Domain + Persistence (MINIMUM DATA MODEL) ✅ COMPLETED
+- [x] Entities: Series, Issue, EditionTitle (Collections), FileAsset, HistoryEvent
+- [x] Repositories + EF Core mappings (SQLite)
+- [x] CRUD endpoints for Series + Collections
+- [x] Filtering/paging conventions aligned with Arr APIs
 
 ## EPIC 2: Import Pipeline (MYLAR3-LIKE)
 - [ ] Staging folder model + endpoints
