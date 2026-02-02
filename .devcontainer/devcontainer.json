@@ -1,0 +1,19 @@
+{
+  "name": "shortboxerr-dev",
+  "dockerComposeFile": ["../docker-compose.dev.yml"],
+  "service": "dev",
+  "workspaceFolder": "/workspaces/shortboxerr",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      "extensions": [
+        "ms-dotnettools.csharp",
+        "ms-azuretools.vscode-docker",
+        "editorconfig.editorconfig"
+      ]
+    }
+  },
+  "postCreateCommand": "dotnet --info"
+}

@@ -1,0 +1,43 @@
+{
+  "mediaManagement": {
+    "preferredArchive": "cbz",
+    "allowCbr": true,
+    "allowPdf": false,
+    "writeComicInfoXmlToCbz": true,
+    "writeComicInfoXmlToCbr": false,
+    "renameOnImport": true,
+    "useDryRunPreview": true,
+    "stagingFolder": "/data/staging",
+    "failedFolder": "/data/failed",
+    "rootFolders": [
+      "/data/library"
+    ],
+    "moveMode": "atomic",
+    "pageCountDetection": true,
+    "hashing": "sha256"
+  },
+  "decisionEngine": {
+    "autoGrabEnabled": true,
+    "autoGrabThreshold": "TODO_MATCH_MYLAR3",
+    "manualChoiceMargin": "TODO_MATCH_MYLAR3",
+    "formatPreferenceOrder": [
+      "cbz",
+      "cbr"
+    ],
+    "bannedWords": [
+      "sample",
+      "preview"
+    ],
+    "requiredWords": [],
+    "minSizeBytesSingles": "TODO_MATCH_MYLAR3",
+    "maxSizeBytesSingles": "TODO_MATCH_MYLAR3",
+    "minSizeBytesCollections": "TODO_MATCH_MYLAR3",
+    "maxSizeBytesCollections": "TODO_MATCH_MYLAR3",
+    "sourcePriority": []
+  },
+  "monitoring": {
+    "editionSatisfiesSingles": true,
+    "monitorSinglesDefault": true,
+    "monitorCollectionsDefault": false
+  }
+}

@@ -1,0 +1,13 @@
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - .:/workspaces/shortboxerr:cached
+      - shortboxerr-nuget:/home/vscode/.nuget/packages
+    working_dir: /workspaces/shortboxerr
+    command: sleep infinity
+
+volumes:
+  shortboxerr-nuget:

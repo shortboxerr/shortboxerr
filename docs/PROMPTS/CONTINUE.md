@@ -1,0 +1,1 @@
+Run the next iteration strictly per docs/ITERATION_PROTOCOL.md. Do not ask questions. Pull the next READY items from docs/BACKLOG.md. Implement a vertical slice with code+tests+docs. Update docs/WORKLOG.md, docs/BACKLOG.md, docs/SELF_CHECK.md. If blocked, assume defaults and log them in docs/ASSUMPTIONS.md. Commit after every logical breakpoint.
