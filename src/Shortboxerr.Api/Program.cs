@@ -1,10 +1,17 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Shortboxerr.Infrastructure;
+using Shortboxerr.Infrastructure.Persistence;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? "Data Source=shortboxerr.db";
+builder.Services.AddInfrastructure(connectionString);
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -16,9 +23,17 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<ShortboxerrDbContext>("database");
 
 var app = builder.Build();
+
+// Apply migrations on startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ShortboxerrDbContext>();
+    db.Database.Migrate();
+}
 
 // Configure the HTTP request pipeline
 app.UseSwagger();

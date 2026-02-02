@@ -13,3 +13,5 @@
 /workspaces/shortboxerr/src/Shortboxerr.Infrastructure/obj/Debug/net8.0/refint/Shortboxerr.Infrastructure.dll
 /workspaces/shortboxerr/src/Shortboxerr.Infrastructure/obj/Debug/net8.0/Shortboxerr.Infrastructure.pdb
 /workspaces/shortboxerr/src/Shortboxerr.Infrastructure/obj/Debug/net8.0/ref/Shortboxerr.Infrastructure.dll
+/workspaces/shortboxerr/src/Shortboxerr.Infrastructure/bin/Debug/net8.0/Shortboxerr.Infrastructure.runtimeconfig.json
+/workspaces/shortboxerr/src/Shortboxerr.Infrastructure/obj/Debug/net8.0/Shortboxerr.Infrastructure.genruntimeconfig.cache

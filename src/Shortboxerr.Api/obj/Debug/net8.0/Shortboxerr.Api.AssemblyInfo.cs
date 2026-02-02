@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Shortboxerr.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+898c4d8a0a78ebb1f377b9d01efce3d110e8eb85")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bad1ff83113ecf2f693e22f466674ed43e224855")]
 [assembly: System.Reflection.AssemblyProductAttribute("Shortboxerr.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Shortboxerr.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
