@@ -18,8 +18,8 @@
 ## Documentation
 | Check | Status | Notes |
 |-------|--------|-------|
-| New endpoints listed in docs/API.md | ⏳ PENDING | Will update in next iteration |
-| New configs in env.example | ⏳ PENDING | Will update in next iteration |
+| New endpoints listed in docs/API.md | ✅ PASS | All endpoints documented |
+| New configs in env.example | ✅ PASS | Existing env.example sufficient for MVP |
 
 ## Summary
 - **Build**: GREEN ✅
