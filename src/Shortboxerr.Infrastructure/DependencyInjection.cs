@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Shortboxerr.Core.Ddl;
 using Shortboxerr.Core.Models;
 using Shortboxerr.Core.Providers;
 using Shortboxerr.Core.Services;
@@ -20,6 +21,10 @@ public static class DependencyInjection
         services.AddSingleton<IFilenameParser, FilenameParser>();
         services.AddScoped<IStagingService, StagingService>();
         services.AddSingleton<IDecisionEngine, DecisionEngine>();
+
+        // DDL services
+        services.AddSingleton<IDdlReleaseParser, DdlReleaseParser>();
+        services.AddSingleton<IDdlFilter, DdlFilter>();
 
         // Provider system
         services.AddSingleton<IProviderFactory, ProviderFactory>();

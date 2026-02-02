@@ -1,0 +1,265 @@
+using Shortboxerr.Core.Ddl;
+
+namespace Shortboxerr.Tests;
+
+/// <summary>
+/// Tests for DDL release title parsing.
+/// Includes golden tests for Mylar3 parity.
+/// </summary>
+public class DdlReleaseParserTests
+{
+    private readonly IDdlReleaseParser _parser = new DdlReleaseParser();
+
+    #region Format Extraction
+
+    [Theory]
+    [InlineData("Batman #001.cbz", "cbz")]
+    [InlineData("Batman #001.CBZ", "cbz")]
+    [InlineData("Batman #001.cbr", "cbr")]
+    [InlineData("Batman Vol 1.pdf", "pdf")]
+    [InlineData("Batman #001", null)]
+    [InlineData("Batman #001 (Digital).cb7", "cb7")]
+    public void ExtractFormat_ReturnsCorrectFormat(string title, string? expected)
+    {
+        var result = _parser.ExtractFormat(title);
+        Assert.Equal(expected, result);
+    }
+
+    #endregion
+
+    #region Title Normalization
+
+    [Theory]
+    [InlineData("The Amazing Spider-Man", "amazing spider man")]
+    [InlineData("Batman: Year One", "batman  year one")]
+    [InlineData("A Walk Through Hell", "walk through hell")]
+    [InlineData("X-Men", "x men")]
+    public void NormalizeTitle_RemovesArticlesAndPunctuation(string input, string expected)
+    {
+        var result = _parser.NormalizeTitle(input);
+        Assert.Equal(expected.Replace("  ", " "), result.Replace("  ", " "));
+    }
+
+    #endregion
+
+    #region Single Issue Parsing
+
+    [Fact]
+    public void Parse_SingleIssue_BasicFormat()
+    {
+        var result = _parser.Parse("Batman #001 (2023).cbz");
+        
+        Assert.Equal("Batman", result.SeriesTitle);
+        Assert.Equal(1m, result.IssueNumber);
+        Assert.Equal(2023, result.Year);
+        Assert.Equal("cbz", result.Format);
+        Assert.False(result.IsCollection);
+    }
+
+    [Fact]
+    public void Parse_SingleIssue_WithPublisher()
+    {
+        var result = _parser.Parse("Amazing Spider-Man #150 (Marvel) (2022).cbz");
+        
+        Assert.Equal("Amazing Spider-Man", result.SeriesTitle?.Trim());
+        Assert.Equal(150m, result.IssueNumber);
+        Assert.Equal("Marvel", result.Publisher);
+        Assert.Equal(2022, result.Year);
+    }
+
+    [Fact]
+    public void Parse_SingleIssue_DecimalIssueNumber()
+    {
+        var result = _parser.Parse("Batman #1.5 (2023).cbz");
+        
+        Assert.Equal(1.5m, result.IssueNumber);
+    }
+
+    [Fact]
+    public void Parse_SingleIssue_WithQuality()
+    {
+        var result = _parser.Parse("Batman #001 (2023) (Digital).cbz");
+        
+        Assert.Equal("Digital", result.Quality);
+    }
+
+    [Fact]
+    public void Parse_SingleIssue_WithReleaseGroup()
+    {
+        var result = _parser.Parse("Batman #001 (2023) - Group.cbz");
+        
+        Assert.Equal("Group", result.ReleaseGroup);
+    }
+
+    [Fact]
+    public void Parse_SingleIssue_NumberAtEnd()
+    {
+        var result = _parser.Parse("Batman 001.cbz");
+        
+        Assert.Equal("Batman", result.SeriesTitle);
+        Assert.Equal(1m, result.IssueNumber);
+    }
+
+    [Fact]
+    public void Parse_SingleIssue_ThreeDigitNumber()
+    {
+        var result = _parser.Parse("Amazing Spider-Man 425.cbz");
+        
+        Assert.Equal("Amazing Spider-Man", result.SeriesTitle);
+        Assert.Equal(425m, result.IssueNumber);
+    }
+
+    #endregion
+
+    #region Collection Parsing
+
+    [Fact]
+    public void Parse_Collection_TPB()
+    {
+        var result = _parser.Parse("Batman Vol. 1 TPB (2023).cbz");
+        
+        Assert.True(result.IsCollection);
+        Assert.Equal("TPB", result.EditionType);
+        Assert.Equal(1, result.VolumeNumber);
+        Assert.Equal(2023, result.Year);
+    }
+
+    [Fact]
+    public void Parse_Collection_Hardcover()
+    {
+        var result = _parser.Parse("Spider-Man HC Vol 2 (2022).cbz");
+        
+        Assert.True(result.IsCollection);
+        Assert.Equal("HC", result.EditionType);
+        Assert.Equal(2, result.VolumeNumber);
+    }
+
+    [Fact]
+    public void Parse_Collection_Omnibus()
+    {
+        var result = _parser.Parse("X-Men Omnibus Vol. 1 (2021).cbz");
+        
+        Assert.True(result.IsCollection);
+        Assert.Equal("Omnibus", result.EditionType);
+        Assert.Equal(1, result.VolumeNumber);
+    }
+
+    [Fact]
+    public void Parse_Collection_WithIssueRange()
+    {
+        var result = _parser.Parse("Batman TPB #1-6 (2023).cbz");
+        
+        Assert.True(result.IsCollection);
+        Assert.Equal("1-6", result.IssueRange);
+    }
+
+    [Fact]
+    public void Parse_Collection_Deluxe()
+    {
+        var result = _parser.Parse("Saga Deluxe Edition Vol. 1 (2019).cbz");
+        
+        Assert.True(result.IsCollection);
+        Assert.Equal("Deluxe", result.EditionType);
+    }
+
+    [Fact]
+    public void Parse_Collection_TradeKeyword()
+    {
+        var result = _parser.Parse("Invincible Trade Paperback Vol 1.cbz");
+        
+        Assert.True(result.IsCollection);
+        Assert.Equal("TPB", result.EditionType);
+    }
+
+    #endregion
+
+    #region Volume Parsing
+
+    [Theory]
+    [InlineData("Batman Vol. 1 TPB.cbz", 1)]
+    [InlineData("Batman Vol 2.cbz", 2)]
+    [InlineData("Batman Volume 3.cbz", 3)]
+    [InlineData("Batman v4.cbz", 4)]
+    [InlineData("Batman Vol.12.cbz", 12)]
+    public void Parse_ExtractsVolumeNumber(string title, int expectedVolume)
+    {
+        var result = _parser.Parse(title);
+        Assert.Equal(expectedVolume, result.VolumeNumber);
+    }
+
+    #endregion
+
+    #region Year Parsing
+
+    [Theory]
+    [InlineData("Batman #1 (2023).cbz", 2023)]
+    [InlineData("Batman #1 2022.cbz", 2022)]
+    [InlineData("Batman (1999) #1.cbz", 1999)]
+    [InlineData("Batman #1.cbz", null)]
+    public void Parse_ExtractsYear(string title, int? expectedYear)
+    {
+        var result = _parser.Parse(title);
+        Assert.Equal(expectedYear, result.Year);
+    }
+
+    #endregion
+
+    #region Publisher Parsing
+
+    [Theory]
+    [InlineData("Batman #1 (DC) (2023).cbz", "DC")]
+    [InlineData("Spider-Man Marvel #1.cbz", "Marvel")]
+    [InlineData("Walking Dead Image #1.cbz", "Image")]
+    [InlineData("Batman #1.cbz", null)]
+    public void Parse_ExtractsPublisher(string title, string? expectedPublisher)
+    {
+        var result = _parser.Parse(title);
+        Assert.Equal(expectedPublisher, result.Publisher);
+    }
+
+    #endregion
+
+    #region Confidence Scoring
+
+    [Fact]
+    public void Parse_FullInfo_HighConfidence()
+    {
+        var result = _parser.Parse("Amazing Spider-Man #001 (Marvel) (2023) (Digital).cbz");
+        
+        Assert.True(result.Confidence >= 60);
+    }
+
+    [Fact]
+    public void Parse_MinimalInfo_LowConfidence()
+    {
+        var result = _parser.Parse("somefile");
+        
+        Assert.True(result.Confidence < 30);
+    }
+
+    #endregion
+
+    #region Golden Tests (Mylar3 Parity)
+
+    [Theory]
+    [InlineData("Amazing Spider-Man 001 (2022) (Digital) (Zone-Empire).cbz", "Amazing Spider-Man", 1, 2022, false)]
+    [InlineData("Batman - The Dark Knight Returns TPB (1986) (Digital) (Minutemen-Slayer).cbz", "Batman - The Dark Knight Returns", null, 1986, true)]
+    [InlineData("X-Men v1 001 (1963) (Digital) (Glorith-HD).cbz", "X-Men", 1, 1963, false)]
+    [InlineData("Saga Vol. 01 TPB (2012) (Digital) (Zone-Empire).cbz", "Saga", null, 2012, true)]
+    [InlineData("Immortal Hulk 001 (2018) (Digital) (Zone-Empire).cbr", "Immortal Hulk", 1, 2018, false)]
+    public void Parse_GoldenTest_CommonPatterns(string title, string expectedSeries, int? expectedIssue, int expectedYear, bool expectedIsCollection)
+    {
+        var result = _parser.Parse(title);
+        
+        Assert.Contains(expectedSeries.Split(' ')[0], result.SeriesTitle ?? "");
+        if (expectedIssue.HasValue)
+        {
+            Assert.Equal(expectedIssue.Value, (int?)result.IssueNumber);
+        }
+        Assert.Equal(expectedYear, result.Year);
+        Assert.Equal(expectedIsCollection, result.IsCollection);
+    }
+
+    #endregion
+}
+
