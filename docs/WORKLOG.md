@@ -1,5 +1,61 @@
 # Worklog
 
+## Iteration 012 (2026-02-02)
+**EPIC 4.7: DDL Parser Enhancements (Mylar3 Parity) - COMPLETED**
+
+### Commits
+1. `feat: enhance DDL release parser for Mylar3 parity`
+
+### Deliverables
+- ✅ Publisher extraction improvement:
+  - Extract publisher from parentheses when followed by year
+  - Handle multiple parenthetical metadata groups in any order
+  - `Wolverine 0001 (Marvel) (2024).cbz` → Publisher: Marvel
+- ✅ Quality tag extraction:
+  - Extract quality tags reliably: Webrip, Digital, Scan, c2c, HD
+  - Handle quality tags in parentheses and as standalone tokens
+  - `Action Comics 1050 (2023) (Webrip).cbz` → Quality: Webrip
+- ✅ Separator normalization:
+  - Normalize underscores to spaces: `Wonder_Woman_001_(DC)_(2023).cbz`
+  - Normalize periods to spaces (preserving file extension and decimals)
+  - `Aquaman.001.2023.Digital.cbz` → Aquaman 001 2023 Digital
+- ✅ Hyphen-separated subtitles:
+  - Handle `Series - Subtitle` patterns properly
+  - `Star Wars - Darth Vader 001 (Marvel) (2020).cbz` → works correctly
+- ✅ Aspirational tests promoted to main tests:
+  - 5 new test cases added to ddl_parsing_golden.json
+  - Total: 29 parsing golden tests, all passing
+  - Removed aspirationalTests section (no longer needed)
+- ✅ 337 tests passing (5 new parser tests)
+
+### Technical Details
+- Added `NormalizeSeparators()` preprocessing step
+- Protected decimal issue numbers (1.5) during normalization
+- Added `YearAnywhereRegex` for scene-style year positions
+- Added `ExtractAllParenGroups()` for multiple parenthetical metadata
+- Added `ExtractPublisherFromParenGroups()` for publisher in parens
+- Added `ExtractQualityFromParenGroups()` for quality in parens
+- Reordered extraction pipeline: quality extraction now before issue extraction
+
+### Mylar3 Parity Status
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Publisher in parens | ✅ PASS | `(Marvel)` extracted correctly |
+| Quality tags | ✅ PASS | Digital, Webrip, Scan, c2c |
+| Underscore separator | ✅ PASS | Normalized before parsing |
+| Period separator | ✅ PASS | Preserves decimals |
+| Hyphen subtitles | ✅ PASS | Preserved in series title |
+
+### Assumptions Made
+- None new (used existing assumptions from docs/ASSUMPTIONS.md)
+
+### Notes
+- All parser enhancements backward-compatible with existing tests
+- Scene-style naming (Aquaman.001.2023.Digital.cbz) now fully supported
+- DDL parser now achieves 100% Mylar3 parity for documented cases
+
+---
+
 ## Iteration 011 (2026-02-02)
 **EPIC 4.4: DDL Conformance Tests (Mylar3 Parity) - COMPLETED**
 

@@ -1,48 +1,68 @@
-# Self-Check: Iteration 011
+# Self-Check: Iteration 012
 
-## Checklist
+## Rubric
 
-| Item | Status | Notes |
-|------|--------|-------|
-| Tests pass | ✅ | 332 tests passing |
-| Linter clean | ✅ | No warnings |
-| Builds in Dev Container | ✅ | dotnet 8.0 |
-| Commits follow protocol | ✅ | Conventional commits |
-| BACKLOG.md updated | ✅ | EPIC 4.4 marked complete |
-| WORKLOG.md updated | ✅ | Iteration 011 logged |
-| API.md updated | ⏭️ | No new endpoints this iteration |
-| ASSUMPTIONS.md updated | ⏭️ | No new assumptions |
+| Criterion | Status | Evidence |
+|-----------|--------|----------|
+| Tests pass | ✅ | 337 tests, 0 failures |
+| Build succeeds | ✅ | `dotnet build` clean |
+| Commits conventional | ✅ | `feat:` prefix, descriptive body |
+| Backlog updated | ✅ | EPIC 4.7 marked complete |
+| Worklog updated | ✅ | Iteration 012 entry added |
 
-## Iteration Summary
+## Deliverable Summary
 
-**EPIC 4.4: DDL Conformance Tests (Mylar3 Parity) - COMPLETED**
+### EPIC 4.7: DDL Parser Enhancements (Mylar3 Parity)
 
-### Golden Test Fixtures Added
-- **ddl_parsing_golden.json**: 24 test cases for release title parsing
-- **ddl_filtering_golden.json**: 21 filtering + 4 required words test cases
-- **ddl_retry_golden.json**: 24 retry behavior and failure handling tests
-- **ddl_integration_golden.json**: 17 end-to-end integration scenarios
+| Feature | Status | Test Coverage |
+|---------|--------|---------------|
+| Publisher extraction | ✅ | 3 test cases |
+| Quality tag extraction | ✅ | 4 test cases |
+| Separator normalization | ✅ | 2 test cases |
+| Hyphen subtitles | ✅ | 1 test case |
+| Aspirational → main | ✅ | 5 tests promoted |
 
-### Test Classes
-- `DdlParsingGoldenTests`: Verifies parser against Mylar3 expected output
-- `DdlFilteringGoldenTests`: Verifies filter rules match Mylar3 defaults
-- `DdlRetryGoldenTests`: Verifies retry semantics and failure handling
-- `DdlIntegrationGoldenTests`: End-to-end pipeline verification
+## Test Results
 
-### Mylar3 Parity Summary
-| Component | Status |
-|-----------|--------|
-| Release parsing | ✅ Core patterns pass |
-| Filter rules | ✅ Full parity |
-| Retry semantics | ✅ Full parity |
-| File verification | ✅ Full parity |
-| Edge case separators | ⚠️ Documented |
+```
+Passed!  - Failed: 0, Passed: 337, Skipped: 0, Total: 337, Duration: 1s
+```
 
-### Test Count
-- Previous: 266 tests
-- New: 66 conformance tests
-- Total: 332 tests passing
+### Golden Test Fixtures
+
+| Fixture | Test Count | Status |
+|---------|------------|--------|
+| ddl_parsing_golden.json | 29 | ✅ ALL PASS |
+| ddl_filtering_golden.json | 25 | ✅ ALL PASS |
+| ddl_retry_golden.json | 24 | ✅ ALL PASS |
+| ddl_integration_golden.json | 17 | ✅ ALL PASS |
+
+## Mylar3 Parity Achieved
+
+All previously aspirational parser test cases now pass:
+
+1. **Publisher in parentheses with year**: `Wolverine 0001 (Marvel) (2024).cbz` ✅
+2. **Quality tag extraction**: `Action Comics 1050 (2023) (Webrip).cbz` ✅
+3. **Underscore separator**: `Wonder_Woman_001_(DC)_(2023).cbz` ✅
+4. **Period separator**: `Aquaman.001.2023.Digital.cbz` ✅
+5. **Hyphen subtitle**: `Star Wars - Darth Vader 001 (Marvel) (2020).cbz` ✅
+
+## Files Changed
+
+- `src/Shortboxerr.Core/Ddl/DdlReleaseParser.cs` - Enhanced parser
+- `tests/Shortboxerr.Tests/Fixtures/ddl_parsing_golden.json` - Updated test fixtures
+- `docs/BACKLOG.md` - EPIC 4.7 marked complete
+- `docs/WORKLOG.md` - Iteration 012 entry added
+
+## Stop Criteria Met
+
+- [x] All tests green (337/337)
+- [x] Build succeeds
+- [x] Backlog item completed
+- [x] Worklog updated
+- [x] Commits follow conventional format
+- [x] No new assumptions needed
 
 ## Next Steps
-- EPIC 4.5: DDL UI (Arr-Style) is next in the backlog
-- Aspirational parser tests documented for future work
+
+Ready for: EPIC 4.5: DDL UI (Arr-Style) or EPIC 4.6: Generic Indexer/Download Client Support
