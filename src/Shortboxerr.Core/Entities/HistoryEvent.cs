@@ -80,6 +80,12 @@ public enum HistoryEventType
     DownloadCompleted = 21,
     DownloadFailed = 22,
     
+    // DDL Import operations
+    DdlImportStarted = 50,
+    DdlImportCompleted = 51,
+    DdlImportFailed = 52,
+    DdlImportPending = 53,
+    
     // Series/Issue operations
     SeriesAdded = 30,
     SeriesDeleted = 31,

@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddSingleton<IDdlSiteAdapterFactory, DdlSiteAdapterFactory>();
         services.AddSingleton<IDdlSearchService, DdlSearchService>();
         services.AddSingleton<IDdlDownloadService, DdlDownloadService>();
+        services.AddScoped<IDdlImportService, DdlImportService>();
 
         // Provider system
         services.AddSingleton<IProviderFactory, ProviderFactory>();
