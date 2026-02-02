@@ -68,6 +68,50 @@ public class DdlFilteringGoldenTests
         }
     }
 
+    public static IEnumerable<object[]> RequiredWordsTestCases()
+    {
+        var fixture = LoadFixture();
+        
+        foreach (var testCase in fixture.RequiredWordsTestCases ?? Array.Empty<RequiredWordsTestCase>())
+        {
+            yield return new object[] { testCase };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(RequiredWordsTestCases))]
+    public void Filter_RequiredWords_GoldenFixture(RequiredWordsTestCase testCase)
+    {
+        var fixture = LoadFixture();
+        var settings = BuildSettings(fixture.DefaultSettings);
+        settings.RequiredWords = testCase.RequiredWords?.ToList() ?? new List<string>();
+        
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            ReleaseTitle = testCase.Title,
+            SourceSite = "GoldenTest",
+            Size = testCase.Size,
+            ParsedInfo = new DdlParsedInfo
+            {
+                SeriesTitle = "Batman",
+                Format = testCase.Format,
+                IsCollection = testCase.IsCollection,
+                Confidence = 50
+            }
+        };
+        
+        var (passes, reason) = _filter.CheckCandidate(candidate, settings);
+        
+        Assert.Equal(testCase.ExpectedPasses, passes);
+        
+        if (!testCase.ExpectedPasses && !string.IsNullOrEmpty(testCase.ExpectedReasonContains))
+        {
+            Assert.NotNull(reason);
+            Assert.Contains(testCase.ExpectedReasonContains, reason, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     private static DdlFilterSettings BuildSettings(DefaultSettings? defaults)
     {
         if (defaults == null)
@@ -93,6 +137,7 @@ public class DdlFilteringGoldenTests
         public string? Description { get; set; }
         public DefaultSettings? DefaultSettings { get; set; }
         public FilteringTestCase[] TestCases { get; set; } = Array.Empty<FilteringTestCase>();
+        public RequiredWordsTestCase[] RequiredWordsTestCases { get; set; } = Array.Empty<RequiredWordsTestCase>();
     }
 
     public class DefaultSettings
@@ -112,6 +157,20 @@ public class DdlFilteringGoldenTests
         public long? Size { get; set; }
         public bool IsCollection { get; set; }
         public string Format { get; set; } = "cbz";
+        public bool ExpectedPasses { get; set; }
+        public string? ExpectedReasonContains { get; set; }
+        
+        public override string ToString() => $"[{Id}] {Title}";
+    }
+
+    public class RequiredWordsTestCase
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public long? Size { get; set; } = 15_000_000;
+        public bool IsCollection { get; set; }
+        public string Format { get; set; } = "cbz";
+        public string[]? RequiredWords { get; set; }
         public bool ExpectedPasses { get; set; }
         public string? ExpectedReasonContains { get; set; }
         
