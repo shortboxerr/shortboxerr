@@ -1,5 +1,66 @@
 # Worklog
 
+## Iteration 011 (2026-02-02)
+**EPIC 4.4: DDL Conformance Tests (Mylar3 Parity) - COMPLETED**
+
+### Commits
+1. `feat: expand DDL parsing and filtering golden test fixtures`
+2. `feat: add required words filtering test cases`
+3. `chore: update docs for iteration 011 completion`
+
+### Deliverables
+- ✅ DDL Parsing Fixture Tests:
+  - 24 comprehensive golden test cases for release title parsing
+  - Covers: singles, collections, TPB, HC, Omnibus, Deluxe, Compendium
+  - Covers: issue numbers, volumes, years, publishers, release groups
+  - Aspirational tests documented for future parser enhancements
+  - Must pass 100% to claim Mylar3 parity
+- ✅ DDL Filtering Fixture Tests:
+  - 21 test cases in main fixture
+  - 4 required words test cases
+  - Banned words (sample, preview, promo, demo, watermark)
+  - Size limits for singles and collections
+  - Format blocking (PDF)
+  - Edge cases (exact min/max boundaries)
+- ✅ DDL Retry/Failure Fixture Tests:
+  - 11 retry behavior scenarios
+  - 3 exponential backoff tests
+  - 3 failure state transition tests
+  - 5 file verification tests
+  - Covers: timeout, connection failures, 404, 401/403, rate limiting
+  - Distinguishes transient vs non-transient failures
+- ✅ DDL Integration Tests:
+  - 12 end-to-end scenarios
+  - 3 multi-site aggregation tests
+  - Happy path: search → candidate → filter → download → import
+  - Rejection paths: banned words, size limits
+  - Retry paths: succeed after retries, max retries exceeded
+  - Verification: HTML error page detection
+  - Auto-match: high confidence auto-import, low confidence manual review
+- ✅ 332 tests passing (65 new conformance tests)
+
+### Test Coverage Summary
+| Category | Test Count | Description |
+|----------|------------|-------------|
+| Parsing | 24 | Release title parsing |
+| Filtering | 25 | Filter rule application |
+| Retry/Failure | 24 | Retry semantics and failure handling |
+| Integration | 17 | End-to-end scenarios |
+
+### Mylar3 Parity Status
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Basic release parsing | ✅ | Series, issue, year, format |
+| Collection detection | ✅ | TPB, HC, Omnibus, etc. |
+| Banned words filter | ✅ | Matches Mylar3 defaults |
+| Size limits | ✅ | Singles and collections |
+| Retry semantics | ✅ | 3 retries, exponential backoff |
+| File verification | ✅ | Magic bytes, HTML detection |
+| Underscore/period separators | ⚠️ | Documented as aspirational |
+| Quality tag extraction | ⚠️ | Documented as aspirational |
+
+---
+
 ## Iteration 010 (2026-02-02)
 **EPIC 4.3: DDL Configuration & Mylar3 Import - COMPLETED**
 

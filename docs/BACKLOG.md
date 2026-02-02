@@ -112,17 +112,17 @@ The DDL (Direct Download) provider must achieve behavioral parity with Mylar3's 
   - AC: Ship with Mylar3-equivalent default settings in config/defaults.mylar3.json
   - AC: Document any deviations from Mylar3 behavior
 
-### 4.4 DDL Conformance Tests (Mylar3 Parity)
-- [ ] **DDL parsing fixture tests**
+### 4.4 DDL Conformance Tests (Mylar3 Parity) ✅ COMPLETED
+- [x] **DDL parsing fixture tests**
   - AC: Golden test files with Mylar3 release names → expected parsed output
   - AC: Must pass 100% to claim Mylar3 parity
-- [ ] **DDL filtering fixture tests**
+- [x] **DDL filtering fixture tests**
   - AC: Test cases for banned words, required words, size limits
   - AC: Fixtures derived from Mylar3 test cases or observed behavior
-- [ ] **DDL retry/failure fixture tests**
+- [x] **DDL retry/failure fixture tests**
   - AC: Simulate timeout, 404, corrupt file scenarios
   - AC: Verify retry count, backoff timing, failure state transitions
-- [ ] **DDL integration tests**
+- [x] **DDL integration tests**
   - AC: Mock DDL site responses
   - AC: End-to-end: discovery → candidate → download → staging
 

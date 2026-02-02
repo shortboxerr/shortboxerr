@@ -1,74 +1,48 @@
-# Self-Check (Living Document)
+# Self-Check: Iteration 011
 
-## Current Iteration: 010 - EPIC 4.3 DDL Configuration & Mylar3 Import
+## Checklist
 
-### Status: ✅ COMPLETED
-
-| Criterion | Status | Notes |
-|-----------|--------|-------|
-| Solution builds | ✅ | `dotnet build` succeeds |
-| All tests pass | ✅ | 266 passing (19 new) |
-| Vertical slice complete | ✅ | Settings + importer + API + tests |
-| Git commits logical | ✅ | 2 commits this iteration |
-| Docs updated | ✅ | API.md, BACKLOG, WORKLOG |
-
-### Deliverables Checklist
-
-- [x] DdlProviderSettings model
-- [x] IMylar3ConfigImporter interface
-- [x] Mylar3ConfigImporter implementation
-- [x] INI section parsing
-- [x] Site type inference
-- [x] Credential handling
-- [x] Validation workflow
-- [x] Import execution
-- [x] API endpoints (6 total)
-- [x] Updated defaults.mylar3.json
-- [x] Unit tests (19 new tests)
-
-### Test Summary
-```
-Passed!  - Failed: 0, Passed: 266, Skipped: 0, Total: 266
-```
-
----
-
-## Progress Summary
-
-| Epic | Status | Tests |
+| Item | Status | Notes |
 |------|--------|-------|
-| EPIC 0: Repo Skeleton | ✅ COMPLETED | 4 |
-| EPIC 1: Domain + Persistence | ✅ COMPLETED | 16 |
-| EPIC 2: Import Pipeline | ✅ COMPLETED | 45 |
-| EPIC 3: DecisionEngine | ✅ COMPLETED | 83 |
-| EPIC 4.1: Provider Abstractions | ✅ COMPLETED | 97 |
-| EPIC 4.2.2: DDL Candidate Normalization | ✅ COMPLETED | 183 |
-| EPIC 4.2.1: DDL Discovery & Search | ✅ COMPLETED | 214 |
-| EPIC 4.2.3: DDL Download Execution | ✅ COMPLETED | 229 |
-| EPIC 4.2.4: DDL → Import Handoff | ✅ COMPLETED | 247 |
-| EPIC 4.3: DDL Configuration & Mylar3 Import | ✅ COMPLETED | 266 |
+| Tests pass | ✅ | 332 tests passing |
+| Linter clean | ✅ | No warnings |
+| Builds in Dev Container | ✅ | dotnet 8.0 |
+| Commits follow protocol | ✅ | Conventional commits |
+| BACKLOG.md updated | ✅ | EPIC 4.4 marked complete |
+| WORKLOG.md updated | ✅ | Iteration 011 logged |
+| API.md updated | ⏭️ | No new endpoints this iteration |
+| ASSUMPTIONS.md updated | ⏭️ | No new assumptions |
 
-### Next Up
-- EPIC 4.4: DDL Conformance Tests
-- EPIC 4.5: DDL UI
-- EPIC 4.6: Generic Indexer/Download Client Support
+## Iteration Summary
 
----
+**EPIC 4.4: DDL Conformance Tests (Mylar3 Parity) - COMPLETED**
 
-## DDL Provider System Complete!
+### Golden Test Fixtures Added
+- **ddl_parsing_golden.json**: 24 test cases for release title parsing
+- **ddl_filtering_golden.json**: 21 filtering + 4 required words test cases
+- **ddl_retry_golden.json**: 24 retry behavior and failure handling tests
+- **ddl_integration_golden.json**: 17 end-to-end integration scenarios
 
-With EPIC 4.3 complete, the full DDL provider system is now operational:
+### Test Classes
+- `DdlParsingGoldenTests`: Verifies parser against Mylar3 expected output
+- `DdlFilteringGoldenTests`: Verifies filter rules match Mylar3 defaults
+- `DdlRetryGoldenTests`: Verifies retry semantics and failure handling
+- `DdlIntegrationGoldenTests`: End-to-end pipeline verification
 
-1. **Provider Abstractions** (4.1): Base interfaces and factory
-2. **Candidate Normalization** (4.2.2): Mylar3-compatible parsing
-3. **Discovery & Search** (4.2.1): Multi-site search with adapters
-4. **Download Execution** (4.2.3): HTTP downloads with retry logic
-5. **Import Handoff** (4.2.4): Auto-match and import to library
-6. **Configuration & Import** (4.3): Mylar3 config import
+### Mylar3 Parity Summary
+| Component | Status |
+|-----------|--------|
+| Release parsing | ✅ Core patterns pass |
+| Filter rules | ✅ Full parity |
+| Retry semantics | ✅ Full parity |
+| File verification | ✅ Full parity |
+| Edge case separators | ⚠️ Documented |
 
-The system supports:
-- Full Mylar3 config.ini import
-- DDL-specific settings (rate limits, timeouts, auth)
-- Multiple site types (GettyComics, ReadComicOnline, etc.)
-- Credential handling with validation
-- Mylar3-equivalent defaults
+### Test Count
+- Previous: 266 tests
+- New: 66 conformance tests
+- Total: 332 tests passing
+
+## Next Steps
+- EPIC 4.5: DDL UI (Arr-Style) is next in the backlog
+- Aspirational parser tests documented for future work
