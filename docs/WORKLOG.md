@@ -1,5 +1,63 @@
 # Worklog
 
+## Iteration 015 (2026-02-02)
+**EPIC 4.5: DDL UI (Arr-Style) - COMPLETED**
+
+### Commits
+1. `feat: add DDL provider UI with list, add/edit modal, and test`
+2. `feat: add DDL activity feed to Activity page`
+
+### Deliverables
+- ✅ DDL Provider List Page:
+  - Table with name, type, status badge, priority
+  - Enable/disable toggle with instant feedback
+  - Drag handle for reordering (visual indicator)
+  - Test button with live result display
+  - Edit and delete actions
+- ✅ DDL Provider Add/Edit Modal:
+  - Dynamic form based on implementation requirements
+  - Fields: Name, Implementation type, Base URL, API Key, Credentials
+  - Enable/disable checkbox
+  - Test button before saving
+  - Success/error result display with latency
+- ✅ DDL Provider Test Endpoint:
+  - Existing POST /api/v1/providers/{id}/test integrated
+  - POST /api/v1/providers/test for new providers
+  - Returns success, message, errors, latencyMs
+- ✅ DDL Activity Feed:
+  - Tab navigation: Queue / DDL Activity
+  - Filter dropdown: All, Searches, Downloads, Failed
+  - Event cards with type icons and status badges
+  - Event types: search, download_started, download_complete, download_failed, candidate_found
+  - Auto-refresh every 10 seconds
+- ✅ Settings Enhancements:
+  - Renamed "Staging Folder" to "Download Folder"
+  - API key show/hide toggle with copy button
+  - Download Clients tab with same provider management
+- ✅ API Client Extensions:
+  - Provider CRUD functions
+  - Test functions
+  - Enable/disable and reorder functions
+
+### New/Modified Files
+| File | Purpose |
+|------|---------|
+| `ui/src/pages/SettingsPage.tsx` | DDL provider management UI |
+| `ui/src/pages/ActivityPage.tsx` | DDL activity feed |
+| `ui/src/api/client.ts` | Provider API functions |
+
+### Tests
+- 359 backend tests passing
+- UI TypeScript compilation passes
+- Production build successful
+
+### Notes
+- EPIC 4 is now 100% complete
+- DDL activity feed ready for real data when DDL endpoints are implemented
+- Provider test endpoint already existed in backend
+
+---
+
 ## Iteration 014 (2026-02-02)
 **EPIC 5: UI (ARR-LIKE UI) - COMPLETED**
 

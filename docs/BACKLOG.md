@@ -126,19 +126,19 @@ The DDL (Direct Download) provider must achieve behavioral parity with Mylar3's 
   - AC: Mock DDL site responses
   - AC: End-to-end: discovery → candidate → download → staging
 
-### 4.5 DDL UI (Arr-Style)
-- [ ] **DDL provider list page**
+### 4.5 DDL UI (Arr-Style) ✅ COMPLETED
+- [x] **DDL provider list page**
   - AC: Table showing all DDL providers with status (healthy/unhealthy/disabled)
   - AC: Enable/disable toggle per provider
   - AC: Priority drag-and-drop reordering
-- [ ] **DDL provider add/edit modal**
+- [x] **DDL provider add/edit modal**
   - AC: Form fields for site type, URL, credentials, rate limit, etc.
   - AC: "Test" button that validates connectivity and authentication
   - AC: Test result shows: connection status, auth status, sample search result count
-- [ ] **DDL provider test endpoint**
+- [x] **DDL provider test endpoint**
   - AC: POST /api/v1/providers/ddl/{id}/test
   - AC: Returns: { success, message, sampleResults, latencyMs }
-- [ ] **DDL activity feed**
+- [x] **DDL activity feed**
   - AC: Show recent DDL searches, downloads, failures
   - AC: Filterable by provider, status, date range
 
