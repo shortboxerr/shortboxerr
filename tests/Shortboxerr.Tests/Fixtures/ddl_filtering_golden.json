@@ -1,12 +1,17 @@
 {
   "description": "Golden test fixtures for DDL candidate filtering. Mylar3 default rules.",
+  "version": "1.1.0",
+  "mylar3Parity": true,
   "defaultSettings": {
-    "bannedWords": ["sample", "preview"],
+    "bannedWords": ["sample", "preview", "promo", "demo", "watermark"],
+    "requiredWords": [],
     "minSizeSingles": 1000000,
     "maxSizeSingles": 200000000,
     "minSizeCollections": 5000000,
     "maxSizeCollections": 2000000000,
-    "blockedFormats": ["pdf"]
+    "blockedFormats": ["pdf"],
+    "preferredFormats": ["cbz", "cbr", "cb7"],
+    "minConfidence": 0
   },
   "testCases": [
     {
@@ -14,6 +19,46 @@
       "title": "Batman #001 (2023).cbz",
       "size": 15000000,
       "isCollection": false,
+      "format": "cbz",
+      "expectedPasses": true
+    },
+    {
+      "id": "pass_valid_collection",
+      "title": "Batman TPB Vol 1.cbz",
+      "size": 50000000,
+      "isCollection": true,
+      "format": "cbz",
+      "expectedPasses": true
+    },
+    {
+      "id": "pass_cbr_format",
+      "title": "Batman #001.cbr",
+      "size": 15000000,
+      "isCollection": false,
+      "format": "cbr",
+      "expectedPasses": true
+    },
+    {
+      "id": "pass_cb7_format",
+      "title": "Batman #001.cb7",
+      "size": 15000000,
+      "isCollection": false,
+      "format": "cb7",
+      "expectedPasses": true
+    },
+    {
+      "id": "pass_no_size",
+      "title": "Batman #001.cbz",
+      "size": null,
+      "isCollection": false,
+      "format": "cbz",
+      "expectedPasses": true
+    },
+    {
+      "id": "pass_large_collection",
+      "title": "Uncanny X-Men Omnibus Vol 1.cbz",
+      "size": 1500000000,
+      "isCollection": true,
       "format": "cbz",
       "expectedPasses": true
     },
@@ -34,6 +79,42 @@
       "format": "cbz",
       "expectedPasses": false,
       "expectedReasonContains": "preview"
+    },
+    {
+      "id": "fail_banned_word_promo",
+      "title": "Spider-Man Promo Issue.cbz",
+      "size": 15000000,
+      "isCollection": false,
+      "format": "cbz",
+      "expectedPasses": false,
+      "expectedReasonContains": "promo"
+    },
+    {
+      "id": "fail_banned_word_demo",
+      "title": "X-Men Demo Pack.cbz",
+      "size": 15000000,
+      "isCollection": false,
+      "format": "cbz",
+      "expectedPasses": false,
+      "expectedReasonContains": "demo"
+    },
+    {
+      "id": "fail_banned_word_watermark",
+      "title": "Batman #001 (watermark).cbz",
+      "size": 15000000,
+      "isCollection": false,
+      "format": "cbz",
+      "expectedPasses": false,
+      "expectedReasonContains": "watermark"
+    },
+    {
+      "id": "fail_banned_word_case_insensitive",
+      "title": "Batman SAMPLE Edition.cbz",
+      "size": 15000000,
+      "isCollection": false,
+      "format": "cbz",
+      "expectedPasses": false,
+      "expectedReasonContains": "sample"
     },
     {
       "id": "fail_too_small_single",
@@ -63,15 +144,16 @@
       "expectedReasonContains": "collection"
     },
     {
-      "id": "pass_valid_collection",
-      "title": "Batman TPB Vol 1.cbz",
-      "size": 50000000,
+      "id": "fail_too_large_collection",
+      "title": "Batman Mega Omnibus.cbz",
+      "size": 3000000000,
       "isCollection": true,
       "format": "cbz",
-      "expectedPasses": true
+      "expectedPasses": false,
+      "expectedReasonContains": "exceeds maximum"
     },
     {
-      "id": "fail_blocked_format",
+      "id": "fail_blocked_format_pdf",
       "title": "Batman #001.pdf",
       "size": 15000000,
       "isCollection": false,
@@ -80,21 +162,76 @@
       "expectedReasonContains": "pdf"
     },
     {
-      "id": "pass_no_size",
+      "id": "pass_exact_min_size_single",
       "title": "Batman #001.cbz",
-      "size": null,
+      "size": 1000000,
       "isCollection": false,
       "format": "cbz",
       "expectedPasses": true
     },
     {
-      "id": "pass_cbr_format",
-      "title": "Batman #001.cbr",
+      "id": "pass_exact_max_size_single",
+      "title": "Batman #001.cbz",
+      "size": 200000000,
+      "isCollection": false,
+      "format": "cbz",
+      "expectedPasses": true
+    },
+    {
+      "id": "pass_exact_min_size_collection",
+      "title": "Batman TPB Vol 1.cbz",
+      "size": 5000000,
+      "isCollection": true,
+      "format": "cbz",
+      "expectedPasses": true
+    },
+    {
+      "id": "pass_exact_max_size_collection",
+      "title": "Batman TPB Vol 1.cbz",
+      "size": 2000000000,
+      "isCollection": true,
+      "format": "cbz",
+      "expectedPasses": true
+    }
+  ],
+  "requiredWordsTestCases": [
+    {
+      "id": "pass_required_word_present",
+      "title": "Batman #001 (Digital).cbz",
       "size": 15000000,
       "isCollection": false,
-      "format": "cbr",
+      "format": "cbz",
+      "requiredWords": ["Digital"],
       "expectedPasses": true
+    },
+    {
+      "id": "fail_required_word_missing",
+      "title": "Batman #001 (Scan).cbz",
+      "size": 15000000,
+      "isCollection": false,
+      "format": "cbz",
+      "requiredWords": ["Digital"],
+      "expectedPasses": false,
+      "expectedReasonContains": "required"
+    },
+    {
+      "id": "pass_multiple_required_words",
+      "title": "Batman #001 (Digital) (Zone-Empire).cbz",
+      "size": 15000000,
+      "isCollection": false,
+      "format": "cbz",
+      "requiredWords": ["Digital", "Empire"],
+      "expectedPasses": true
+    },
+    {
+      "id": "fail_one_required_word_missing",
+      "title": "Batman #001 (Digital).cbz",
+      "size": 15000000,
+      "isCollection": false,
+      "format": "cbz",
+      "requiredWords": ["Digital", "Empire"],
+      "expectedPasses": false,
+      "expectedReasonContains": "Empire"
     }
   ]
 }
-

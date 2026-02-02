@@ -1,0 +1,199 @@
+{
+  "description": "Golden test fixtures for DDL download retry and failure handling. Mylar3 parity.",
+  "version": "1.0.0",
+  "mylar3Parity": true,
+  "defaultSettings": {
+    "maxRetries": 3,
+    "retryDelayMs": 1000,
+    "maxRetryDelayMs": 30000,
+    "useExponentialBackoff": true,
+    "timeoutSeconds": 300
+  },
+  "retryBehaviorTests": [
+    {
+      "id": "retry_on_timeout",
+      "scenario": "timeout",
+      "attempts": 3,
+      "finalOutcome": "failed",
+      "expectedRetries": 3,
+      "shouldRetry": true,
+      "failureReason": "Timeout"
+    },
+    {
+      "id": "retry_on_connection_failed",
+      "scenario": "connection_failed",
+      "attempts": 3,
+      "finalOutcome": "failed",
+      "expectedRetries": 3,
+      "shouldRetry": true,
+      "failureReason": "ConnectionFailed"
+    },
+    {
+      "id": "retry_on_server_error_500",
+      "scenario": "http_500",
+      "attempts": 3,
+      "finalOutcome": "failed",
+      "expectedRetries": 3,
+      "shouldRetry": true,
+      "failureReason": "ServerError"
+    },
+    {
+      "id": "retry_on_server_error_503",
+      "scenario": "http_503",
+      "attempts": 3,
+      "finalOutcome": "failed",
+      "expectedRetries": 3,
+      "shouldRetry": true,
+      "failureReason": "ServerError"
+    },
+    {
+      "id": "retry_on_rate_limit_429",
+      "scenario": "http_429",
+      "attempts": 3,
+      "finalOutcome": "failed",
+      "expectedRetries": 3,
+      "shouldRetry": true,
+      "failureReason": "RateLimited"
+    },
+    {
+      "id": "no_retry_on_404",
+      "scenario": "http_404",
+      "attempts": 1,
+      "finalOutcome": "failed",
+      "expectedRetries": 0,
+      "shouldRetry": false,
+      "failureReason": "NotFound"
+    },
+    {
+      "id": "no_retry_on_401",
+      "scenario": "http_401",
+      "attempts": 1,
+      "finalOutcome": "failed",
+      "expectedRetries": 0,
+      "shouldRetry": false,
+      "failureReason": "Unauthorized"
+    },
+    {
+      "id": "no_retry_on_403",
+      "scenario": "http_403",
+      "attempts": 1,
+      "finalOutcome": "failed",
+      "expectedRetries": 0,
+      "shouldRetry": false,
+      "failureReason": "Unauthorized"
+    },
+    {
+      "id": "no_retry_on_cancelled",
+      "scenario": "cancelled",
+      "attempts": 1,
+      "finalOutcome": "cancelled",
+      "expectedRetries": 0,
+      "shouldRetry": false,
+      "failureReason": "Cancelled"
+    },
+    {
+      "id": "success_after_retries",
+      "scenario": "succeed_on_third_attempt",
+      "attempts": 3,
+      "finalOutcome": "success",
+      "expectedRetries": 2,
+      "shouldRetry": true,
+      "failureReason": null
+    },
+    {
+      "id": "success_on_first_attempt",
+      "scenario": "succeed_immediately",
+      "attempts": 1,
+      "finalOutcome": "success",
+      "expectedRetries": 0,
+      "shouldRetry": false,
+      "failureReason": null
+    }
+  ],
+  "backoffTests": [
+    {
+      "id": "exponential_backoff_delays",
+      "maxRetries": 3,
+      "baseDelayMs": 1000,
+      "expectedDelays": [1000, 2000, 4000],
+      "useExponentialBackoff": true
+    },
+    {
+      "id": "linear_backoff_delays",
+      "maxRetries": 3,
+      "baseDelayMs": 1000,
+      "expectedDelays": [1000, 1000, 1000],
+      "useExponentialBackoff": false
+    },
+    {
+      "id": "max_delay_cap",
+      "maxRetries": 10,
+      "baseDelayMs": 5000,
+      "maxDelayMs": 30000,
+      "expectedMaxDelay": 30000,
+      "useExponentialBackoff": true
+    }
+  ],
+  "failureStateTests": [
+    {
+      "id": "failure_tracking_increments",
+      "scenario": "repeated_failures",
+      "failureCount": 5,
+      "expectedProviderStatus": "Degraded"
+    },
+    {
+      "id": "failure_tracking_resets_on_success",
+      "scenario": "success_after_failures",
+      "failureCountBefore": 3,
+      "failureCountAfter": 0,
+      "expectedProviderStatus": "Healthy"
+    },
+    {
+      "id": "quarantine_after_threshold",
+      "scenario": "max_failures_reached",
+      "failureThreshold": 10,
+      "failureCount": 10,
+      "expectedProviderStatus": "Unhealthy"
+    }
+  ],
+  "verificationTests": [
+    {
+      "id": "fail_empty_file",
+      "scenario": "downloaded_empty_file",
+      "fileSize": 0,
+      "expectedPasses": false,
+      "failureReason": "EmptyFile"
+    },
+    {
+      "id": "fail_file_too_small",
+      "scenario": "downloaded_tiny_file",
+      "fileSize": 100,
+      "expectedPasses": false,
+      "failureReason": "FileTooSmall"
+    },
+    {
+      "id": "fail_html_error_page",
+      "scenario": "downloaded_html_error",
+      "magicBytes": "3C21444F4354595045",
+      "expectedPasses": false,
+      "failureReason": "HtmlErrorPage"
+    },
+    {
+      "id": "pass_valid_cbz",
+      "scenario": "downloaded_valid_cbz",
+      "magicBytes": "504B0304",
+      "fileSize": 15000000,
+      "expectedPasses": true,
+      "failureReason": null
+    },
+    {
+      "id": "pass_valid_cbr",
+      "scenario": "downloaded_valid_cbr",
+      "magicBytes": "526172",
+      "fileSize": 15000000,
+      "expectedPasses": true,
+      "failureReason": null
+    }
+  ]
+}
+

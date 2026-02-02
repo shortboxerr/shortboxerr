@@ -1,5 +1,7 @@
 {
   "description": "Golden test fixtures for DDL release title parsing. Must achieve Mylar3 parity.",
+  "version": "1.1.0",
+  "mylar3Parity": true,
   "testCases": [
     {
       "id": "single_basic",
@@ -43,6 +45,62 @@
         "volumeNumber": 1,
         "issueNumber": 1,
         "year": 1963,
+        "format": "cbz",
+        "isCollection": false
+      }
+    },
+    {
+      "id": "single_leading_zeros",
+      "title": "Wolverine 0001 (2024).cbz",
+      "expected": {
+        "seriesTitle": "Wolverine",
+        "issueNumber": 1,
+        "year": 2024,
+        "format": "cbz",
+        "isCollection": false
+      }
+    },
+    {
+      "id": "single_hyphenated_title",
+      "title": "Spider-Man-2099 023 (2023) (Digital).cbz",
+      "expected": {
+        "seriesTitleContains": "Spider-Man-2099",
+        "issueNumber": 23,
+        "year": 2023,
+        "format": "cbz",
+        "isCollection": false
+      }
+    },
+    {
+      "id": "single_annual",
+      "title": "The Amazing Spider-Man Annual 001 (2023) (Digital-Empire).cbz",
+      "expected": {
+        "seriesTitleContains": "Amazing Spider-Man Annual",
+        "issueNumber": 1,
+        "year": 2023,
+        "format": "cbz",
+        "isCollection": false
+      }
+    },
+    {
+      "id": "single_special",
+      "title": "Batman Special #1 (2022) (Digital).cbz",
+      "expected": {
+        "seriesTitleContains": "Batman Special",
+        "issueNumber": 1,
+        "year": 2022,
+        "format": "cbz",
+        "isCollection": false
+      }
+    },
+    {
+      "id": "single_giant",
+      "title": "Superman Giant #7 (DC) (2021).cbz",
+      "expected": {
+        "seriesTitleContains": "Superman Giant",
+        "issueNumber": 7,
+        "publisher": "DC",
+        "year": 2021,
         "format": "cbz",
         "isCollection": false
       }
@@ -109,6 +167,41 @@
       }
     },
     {
+      "id": "collection_compendium",
+      "title": "The Walking Dead Compendium Vol. 1 (Image) (2009).cbz",
+      "expected": {
+        "seriesTitleContains": "Walking Dead",
+        "volumeNumber": 1,
+        "editionType": "Compendium",
+        "publisher": "Image",
+        "year": 2009,
+        "format": "cbz",
+        "isCollection": true
+      }
+    },
+    {
+      "id": "collection_absolute",
+      "title": "Absolute Sandman Vol 1 (Vertigo) (2006).cbz",
+      "expected": {
+        "seriesTitleContains": "Sandman",
+        "volumeNumber": 1,
+        "editionType": "Absolute",
+        "year": 2006,
+        "format": "cbz",
+        "isCollection": true
+      }
+    },
+    {
+      "id": "collection_complete",
+      "title": "The Complete Bone (2004) (Digital).cbz",
+      "expected": {
+        "seriesTitleContains": "Bone",
+        "year": 2004,
+        "format": "cbz",
+        "isCollection": true
+      }
+    },
+    {
       "id": "cbr_format",
       "title": "Immortal Hulk 001 (2018) (Digital) (Zone-Empire).cbr",
       "expected": {
@@ -120,23 +213,23 @@
       }
     },
     {
+      "id": "cb7_format",
+      "title": "Spawn 001 (1992).cb7",
+      "expected": {
+        "seriesTitle": "Spawn",
+        "issueNumber": 1,
+        "year": 1992,
+        "format": "cb7",
+        "isCollection": false
+      }
+    },
+    {
       "id": "no_year",
       "title": "Spider-Man #1 (Digital).cbz",
       "expected": {
         "seriesTitle": "Spider-Man",
         "issueNumber": 1,
         "year": null,
-        "format": "cbz",
-        "isCollection": false
-      }
-    },
-    {
-      "id": "complex_title",
-      "title": "The Amazing Spider-Man Annual 001 (2023) (Digital-Empire).cbz",
-      "expected": {
-        "seriesTitleContains": "Amazing Spider-Man Annual",
-        "issueNumber": 1,
-        "year": 2023,
         "format": "cbz",
         "isCollection": false
       }
@@ -163,7 +256,62 @@
         "format": "cbr",
         "isCollection": false
       }
+    },
+    {
+      "id": "release_group_parens",
+      "title": "Flash 001 (2023) (Digital) (Zone-Empire).cbz",
+      "expected": {
+        "seriesTitle": "Flash",
+        "issueNumber": 1,
+        "year": 2023,
+        "releaseGroup": "Zone-Empire",
+        "format": "cbz",
+        "isCollection": false
+      }
+    },
+    {
+      "id": "multiple_parentheses",
+      "title": "Batman (2016) #25 (DC) (Digital) (Empire).cbz",
+      "expected": {
+        "seriesTitleContains": "Batman",
+        "issueNumber": 25,
+        "year": 2016,
+        "publisher": "DC",
+        "format": "cbz",
+        "isCollection": false
+      }
     }
-  ]
+  ],
+  "aspirationalTests": {
+    "description": "Tests for future parser enhancements. These document Mylar3 behavior that is not yet fully supported.",
+    "testCases": [
+      {
+        "id": "publisher_in_parens_with_other_metadata",
+        "title": "Wolverine 0001 (Marvel) (2024).cbz",
+        "note": "Parser currently has difficulty extracting publisher when followed by year",
+        "expectedPublisher": "Marvel"
+      },
+      {
+        "id": "quality_extraction",
+        "title": "Action Comics 1050 (2023) (Webrip).cbz",
+        "note": "Quality tag extraction could be improved",
+        "expectedQuality": "Webrip"
+      },
+      {
+        "id": "underscore_separator",
+        "title": "Wonder_Woman_001_(DC)_(2023).cbz",
+        "note": "Underscore normalization needed before parsing"
+      },
+      {
+        "id": "period_separator",
+        "title": "Aquaman.001.2023.Digital.cbz",
+        "note": "Period separator normalization needed"
+      },
+      {
+        "id": "colon_title_extraction",
+        "title": "Star Wars - Darth Vader 001 (Marvel) (2020).cbz",
+        "note": "Hyphen-separated subtitles need special handling"
+      }
+    ]
+  }
 }
-

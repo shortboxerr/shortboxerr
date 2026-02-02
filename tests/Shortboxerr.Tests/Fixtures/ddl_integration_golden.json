@@ -1,0 +1,323 @@
+{
+  "description": "Golden test fixtures for DDL end-to-end integration testing. Mylar3 parity.",
+  "version": "1.0.0",
+  "mylar3Parity": true,
+  "endToEndScenarios": [
+    {
+      "id": "e2e_single_issue_happy_path",
+      "description": "Full flow: search → candidate → filter → download → import",
+      "searchQuery": {
+        "seriesTitle": "Batman",
+        "issueNumber": 1,
+        "year": 2023
+      },
+      "mockSearchResults": [
+        {
+          "releaseTitle": "Batman 001 (2023) (Digital) (Zone-Empire).cbz",
+          "sourceSite": "MockDdl",
+          "size": 15000000,
+          "downloadUrl": "https://mock.example.com/batman001.cbz"
+        }
+      ],
+      "expectedCandidateCount": 1,
+      "expectedFilteredCount": 1,
+      "expectedDownloadSuccess": true,
+      "expectedImportSuccess": true,
+      "expectedHistoryEvents": ["DdlImportCompleted"]
+    },
+    {
+      "id": "e2e_collection_happy_path",
+      "description": "Full flow for TPB collection",
+      "searchQuery": {
+        "seriesTitle": "Batman",
+        "collectionsOnly": true
+      },
+      "mockSearchResults": [
+        {
+          "releaseTitle": "Batman TPB Vol 1 (DC) (2023) (Digital).cbz",
+          "sourceSite": "MockDdl",
+          "size": 75000000,
+          "downloadUrl": "https://mock.example.com/batman_tpb.cbz"
+        }
+      ],
+      "expectedCandidateCount": 1,
+      "expectedFilteredCount": 1,
+      "expectedDownloadSuccess": true,
+      "expectedImportSuccess": true,
+      "expectedHistoryEvents": ["DdlImportCompleted"]
+    },
+    {
+      "id": "e2e_multiple_results_best_selected",
+      "description": "Multiple candidates, best one selected by DecisionEngine",
+      "searchQuery": {
+        "seriesTitle": "Spider-Man",
+        "issueNumber": 1
+      },
+      "mockSearchResults": [
+        {
+          "releaseTitle": "Spider-Man 001 (2023) (Scan).cbr",
+          "sourceSite": "MockDdl",
+          "size": 10000000,
+          "downloadUrl": "https://mock.example.com/sm_scan.cbr"
+        },
+        {
+          "releaseTitle": "Spider-Man 001 (2023) (Digital) (Zone-Empire).cbz",
+          "sourceSite": "MockDdl",
+          "size": 15000000,
+          "downloadUrl": "https://mock.example.com/sm_digital.cbz"
+        }
+      ],
+      "expectedCandidateCount": 2,
+      "expectedBestCandidateTitle": "Spider-Man 001 (2023) (Digital) (Zone-Empire).cbz",
+      "expectedDownloadSuccess": true,
+      "expectedImportSuccess": true
+    },
+    {
+      "id": "e2e_filter_rejects_banned_word",
+      "description": "Candidate rejected due to banned word",
+      "searchQuery": {
+        "seriesTitle": "X-Men",
+        "issueNumber": 1
+      },
+      "mockSearchResults": [
+        {
+          "releaseTitle": "X-Men 001 (2023) (SAMPLE).cbz",
+          "sourceSite": "MockDdl",
+          "size": 15000000,
+          "downloadUrl": "https://mock.example.com/xmen_sample.cbz"
+        }
+      ],
+      "expectedCandidateCount": 1,
+      "expectedFilteredCount": 0,
+      "expectedFilterReason": "sample"
+    },
+    {
+      "id": "e2e_filter_rejects_size",
+      "description": "Candidate rejected due to size limit",
+      "searchQuery": {
+        "seriesTitle": "Hulk",
+        "issueNumber": 1
+      },
+      "mockSearchResults": [
+        {
+          "releaseTitle": "Hulk 001 (2023) (Digital).cbz",
+          "sourceSite": "MockDdl",
+          "size": 500000,
+          "downloadUrl": "https://mock.example.com/hulk.cbz"
+        }
+      ],
+      "expectedCandidateCount": 1,
+      "expectedFilteredCount": 0,
+      "expectedFilterReason": "below minimum"
+    },
+    {
+      "id": "e2e_download_fails_retry_succeeds",
+      "description": "Download fails initially but succeeds on retry",
+      "searchQuery": {
+        "seriesTitle": "Flash",
+        "issueNumber": 1
+      },
+      "mockSearchResults": [
+        {
+          "releaseTitle": "Flash 001 (2023) (Digital).cbz",
+          "sourceSite": "MockDdl",
+          "size": 15000000,
+          "downloadUrl": "https://mock.example.com/flash.cbz"
+        }
+      ],
+      "mockDownloadBehavior": {
+        "failFirstAttempts": 2,
+        "succeedOnAttempt": 3
+      },
+      "expectedRetryAttempts": 2,
+      "expectedDownloadSuccess": true,
+      "expectedImportSuccess": true
+    },
+    {
+      "id": "e2e_download_fails_max_retries",
+      "description": "Download fails after max retries",
+      "searchQuery": {
+        "seriesTitle": "Aquaman",
+        "issueNumber": 1
+      },
+      "mockSearchResults": [
+        {
+          "releaseTitle": "Aquaman 001 (2023) (Digital).cbz",
+          "sourceSite": "MockDdl",
+          "size": 15000000,
+          "downloadUrl": "https://mock.example.com/aquaman.cbz"
+        }
+      ],
+      "mockDownloadBehavior": {
+        "alwaysFail": true,
+        "failureReason": "Timeout"
+      },
+      "expectedRetryAttempts": 3,
+      "expectedDownloadSuccess": false,
+      "expectedHistoryEvents": ["DownloadFailed"]
+    },
+    {
+      "id": "e2e_verification_fails_html_page",
+      "description": "Downloaded file is HTML error page",
+      "searchQuery": {
+        "seriesTitle": "Thor",
+        "issueNumber": 1
+      },
+      "mockSearchResults": [
+        {
+          "releaseTitle": "Thor 001 (2023) (Digital).cbz",
+          "sourceSite": "MockDdl",
+          "size": 15000000,
+          "downloadUrl": "https://mock.example.com/thor.cbz"
+        }
+      ],
+      "mockDownloadBehavior": {
+        "returnHtmlErrorPage": true
+      },
+      "expectedDownloadSuccess": false,
+      "expectedFailureReason": "HtmlErrorPage"
+    },
+    {
+      "id": "e2e_auto_match_high_confidence",
+      "description": "Auto-import with high confidence match",
+      "searchQuery": {
+        "seriesTitle": "Daredevil",
+        "issueNumber": 1
+      },
+      "existingSeries": {
+        "title": "Daredevil",
+        "publisher": "Marvel",
+        "startYear": 2023
+      },
+      "existingIssue": {
+        "issueNumber": 1
+      },
+      "mockSearchResults": [
+        {
+          "releaseTitle": "Daredevil 001 (Marvel) (2023) (Digital).cbz",
+          "sourceSite": "MockDdl",
+          "size": 15000000,
+          "downloadUrl": "https://mock.example.com/dd.cbz"
+        }
+      ],
+      "importOptions": {
+        "autoImportEnabled": true,
+        "autoImportMinConfidence": 80
+      },
+      "expectedAutoImport": true,
+      "expectedMatchConfidence": 100
+    },
+    {
+      "id": "e2e_manual_review_low_confidence",
+      "description": "Queue for manual review with low confidence match",
+      "searchQuery": {
+        "seriesTitle": "Iron Man",
+        "issueNumber": 50
+      },
+      "existingSeries": {
+        "title": "Iron Man",
+        "publisher": "Marvel",
+        "startYear": 2020
+      },
+      "mockSearchResults": [
+        {
+          "releaseTitle": "Iron Man 050 (2023) (Digital).cbz",
+          "sourceSite": "MockDdl",
+          "size": 15000000,
+          "downloadUrl": "https://mock.example.com/im.cbz"
+        }
+      ],
+      "importOptions": {
+        "autoImportEnabled": true,
+        "autoImportMinConfidence": 80,
+        "requireIssueMatch": true
+      },
+      "expectedAutoImport": false,
+      "expectedPendingReview": true,
+      "expectedReviewReason": "Issue"
+    },
+    {
+      "id": "e2e_no_results_found",
+      "description": "Search returns no results",
+      "searchQuery": {
+        "seriesTitle": "NonExistent Comic",
+        "issueNumber": 999
+      },
+      "mockSearchResults": [],
+      "expectedCandidateCount": 0
+    }
+  ],
+  "multiSiteScenarios": [
+    {
+      "id": "multi_site_aggregation",
+      "description": "Results from multiple sites aggregated",
+      "searchQuery": {
+        "seriesTitle": "Batman",
+        "issueNumber": 1
+      },
+      "mockSiteResults": {
+        "Site1": [
+          {
+            "releaseTitle": "Batman 001 (2023) (Digital).cbz",
+            "size": 15000000
+          }
+        ],
+        "Site2": [
+          {
+            "releaseTitle": "Batman 001 (2023) (Webrip).cbz",
+            "size": 14000000
+          }
+        ]
+      },
+      "expectedTotalCandidates": 2,
+      "expectedSitesQueried": ["Site1", "Site2"]
+    },
+    {
+      "id": "multi_site_deduplication",
+      "description": "Duplicate results from multiple sites deduplicated",
+      "searchQuery": {
+        "seriesTitle": "Superman",
+        "issueNumber": 1
+      },
+      "mockSiteResults": {
+        "Site1": [
+          {
+            "releaseTitle": "Superman 001 (2023) (Digital).cbz",
+            "size": 15000000
+          }
+        ],
+        "Site2": [
+          {
+            "releaseTitle": "Superman 001 (2023) (Digital).cbz",
+            "size": 15000000
+          }
+        ]
+      },
+      "expectedTotalCandidates": 1,
+      "expectedDuplicatesRemoved": 1
+    },
+    {
+      "id": "multi_site_one_fails",
+      "description": "One site fails, others still return results",
+      "searchQuery": {
+        "seriesTitle": "Wonder Woman",
+        "issueNumber": 1
+      },
+      "mockSiteResults": {
+        "Site1": [
+          {
+            "releaseTitle": "Wonder Woman 001 (2023) (Digital).cbz",
+            "size": 15000000
+          }
+        ],
+        "Site2": {
+          "error": "Connection timeout"
+        }
+      },
+      "expectedTotalCandidates": 1,
+      "expectedFailedSites": ["Site2"],
+      "expectedSuccessfulSites": ["Site1"]
+    }
+  ]
+}
+
