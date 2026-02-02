@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+msg_file="$1"
+msg="$(head -n1 "$msg_file" || true)"
+
+if [[ -z "$msg" ]]; then
+  echo "ERROR: empty commit message"
+  exit 1
+fi
+
+if [[ ! "$msg" =~ ^(feat|fix|chore|test)(\(.+\))?:\ .+ ]]; then
+  echo "ERROR: commit message must start with one of:"
+  echo "  feat: ... | fix: ... | chore: ... | test: ..."
+  echo "Optional scope allowed: feat(scope): ..."
+  echo "Got: $msg"
+  exit 1
+fi
+
+exit 0
