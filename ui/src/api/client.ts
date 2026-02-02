@@ -192,6 +192,14 @@ export interface NamingTokensResponse {
   collectionFileTokens: NamingToken[];
 }
 
+export interface ApiKeyInfo {
+  maskedKey: string;
+  fullKey: string | null;
+  createdAt: string;
+  lastUsedAt: string | null;
+  isNewKey?: boolean;
+}
+
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
@@ -521,6 +529,19 @@ export const api = {
 
   getNamingTokens: async (): Promise<NamingTokensResponse> => {
     return await fetchApi<NamingTokensResponse>('/api/v1/settings/naming/tokens');
+  },
+
+  // API Key
+  getApiKey: async (): Promise<ApiKeyInfo> => {
+    return await fetchApi<ApiKeyInfo>('/api/v1/settings/apikey');
+  },
+
+  getApiKeyFull: async (): Promise<ApiKeyInfo> => {
+    return await fetchApi<ApiKeyInfo>('/api/v1/settings/apikey/full');
+  },
+
+  regenerateApiKey: async (): Promise<ApiKeyInfo> => {
+    return await fetchApi<ApiKeyInfo>('/api/v1/settings/apikey/regenerate', { method: 'POST' });
   },
 };
 

@@ -1233,11 +1233,53 @@ function UISettings() {
 
 function SecuritySettings() {
   const [showApiKey, setShowApiKey] = useState(false);
-  const [apiKey] = useState('sk_live_abc123def456ghi789jkl012mno345pqr678');
+  const [fullKey, setFullKey] = useState<string | null>(null);
+  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState(false);
+  const queryClient = useQueryClient();
 
-  const handleCopyApiKey = () => {
-    navigator.clipboard.writeText(apiKey);
+  const { data: apiKeyInfo, isLoading } = useQuery({
+    queryKey: ['apiKey'],
+    queryFn: api.getApiKey,
+  });
+
+  const regenerateMutation = useMutation({
+    mutationFn: api.regenerateApiKey,
+    onSuccess: (data) => {
+      setFullKey(data.fullKey);
+      setShowApiKey(true); // Show the new key after regeneration
+      setShowRegenerateConfirm(false);
+      queryClient.invalidateQueries({ queryKey: ['apiKey'] });
+    },
+  });
+
+  const handleShowKey = async () => {
+    if (showApiKey) {
+      setShowApiKey(false);
+    } else {
+      if (!fullKey) {
+        const data = await api.getApiKeyFull();
+        setFullKey(data.fullKey);
+      }
+      setShowApiKey(true);
+    }
   };
+
+  const handleCopyApiKey = async () => {
+    let keyToCopy = fullKey;
+    if (!keyToCopy) {
+      const data = await api.getApiKeyFull();
+      keyToCopy = data.fullKey;
+      setFullKey(keyToCopy);
+    }
+    if (keyToCopy) {
+      await navigator.clipboard.writeText(keyToCopy);
+      setCopyFeedback(true);
+      setTimeout(() => setCopyFeedback(false), 2000);
+    }
+  };
+
+  const displayValue = showApiKey && fullKey ? fullKey : (apiKeyInfo?.maskedKey || '...');
 
   return (
     <>
@@ -1261,33 +1303,101 @@ function SecuritySettings() {
       <SettingsSection title="API">
         <SettingsField 
           label="API Key" 
-          description="Used for external integrations"
+          description="Used for external integrations. Keep this secret!"
         >
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <input 
               className="input" 
-              style={{ flex: 1, fontFamily: 'var(--font-mono)' }}
-              value={showApiKey ? apiKey : '•'.repeat(40)}
+              style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: '13px' }}
+              value={isLoading ? 'Loading...' : displayValue}
               readOnly
             />
             <button 
               className="btn btn-icon" 
-              onClick={() => setShowApiKey(!showApiKey)}
+              onClick={handleShowKey}
               title={showApiKey ? 'Hide' : 'Show'}
+              disabled={isLoading}
             >
               {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
             <button 
               className="btn btn-icon" 
               onClick={handleCopyApiKey}
-              title="Copy"
+              title={copyFeedback ? 'Copied!' : 'Copy'}
+              disabled={isLoading}
+              style={copyFeedback ? { color: 'var(--accent-success)' } : undefined}
             >
-              <Copy size={16} />
+              {copyFeedback ? <CheckCircle size={16} /> : <Copy size={16} />}
             </button>
-            <button className="btn btn-secondary">Regenerate</button>
+            <button 
+              className="btn btn-secondary"
+              onClick={() => setShowRegenerateConfirm(true)}
+              disabled={isLoading || regenerateMutation.isPending}
+            >
+              {regenerateMutation.isPending ? 'Regenerating...' : 'Regenerate'}
+            </button>
           </div>
+          {apiKeyInfo?.createdAt && (
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+              Created: {new Date(apiKeyInfo.createdAt).toLocaleDateString()}
+              {apiKeyInfo.lastUsedAt && (
+                <span style={{ marginLeft: '16px' }}>
+                  Last used: {new Date(apiKeyInfo.lastUsedAt).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+          )}
         </SettingsField>
       </SettingsSection>
+
+      {/* Regenerate Confirmation Modal */}
+      {showRegenerateConfirm && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            background: 'var(--bg-secondary)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '24px',
+            maxWidth: '400px',
+            width: '90%',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <AlertCircle size={24} style={{ color: 'var(--accent-warning)' }} />
+              <h3 style={{ margin: 0 }}>Regenerate API Key?</h3>
+            </div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: '0 0 20px 0' }}>
+              This will invalidate your current API key. Any applications or integrations using
+              the current key will stop working until updated with the new key.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => setShowRegenerateConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-primary" 
+                style={{ background: 'var(--accent-warning)' }}
+                onClick={() => regenerateMutation.mutate()}
+              >
+                Regenerate Key
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
