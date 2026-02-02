@@ -249,9 +249,104 @@ public class SettingsEndpointTests : IClassFixture<CustomWebApplicationFactory>
         var response = await _client.DeleteAsync("/api/v1/settings/nonexistent.to.delete");
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+
+    // ========== API Key Tests ==========
+
+    [Fact]
+    public async Task GetApiKey_ReturnsMaskedKey()
+    {
+        var response = await _client.GetAsync("/api/v1/settings/apikey");
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<ApiKeyResponse>();
+        Assert.NotNull(result);
+        // Masked key should contain "..." 
+        Assert.Contains("...", result.MaskedKey);
+        // Full key should not be returned on regular get
+        Assert.Null(result.FullKey);
+        // Should have a created date
+        Assert.True(result.CreatedAt > DateTime.MinValue);
+    }
+
+    [Fact]
+    public async Task GetApiKeyFull_ReturnsFullKey()
+    {
+        var response = await _client.GetAsync("/api/v1/settings/apikey/full");
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<ApiKeyResponse>();
+        Assert.NotNull(result);
+        Assert.NotNull(result.FullKey);
+        // Full key should start with "sk_live_"
+        Assert.StartsWith("sk_live_", result.FullKey);
+        // Full key should be 40 chars (8 prefix + 32 hex)
+        Assert.Equal(40, result.FullKey.Length);
+        // Masked key should also be present
+        Assert.NotEmpty(result.MaskedKey);
+    }
+
+    [Fact]
+    public async Task RegenerateApiKey_CreatesNewKey()
+    {
+        // Get the current key
+        var currentResponse = await _client.GetAsync("/api/v1/settings/apikey/full");
+        var currentKey = await currentResponse.Content.ReadFromJsonAsync<ApiKeyResponse>();
+        Assert.NotNull(currentKey?.FullKey);
+
+        // Regenerate
+        var regenerateResponse = await _client.PostAsync("/api/v1/settings/apikey/regenerate", null);
+        regenerateResponse.EnsureSuccessStatusCode();
+
+        var newKey = await regenerateResponse.Content.ReadFromJsonAsync<ApiKeyResponse>();
+        Assert.NotNull(newKey);
+        Assert.NotNull(newKey.FullKey);
+        Assert.True(newKey.IsNewKey);
+        
+        // New key should be different from old key
+        Assert.NotEqual(currentKey.FullKey, newKey.FullKey);
+        // New key should have proper format
+        Assert.StartsWith("sk_live_", newKey.FullKey);
+    }
+
+    [Fact]
+    public async Task RegenerateApiKey_ResetslastUsedAt()
+    {
+        var response = await _client.PostAsync("/api/v1/settings/apikey/regenerate", null);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<ApiKeyResponse>();
+        Assert.NotNull(result);
+        // Last used should be null for a newly generated key
+        Assert.Null(result.LastUsedAt);
+        // Created date should be recent
+        Assert.True((DateTime.UtcNow - result.CreatedAt).TotalMinutes < 1);
+    }
+
+    [Fact]
+    public async Task ApiKey_MaskedFormat_CorrectStructure()
+    {
+        var response = await _client.GetAsync("/api/v1/settings/apikey");
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<ApiKeyResponse>();
+        Assert.NotNull(result);
+        
+        // Format should be: sk_live_...xxxx (prefix + "..." + last 4)
+        Assert.StartsWith("sk_live_", result.MaskedKey);
+        Assert.Contains("...", result.MaskedKey);
+    }
 }
 
 // Response DTOs for deserialization
+
+public class ApiKeyResponse
+{
+    public string MaskedKey { get; set; } = "";
+    public string? FullKey { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? LastUsedAt { get; set; }
+    public bool IsNewKey { get; set; }
+}
 public class FolderSettingsResponse
 {
     public string ComicLibraryPath { get; set; } = "";
