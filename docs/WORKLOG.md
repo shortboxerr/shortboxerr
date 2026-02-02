@@ -1,5 +1,57 @@
 # Worklog
 
+## Iteration 005 (2026-02-02)
+**EPIC 4.1: Provider Abstractions - COMPLETED**
+
+### Commits
+1. `feat: add provider abstractions and CRUD endpoints (EPIC 4.1)`
+2. `chore: update docs for iteration 005 completion` (pending)
+
+### Deliverables
+- ✅ Core Interfaces:
+  - IProvider (base abstraction)
+  - IIndexerProvider (search/discovery)
+  - IDownloadProvider (acquisition)
+  - IProviderManager (registry/CRUD)
+  - IProviderFactory (implementation factory)
+- ✅ Entity & Persistence:
+  - ProviderDefinition entity
+  - AddProviders migration
+  - DbContext integration
+- ✅ Infrastructure:
+  - ProviderManager implementation
+  - ProviderFactory with implementation registry
+  - Placeholder providers (DdlProvider, RssIndexer, HttpDownloadClient)
+- ✅ API Endpoints (14 total):
+  - GET /api/v1/providers (all)
+  - GET /api/v1/providers/indexers
+  - GET /api/v1/providers/downloadclients
+  - GET /api/v1/providers/implementations
+  - GET /api/v1/providers/{id}
+  - POST /api/v1/providers/indexers (create)
+  - POST /api/v1/providers/downloadclients (create)
+  - PUT /api/v1/providers/{id} (update)
+  - DELETE /api/v1/providers/{id}
+  - POST /api/v1/providers/{id}/test
+  - POST /api/v1/providers/test (test before save)
+  - POST /api/v1/providers/{id}/enable
+  - POST /api/v1/providers/indexers/reorder
+  - POST /api/v1/providers/downloadclients/reorder
+- ✅ Test Infrastructure:
+  - CustomWebApplicationFactory with in-memory SQLite
+  - Isolated test databases for parallel execution
+- ✅ 97 tests passing (14 new provider tests)
+
+### Enums Defined
+| Enum | Values |
+|------|--------|
+| ProviderType | Ddl, Rss, Newznab, Torznab, HttpDownload, Torrent, Usenet |
+| ProviderCategory | Indexer, DownloadClient |
+| HealthStatus | Healthy, Degraded, Unhealthy, Unknown, Disabled |
+| DownloadState | Queued, Downloading, Paused, Completed, Failed, Cancelled, Retrying, Processing |
+
+---
+
 ## Iteration 004 (2026-02-02)
 **EPIC 3: DecisionEngine - COMPLETED**
 

@@ -33,14 +33,14 @@
 
 ## EPIC 4: Indexers + Download Clients (ARR-LIKE SHAPE)
 
-### 4.1 Provider Abstractions
-- [ ] **IProvider interface**: Base abstraction for all provider types
+### 4.1 Provider Abstractions ✅ COMPLETED
+- [x] **IProvider interface**: Base abstraction for all provider types
   - AC: Defines Name, Type, IsEnabled, Test(), GetHealth()
-- [ ] **IIndexerProvider**: Extends IProvider for search/discovery
+- [x] **IIndexerProvider**: Extends IProvider for search/discovery
   - AC: Defines Search(query), GetLatest(), SupportsRss
-- [ ] **IDownloadProvider**: Extends IProvider for acquisition
+- [x] **IDownloadProvider**: Extends IProvider for acquisition
   - AC: Defines Download(candidate), GetStatus(id), Cancel(id)
-- [ ] **ProviderManager**: Registry for all configured providers
+- [x] **ProviderManager**: Registry for all configured providers
   - AC: CRUD operations, priority ordering, enable/disable
 
 ### 4.2 DDL Provider (Mylar3-Compatible) - FIRST-CLASS PROVIDER TYPE

@@ -424,6 +424,169 @@ Returns verbose explanations for all candidate evaluations (debugging).
 
 ---
 
+## Provider Endpoints
+
+### List All Providers
+```
+GET /api/v1/providers
+```
+Returns all configured providers (indexers and download clients).
+
+### List Indexers
+```
+GET /api/v1/providers/indexers
+```
+Returns all indexer providers.
+
+### List Download Clients
+```
+GET /api/v1/providers/downloadclients
+```
+Returns all download client providers.
+
+### Get Provider by ID
+```
+GET /api/v1/providers/{id}
+```
+Returns a single provider.
+
+### Get Available Implementations
+```
+GET /api/v1/providers/implementations
+```
+Returns all available provider implementations.
+
+**Response (200 OK)**
+```json
+[
+  {
+    "name": "DdlProvider",
+    "displayName": "DDL (Direct Download)",
+    "description": "Direct download link provider for comic sites (Mylar3-compatible)",
+    "category": "Indexer",
+    "type": "Ddl",
+    "requiresBaseUrl": true,
+    "requiresApiKey": false,
+    "requiresCredentials": false
+  }
+]
+```
+
+### Create Indexer
+```
+POST /api/v1/providers/indexers
+Content-Type: application/json
+
+{
+  "name": "My DDL Provider",
+  "implementation": "DdlProvider",
+  "isEnabled": true,
+  "baseUrl": "https://example.com",
+  "apiKey": "optional-api-key",
+  "username": "optional-user",
+  "password": "optional-pass",
+  "settings": "{\"customSetting\": \"value\"}",
+  "tags": "ddl,comics"
+}
+```
+
+### Create Download Client
+```
+POST /api/v1/providers/downloadclients
+Content-Type: application/json
+
+{
+  "name": "HTTP Downloader",
+  "implementation": "HttpDownloadClient",
+  "isEnabled": true
+}
+```
+
+### Update Provider
+```
+PUT /api/v1/providers/{id}
+Content-Type: application/json
+
+{
+  "name": "Updated Name",
+  "isEnabled": false
+}
+```
+
+### Delete Provider
+```
+DELETE /api/v1/providers/{id}
+```
+
+### Enable/Disable Provider
+```
+POST /api/v1/providers/{id}/enable?enabled=true
+```
+
+### Reorder Providers
+```
+POST /api/v1/providers/indexers/reorder
+POST /api/v1/providers/downloadclients/reorder
+Content-Type: application/json
+
+{
+  "orderedIds": [3, 1, 2]
+}
+```
+
+### Test Provider
+```
+POST /api/v1/providers/{id}/test
+```
+Test an existing provider's connection.
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "message": "Connection successful",
+  "sampleResultCount": 10,
+  "latencyMs": 245,
+  "errors": []
+}
+```
+
+### Test New Provider (Before Saving)
+```
+POST /api/v1/providers/test
+Content-Type: application/json
+
+{
+  "name": "Test Provider",
+  "implementation": "DdlProvider",
+  "baseUrl": "https://example.com"
+}
+```
+
+---
+
+## Provider Types (Enum)
+- 1: Ddl (Direct Download)
+- 2: Rss (RSS/Atom Feed)
+- 3: Newznab
+- 4: Torznab
+- 10: HttpDownload
+- 11: Torrent (future)
+- 12: Usenet (future)
+
+## Provider Categories (Enum)
+- 1: Indexer
+- 2: DownloadClient
+
+## Health Status (Enum)
+- 0: Healthy
+- 1: Degraded
+- 2: Unhealthy
+- 3: Unknown
+- 4: Disabled
+
+---
+
 ## OpenAPI / Swagger
 
 - **Swagger UI**: `GET /swagger`

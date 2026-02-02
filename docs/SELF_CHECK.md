@@ -1,4 +1,4 @@
-# Self-Check (Iteration 004)
+# Self-Check (Iteration 005)
 
 ## Protocol Compliance
 
@@ -6,42 +6,39 @@
 |-------|--------|
 | Pulled READY items from BACKLOG.md | ✅ |
 | Implemented vertical slice (code + tests + docs) | ✅ |
-| Tests pass (`dotnet test`) | ✅ 83 passing |
+| Tests pass (`dotnet test`) | ✅ 97 passing |
 | Build succeeds (`dotnet build`) | ✅ |
-| Committed at logical breakpoints | ✅ 2 commits |
+| Committed at logical breakpoints | ✅ 1 commit |
 | Updated WORKLOG.md | ✅ |
-| Updated BACKLOG.md | ✅ EPIC 3 marked complete |
+| Updated BACKLOG.md | ✅ EPIC 4.1 marked complete |
 | No uncommitted changes | ✅ |
-| Conventional commit messages | ✅ feat:, test:, chore: |
+| Conventional commit messages | ✅ feat:, chore: |
 
 ## Deliverables
 
 | Deliverable | Status | Notes |
 |-------------|--------|-------|
-| Candidate model | ✅ | With all metadata fields |
-| Rejection reasons | ✅ | 15+ enum values covering all rejection types |
-| Scoring factors | ✅ | Format, series, issue, year, source |
-| Deterministic tie-break | ✅ | Score → Source alpha → Title alpha |
-| Explanation report | ✅ | Full breakdown in API response |
-| API endpoints | ✅ | /evaluate, /evaluate/single, /explain |
-| Golden test harness | ✅ | JSON fixtures + 8 golden scenarios |
-| DecisionEngineTests | ✅ | 29 unit tests |
-| GoldenTests | ✅ | 9 fixture-based tests |
+| IProvider interface | ✅ | Name, Type, IsEnabled, Test, GetHealth |
+| IIndexerProvider | ✅ | Search, GetLatest, SupportsRss |
+| IDownloadProvider | ✅ | Download, GetStatus, Cancel |
+| ProviderManager | ✅ | CRUD, priority, enable/disable |
+| ProviderDefinition entity | ✅ | Full persistence with EF Core |
+| Provider API endpoints | ✅ | 14 endpoints |
+| Provider endpoint tests | ✅ | 14 integration tests |
 
 ## Test Summary
 
 ```
-Total:    83 tests
-Passed:   83
+Total:    97 tests
+Passed:   97
 Failed:   0
 Skipped:  0
 ```
 
 ## Commit History (This Iteration)
 
-1. `feat: add DecisionEngine with candidate evaluation and ranking (EPIC 3)`
-2. `test: add golden test harness for DecisionEngine (EPIC 3)`
-3. `chore: update docs for iteration 004 completion` (pending)
+1. `feat: add provider abstractions and CRUD endpoints (EPIC 4.1)`
+2. `chore: update docs for iteration 005 completion` (pending)
 
 ## EPIC Status
 
@@ -51,14 +48,14 @@ Skipped:  0
 | EPIC 1: Domain + Persistence | ✅ COMPLETED |
 | EPIC 2: Import Pipeline | ✅ COMPLETED |
 | EPIC 3: DecisionEngine | ✅ COMPLETED |
-| EPIC 4: Indexers + Download Clients | 🔜 Next |
+| EPIC 4.1: Provider Abstractions | ✅ COMPLETED |
+| EPIC 4.2: DDL Provider | 🔜 Next |
 | EPIC 5: UI | ⏳ Pending |
 | EPIC 6: Mylar3 Migration | ⏳ Pending |
 
 ## Notes
 
-- DecisionEngine implements Mylar3-compatible candidate selection
-- Configurable via `DecisionEngineSettings` (IOptions pattern)
-- Golden test fixtures enable easy parity verification with Mylar3 behavior
-- All rejection reasons have corresponding enum values for programmatic handling
-- Explanation reports provide full transparency for debugging/UI display
+- Provider system follows Arr-style patterns for familiarity
+- Placeholder implementations allow CRUD operations while real providers are developed
+- Test infrastructure improved with in-memory SQLite for isolated parallel tests
+- Ready for DDL Provider implementation in EPIC 4.2
