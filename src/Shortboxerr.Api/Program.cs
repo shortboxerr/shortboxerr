@@ -93,6 +93,7 @@ app.MapManualImportEndpoints();
 app.MapDecisionEngineEndpoints();
 app.MapProviderEndpoints();
 app.MapDdlImportEndpoints();
+app.MapMylar3ImportEndpoints();
 
 app.Run();
 

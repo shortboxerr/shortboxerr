@@ -18,8 +18,8 @@
   },
   "decisionEngine": {
     "autoGrabEnabled": true,
-    "autoGrabThreshold": "TODO_MATCH_MYLAR3",
-    "manualChoiceMargin": "TODO_MATCH_MYLAR3",
+    "autoGrabThreshold": 80,
+    "manualChoiceMargin": 10,
     "formatPreferenceOrder": [
       "cbz",
       "cbr"
@@ -29,15 +29,80 @@
       "preview"
     ],
     "requiredWords": [],
-    "minSizeBytesSingles": "TODO_MATCH_MYLAR3",
-    "maxSizeBytesSingles": "TODO_MATCH_MYLAR3",
-    "minSizeBytesCollections": "TODO_MATCH_MYLAR3",
-    "maxSizeBytesCollections": "TODO_MATCH_MYLAR3",
+    "minSizeBytesSingles": 1000000,
+    "maxSizeBytesSingles": 200000000,
+    "minSizeBytesCollections": 5000000,
+    "maxSizeBytesCollections": 2000000000,
     "sourcePriority": []
   },
   "monitoring": {
     "editionSatisfiesSingles": true,
     "monitorSinglesDefault": true,
     "monitorCollectionsDefault": false
+  },
+  "ddlProviders": {
+    "gettyComics": {
+      "siteType": "GettyComics",
+      "rateLimitPerMinute": 10,
+      "timeoutSeconds": 30,
+      "downloadTimeoutSeconds": 300,
+      "maxRetries": 3,
+      "retryDelayMs": 1000,
+      "useExponentialBackoff": true,
+      "requiresAuth": false,
+      "enableCookies": true
+    },
+    "readComicOnline": {
+      "siteType": "ReadComicOnline",
+      "rateLimitPerMinute": 5,
+      "timeoutSeconds": 45,
+      "downloadTimeoutSeconds": 600,
+      "maxRetries": 3,
+      "retryDelayMs": 2000,
+      "useExponentialBackoff": true,
+      "requiresAuth": false,
+      "enableCookies": true
+    },
+    "getComics": {
+      "siteType": "GetComics",
+      "rateLimitPerMinute": 10,
+      "timeoutSeconds": 30,
+      "downloadTimeoutSeconds": 300,
+      "maxRetries": 3,
+      "retryDelayMs": 1000,
+      "useExponentialBackoff": true,
+      "requiresAuth": false,
+      "enableCookies": true
+    },
+    "generic": {
+      "siteType": "Generic",
+      "rateLimitPerMinute": 10,
+      "timeoutSeconds": 30,
+      "downloadTimeoutSeconds": 300,
+      "maxRetries": 3,
+      "retryDelayMs": 1000,
+      "useExponentialBackoff": true,
+      "requiresAuth": false,
+      "enableCookies": true
+    }
+  },
+  "ddlDefaults": {
+    "formatPreference": ["cbz", "cbr"],
+    "bannedWords": ["sample", "preview"],
+    "requiredWords": [],
+    "minSizeSingles": 1000000,
+    "maxSizeSingles": 200000000,
+    "minSizeCollections": 5000000,
+    "maxSizeCollections": 2000000000,
+    "autoGrabEnabled": true,
+    "autoGrabMinScore": 80,
+    "searchCollections": true,
+    "searchSingles": true
+  },
+  "_documentation": {
+    "note": "These defaults match Mylar3 behavior as of v0.7.x",
+    "sizeUnits": "bytes",
+    "rateLimitUnits": "requests per minute",
+    "timeoutUnits": "seconds"
   }
 }

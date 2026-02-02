@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.AddSingleton<IDdlSearchService, DdlSearchService>();
         services.AddSingleton<IDdlDownloadService, DdlDownloadService>();
         services.AddScoped<IDdlImportService, DdlImportService>();
+        services.AddScoped<IMylar3ConfigImporter, Mylar3ConfigImporter>();
 
         // Provider system
         services.AddSingleton<IProviderFactory, ProviderFactory>();
