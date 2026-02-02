@@ -348,6 +348,162 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
 
 ---
 
+## EPIC 9: ComicVine Integration (Mylar3 Parity)
+ComicVine is the primary metadata source for comic series, issues, and collections. Must achieve behavioral parity with Mylar3's ComicVine integration.
+
+### 9.1 ComicVine API Client
+- [ ] **API authentication & configuration**
+  - AC: Store ComicVine API key securely in settings
+  - AC: API key validation endpoint
+  - AC: Settings UI for entering/updating API key
+  - AC: API endpoint: GET/PUT /api/v1/settings/comicvine
+- [ ] **Rate limiting (match Mylar3)**
+  - AC: Respect ComicVine's rate limits (200 requests/hour or as documented)
+  - AC: Request queuing with backoff
+  - AC: Track request count and reset time
+  - AC: Graceful handling of 420 (rate limit) responses
+- [ ] **API client implementation**
+  - AC: IComicVineClient interface
+  - AC: Search, GetSeries, GetIssue, GetVolume, GetPublisher endpoints
+  - AC: Response caching (configurable TTL, default 24h for static data)
+  - AC: Retry logic for transient failures
+
+### 9.2 Series Metadata
+- [ ] **Series search**
+  - AC: Search ComicVine by series name
+  - AC: Filter by publisher, year range
+  - AC: Return top N matches with confidence scores
+  - AC: Handle series with same name from different publishers/years
+- [ ] **Series matching**
+  - AC: Auto-match local series to ComicVine on add
+  - AC: Manual search and match UI
+  - AC: Store ComicVine ID (volume ID) in Series entity
+  - AC: Unmatch/rematch functionality
+- [ ] **Series metadata sync**
+  - AC: Fetch: title, sort title, publisher, start year, status (continuing/ended)
+  - AC: Fetch: description, issue count, first/last issue dates
+  - AC: Fetch: aliases (alternate titles for matching)
+  - AC: Store original vs. ComicVine metadata (allow overrides)
+
+### 9.3 Issue Metadata
+- [ ] **Issue list sync**
+  - AC: Fetch all issues for a matched series
+  - AC: Create Issue entities for missing issues (wanted list)
+  - AC: Store ComicVine issue ID
+  - AC: Handle issue number formats (decimals, specials, annuals)
+- [ ] **Issue detail sync**
+  - AC: Fetch: issue number, title, release date, description
+  - AC: Fetch: cover date vs. store date (match Mylar3 behavior)
+  - AC: Fetch: story arc associations
+  - AC: Fetch: character/team appearances (optional, configurable)
+- [ ] **Special issues handling (Mylar3 parity)**
+  - AC: Annuals linked to parent series
+  - AC: One-shots handling
+  - AC: Issue #0, negative issues, decimal issues (1.5, etc.)
+  - AC: Variant cover detection (optional)
+
+### 9.4 Cover Art
+- [ ] **Cover image fetching**
+  - AC: Download series cover (primary volume image)
+  - AC: Download issue covers (individual issue images)
+  - AC: Multiple image sizes (thumb, medium, large) - match Mylar3
+  - AC: Store in configurable cache directory
+- [ ] **Cover caching**
+  - AC: Check cache before fetching
+  - AC: Configurable cache retention (default: indefinite)
+  - AC: Cache invalidation on metadata refresh
+- [ ] **Cover fallbacks**
+  - AC: Use series cover if issue cover missing
+  - AC: Placeholder image for missing covers
+  - AC: Cover priority: issue > series > publisher > placeholder
+
+### 9.5 Collection/TPB Metadata
+- [ ] **Volume/TPB search**
+  - AC: Search ComicVine for collected editions
+  - AC: Match TPB/HC/Omnibus to ComicVine volume entries
+  - AC: Handle editions that span multiple series
+- [ ] **Collection content mapping**
+  - AC: Fetch issues contained in collection
+  - AC: Map to EditionContent entities
+  - AC: Handle issue ranges (e.g., "collects #1-6")
+- [ ] **Collection cover art**
+  - AC: Fetch collection/TPB covers
+  - AC: Same caching rules as issue covers
+
+### 9.6 Auto-Matching & Import Integration
+- [ ] **Import auto-match**
+  - AC: On file import, search ComicVine for series match
+  - AC: Confidence threshold for auto-accept (configurable, default 85%)
+  - AC: Queue low-confidence matches for manual review
+  - AC: Use parsed filename (series, issue, year) for search
+- [ ] **Bulk matching**
+  - AC: "Match All Unmatched" action for series list
+  - AC: Progress indicator for bulk operations
+  - AC: Summary report of matches/failures
+- [ ] **Match conflict resolution**
+  - AC: UI for resolving ambiguous matches
+  - AC: Show top N candidates with confidence scores
+  - AC: Preview metadata before accepting match
+
+### 9.7 Metadata Refresh
+- [ ] **Scheduled refresh**
+  - AC: Configurable refresh interval (default: weekly)
+  - AC: Refresh series metadata
+  - AC: Refresh issue list (discover new issues)
+  - AC: Refresh covers (if changed)
+- [ ] **Manual refresh**
+  - AC: "Refresh Metadata" button on series detail page
+  - AC: "Refresh All" action in settings
+  - AC: Force refresh option (ignore cache)
+- [ ] **Refresh history**
+  - AC: Log metadata refresh events
+  - AC: Track last refresh time per series
+  - AC: API endpoint: GET /api/v1/series/{id}/metadata/history
+
+### 9.8 Mylar3 ComicVine Settings Import
+- [ ] **Import ComicVine config from Mylar3**
+  - AC: Parse config.ini for ComicVine API key
+  - AC: Import cover cache settings
+  - AC: Import refresh interval settings
+  - AC: Import auto-match thresholds
+- [ ] **ComicVine ID migration**
+  - AC: Map Mylar3 ComicVine IDs to Shortboxerr series
+  - AC: Preserve existing metadata matches
+  - AC: Validate migrated IDs are still valid
+
+### 9.9 ComicVine UI
+- [ ] **Settings page**
+  - AC: API key input (masked, with show/hide toggle)
+  - AC: Test connection button
+  - AC: Rate limit status display
+  - AC: Cache management (clear cache button)
+- [ ] **Series detail integration**
+  - AC: "Match to ComicVine" button on unmatched series
+  - AC: ComicVine link on matched series
+  - AC: Metadata source indicator (local vs. ComicVine)
+  - AC: "Refresh Metadata" button
+- [ ] **Search & match modal**
+  - AC: Search ComicVine by name
+  - AC: Display results with covers and metadata preview
+  - AC: Confidence score display
+  - AC: Select and confirm match
+
+### 9.10 ComicVine Conformance Tests
+- [ ] **API client tests**
+  - AC: Mock ComicVine responses
+  - AC: Test rate limiting behavior
+  - AC: Test error handling (404, 420, 500)
+- [ ] **Matching algorithm tests**
+  - AC: Golden test fixtures for series matching
+  - AC: Test edge cases (same name, different years)
+  - AC: Test confidence scoring
+- [ ] **Integration tests**
+  - AC: Full flow: search → match → sync metadata
+  - AC: Cover download and caching
+  - AC: Refresh cycle
+
+---
+
 ## Story Ordering Notes
 
 **EPIC 4 Implementation Order:**
@@ -367,3 +523,6 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
 - 4.2.4 depends on EPIC 2 (Import Pipeline) for handoff
 - 4.5 depends on EPIC 5 UI shell ✅ (can now be implemented)
 - EPIC 8 depends on EPIC 4.2 (DDL Provider interfaces and services)
+- EPIC 9 depends on EPIC 1 (Series/Issue entities) and EPIC 5 (UI shell)
+- EPIC 9.6 depends on EPIC 2 (Import Pipeline) for auto-match on import
+- EPIC 9.8 depends on EPIC 7 (Mylar3 Migration) for config import patterns
