@@ -1252,10 +1252,12 @@ function SecuritySettings() {
 
   const regenerateMutation = useMutation({
     mutationFn: api.regenerateApiKey,
-    onSuccess: (data) => {
-      setFullKey(data.fullKey);
-      setShowApiKey(true); // Show the new key after regeneration
+    onSuccess: () => {
+      // Close modal and reset state
       setShowRegenerateConfirm(false);
+      setFullKey(null); // Clear cached key so user can reveal the new one
+      setShowApiKey(false); // Show masked by default
+      // Refresh the API key data to show new masked key
       queryClient.invalidateQueries({ queryKey: ['apiKey'] });
     },
   });
@@ -1265,15 +1267,27 @@ function SecuritySettings() {
     setApiEnabledMutation.mutate(newEnabled);
   };
 
+  const [isLoadingFullKey, setIsLoadingFullKey] = useState(false);
+
   const handleShowKey = async () => {
     if (showApiKey) {
       setShowApiKey(false);
     } else {
+      // Fetch the full key if we don't have it cached
       if (!fullKey) {
-        const data = await api.getApiKeyFull();
-        setFullKey(data.fullKey);
+        setIsLoadingFullKey(true);
+        try {
+          const data = await api.getApiKeyFull();
+          setFullKey(data.fullKey);
+          setShowApiKey(true);
+        } catch (error) {
+          console.error('Failed to fetch full API key:', error);
+        } finally {
+          setIsLoadingFullKey(false);
+        }
+      } else {
+        setShowApiKey(true);
       }
-      setShowApiKey(true);
     }
   };
 
@@ -1351,9 +1365,15 @@ function SecuritySettings() {
                 className="btn btn-icon" 
                 onClick={handleShowKey}
                 title={showApiKey ? 'Hide' : 'Show'}
-                disabled={isLoading}
+                disabled={isLoading || isLoadingFullKey}
               >
-                {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                {isLoadingFullKey ? (
+                  <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                ) : showApiKey ? (
+                  <EyeOff size={16} />
+                ) : (
+                  <Eye size={16} />
+                )}
               </button>
               <button 
                 className="btn btn-icon" 
