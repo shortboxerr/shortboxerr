@@ -178,7 +178,7 @@ Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests sec
 - [x] Collections list page
 - [x] Activity + Manual Import pages (thin but functional)
 
-## EPIC 6: Settings Persistence
+## EPIC 6: Settings Persistence & UI Enhancements
 - [ ] **Theme persistence**
   - AC: Save selected theme (dark/light/system) to database
   - AC: Load theme preference on app start
@@ -187,6 +187,24 @@ Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests sec
   - AC: Save naming patterns, root folders to database
   - AC: Settings entity with key-value storage
   - AC: Settings API endpoints for all categories
+- [ ] **API key management**
+  - AC: Display API key in Settings > Security (masked by default)
+  - AC: "Show" toggle to reveal full API key
+  - AC: "Copy" button to copy API key to clipboard
+  - AC: "Regenerate" button with confirmation dialog
+  - AC: API endpoint: GET /api/v1/settings/apikey (returns masked), POST /api/v1/settings/apikey/regenerate
+- [ ] **Naming format token helper**
+  - AC: Display available tokens for Series Folder Format: `{Series Title}`, `{Series Year}`, `{Publisher}`, `{Status}`
+  - AC: Display available tokens for Issue File Format: `{Series Title}`, `{Issue}`, `{Issue Title}`, `{Year}`, `{Publisher}`, `{Quality}`
+  - AC: Display available tokens for Collection File Format: `{Series Title}`, `{Edition Type}`, `{Volume}`, `{Year}`, `{Publisher}`
+  - AC: Clickable tokens that insert into the format input field
+  - AC: Live preview showing example output with sample data
+  - AC: API endpoint: GET /api/v1/settings/naming/tokens (returns available tokens per format type)
+- [ ] **Rename Staging folder to Download folder**
+  - AC: Update Settings UI label from "Staging Folder" to "Download Folder"
+  - AC: Update Settings UI description to reflect download destination
+  - AC: Update API documentation to use "download folder" terminology
+  - AC: Maintain backward compatibility (internal code can keep "staging" references)
 
 ## EPIC 7: Mylar3 Migration (BEHAVIORAL PARITY SETUP)
 - [ ] Read Mylar3 SQLite DB (read-only)
