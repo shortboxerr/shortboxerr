@@ -165,7 +165,7 @@ public class DdlParsedInfo
 /// <summary>
 /// Represents a download link for a DDL candidate.
 /// </summary>
-public class DdlDownloadLink
+public record DdlDownloadLink
 {
     /// <summary>
     /// Download URL.
@@ -185,7 +185,7 @@ public class DdlDownloadLink
     /// <summary>
     /// Whether this link has been verified as working.
     /// </summary>
-    public bool IsVerified { get; set; }
+    public bool IsVerified { get; init; }
     
     /// <summary>
     /// Priority for this link (lower = preferred).

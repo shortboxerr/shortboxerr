@@ -4,6 +4,7 @@ using Shortboxerr.Core.Ddl;
 using Shortboxerr.Core.Models;
 using Shortboxerr.Core.Providers;
 using Shortboxerr.Core.Services;
+using Shortboxerr.Infrastructure.Ddl;
 using Shortboxerr.Infrastructure.Persistence;
 using Shortboxerr.Infrastructure.Providers;
 using Shortboxerr.Infrastructure.Services;
@@ -25,6 +26,8 @@ public static class DependencyInjection
         // DDL services
         services.AddSingleton<IDdlReleaseParser, DdlReleaseParser>();
         services.AddSingleton<IDdlFilter, DdlFilter>();
+        services.AddSingleton<IDdlSiteAdapterFactory, DdlSiteAdapterFactory>();
+        services.AddSingleton<IDdlSearchService, DdlSearchService>();
 
         // Provider system
         services.AddSingleton<IProviderFactory, ProviderFactory>();
