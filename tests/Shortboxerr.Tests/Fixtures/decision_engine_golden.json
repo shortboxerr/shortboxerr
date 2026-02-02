@@ -1,0 +1,231 @@
+{
+  "$schema": "https://shortboxerr.dev/schemas/decision-engine-golden-v1.json",
+  "description": "Golden test fixtures for DecisionEngine Mylar3 parity verification",
+  "version": "1.0.0",
+  "testCases": [
+    {
+      "id": "single-exact-match",
+      "description": "Single issue with exact series and issue match",
+      "target": {
+        "seriesTitle": "Amazing Spider-Man",
+        "issueNumber": 1,
+        "year": 2022,
+        "isCollection": false
+      },
+      "candidates": [
+        {
+          "releaseTitle": "Amazing Spider-Man #001 (2022).cbz",
+          "source": "preferred-source",
+          "seriesTitle": "Amazing Spider-Man",
+          "issueNumber": 1,
+          "year": 2022,
+          "format": "cbz",
+          "size": 15000000
+        }
+      ],
+      "expectedBestId": 0,
+      "expectedAccepted": true,
+      "shouldAutoGrab": true
+    },
+    {
+      "id": "format-preference",
+      "description": "CBZ should be preferred over CBR",
+      "target": {
+        "seriesTitle": "Batman",
+        "issueNumber": 100,
+        "isCollection": false
+      },
+      "candidates": [
+        {
+          "releaseTitle": "Batman #100.cbr",
+          "source": "source-a",
+          "seriesTitle": "Batman",
+          "issueNumber": 100,
+          "format": "cbr",
+          "size": 15000000
+        },
+        {
+          "releaseTitle": "Batman #100.cbz",
+          "source": "source-a",
+          "seriesTitle": "Batman",
+          "issueNumber": 100,
+          "format": "cbz",
+          "size": 15000000
+        }
+      ],
+      "expectedBestId": 1,
+      "expectedAccepted": true,
+      "note": "cbz format ranked higher than cbr due to format preference. Auto-grab not tested since both are within margin."
+    },
+    {
+      "id": "banned-word-rejection",
+      "description": "Candidate with 'sample' should be rejected",
+      "target": {
+        "seriesTitle": "X-Men",
+        "issueNumber": 1,
+        "isCollection": false
+      },
+      "candidates": [
+        {
+          "releaseTitle": "X-Men #001 (sample).cbz",
+          "source": "source-a",
+          "seriesTitle": "X-Men",
+          "issueNumber": 1,
+          "format": "cbz",
+          "size": 15000000
+        }
+      ],
+      "expectedBestId": null,
+      "expectedAccepted": false,
+      "expectedRejectionReason": "BannedWordFound"
+    },
+    {
+      "id": "size-too-small",
+      "description": "File under minimum size should be rejected",
+      "target": {
+        "seriesTitle": "Wolverine",
+        "issueNumber": 1,
+        "isCollection": false
+      },
+      "candidates": [
+        {
+          "releaseTitle": "Wolverine #001.cbz",
+          "source": "source-a",
+          "seriesTitle": "Wolverine",
+          "issueNumber": 1,
+          "format": "cbz",
+          "size": 500000
+        }
+      ],
+      "expectedBestId": null,
+      "expectedAccepted": false,
+      "expectedRejectionReason": "TooSmall"
+    },
+    {
+      "id": "source-priority",
+      "description": "Higher priority source should win over lower",
+      "target": {
+        "seriesTitle": "Iron Man",
+        "issueNumber": 50,
+        "isCollection": false
+      },
+      "candidates": [
+        {
+          "releaseTitle": "Iron Man #050.cbz",
+          "source": "secondary-source",
+          "seriesTitle": "Iron Man",
+          "issueNumber": 50,
+          "format": "cbz",
+          "size": 15000000
+        },
+        {
+          "releaseTitle": "Iron Man #050.cbz",
+          "source": "preferred-source",
+          "seriesTitle": "Iron Man",
+          "issueNumber": 50,
+          "format": "cbz",
+          "size": 15000000
+        }
+      ],
+      "expectedBestId": 1,
+      "expectedAccepted": true
+    },
+    {
+      "id": "collection-tpb",
+      "description": "TPB collection matching",
+      "target": {
+        "seriesTitle": "Saga",
+        "isCollection": true,
+        "editionTitle": "Vol. 1",
+        "volumeNumber": 1
+      },
+      "candidates": [
+        {
+          "releaseTitle": "Saga Vol. 1 TPB.cbz",
+          "source": "source-a",
+          "seriesTitle": "Saga",
+          "volumeNumber": 1,
+          "format": "cbz",
+          "size": 50000000,
+          "isCollection": true,
+          "editionType": "TPB"
+        }
+      ],
+      "expectedBestId": 0,
+      "expectedAccepted": true
+    },
+    {
+      "id": "deterministic-tiebreak",
+      "description": "Equal candidates should sort alphabetically by source then title",
+      "target": {
+        "seriesTitle": "Thor",
+        "issueNumber": 1,
+        "isCollection": false
+      },
+      "candidates": [
+        {
+          "releaseTitle": "Thor #001.cbz",
+          "source": "zzz-source",
+          "seriesTitle": "Thor",
+          "issueNumber": 1,
+          "format": "cbz",
+          "size": 15000000
+        },
+        {
+          "releaseTitle": "Thor #001.cbz",
+          "source": "aaa-source",
+          "seriesTitle": "Thor",
+          "issueNumber": 1,
+          "format": "cbz",
+          "size": 15000000
+        }
+      ],
+      "expectedBestId": 1,
+      "expectedAccepted": true,
+      "note": "aaa-source wins due to alphabetical tie-break"
+    },
+    {
+      "id": "manual-review-margin",
+      "description": "Close candidates should trigger manual review",
+      "target": {
+        "seriesTitle": "Daredevil",
+        "issueNumber": 1,
+        "isCollection": false
+      },
+      "candidates": [
+        {
+          "releaseTitle": "Daredevil #001.cbz",
+          "source": "source-a",
+          "seriesTitle": "Daredevil",
+          "issueNumber": 1,
+          "format": "cbz",
+          "size": 15000000
+        },
+        {
+          "releaseTitle": "Daredevil #001.cbz",
+          "source": "source-b",
+          "seriesTitle": "Daredevil",
+          "issueNumber": 1,
+          "format": "cbz",
+          "size": 15000000
+        }
+      ],
+      "shouldAutoGrab": false,
+      "note": "When candidates are within margin, manual review is required"
+    }
+  ],
+  "settings": {
+    "autoGrabEnabled": true,
+    "autoGrabThreshold": 50,
+    "manualChoiceMargin": 10,
+    "formatPreferenceOrder": ["cbz", "cbr"],
+    "bannedWords": ["sample", "preview"],
+    "requiredWords": [],
+    "minSizeBytesSingles": 1000000,
+    "maxSizeBytesSingles": 200000000,
+    "minSizeBytesCollections": 5000000,
+    "maxSizeBytesCollections": 2000000000,
+    "sourcePriority": ["preferred-source", "secondary-source"]
+  }
+}
+
