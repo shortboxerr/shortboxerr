@@ -3,9 +3,9 @@ services:
     build: .
     container_name: shortboxerr
     ports:
-      - "7878:7878"
+      - "8585:8585"
     environment:
-      - ASPNETCORE_URLS=http://0.0.0.0:7878
+      - ASPNETCORE_URLS=http://0.0.0.0:8585
       - SHORTBOXERR_DB=Data Source=/data/shortboxerr.db
       - SHORTBOXERR_LIBRARY_ROOT=/data/library
       - SHORTBOXERR_STAGING=/data/staging

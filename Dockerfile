@@ -37,18 +37,18 @@ RUN chown -R shortboxerr:shortboxerr /app
 USER shortboxerr
 
 # Environment variables (can be overridden)
-ENV ASPNETCORE_URLS=http://0.0.0.0:7878
+ENV ASPNETCORE_URLS=http://0.0.0.0:8585
 ENV SHORTBOXERR_DB="Data Source=/data/shortboxerr.db"
 ENV SHORTBOXERR_LIBRARY_ROOT=/data/library
 ENV SHORTBOXERR_STAGING=/data/staging
 ENV SHORTBOXERR_FAILED=/data/failed
 
 # Expose port
-EXPOSE 7878
+EXPOSE 8585
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:7878/health || exit 1
+    CMD curl -f http://localhost:8585/health || exit 1
 
 # Entry point
 ENTRYPOINT ["dotnet", "Shortboxerr.Api.dll"]
