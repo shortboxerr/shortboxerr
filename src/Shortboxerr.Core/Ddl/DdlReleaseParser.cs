@@ -400,6 +400,20 @@ public partial class DdlReleaseParser : IDdlReleaseParser
 
     private static (string? quality, string remainingTitle) ExtractQuality(string title)
     {
+        // Check for quality in parentheses first: (Digital)
+        foreach (var quality in QualityTags)
+        {
+            var parenPattern = $@"\({Regex.Escape(quality)}\)";
+            var parenMatch = Regex.Match(title, parenPattern, RegexOptions.IgnoreCase);
+            if (parenMatch.Success)
+            {
+                var remaining = title.Remove(parenMatch.Index, parenMatch.Length).Trim();
+                remaining = MultipleSpacesRegex().Replace(remaining, " ");
+                return (quality, remaining);
+            }
+        }
+        
+        // Then check standalone words
         foreach (var quality in QualityTags)
         {
             var pattern = $@"\b{Regex.Escape(quality)}\b";
@@ -417,7 +431,8 @@ public partial class DdlReleaseParser : IDdlReleaseParser
 
     private static (string? group, string remainingTitle) ExtractReleaseGroup(string title)
     {
-        // Match release group in parentheses at end: (GroupName)
+        // Match release group in parentheses at end: (GroupName) or (Group-Name)
+        // Must contain hyphen or special character to be a group, not a simple word
         var parenGroupMatch = ReleaseGroupParensRegex().Match(title);
         if (parenGroupMatch.Success)
         {
@@ -425,8 +440,12 @@ public partial class DdlReleaseParser : IDdlReleaseParser
             // Don't extract if it looks like a year, quality indicator, or publisher
             if (!IsYear(group) && !IsQuality(group) && !IsPublisher(group))
             {
-                var remaining = title[..parenGroupMatch.Index].Trim();
-                return (group, remaining);
+                // Prefer groups that have hyphen (scene naming style)
+                if (group.Contains('-'))
+                {
+                    var remaining = title[..parenGroupMatch.Index].Trim();
+                    return (group, remaining);
+                }
             }
         }
         

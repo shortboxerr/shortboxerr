@@ -1,0 +1,169 @@
+{
+  "description": "Golden test fixtures for DDL release title parsing. Must achieve Mylar3 parity.",
+  "testCases": [
+    {
+      "id": "single_basic",
+      "title": "Amazing Spider-Man 001 (2022) (Digital) (Zone-Empire).cbz",
+      "expected": {
+        "seriesTitle": "Amazing Spider-Man",
+        "issueNumber": 1,
+        "year": 2022,
+        "format": "cbz",
+        "isCollection": false
+      }
+    },
+    {
+      "id": "single_with_hash",
+      "title": "Batman #150 (DC) (2023) (Zone-Empire).cbz",
+      "expected": {
+        "seriesTitle": "Batman",
+        "issueNumber": 150,
+        "publisher": "DC",
+        "year": 2023,
+        "format": "cbz",
+        "isCollection": false
+      }
+    },
+    {
+      "id": "single_decimal_issue",
+      "title": "X-Force #1.5 (2020) (Digital) (Mephisto-Empire).cbz",
+      "expected": {
+        "seriesTitle": "X-Force",
+        "issueNumber": 1.5,
+        "year": 2020,
+        "format": "cbz",
+        "isCollection": false
+      }
+    },
+    {
+      "id": "single_with_volume",
+      "title": "X-Men v1 001 (1963) (Digital) (Glorith-HD).cbz",
+      "expected": {
+        "seriesTitle": "X-Men",
+        "volumeNumber": 1,
+        "issueNumber": 1,
+        "year": 1963,
+        "format": "cbz",
+        "isCollection": false
+      }
+    },
+    {
+      "id": "collection_tpb",
+      "title": "Batman - The Dark Knight Returns TPB (1986) (Digital) (Minutemen-Slayer).cbz",
+      "expected": {
+        "seriesTitleContains": "Batman",
+        "editionType": "TPB",
+        "year": 1986,
+        "format": "cbz",
+        "isCollection": true
+      }
+    },
+    {
+      "id": "collection_volume",
+      "title": "Saga Vol. 01 TPB (2012) (Digital) (Zone-Empire).cbz",
+      "expected": {
+        "seriesTitleContains": "Saga",
+        "volumeNumber": 1,
+        "editionType": "TPB",
+        "year": 2012,
+        "format": "cbz",
+        "isCollection": true
+      }
+    },
+    {
+      "id": "collection_hardcover",
+      "title": "Absolute Batman HC Vol 1 (2024) (Webrip) (XRA-Empire).cbz",
+      "expected": {
+        "seriesTitleContains": "Absolute Batman",
+        "volumeNumber": 1,
+        "editionType": "HC",
+        "year": 2024,
+        "format": "cbz",
+        "isCollection": true
+      }
+    },
+    {
+      "id": "collection_omnibus",
+      "title": "Uncanny X-Men Omnibus Vol. 2 (Marvel) (2019) (Digital) (Glorith-HD).cbz",
+      "expected": {
+        "seriesTitleContains": "Uncanny X-Men",
+        "volumeNumber": 2,
+        "editionType": "Omnibus",
+        "publisher": "Marvel",
+        "year": 2019,
+        "format": "cbz",
+        "isCollection": true
+      }
+    },
+    {
+      "id": "collection_deluxe",
+      "title": "Invincible Deluxe Edition Vol. 1 (Image) (2020) (Digital).cbz",
+      "expected": {
+        "seriesTitleContains": "Invincible",
+        "volumeNumber": 1,
+        "editionType": "Deluxe",
+        "publisher": "Image",
+        "year": 2020,
+        "format": "cbz",
+        "isCollection": true
+      }
+    },
+    {
+      "id": "cbr_format",
+      "title": "Immortal Hulk 001 (2018) (Digital) (Zone-Empire).cbr",
+      "expected": {
+        "seriesTitle": "Immortal Hulk",
+        "issueNumber": 1,
+        "year": 2018,
+        "format": "cbr",
+        "isCollection": false
+      }
+    },
+    {
+      "id": "no_year",
+      "title": "Spider-Man #1 (Digital).cbz",
+      "expected": {
+        "seriesTitle": "Spider-Man",
+        "issueNumber": 1,
+        "year": null,
+        "format": "cbz",
+        "isCollection": false
+      }
+    },
+    {
+      "id": "complex_title",
+      "title": "The Amazing Spider-Man Annual 001 (2023) (Digital-Empire).cbz",
+      "expected": {
+        "seriesTitleContains": "Amazing Spider-Man Annual",
+        "issueNumber": 1,
+        "year": 2023,
+        "format": "cbz",
+        "isCollection": false
+      }
+    },
+    {
+      "id": "issue_range",
+      "title": "Batman TPB #1-6 (DC) (2023) (Digital).cbz",
+      "expected": {
+        "seriesTitleContains": "Batman",
+        "issueRange": "1-6",
+        "publisher": "DC",
+        "year": 2023,
+        "format": "cbz",
+        "isCollection": true
+      }
+    },
+    {
+      "id": "scan_quality",
+      "title": "Detective Comics 001 (1937) (c2c-Scan) (Team-Up).cbr",
+      "expected": {
+        "seriesTitle": "Detective Comics",
+        "issueNumber": 1,
+        "year": 1937,
+        "format": "cbr",
+        "isCollection": false
+      }
+    }
+  ]
+}
+

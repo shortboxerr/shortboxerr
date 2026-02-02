@@ -1,0 +1,100 @@
+{
+  "description": "Golden test fixtures for DDL candidate filtering. Mylar3 default rules.",
+  "defaultSettings": {
+    "bannedWords": ["sample", "preview"],
+    "minSizeSingles": 1000000,
+    "maxSizeSingles": 200000000,
+    "minSizeCollections": 5000000,
+    "maxSizeCollections": 2000000000,
+    "blockedFormats": ["pdf"]
+  },
+  "testCases": [
+    {
+      "id": "pass_valid_single",
+      "title": "Batman #001 (2023).cbz",
+      "size": 15000000,
+      "isCollection": false,
+      "format": "cbz",
+      "expectedPasses": true
+    },
+    {
+      "id": "fail_banned_word_sample",
+      "title": "Batman #001 (sample).cbz",
+      "size": 15000000,
+      "isCollection": false,
+      "format": "cbz",
+      "expectedPasses": false,
+      "expectedReasonContains": "sample"
+    },
+    {
+      "id": "fail_banned_word_preview",
+      "title": "Batman Preview Special.cbz",
+      "size": 15000000,
+      "isCollection": false,
+      "format": "cbz",
+      "expectedPasses": false,
+      "expectedReasonContains": "preview"
+    },
+    {
+      "id": "fail_too_small_single",
+      "title": "Batman #001.cbz",
+      "size": 500000,
+      "isCollection": false,
+      "format": "cbz",
+      "expectedPasses": false,
+      "expectedReasonContains": "below minimum"
+    },
+    {
+      "id": "fail_too_large_single",
+      "title": "Batman #001.cbz",
+      "size": 300000000,
+      "isCollection": false,
+      "format": "cbz",
+      "expectedPasses": false,
+      "expectedReasonContains": "exceeds maximum"
+    },
+    {
+      "id": "fail_too_small_collection",
+      "title": "Batman TPB Vol 1.cbz",
+      "size": 1000000,
+      "isCollection": true,
+      "format": "cbz",
+      "expectedPasses": false,
+      "expectedReasonContains": "collection"
+    },
+    {
+      "id": "pass_valid_collection",
+      "title": "Batman TPB Vol 1.cbz",
+      "size": 50000000,
+      "isCollection": true,
+      "format": "cbz",
+      "expectedPasses": true
+    },
+    {
+      "id": "fail_blocked_format",
+      "title": "Batman #001.pdf",
+      "size": 15000000,
+      "isCollection": false,
+      "format": "pdf",
+      "expectedPasses": false,
+      "expectedReasonContains": "pdf"
+    },
+    {
+      "id": "pass_no_size",
+      "title": "Batman #001.cbz",
+      "size": null,
+      "isCollection": false,
+      "format": "cbz",
+      "expectedPasses": true
+    },
+    {
+      "id": "pass_cbr_format",
+      "title": "Batman #001.cbr",
+      "size": 15000000,
+      "isCollection": false,
+      "format": "cbr",
+      "expectedPasses": true
+    }
+  ]
+}
+
