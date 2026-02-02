@@ -73,17 +73,17 @@ The DDL (Direct Download) provider must achieve behavioral parity with Mylar3's 
   - AC: Size limits (min/max for singles and collections)
   - AC: Format preference (cbz > cbr, configurable)
 
-#### 4.2.3 DDL Download Execution
-- [ ] **DDL downloader service**
+#### 4.2.3 DDL Download Execution ✅ COMPLETED
+- [x] **DDL downloader service**
   - AC: HTTP client with configurable timeouts (match Mylar3)
   - AC: User-Agent rotation/configuration
   - AC: Cookie/session handling for authenticated sites
   - AC: Resume support for interrupted downloads
-- [ ] **DDL retry semantics**
+- [x] **DDL retry semantics**
   - AC: Configurable retry count (default: 3, match Mylar3)
   - AC: Exponential backoff between retries
   - AC: Alternate mirror fallback if primary fails
-- [ ] **DDL failure handling**
+- [x] **DDL failure handling**
   - AC: Mark candidate as failed after max retries
   - AC: Log detailed failure reason (timeout, 404, auth, corrupt)
   - AC: Quarantine repeated failures (configurable threshold)

@@ -646,6 +646,83 @@ DDL candidates represent releases discovered from DDL sites:
 
 ---
 
+## DDL Download Service (Internal)
+
+### Download Options
+```json
+{
+  "destinationFolder": "/downloads",
+  "customFilename": null,
+  "maxRetries": 3,
+  "retryDelayMs": 1000,
+  "maxRetryDelayMs": 30000,
+  "timeoutSeconds": 300,
+  "enableResume": true,
+  "userAgent": "Mozilla/5.0...",
+  "customHeaders": {},
+  "cookies": {},
+  "verifyDownload": true,
+  "minExpectedSize": null,
+  "maxExpectedSize": null
+}
+```
+
+### Download Result
+```json
+{
+  "downloadId": "abc-123",
+  "success": true,
+  "filePath": "/downloads/Batman_001.cbz",
+  "fileName": "Batman_001.cbz",
+  "fileSize": 52428800,
+  "duration": "00:02:30",
+  "bytesPerSecond": 349525.33,
+  "retryAttempts": 0,
+  "failureReason": 0,
+  "errorMessage": null,
+  "httpStatusCode": null,
+  "sourceUrl": "https://...",
+  "wasResumed": false
+}
+```
+
+### Download Failure Reasons (Enum)
+| Value | Name | Description |
+|-------|------|-------------|
+| 0 | None | No failure |
+| 10 | Timeout | Network timeout |
+| 11 | ConnectionFailed | Connection failed |
+| 12 | DnsFailure | DNS resolution failed |
+| 20 | NotFound | HTTP 404 |
+| 21 | Unauthorized | HTTP 401/403 |
+| 22 | RateLimited | HTTP 429 |
+| 23 | ServerError | HTTP 5xx |
+| 30 | EmptyFile | Downloaded file is empty |
+| 31 | FileTooSmall | File below minimum size |
+| 32 | FileTooLarge | File exceeds maximum size |
+| 33 | HtmlErrorPage | File is HTML error page |
+| 34 | VerificationFailed | Magic bytes check failed |
+| 40 | DiskError | Disk full or write error |
+| 50 | Cancelled | Download cancelled |
+| 60 | MaxRetriesExceeded | All retries exhausted |
+| 70 | NoValidLinks | No download links available |
+| 99 | Unknown | Unknown error |
+
+### Download States (Enum)
+| Value | Name |
+|-------|------|
+| 0 | Queued |
+| 1 | Connecting |
+| 2 | Downloading |
+| 3 | Paused |
+| 4 | Retrying |
+| 5 | Verifying |
+| 10 | Completed |
+| 11 | Failed |
+| 12 | Cancelled |
+
+---
+
 ## DDL Search Service (Internal)
 
 ### Site Adapter System
