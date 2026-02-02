@@ -154,6 +154,42 @@ export interface CreateProviderRequest {
   tags?: string;
 }
 
+export interface UiSettings {
+  theme: 'dark' | 'light' | 'system';
+  pageSize: number;
+  showFileSizes: boolean;
+  relativeTimestamps: boolean;
+}
+
+export interface GeneralSettings {
+  seriesFolderFormat: string;
+  issueFileFormat: string;
+  collectionFileFormat: string;
+  comicLibraryPath: string;
+  downloadFolder: string;
+  stagingFolder: string;
+  autoMoveToStaging: boolean;
+}
+
+export interface FolderSettings {
+  comicLibraryPath: string;
+  downloadFolder: string;
+  stagingFolder: string;
+  autoMoveToStaging: boolean;
+}
+
+export interface NamingToken {
+  token: string;
+  description: string;
+  example: string;
+}
+
+export interface NamingTokensResponse {
+  seriesFolderTokens: NamingToken[];
+  issueFileTokens: NamingToken[];
+  collectionFileTokens: NamingToken[];
+}
+
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
@@ -415,6 +451,74 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(request),
     });
+  },
+
+  // Settings
+  getUiSettings: async (): Promise<UiSettings> => {
+    try {
+      return await fetchApi<UiSettings>('/api/v1/settings/ui');
+    } catch {
+      return { theme: 'dark', pageSize: 50, showFileSizes: true, relativeTimestamps: true };
+    }
+  },
+
+  updateUiSettings: async (settings: Partial<UiSettings>): Promise<UiSettings> => {
+    // Fetch current settings first to merge
+    const current = await api.getUiSettings();
+    const merged = { ...current, ...settings };
+    return await fetchApi<UiSettings>('/api/v1/settings/ui', {
+      method: 'PUT',
+      body: JSON.stringify(merged),
+    });
+  },
+
+  getGeneralSettings: async (): Promise<GeneralSettings> => {
+    try {
+      return await fetchApi<GeneralSettings>('/api/v1/settings/general');
+    } catch {
+      return {
+        seriesFolderFormat: '{Series Title} ({Year})',
+        issueFileFormat: '{Series Title} #{Issue} ({Year})',
+        collectionFileFormat: '{Series Title} - {Edition Type} Vol. {Volume} ({Year})',
+        comicLibraryPath: '/comics',
+        downloadFolder: '/downloads',
+        stagingFolder: '/staging',
+        autoMoveToStaging: true,
+      };
+    }
+  },
+
+  updateGeneralSettings: async (settings: Partial<GeneralSettings>): Promise<GeneralSettings> => {
+    const current = await api.getGeneralSettings();
+    const merged = { ...current, ...settings };
+    return await fetchApi<GeneralSettings>('/api/v1/settings/general', {
+      method: 'PUT',
+      body: JSON.stringify(merged),
+    });
+  },
+
+  getFolderSettings: async (): Promise<FolderSettings> => {
+    try {
+      return await fetchApi<FolderSettings>('/api/v1/settings/folders');
+    } catch {
+      return {
+        comicLibraryPath: '/comics',
+        downloadFolder: '/downloads',
+        stagingFolder: '/staging',
+        autoMoveToStaging: true,
+      };
+    }
+  },
+
+  updateFolderSettings: async (settings: Partial<FolderSettings>): Promise<FolderSettings> => {
+    return await fetchApi<FolderSettings>('/api/v1/settings/folders', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+  },
+
+  getNamingTokens: async (): Promise<NamingTokensResponse> => {
+    return await fetchApi<NamingTokensResponse>('/api/v1/settings/naming/tokens');
   },
 };
 

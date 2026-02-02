@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import type { Provider, CreateProviderRequest, ProviderTestResult } from '../api/client';
+import { useTheme } from '../App';
 
 type SettingsTab = 'general' | 'indexers' | 'download' | 'import' | 'ui' | 'security';
 
@@ -912,13 +913,20 @@ function ImportSettings() {
 }
 
 function UISettings() {
+  const { theme, setTheme } = useTheme();
+
   return (
     <SettingsSection title="UI Preferences">
       <SettingsField label="Theme">
-        <select className="input" style={{ minWidth: '150px' }}>
+        <select 
+          className="input" 
+          style={{ minWidth: '150px' }}
+          value={theme}
+          onChange={(e) => setTheme(e.target.value as 'dark' | 'light' | 'system')}
+        >
           <option value="dark">Dark</option>
           <option value="light">Light</option>
-          <option value="auto">System</option>
+          <option value="system">System</option>
         </select>
       </SettingsField>
       

@@ -98,6 +98,7 @@ app.MapDecisionEngineEndpoints();
 app.MapProviderEndpoints();
 app.MapDdlImportEndpoints();
 app.MapMylar3ImportEndpoints();
+app.MapSettingsEndpoints();
 
 // SPA fallback - serve index.html for client-side routes
 app.MapFallbackToFile("index.html");
