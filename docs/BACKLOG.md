@@ -142,14 +142,14 @@ The DDL (Direct Download) provider must achieve behavioral parity with Mylar3's 
   - AC: Show recent DDL searches, downloads, failures
   - AC: Filterable by provider, status, date range
 
-### 4.6 Generic Indexer/Download Client Support
-- [ ] **RSS/Atom indexer adapter**
+### 4.6 Generic Indexer/Download Client Support ✅ COMPLETED
+- [x] **RSS/Atom indexer adapter**
   - AC: Poll RSS feeds for new releases
   - AC: Parse feed items into candidates
-- [ ] **Generic HTTP download client**
+- [x] **Generic HTTP download client**
   - AC: Simple URL → file download
   - AC: For use with RSS-discovered direct links
-- [ ] **Torrent client abstraction** (placeholder for future)
+- [x] **Torrent client abstraction** (placeholder for future)
   - AC: Interface only, no implementation in EPIC 4
 
 ### 4.7 DDL Parser Enhancements (Mylar3 Parity) ✅ COMPLETED

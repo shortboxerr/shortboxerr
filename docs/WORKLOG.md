@@ -1,5 +1,64 @@
 # Worklog
 
+## Iteration 013 (2026-02-02)
+**EPIC 4.6: Generic Indexer/Download Client Support - COMPLETED**
+
+### Commits
+1. `feat: add RSS indexer and HTTP download client`
+
+### Deliverables
+- ✅ RSS/Atom Indexer Adapter:
+  - `IRssIndexer` interface extending `IIndexerProvider`
+  - `RssIndexer` implementation using `System.ServiceModel.Syndication`
+  - Support for RSS 2.0 and Atom 1.0 feeds
+  - Feed polling with configurable intervals
+  - Category filtering support
+  - Basic authentication support
+  - Enclosure link extraction for direct downloads
+  - 10 unit tests for feed parsing and candidate conversion
+- ✅ Generic HTTP Download Client:
+  - `IHttpDownloadClient` interface extending `IDownloadProvider`
+  - `HttpDownloadClient` implementation with full feature set
+  - Retry logic with exponential backoff
+  - Concurrent download support via semaphore
+  - Resume support for partial downloads
+  - Progress reporting capability
+  - Custom headers, cookies, and auth support
+  - File size checking via HEAD requests
+  - Reachability checking
+  - 12 unit tests covering download operations
+- ✅ Torrent Client Abstraction (Interface Only):
+  - `ITorrentClient` interface for future torrent support
+  - Complete type definitions: `TorrentAddResult`, `TorrentInfo`, `TorrentState`
+  - Configuration types: `TorrentClientSettings`, `TorrentAddOptions`
+  - No implementation per EPIC 4 spec
+- ✅ 359 tests passing (22 new tests)
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Core/Indexers/IRssIndexer.cs` | RSS indexer interface and models |
+| `src/Shortboxerr.Core/DownloadClients/IHttpDownloadClient.cs` | HTTP client interface and models |
+| `src/Shortboxerr.Core/DownloadClients/ITorrentClient.cs` | Torrent client interface (placeholder) |
+| `src/Shortboxerr.Infrastructure/Indexers/RssIndexer.cs` | RSS indexer implementation |
+| `src/Shortboxerr.Infrastructure/DownloadClients/HttpDownloadClient.cs` | HTTP client implementation |
+| `tests/Shortboxerr.Tests/RssIndexerTests.cs` | RSS indexer tests |
+| `tests/Shortboxerr.Tests/HttpDownloadClientTests.cs` | HTTP client tests |
+
+### Dependencies Added
+- `System.ServiceModel.Syndication` - RSS/Atom feed parsing
+- `Moq` - Mocking framework for tests
+
+### Assumptions Made
+- None new (used existing assumptions from docs/ASSUMPTIONS.md)
+
+### Notes
+- RSS indexer converts feed items to Candidates using existing FilenameParser
+- HTTP client supports all common download scenarios
+- Torrent interface is ready for future implementation (qBittorrent, Transmission, etc.)
+
+---
+
 ## Iteration 012 (2026-02-02)
 **EPIC 4.7: DDL Parser Enhancements (Mylar3 Parity) - COMPLETED**
 
