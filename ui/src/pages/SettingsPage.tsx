@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Settings, Server, Download, Shield, 
@@ -126,42 +126,249 @@ function SettingsField({
   );
 }
 
+// Sample data for live preview
+const SAMPLE_DATA = {
+  seriesTitle: 'Batman',
+  seriesYear: '2016',
+  publisher: 'DC',
+  status: 'Continuing',
+  issue: '001',
+  issueTitle: 'I Am Gotham',
+  year: '2016',
+  quality: 'Digital',
+  editionType: 'TPB',
+  volume: '01',
+  collectionTitle: 'I Am Gotham',
+};
+
+// Replace tokens with sample values
+function generatePreview(format: string): string {
+  return format
+    .replace(/\{Series Title\}/gi, SAMPLE_DATA.seriesTitle)
+    .replace(/\{Series Year\}/gi, SAMPLE_DATA.seriesYear)
+    .replace(/\{Publisher\}/gi, SAMPLE_DATA.publisher)
+    .replace(/\{Status\}/gi, SAMPLE_DATA.status)
+    .replace(/\{Issue\}/gi, SAMPLE_DATA.issue)
+    .replace(/\{Issue Title\}/gi, SAMPLE_DATA.issueTitle)
+    .replace(/\{Year\}/gi, SAMPLE_DATA.year)
+    .replace(/\{Quality\}/gi, SAMPLE_DATA.quality)
+    .replace(/\{Edition Type\}/gi, SAMPLE_DATA.editionType)
+    .replace(/\{Volume\}/gi, SAMPLE_DATA.volume)
+    .replace(/\{Collection Title\}/gi, SAMPLE_DATA.collectionTitle);
+}
+
+interface NamingToken {
+  token: string;
+  description: string;
+  example: string;
+}
+
+interface NamingTokensResponse {
+  seriesFolderTokens: NamingToken[];
+  issueFileTokens: NamingToken[];
+  collectionFileTokens: NamingToken[];
+}
+
+function TokenPills({ 
+  tokens, 
+  onTokenClick 
+}: { 
+  tokens: NamingToken[]; 
+  onTokenClick: (token: string) => void;
+}) {
+  return (
+    <div style={{ 
+      display: 'flex', 
+      flexWrap: 'wrap', 
+      gap: '6px', 
+      marginTop: '8px' 
+    }}>
+      {tokens.map((t) => (
+        <button
+          key={t.token}
+          type="button"
+          onClick={() => onTokenClick(t.token)}
+          title={`${t.description} (e.g., ${t.example})`}
+          style={{
+            padding: '4px 8px',
+            fontSize: '11px',
+            fontFamily: 'var(--font-mono)',
+            background: 'var(--bg-tertiary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--radius-sm)',
+            color: 'var(--accent-primary)',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--accent-primary)';
+            e.currentTarget.style.color = 'white';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'var(--bg-tertiary)';
+            e.currentTarget.style.color = 'var(--accent-primary)';
+          }}
+        >
+          {t.token}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function FormatPreview({ format }: { format: string }) {
+  const preview = generatePreview(format);
+  return (
+    <div style={{
+      marginTop: '8px',
+      padding: '8px 12px',
+      background: 'var(--bg-tertiary)',
+      borderRadius: 'var(--radius-sm)',
+      border: '1px solid var(--border-color)',
+      fontSize: '12px',
+    }}>
+      <span style={{ color: 'var(--text-muted)', marginRight: '8px' }}>Preview:</span>
+      <span style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
+        {preview}
+      </span>
+    </div>
+  );
+}
+
+function NamingFormatField({
+  label,
+  description,
+  value,
+  onChange,
+  tokens,
+  inputRef,
+}: {
+  label: string;
+  description: string;
+  value: string;
+  onChange: (value: string) => void;
+  tokens: NamingToken[];
+  inputRef: React.RefObject<HTMLInputElement | null>;
+}) {
+  const handleTokenClick = (token: string) => {
+    const input = inputRef.current;
+    if (input) {
+      const start = input.selectionStart ?? value.length;
+      const end = input.selectionEnd ?? value.length;
+      const newValue = value.slice(0, start) + token + value.slice(end);
+      onChange(newValue);
+      // Set cursor position after inserted token
+      setTimeout(() => {
+        input.focus();
+        input.setSelectionRange(start + token.length, start + token.length);
+      }, 0);
+    } else {
+      onChange(value + token);
+    }
+  };
+
+  return (
+    <SettingsField label={label} description={description}>
+      <input
+        ref={inputRef}
+        className="input"
+        style={{ width: '100%', fontFamily: 'var(--font-mono)', fontSize: '13px' }}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <TokenPills tokens={tokens} onTokenClick={handleTokenClick} />
+      <FormatPreview format={value} />
+    </SettingsField>
+  );
+}
+
 function GeneralSettings() {
+  const [seriesFolderFormat, setSeriesFolderFormat] = useState('{Series Title} ({Year})');
+  const [issueFileFormat, setIssueFileFormat] = useState('{Series Title} #{Issue} ({Year})');
+  const [collectionFileFormat, setCollectionFileFormat] = useState('{Series Title} - {Edition Type} Vol. {Volume} ({Year})');
+  
+  const seriesInputRef = useRef<HTMLInputElement>(null);
+  const issueInputRef = useRef<HTMLInputElement>(null);
+  const collectionInputRef = useRef<HTMLInputElement>(null);
+
+  // Load tokens from API
+  const { data: tokens } = useQuery({
+    queryKey: ['namingTokens'],
+    queryFn: api.getNamingTokens,
+  });
+
+  // Load saved settings from API
+  const { data: generalSettings } = useQuery({
+    queryKey: ['generalSettings'],
+    queryFn: api.getGeneralSettings,
+  });
+
+  // Update local state when settings load
+  useEffect(() => {
+    if (generalSettings) {
+      setSeriesFolderFormat(generalSettings.seriesFolderFormat);
+      setIssueFileFormat(generalSettings.issueFileFormat);
+      setCollectionFileFormat(generalSettings.collectionFileFormat);
+    }
+  }, [generalSettings]);
+
+  // Default tokens if API hasn't loaded
+  const defaultTokens: NamingTokensResponse = {
+    seriesFolderTokens: [
+      { token: '{Series Title}', description: 'Series title', example: 'Batman' },
+      { token: '{Series Year}', description: 'Year started', example: '2016' },
+      { token: '{Publisher}', description: 'Publisher name', example: 'DC' },
+      { token: '{Status}', description: 'Series status', example: 'Continuing' },
+    ],
+    issueFileTokens: [
+      { token: '{Series Title}', description: 'Series title', example: 'Batman' },
+      { token: '{Issue}', description: 'Issue number', example: '001' },
+      { token: '{Issue Title}', description: 'Issue title', example: 'I Am Gotham' },
+      { token: '{Year}', description: 'Release year', example: '2016' },
+      { token: '{Publisher}', description: 'Publisher name', example: 'DC' },
+      { token: '{Quality}', description: 'Quality tag', example: 'Digital' },
+    ],
+    collectionFileTokens: [
+      { token: '{Series Title}', description: 'Series title', example: 'Batman' },
+      { token: '{Edition Type}', description: 'Edition type', example: 'TPB' },
+      { token: '{Volume}', description: 'Volume number', example: '01' },
+      { token: '{Collection Title}', description: 'Collection title', example: 'I Am Gotham' },
+      { token: '{Year}', description: 'Release year', example: '2016' },
+      { token: '{Publisher}', description: 'Publisher name', example: 'DC' },
+    ],
+  };
+
+  const namingTokens = tokens ?? defaultTokens;
+
   return (
     <>
       <SettingsSection title="Naming">
-        <SettingsField 
-          label="Series Folder Format" 
+        <NamingFormatField
+          label="Series Folder Format"
           description="Pattern for organizing series folders"
-        >
-          <input 
-            className="input" 
-            style={{ width: '100%' }}
-            defaultValue="{Series Title} ({Year})"
-          />
-        </SettingsField>
+          value={seriesFolderFormat}
+          onChange={setSeriesFolderFormat}
+          tokens={namingTokens.seriesFolderTokens}
+          inputRef={seriesInputRef}
+        />
         
-        <SettingsField 
-          label="Issue File Format" 
+        <NamingFormatField
+          label="Issue File Format"
           description="Pattern for naming issue files"
-        >
-          <input 
-            className="input" 
-            style={{ width: '100%' }}
-            defaultValue="{Series Title} #{Issue} ({Year})"
-          />
-        </SettingsField>
+          value={issueFileFormat}
+          onChange={setIssueFileFormat}
+          tokens={namingTokens.issueFileTokens}
+          inputRef={issueInputRef}
+        />
         
-        <SettingsField 
-          label="Collection File Format" 
+        <NamingFormatField
+          label="Collection File Format"
           description="Pattern for naming collection files"
-        >
-          <input 
-            className="input" 
-            style={{ width: '100%' }}
-            defaultValue="{Series Title} - {Edition Type} Vol. {Volume} ({Year})"
-          />
-        </SettingsField>
+          value={collectionFileFormat}
+          onChange={setCollectionFileFormat}
+          tokens={namingTokens.collectionFileTokens}
+          inputRef={collectionInputRef}
+        />
       </SettingsSection>
       
       <SettingsSection title="Root Folders">
