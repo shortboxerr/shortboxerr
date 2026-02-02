@@ -36,6 +36,7 @@ public class SettingsService : ISettingsService
     private const string ApiKeyValueKey = "security.apiKey";
     private const string ApiKeyCreatedAtKey = "security.apiKeyCreatedAt";
     private const string ApiKeyLastUsedAtKey = "security.apiKeyLastUsedAt";
+    private const string ApiKeyEnabledKey = "security.apiKeyEnabled";
 
     public SettingsService(ShortboxerrDbContext context)
     {
@@ -188,11 +189,14 @@ public class SettingsService : ISettingsService
     public async Task<ApiKeyInfo> GetApiKeyAsync(bool includeFull = false, CancellationToken cancellationToken = default)
     {
         var apiKey = await GetAsync(ApiKeyValueKey, cancellationToken);
+        var isEnabled = await GetAsync<bool>(ApiKeyEnabledKey, true, cancellationToken); // Default to enabled
         
-        // Generate a new key if none exists
+        // Generate a new key if none exists (auto-generate on first access)
         if (string.IsNullOrEmpty(apiKey))
         {
-            return await RegenerateApiKeyAsync(cancellationToken);
+            var newKeyInfo = await RegenerateApiKeyAsync(cancellationToken);
+            newKeyInfo.IsEnabled = isEnabled;
+            return newKeyInfo;
         }
 
         var createdAtStr = await GetAsync(ApiKeyCreatedAtKey, cancellationToken);
@@ -200,6 +204,7 @@ public class SettingsService : ISettingsService
 
         return new ApiKeyInfo
         {
+            IsEnabled = isEnabled,
             MaskedKey = MaskApiKey(apiKey),
             FullKey = includeFull ? apiKey : null,
             CreatedAt = DateTime.TryParse(createdAtStr, out var createdAt) ? createdAt : DateTime.UtcNow,
@@ -211,6 +216,7 @@ public class SettingsService : ISettingsService
     {
         var newKey = GenerateApiKey();
         var createdAt = DateTime.UtcNow;
+        var isEnabled = await GetAsync<bool>(ApiKeyEnabledKey, true, cancellationToken);
 
         await SetAsync(ApiKeyValueKey, newKey, cancellationToken);
         await SetAsync(ApiKeyCreatedAtKey, createdAt.ToString("O"), cancellationToken);
@@ -218,11 +224,18 @@ public class SettingsService : ISettingsService
 
         return new ApiKeyInfo
         {
+            IsEnabled = isEnabled,
             MaskedKey = MaskApiKey(newKey),
             FullKey = newKey, // Return full key on regenerate so user can copy it
             CreatedAt = createdAt,
             LastUsedAt = null
         };
+    }
+
+    public async Task<ApiKeyInfo> SetApiEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+    {
+        await SetAsync<bool>(ApiKeyEnabledKey, enabled, cancellationToken);
+        return await GetApiKeyAsync(includeFull: false, cancellationToken);
     }
 
     public async Task<bool> ValidateApiKeyAsync(string apiKey, CancellationToken cancellationToken = default)

@@ -1243,6 +1243,13 @@ function SecuritySettings() {
     queryFn: api.getApiKey,
   });
 
+  const setApiEnabledMutation = useMutation({
+    mutationFn: (enabled: boolean) => api.setApiEnabled(enabled),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['apiKey'] });
+    },
+  });
+
   const regenerateMutation = useMutation({
     mutationFn: api.regenerateApiKey,
     onSuccess: (data) => {
@@ -1252,6 +1259,11 @@ function SecuritySettings() {
       queryClient.invalidateQueries({ queryKey: ['apiKey'] });
     },
   });
+
+  const handleToggleApiEnabled = () => {
+    const newEnabled = !apiKeyInfo?.isEnabled;
+    setApiEnabledMutation.mutate(newEnabled);
+  };
 
   const handleShowKey = async () => {
     if (showApiKey) {
@@ -1279,7 +1291,12 @@ function SecuritySettings() {
     }
   };
 
+  const handleRegenerateConfirm = () => {
+    regenerateMutation.mutate();
+  };
+
   const displayValue = showApiKey && fullKey ? fullKey : (apiKeyInfo?.maskedKey || '...');
+  const isApiEnabled = apiKeyInfo?.isEnabled ?? true;
 
   return (
     <>
@@ -1302,52 +1319,71 @@ function SecuritySettings() {
       
       <SettingsSection title="API">
         <SettingsField 
-          label="API Key" 
-          description="Used for external integrations. Keep this secret!"
+          label="Enable API" 
+          description="Allow external applications to access Shortboxerr via API"
         >
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <input 
-              className="input" 
-              style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: '13px' }}
-              value={isLoading ? 'Loading...' : displayValue}
-              readOnly
+              type="checkbox" 
+              checked={isApiEnabled}
+              onChange={handleToggleApiEnabled}
+              disabled={isLoading || setApiEnabledMutation.isPending}
             />
-            <button 
-              className="btn btn-icon" 
-              onClick={handleShowKey}
-              title={showApiKey ? 'Hide' : 'Show'}
-              disabled={isLoading}
-            >
-              {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-            <button 
-              className="btn btn-icon" 
-              onClick={handleCopyApiKey}
-              title={copyFeedback ? 'Copied!' : 'Copy'}
-              disabled={isLoading}
-              style={copyFeedback ? { color: 'var(--accent-success)' } : undefined}
-            >
-              {copyFeedback ? <CheckCircle size={16} /> : <Copy size={16} />}
-            </button>
-            <button 
-              className="btn btn-secondary"
-              onClick={() => setShowRegenerateConfirm(true)}
-              disabled={isLoading || regenerateMutation.isPending}
-            >
-              {regenerateMutation.isPending ? 'Regenerating...' : 'Regenerate'}
-            </button>
-          </div>
-          {apiKeyInfo?.createdAt && (
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-              Created: {new Date(apiKeyInfo.createdAt).toLocaleDateString()}
-              {apiKeyInfo.lastUsedAt && (
-                <span style={{ marginLeft: '16px' }}>
-                  Last used: {new Date(apiKeyInfo.lastUsedAt).toLocaleDateString()}
-                </span>
-              )}
-            </div>
-          )}
+            <span style={{ fontSize: '13px' }}>
+              {isApiEnabled ? 'API access is enabled' : 'API access is disabled'}
+            </span>
+          </label>
         </SettingsField>
+
+        {isApiEnabled && (
+          <SettingsField 
+            label="API Key" 
+            description="Used for external integrations. Keep this secret!"
+          >
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input 
+                className="input" 
+                style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: '13px' }}
+                value={isLoading ? 'Loading...' : displayValue}
+                readOnly
+              />
+              <button 
+                className="btn btn-icon" 
+                onClick={handleShowKey}
+                title={showApiKey ? 'Hide' : 'Show'}
+                disabled={isLoading}
+              >
+                {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+              <button 
+                className="btn btn-icon" 
+                onClick={handleCopyApiKey}
+                title={copyFeedback ? 'Copied!' : 'Copy'}
+                disabled={isLoading}
+                style={copyFeedback ? { color: 'var(--accent-success)' } : undefined}
+              >
+                {copyFeedback ? <CheckCircle size={16} /> : <Copy size={16} />}
+              </button>
+              <button 
+                className="btn btn-secondary"
+                onClick={() => setShowRegenerateConfirm(true)}
+                disabled={isLoading || regenerateMutation.isPending}
+              >
+                {regenerateMutation.isPending ? 'Regenerating...' : 'Regenerate'}
+              </button>
+            </div>
+            {apiKeyInfo?.createdAt && (
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+                Created: {new Date(apiKeyInfo.createdAt).toLocaleDateString()}
+                {apiKeyInfo.lastUsedAt && (
+                  <span style={{ marginLeft: '16px' }}>
+                    Last used: {new Date(apiKeyInfo.lastUsedAt).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+            )}
+          </SettingsField>
+        )}
       </SettingsSection>
 
       {/* Regenerate Confirmation Modal */}
@@ -1390,9 +1426,10 @@ function SecuritySettings() {
               <button 
                 className="btn btn-primary" 
                 style={{ background: 'var(--accent-warning)' }}
-                onClick={() => regenerateMutation.mutate()}
+                onClick={handleRegenerateConfirm}
+                disabled={regenerateMutation.isPending}
               >
-                Regenerate Key
+                {regenerateMutation.isPending ? 'Regenerating...' : 'Regenerate Key'}
               </button>
             </div>
           </div>

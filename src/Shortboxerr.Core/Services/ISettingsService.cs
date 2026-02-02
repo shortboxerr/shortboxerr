@@ -69,6 +69,11 @@ public interface ISettingsService
     /// Validates an API key.
     /// </summary>
     Task<bool> ValidateApiKeyAsync(string apiKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sets whether API access is enabled.
+    /// </summary>
+    Task<ApiKeyInfo> SetApiEnabledAsync(bool enabled, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -76,6 +81,11 @@ public interface ISettingsService
 /// </summary>
 public class ApiKeyInfo
 {
+    /// <summary>
+    /// Whether API access is enabled.
+    /// </summary>
+    public bool IsEnabled { get; set; } = true;
+
     /// <summary>
     /// The masked API key (shows first 4 and last 4 characters).
     /// </summary>

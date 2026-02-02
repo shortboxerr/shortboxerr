@@ -193,6 +193,7 @@ export interface NamingTokensResponse {
 }
 
 export interface ApiKeyInfo {
+  isEnabled: boolean;
   maskedKey: string;
   fullKey: string | null;
   createdAt: string;
@@ -542,6 +543,13 @@ export const api = {
 
   regenerateApiKey: async (): Promise<ApiKeyInfo> => {
     return await fetchApi<ApiKeyInfo>('/api/v1/settings/apikey/regenerate', { method: 'POST' });
+  },
+
+  setApiEnabled: async (enabled: boolean): Promise<ApiKeyInfo> => {
+    return await fetchApi<ApiKeyInfo>('/api/v1/settings/apikey/enabled', {
+      method: 'PUT',
+      body: JSON.stringify({ enabled }),
+    });
   },
 };
 

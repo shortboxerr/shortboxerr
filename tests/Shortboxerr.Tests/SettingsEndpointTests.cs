@@ -335,12 +335,53 @@ public class SettingsEndpointTests : IClassFixture<CustomWebApplicationFactory>
         Assert.StartsWith("sk_live_", result.MaskedKey);
         Assert.Contains("...", result.MaskedKey);
     }
+
+    [Fact]
+    public async Task GetApiKey_ReturnsIsEnabled()
+    {
+        var response = await _client.GetAsync("/api/v1/settings/apikey");
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<ApiKeyResponse>();
+        Assert.NotNull(result);
+        // Default should be enabled
+        Assert.True(result.IsEnabled);
+    }
+
+    [Fact]
+    public async Task SetApiEnabled_DisablesAndEnablesApi()
+    {
+        // Disable API
+        var disableRequest = new { enabled = false };
+        var disableResponse = await _client.PutAsJsonAsync("/api/v1/settings/apikey/enabled", disableRequest);
+        disableResponse.EnsureSuccessStatusCode();
+
+        var disabledResult = await disableResponse.Content.ReadFromJsonAsync<ApiKeyResponse>();
+        Assert.NotNull(disabledResult);
+        Assert.False(disabledResult.IsEnabled);
+
+        // Verify persistence
+        var getResponse = await _client.GetAsync("/api/v1/settings/apikey");
+        var persistedResult = await getResponse.Content.ReadFromJsonAsync<ApiKeyResponse>();
+        Assert.NotNull(persistedResult);
+        Assert.False(persistedResult.IsEnabled);
+
+        // Re-enable API
+        var enableRequest = new { enabled = true };
+        var enableResponse = await _client.PutAsJsonAsync("/api/v1/settings/apikey/enabled", enableRequest);
+        enableResponse.EnsureSuccessStatusCode();
+
+        var enabledResult = await enableResponse.Content.ReadFromJsonAsync<ApiKeyResponse>();
+        Assert.NotNull(enabledResult);
+        Assert.True(enabledResult.IsEnabled);
+    }
 }
 
 // Response DTOs for deserialization
 
 public class ApiKeyResponse
 {
+    public bool IsEnabled { get; set; } = true;
     public string MaskedKey { get; set; } = "";
     public string? FullKey { get; set; }
     public DateTime CreatedAt { get; set; }

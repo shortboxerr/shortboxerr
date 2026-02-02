@@ -64,6 +64,11 @@ public static class SettingsEndpoints
             .WithOpenApi()
             .Produces<ApiKeyResponse>(200);
 
+        group.MapPut("/apikey/enabled", SetApiEnabled)
+            .WithName("SetApiEnabled")
+            .WithOpenApi()
+            .Produces<ApiKeyResponse>(200);
+
         // Generic key-value access
         group.MapGet("/{key}", GetSetting)
             .WithName("GetSetting")
@@ -204,6 +209,7 @@ public static class SettingsEndpoints
         var keyInfo = await settingsService.GetApiKeyAsync(includeFull: false, cancellationToken);
         return Results.Ok(new ApiKeyResponse
         {
+            IsEnabled = keyInfo.IsEnabled,
             MaskedKey = keyInfo.MaskedKey,
             FullKey = null, // Never return full key on regular get
             CreatedAt = keyInfo.CreatedAt,
@@ -216,6 +222,7 @@ public static class SettingsEndpoints
         var keyInfo = await settingsService.GetApiKeyAsync(includeFull: true, cancellationToken);
         return Results.Ok(new ApiKeyResponse
         {
+            IsEnabled = keyInfo.IsEnabled,
             MaskedKey = keyInfo.MaskedKey,
             FullKey = keyInfo.FullKey,
             CreatedAt = keyInfo.CreatedAt,
@@ -228,11 +235,25 @@ public static class SettingsEndpoints
         var keyInfo = await settingsService.RegenerateApiKeyAsync(cancellationToken);
         return Results.Ok(new ApiKeyResponse
         {
+            IsEnabled = keyInfo.IsEnabled,
             MaskedKey = keyInfo.MaskedKey,
             FullKey = keyInfo.FullKey, // Return full key on regenerate
             CreatedAt = keyInfo.CreatedAt,
             LastUsedAt = keyInfo.LastUsedAt,
             IsNewKey = true
+        });
+    }
+
+    private static async Task<IResult> SetApiEnabled(SetApiEnabledRequest request, ISettingsService settingsService, CancellationToken cancellationToken)
+    {
+        var keyInfo = await settingsService.SetApiEnabledAsync(request.Enabled, cancellationToken);
+        return Results.Ok(new ApiKeyResponse
+        {
+            IsEnabled = keyInfo.IsEnabled,
+            MaskedKey = keyInfo.MaskedKey,
+            FullKey = null,
+            CreatedAt = keyInfo.CreatedAt,
+            LastUsedAt = keyInfo.LastUsedAt
         });
     }
 
@@ -306,8 +327,18 @@ public class SetSettingRequest
     public string Value { get; set; } = "";
 }
 
+public class SetApiEnabledRequest
+{
+    public bool Enabled { get; set; }
+}
+
 public class ApiKeyResponse
 {
+    /// <summary>
+    /// Whether API access is enabled.
+    /// </summary>
+    public bool IsEnabled { get; set; } = true;
+
     /// <summary>
     /// The masked API key (shows prefix and last 4 characters).
     /// </summary>
