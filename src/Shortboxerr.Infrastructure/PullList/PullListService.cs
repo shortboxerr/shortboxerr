@@ -529,8 +529,8 @@ public class PullListService : IPullListService
 
         try
         {
-            // Check ComicVine configuration
-            status.IsComicVineConfigured = _comicVineClient.IsConfigured;
+            // Check ComicVine configuration (use async method for reliable check)
+            status.IsComicVineConfigured = await _comicVineClient.IsConfiguredAsync(cancellationToken);
 
             // Get series counts
             status.TotalSeriesCount = await _dbContext.Series

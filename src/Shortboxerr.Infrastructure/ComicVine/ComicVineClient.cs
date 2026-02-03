@@ -60,6 +60,12 @@ public class ComicVineClient : IComicVineClient
 
     public bool IsConfigured => !string.IsNullOrEmpty(GetApiKeySync());
 
+    public async Task<bool> IsConfiguredAsync(CancellationToken cancellationToken = default)
+    {
+        var apiKey = await GetApiKeyAsync(cancellationToken);
+        return !string.IsNullOrEmpty(apiKey);
+    }
+
     public async Task<ComicVineTestResult> TestConnectionAsync(CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();

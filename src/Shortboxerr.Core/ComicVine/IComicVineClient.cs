@@ -76,9 +76,16 @@ public interface IComicVineClient
     ComicVineRateLimitStatus GetRateLimitStatus();
 
     /// <summary>
-    /// Gets or sets whether the client is configured (has API key).
+    /// Gets whether the client is configured (has API key) - uses cached value.
+    /// Note: May return false if cache is stale. Use IsConfiguredAsync for reliable check.
     /// </summary>
     bool IsConfigured { get; }
+
+    /// <summary>
+    /// Asynchronously checks whether the client is configured (has API key).
+    /// This method fetches the API key from settings if needed, ensuring an accurate result.
+    /// </summary>
+    Task<bool> IsConfiguredAsync(CancellationToken cancellationToken = default);
 }
 
 #region Result Types
