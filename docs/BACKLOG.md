@@ -649,6 +649,126 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
 
 ---
 
+## EPIC 11: Weekly Pull List (Mylar3 Parity)
+Track upcoming comic releases and automate wanted list management. Must achieve full behavioral parity with Mylar3's weekly pull list functionality.
+
+### 11.1 Release Date Tracking
+- [ ] **ComicVine release date sync**
+  - AC: Fetch store date (release date) for all issues in monitored series
+  - AC: Differentiate between cover date and store date (match Mylar3)
+  - AC: Handle TBD/unknown release dates gracefully
+  - AC: Track release date changes (delays, moved up)
+- [ ] **Release date caching**
+  - AC: Cache release dates locally
+  - AC: Configurable refresh interval (default: daily)
+  - AC: Track last sync time per series
+  - AC: Force refresh option
+- [ ] **Release calendar data model**
+  - AC: ReleaseCalendarEntry entity (IssueId, ReleaseDate, Status)
+  - AC: Status: Upcoming, Released, Owned, Wanted, Skipped
+  - AC: Link to Series and Issue entities
+  - AC: API endpoint: GET /api/v1/calendar
+
+### 11.2 Weekly Pull List Generation
+- [ ] **This week's releases**
+  - AC: List all issues releasing this week for monitored series
+  - AC: Configurable week start (Sunday/Monday, match Mylar3)
+  - AC: Comic release day awareness (typically Wednesday in US)
+  - AC: API endpoint: GET /api/v1/pulllist/week?date={date}
+- [ ] **Upcoming releases**
+  - AC: List releases for next N weeks (configurable, default: 4)
+  - AC: Group by week or by series
+  - AC: Filter by publisher, series status
+  - AC: API endpoint: GET /api/v1/pulllist/upcoming
+- [ ] **Past releases**
+  - AC: List recent releases (last N weeks)
+  - AC: Show owned vs. missing status
+  - AC: Identify missed issues that need to be grabbed
+  - AC: API endpoint: GET /api/v1/pulllist/past
+
+### 11.3 Wanted List Automation
+- [ ] **Auto-add to wanted list**
+  - AC: Automatically add new issues to wanted list on release day
+  - AC: Configurable: on release day, X days before, or manual only
+  - AC: Option to auto-add only for specific series (per-series setting)
+  - AC: Skip variants (configurable)
+- [ ] **Auto-search on release**
+  - AC: Trigger search when issue is added to wanted list
+  - AC: Respect rate limits and search intervals
+  - AC: Configurable delay after release (default: 0, immediate)
+- [ ] **Series monitoring modes (Mylar3 parity)**
+  - AC: "All Issues" - want all issues in series
+  - AC: "Future Issues" - only want new issues going forward
+  - AC: "Manual" - never auto-add, user selects individually
+  - AC: "First Issue" - only want #1 issues (for new series discovery)
+
+### 11.4 Pull List Notifications
+- [ ] **New release notifications**
+  - AC: Notify when issues are releasing this week
+  - AC: Summary notification (all releases) vs. individual
+  - AC: Configurable notification day (e.g., Tuesday before release)
+- [ ] **Grabbed notifications**
+  - AC: Notify when pull list issues are successfully grabbed
+  - AC: Link to downloaded file location
+- [ ] **Notification channels (match Sonarr/Radarr)**
+  - AC: In-app notifications (notification center)
+  - AC: Email notifications (SMTP configuration)
+  - AC: Webhook notifications (for Discord, Slack, etc.)
+  - AC: Pushover/Pushbullet support
+
+### 11.5 Pull List UI
+- [ ] **Calendar view**
+  - AC: Monthly calendar showing release dates
+  - AC: Color-coding: owned (green), wanted (blue), missing (red), upcoming (gray)
+  - AC: Click to view issue details
+  - AC: Navigate between months
+- [ ] **List view**
+  - AC: This week's releases prominently displayed
+  - AC: Upcoming releases list (next 4 weeks)
+  - AC: Past releases with status
+  - AC: Filter by series, publisher, owned/missing
+- [ ] **Pull list management**
+  - AC: Mark issue as "Skip" (don't want this issue)
+  - AC: Mark issue as "Owned" (have it already, outside system)
+  - AC: "Add to Wanted" button for manual additions
+  - AC: Bulk actions (select multiple, mark as skipped/wanted)
+- [ ] **Dashboard integration**
+  - AC: "This Week" widget on dashboard
+  - AC: "Coming Soon" widget
+  - AC: Release count badges
+
+### 11.6 Pull List Configuration
+- [ ] **Settings**
+  - AC: Week start day (Sunday/Monday)
+  - AC: Default add-to-wanted behavior
+  - AC: Search delay after release
+  - AC: Notification preferences
+  - AC: API endpoint: GET/PUT /api/v1/settings/pulllist
+- [ ] **Per-series settings**
+  - AC: Override monitoring mode per series
+  - AC: Skip variants per series
+  - AC: Priority per series (for search ordering)
+- [ ] **Mylar3 settings import**
+  - AC: Parse config.ini for pull list settings
+  - AC: Import series monitoring modes
+  - AC: Import notification preferences
+
+### 11.7 Pull List Conformance Tests
+- [ ] **Calendar generation tests**
+  - AC: Test week boundary calculations
+  - AC: Test release date grouping
+  - AC: Test status calculation (owned/wanted/missing)
+- [ ] **Automation tests**
+  - AC: Test auto-add to wanted list timing
+  - AC: Test auto-search trigger
+  - AC: Test notification generation
+- [ ] **Integration tests**
+  - AC: Full flow: ComicVine sync → calendar update → auto-add → search → grab
+  - AC: Multi-series weekly pull list generation
+  - AC: UI calendar interaction
+
+---
+
 ## Story Ordering Notes
 
 **EPIC 4 Implementation Order:**
@@ -675,3 +795,7 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
 - EPIC 10.4 depends on EPIC 2 (Import Pipeline) for import handoff
 - EPIC 10.5 depends on EPIC 7 (Mylar3 Migration) for config import patterns
 - EPIC 10.6 depends on EPIC 5 (UI shell) for settings pages
+- EPIC 11 depends on EPIC 9 (ComicVine Integration) for release date metadata
+- EPIC 11.3 depends on EPIC 4 (DDL Provider) for auto-search functionality
+- EPIC 11.5 depends on EPIC 5 (UI shell) for calendar and list views
+- EPIC 11.6 depends on EPIC 7 (Mylar3 Migration) for config import patterns
