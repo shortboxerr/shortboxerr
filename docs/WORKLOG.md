@@ -1,5 +1,71 @@
 # Worklog
 
+## Iteration 037 (2026-02-03)
+**EPIC 11.9: Pull List UX Improvements**
+
+### Commits
+1. `feat: add Pull List UX improvements (EPIC 11.9)`
+
+### Deliverables
+
+#### Configuration Status API
+- ✅ **New endpoint**: GET /api/v1/pulllist/config-status
+  - Returns `PullListConfigStatus` with:
+    - `isComicVineConfigured`: Whether API key is set
+    - `totalSeriesCount`: Total series in library
+    - `matchedSeriesCount`: Series matched to ComicVine
+    - `monitoredSeriesCount`: Series being monitored
+    - `hasReleasesThisWeek`: Whether any releases this week
+    - `suggestedAction`: User-friendly next step guidance
+    - `actionType`: Enum for UI routing (ConfigureApiKey, AddSeries, MatchSeries, TryAllReleases, None)
+
+#### Empty State Improvements
+- ✅ **My Pull List empty states**:
+  - ComicVine not configured → "Configure ComicVine" button → Settings page
+  - No series → "Add Series" button → Series page + "Try All Releases" button
+  - Series not matched → "Match Series" button → Series page + "Try All Releases" button
+  - No releases this week → "Discover All Releases" button → All Releases mode
+  
+- ✅ **All Releases empty states**:
+  - ComicVine not configured → "Configure ComicVine" button → Settings page
+  - No releases found → "Refresh from ComicVine" button
+
+#### Configuration Warning Banner
+- ✅ **Warning banner** when ComicVine API is not configured
+  - Displays at top of Pull List page
+  - Links directly to Settings → ComicVine tab
+  - Alert styling with warning icon
+
+#### Manual Refresh Controls
+- ✅ **Refresh button** with loading spinner animation
+- ✅ **Last refresh timestamp** shown next to button
+- ✅ **Disabled state** while loading
+
+### API Endpoints Added
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/pulllist/config-status` | GET | Get pull list configuration status for UX |
+
+### Files Modified
+- `src/Shortboxerr.Core/PullList/IPullListService.cs` (added interface method + models)
+- `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` (implementation)
+- `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` (new endpoint)
+- `ui/src/api/client.ts` (types + API method)
+- `ui/src/pages/PullListPage.tsx` (empty states, banner, refresh)
+- `ui/src/App.css` (empty state actions, alert styles)
+
+### Test Results
+```
+Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
+```
+
+### UI Build
+```
+✓ built in 1.38s
+```
+
+---
+
 ## Iteration 036 (2026-02-03)
 **EPIC 11.5: Pull List UI Improvements & Caching**
 

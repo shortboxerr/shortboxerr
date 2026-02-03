@@ -1,3 +1,79 @@
+# Self Check - Iteration 037
+
+## EPIC 11.9: Pull List UX Improvements
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Build succeeded with 0 errors |
+| Tests pass | ✅ | 570 total tests passing |
+| UI builds | ✅ | Vite build succeeded |
+| API endpoint working | ✅ | GET /api/v1/pulllist/config-status added |
+| Empty states improved | ✅ | Actionable guidance for all scenarios |
+| Warning banner | ✅ | Shows when ComicVine not configured |
+| Refresh controls | ✅ | Button with timestamp tracking |
+| Git commit | ✅ | Conventional commit format |
+
+### Acceptance Criteria Status
+
+#### Empty State Improvements
+| AC | Status |
+|----|--------|
+| My Pull List - Configure API button | ✅ |
+| My Pull List - Add series button | ✅ |
+| My Pull List - Match series guidance | ✅ |
+| My Pull List - Try All Releases suggestion | ✅ |
+| All Releases - Configure API button | ✅ |
+| All Releases - No releases message | ✅ |
+| All Releases - Refresh button | ✅ |
+
+#### Manual Refresh Controls
+| AC | Status |
+|----|--------|
+| Refresh button in toolbar | ✅ |
+| Last refresh timestamp shown | ✅ |
+| Triggers data refetch | ✅ |
+| Progress indicator (spinner) | ✅ |
+
+#### Configuration Status Indicator
+| AC | Status |
+|----|--------|
+| Visual indicator when not configured | ✅ |
+| Warning banner at top of Pull List | ✅ |
+| Quick link to Settings → ComicVine | ✅ |
+
+#### First-time User Experience
+| AC | Status |
+|----|--------|
+| Guided onboarding wizard | Deferred |
+| Step-by-step flow | Deferred |
+| Skip option | Deferred |
+| **Note:** Empty states with actionable buttons provide sufficient guidance |
+
+### Deferred Items
+- First-time user experience wizard (empty states provide sufficient guidance)
+
+### New API Endpoint
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/pulllist/config-status` | GET | Configuration status for UX improvements |
+
+### Files Modified
+- `src/Shortboxerr.Core/PullList/IPullListService.cs`
+- `src/Shortboxerr.Infrastructure/PullList/PullListService.cs`
+- `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs`
+- `ui/src/api/client.ts`
+- `ui/src/pages/PullListPage.tsx`
+- `ui/src/App.css`
+
+### Test Results
+```
+Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
+```
+
+---
+
 # Self Check - Iteration 035
 
 ## EPIC 11.8: This Week Discovery (Mylar3 Parity)
