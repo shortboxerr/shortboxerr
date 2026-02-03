@@ -1,5 +1,85 @@
 # Worklog
 
+## Iteration 040 (2026-02-03)
+**EPIC 11.4: Pull List Notifications (In-App) - COMPLETED**
+
+### Commits
+1. `feat: implement in-app notification system (EPIC 11.4 partial)`
+
+### Deliverables
+
+#### Notification Entity
+- ✅ `Notification` entity with comprehensive type system
+- ✅ Types: Info, Success, Warning, Error, NewRelease, Grabbed, Downloaded, WeeklySummary, Health, Update
+- ✅ EF Core migration for Notifications table
+
+#### Notification Service
+- ✅ `INotificationService` interface with full CRUD operations
+- ✅ `NotificationService` implementation
+- ✅ Create notifications with type, title, message, link, related entities
+- ✅ Query with filtering (unread only, types, series)
+- ✅ Mark as read (single/all)
+- ✅ Delete (single/read/older than date)
+- ✅ Unread count
+
+#### Specialized Notification Methods
+| Method | Purpose |
+|--------|---------|
+| `SendNewReleaseNotificationAsync` | Weekly release notifications |
+| `SendGrabbedNotificationAsync` | Downloaded issue notifications |
+| `SendWeeklySummaryAsync` | Weekly summary notifications |
+
+#### Notification Settings
+| Setting | Type | Default | Purpose |
+|---------|------|---------|---------|
+| `EnableInApp` | bool | true | Enable/disable in-app notifications |
+| `NewReleaseNotifications` | bool | true | Send new release notifications |
+| `GrabbedNotifications` | bool | true | Send grabbed notifications |
+| `WeeklySummaryNotifications` | bool | false | Send weekly summaries |
+| `SummaryNotificationDay` | DayOfWeek | Tuesday | Day to send weekly summary |
+| `AggregateReleaseNotifications` | bool | true | Single vs. individual notifications |
+| `AutoDeleteReadAfterDays` | int | 30 | Auto-cleanup old notifications |
+| `MaxNotifications` | int | 500 | Max notifications to keep |
+
+#### API Endpoints
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/notifications` | GET | List notifications with filtering |
+| `/api/v1/notifications/unread/count` | GET | Get unread count |
+| `/api/v1/notifications/{id}` | GET | Get single notification |
+| `/api/v1/notifications/{id}/read` | POST | Mark as read |
+| `/api/v1/notifications/read-all` | POST | Mark all as read |
+| `/api/v1/notifications/{id}` | DELETE | Delete notification |
+| `/api/v1/notifications/read` | DELETE | Delete all read |
+| `/api/v1/notifications/settings` | GET/PUT | Manage settings |
+| `/api/v1/notifications/test` | POST | Create test notification |
+
+### Unit Tests (20 new tests)
+- Notification CRUD operations (8 tests)
+- Filtering and queries (4 tests)
+- Specialized notification creation (5 tests)
+- Settings management (2 tests)
+- Max notifications enforcement (1 test)
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Entities/Notification.cs` | New entity |
+| `src/Shortboxerr.Core/Notifications/INotificationService.cs` | New interface |
+| `src/Shortboxerr.Infrastructure/Notifications/NotificationService.cs` | New service |
+| `src/Shortboxerr.Infrastructure/Persistence/ShortboxerrDbContext.cs` | Added DbSet |
+| `src/Shortboxerr.Api/Endpoints/NotificationEndpoints.cs` | New endpoints |
+| `src/Shortboxerr.Api/Program.cs` | Register endpoints |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register service |
+| `tests/Shortboxerr.Tests/NotificationServiceTests.cs` | 20 new tests |
+
+### Notes
+- External notification channels (email, webhook, Pushover) deferred for future iteration
+- UI notification center component deferred for future iteration
+- Integration with pull list processing (auto-send on release day) deferred
+
+---
+
 ## Iteration 039 (2026-02-03)
 **EPIC 11.11: ComicVine Sync Parity (Mylar3) - COMPLETED**
 

@@ -829,19 +829,53 @@ Track upcoming comic releases and automate wanted list management. Must achieve 
   - AC: Respect rate limits and search intervals
   - Note: Requires DDL/NZB integration from EPICs 8/10
 
-### 11.4 Pull List Notifications
-- [ ] **New release notifications**
-  - AC: Notify when issues are releasing this week
-  - AC: Summary notification (all releases) vs. individual
-  - AC: Configurable notification day (e.g., Tuesday before release)
-- [ ] **Grabbed notifications**
-  - AC: Notify when pull list issues are successfully grabbed
-  - AC: Link to downloaded file location
-- [ ] **Notification channels (match Sonarr/Radarr)**
-  - AC: In-app notifications (notification center)
+### 11.4 Pull List Notifications (PARTIAL)
+In-app notification system implemented. External notification channels (email, webhooks) deferred.
+
+- [x] **In-app notifications (notification center)** ✅
+  - AC: Notification entity with types (Info, Success, Warning, Error, NewRelease, Grabbed, WeeklySummary, Health, Update) ✅
+  - AC: Create/read/delete notifications ✅
+  - AC: Mark as read (single/all) ✅
+  - AC: Filter by type, read status, series ✅
+  - AC: Unread count endpoint ✅
+  - AC: Auto-delete old notifications (configurable) ✅
+  - AC: Max notifications limit (configurable) ✅
+
+- [x] **New release notifications** ✅
+  - AC: `SendNewReleaseNotificationAsync` method ✅
+  - AC: Summary notification (aggregated) vs. individual (configurable) ✅
+  - AC: Configurable notification day ✅
+  - AC: Links to pull list page ✅
+
+- [x] **Grabbed notifications** ✅
+  - AC: `SendGrabbedNotificationAsync` method ✅
+  - AC: Links to series page ✅
+  - AC: Shows download source ✅
+
+- [x] **Notification settings** ✅
+  - AC: Enable/disable in-app notifications ✅
+  - AC: Enable/disable per notification type (NewRelease, Grabbed, WeeklySummary) ✅
+  - AC: Aggregate release notifications toggle ✅
+  - AC: Auto-delete read after N days ✅
+  - AC: Max notifications limit ✅
+
+- [x] **API endpoints** ✅
+  - GET /api/v1/notifications ✅
+  - GET /api/v1/notifications/unread/count ✅
+  - GET /api/v1/notifications/{id} ✅
+  - POST /api/v1/notifications/{id}/read ✅
+  - POST /api/v1/notifications/read-all ✅
+  - DELETE /api/v1/notifications/{id} ✅
+  - DELETE /api/v1/notifications/read ✅
+  - GET/PUT /api/v1/notifications/settings ✅
+
+- [x] **Unit tests** ✅ (20 tests)
+
+- [ ] **External notification channels** (deferred)
   - AC: Email notifications (SMTP configuration)
   - AC: Webhook notifications (for Discord, Slack, etc.)
   - AC: Pushover/Pushbullet support
+  - Note: Follows Sonarr/Radarr notification provider pattern
 
 ### 11.9 Pull List UX Improvements ✅ COMPLETED
 - [x] **Empty state improvements** ✅

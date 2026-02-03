@@ -1,6 +1,84 @@
-# Self Check - Iteration 039
+# Self Check - Iteration 040
 
-## EPIC 11.11: ComicVine Sync Parity (Mylar3)
+## EPIC 11.4: Pull List Notifications (In-App)
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Build succeeded with 0 errors |
+| Tests pass | ✅ | 605 total tests passing (20 new) |
+| EF Migration created | ✅ | AddNotifications migration |
+| API endpoints working | ✅ | 9 new notification endpoints |
+| Git commits | ✅ | Conventional format |
+
+### Acceptance Criteria Status
+
+#### In-App Notifications
+| AC | Status |
+|----|--------|
+| Notification entity with types | ✅ |
+| Create/read/delete notifications | ✅ |
+| Mark as read (single/all) | ✅ |
+| Filter by type, read status, series | ✅ |
+| Unread count endpoint | ✅ |
+| Auto-delete old notifications | ✅ (configurable) |
+| Max notifications limit | ✅ (configurable) |
+
+#### Notification Methods
+| AC | Status |
+|----|--------|
+| SendNewReleaseNotificationAsync | ✅ |
+| SendGrabbedNotificationAsync | ✅ |
+| SendWeeklySummaryAsync | ✅ |
+
+#### Notification Settings
+| AC | Status |
+|----|--------|
+| Enable/disable in-app | ✅ |
+| Per-type enable/disable | ✅ |
+| Aggregate toggle | ✅ |
+| Auto-delete days | ✅ |
+| Max notifications | ✅ |
+
+### New Tests (20 tests)
+- ✅ CreateAsync_CreatesNotification
+- ✅ CreateAsync_WhenDisabled_ReturnsPlaceholderWithoutPersisting
+- ✅ GetNotificationsAsync_ReturnsAllNotifications
+- ✅ GetNotificationsAsync_WithUnreadOnlyFilter_ReturnsOnlyUnread
+- ✅ GetNotificationsAsync_WithTypeFilter_ReturnsMatchingTypes
+- ✅ GetUnreadCountAsync_ReturnsCorrectCount
+- ✅ MarkAsReadAsync_MarksNotificationAsRead
+- ✅ MarkAsReadAsync_ReturnsfalseForNonexistent
+- ✅ MarkAllAsReadAsync_MarksAllUnreadAsRead
+- ✅ DeleteAsync_DeletesNotification
+- ✅ DeleteReadAsync_DeletesOnlyReadNotifications
+- ✅ DeleteOlderThanAsync_DeletesOldNotifications
+- ✅ SendNewReleaseNotificationAsync_CreatesAggregatedNotification
+- ✅ SendNewReleaseNotificationAsync_WhenDisabled_ReturnsNull
+- ✅ SendNewReleaseNotificationAsync_WithZeroIssues_ReturnsNull
+- ✅ SendGrabbedNotificationAsync_CreatesNotification
+- ✅ SendWeeklySummaryAsync_CreatesNotification
+- ✅ GetSettingsAsync_ReturnsSettings
+- ✅ UpdateSettingsAsync_SavesSettings
+- ✅ CreateAsync_EnforcesMaxNotificationsLimit
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `src/Shortboxerr.Core/Entities/Notification.cs` | ✅ New file |
+| `src/Shortboxerr.Core/Notifications/INotificationService.cs` | ✅ New file |
+| `src/Shortboxerr.Infrastructure/Notifications/NotificationService.cs` | ✅ New file |
+| `src/Shortboxerr.Infrastructure/Persistence/ShortboxerrDbContext.cs` | ✅ Modified |
+| `src/Shortboxerr.Api/Endpoints/NotificationEndpoints.cs` | ✅ New file |
+| `src/Shortboxerr.Api/Program.cs` | ✅ Modified |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | ✅ Modified |
+| Migration file | ✅ Auto-generated |
+| `tests/Shortboxerr.Tests/NotificationServiceTests.cs` | ✅ 20 new tests |
+
+---
+
+## Previous: EPIC 11.11: ComicVine Sync Parity (Mylar3)
 
 ### Checklist
 
