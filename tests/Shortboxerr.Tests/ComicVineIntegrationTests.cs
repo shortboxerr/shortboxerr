@@ -191,7 +191,7 @@ public class ComicVineIntegrationTests : IDisposable
         Assert.Contains(issues, i => i.IssueNumber == 3);
     }
 
-    [Fact(Skip = "Requires full service configuration for auto-match to work")]
+    [Fact]
     public async Task FullFlow_AutoMatchExistingSeries_MatchesAndSyncs()
     {
         // Arrange - Create local series first
@@ -224,8 +224,9 @@ public class ComicVineIntegrationTests : IDisposable
             TotalResults = 1
         };
 
+        // Use It.IsAny<int>() for limit since AutoMatchSeriesAsync uses limit=5
         _mockComicVineClient
-            .Setup(x => x.SearchVolumesAsync("Spider-Man", 1, 10, It.IsAny<CancellationToken>()))
+            .Setup(x => x.SearchVolumesAsync("Spider-Man", It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(searchResults);
 
         var volumeResult = new ComicVineResult<ComicVineVolume>
@@ -565,7 +566,7 @@ public class ComicVineIntegrationTests : IDisposable
         Assert.Contains("flash-1", storedIssue.CoverImageUrl);
     }
 
-    [Fact(Skip = "Requires full service configuration for add series to work")]
+    [Fact]
     public async Task CoverFlow_AddSeriesFromComicVine_StoresCoverUrl()
     {
         // Arrange
@@ -580,6 +581,9 @@ public class ComicVineIntegrationTests : IDisposable
                 Publisher = new ComicVinePublisherRef { Id = 10, Name = "DC Comics" },
                 Image = new ComicVineImage 
                 { 
+                    // Service uses MediumUrl or SmallUrl for CoverImageUrl
+                    MediumUrl = "https://comicvine.gamespot.com/api/image/scale_medium/green-lantern.jpg",
+                    SmallUrl = "https://comicvine.gamespot.com/api/image/scale_small/green-lantern.jpg",
                     SuperUrl = "https://comicvine.gamespot.com/api/image/scale_large/green-lantern.jpg",
                     OriginalUrl = "https://comicvine.gamespot.com/api/image/original/green-lantern.jpg"
                 },
