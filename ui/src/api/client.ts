@@ -99,7 +99,31 @@ function toSeries(api: ApiSeries): Series {
   };
 }
 
-// Detailed series for detail page
+// API response format for detailed series
+interface ApiSeriesDetail {
+  id: number;
+  title: string;
+  sortTitle: string | null;
+  publisher: string | null;
+  startYear: number | null;
+  endYear: number | null;
+  status: number; // Enum: 0=Continuing, 1=Ended
+  path: string | null;
+  overview: string | null;
+  monitored: boolean;
+  issueCount: number;
+  issueFileCount: number;
+  editionCount: number;
+  createdAt: string;
+  updatedAt: string | null;
+  comicVineId: number | null;
+  coverImageUrl: string | null;
+  comicVineUrl: string | null;
+  totalIssueCount: number | null;
+  metadataLastRefreshed: string | null;
+}
+
+// UI-friendly format for detailed series
 export interface SeriesDetail {
   id: number;
   title: string;
@@ -122,6 +146,18 @@ export interface SeriesDetail {
   comicVineUrl: string | null;
   totalIssueCount: number | null;
   metadataLastRefreshed: string | null;
+}
+
+// Map API series detail to UI series detail
+function toSeriesDetail(api: ApiSeriesDetail): SeriesDetail {
+  const statusMap: Record<number, string> = {
+    0: 'Continuing',
+    1: 'Ended',
+  };
+  return {
+    ...api,
+    status: statusMap[api.status] ?? 'Unknown',
+  };
 }
 
 export interface Issue {
@@ -527,7 +563,8 @@ export const api = {
 
   getSeriesById: async (id: number): Promise<SeriesDetail | null> => {
     try {
-      return await fetchApi<SeriesDetail>(`/api/v1/series/${id}`);
+      const response = await fetchApi<ApiSeriesDetail>(`/api/v1/series/${id}`);
+      return toSeriesDetail(response);
     } catch {
       return null;
     }
