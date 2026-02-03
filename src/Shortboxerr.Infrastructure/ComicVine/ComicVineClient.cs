@@ -15,7 +15,8 @@ namespace Shortboxerr.Infrastructure.ComicVine;
 /// </summary>
 public class ComicVineClient : IComicVineClient
 {
-    private const string BaseUrl = "https://comicvine.gamespot.com/api";
+    // IMPORTANT: Trailing slash is required for proper URL concatenation with HttpClient
+    private const string BaseUrl = "https://comicvine.gamespot.com/api/";
     private const int RateLimitPerHour = 200;
     private const string UserAgent = "Shortboxerr/1.0 (Comic Management App)";
 
@@ -77,7 +78,7 @@ public class ComicVineClient : IComicVineClient
 
             // Make a simple search request to validate the API key
             var response = await MakeRequestAsync<ComicVineApiResponse<List<object>>>(
-                $"/search/?api_key={apiKey}&format=json&resources=volume&limit=1&query=test",
+                $"search/?api_key={apiKey}&format=json&resources=volume&limit=1&query=test",
                 cancellationToken);
 
             stopwatch.Stop();
@@ -156,7 +157,7 @@ public class ComicVineClient : IComicVineClient
 
         try
         {
-            var url = $"/search/?api_key={apiKey}&format=json&resources=volume&limit={limit}&offset={offset}&query={Uri.EscapeDataString(query)}";
+            var url = $"search/?api_key={apiKey}&format=json&resources=volume&limit={limit}&offset={offset}&query={Uri.EscapeDataString(query)}";
             var response = await MakeRequestAsync<ComicVineApiResponse<List<ComicVineApiVolume>>>(url, cancellationToken);
 
             var result = new ComicVineSearchResult<ComicVineVolume>
@@ -214,7 +215,7 @@ public class ComicVineClient : IComicVineClient
 
         try
         {
-            var url = $"/search/?api_key={apiKey}&format=json&resources=issue&limit={limit}&offset={offset}&query={Uri.EscapeDataString(query)}";
+            var url = $"search/?api_key={apiKey}&format=json&resources=issue&limit={limit}&offset={offset}&query={Uri.EscapeDataString(query)}";
             var response = await MakeRequestAsync<ComicVineApiResponse<List<ComicVineApiIssue>>>(url, cancellationToken);
 
             var result = new ComicVineSearchResult<ComicVineIssue>
@@ -269,7 +270,7 @@ public class ComicVineClient : IComicVineClient
 
         try
         {
-            var url = $"/volume/4050-{volumeId}/?api_key={apiKey}&format=json";
+            var url = $"volume/4050-{volumeId}/?api_key={apiKey}&format=json";
             var response = await MakeRequestAsync<ComicVineApiResponse<ComicVineApiVolume>>(url, cancellationToken);
 
             var result = new ComicVineResult<ComicVineVolume>
@@ -320,7 +321,7 @@ public class ComicVineClient : IComicVineClient
 
         try
         {
-            var url = $"/issue/4000-{issueId}/?api_key={apiKey}&format=json";
+            var url = $"issue/4000-{issueId}/?api_key={apiKey}&format=json";
             var response = await MakeRequestAsync<ComicVineApiResponse<ComicVineApiIssue>>(url, cancellationToken);
 
             var result = new ComicVineResult<ComicVineIssue>
@@ -374,7 +375,7 @@ public class ComicVineClient : IComicVineClient
 
         try
         {
-            var url = $"/issues/?api_key={apiKey}&format=json&filter=volume:{volumeId}&limit={limit}&offset={offset}&sort=issue_number:asc";
+            var url = $"issues/?api_key={apiKey}&format=json&filter=volume:{volumeId}&limit={limit}&offset={offset}&sort=issue_number:asc";
             var response = await MakeRequestAsync<ComicVineApiResponse<List<ComicVineApiIssue>>>(url, cancellationToken);
 
             var result = new ComicVineSearchResult<ComicVineIssue>
@@ -429,7 +430,7 @@ public class ComicVineClient : IComicVineClient
 
         try
         {
-            var url = $"/publisher/4010-{publisherId}/?api_key={apiKey}&format=json";
+            var url = $"publisher/4010-{publisherId}/?api_key={apiKey}&format=json";
             var response = await MakeRequestAsync<ComicVineApiResponse<ComicVineApiPublisher>>(url, cancellationToken);
 
             var result = new ComicVineResult<ComicVinePublisher>
