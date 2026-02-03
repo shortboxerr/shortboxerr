@@ -570,19 +570,21 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - Note: UI deferred to future iteration
 
 ### 9.7 Metadata Refresh
-- [ ] **Scheduled refresh**
-  - AC: Configurable refresh interval (default: weekly)
-  - AC: Refresh series metadata
-  - AC: Refresh issue list (discover new issues)
-  - AC: Refresh covers (if changed)
-- [ ] **Manual refresh**
-  - AC: "Refresh Metadata" button on series detail page
-  - AC: "Refresh All" action in settings
-  - AC: Force refresh option (ignore cache)
-- [ ] **Refresh history**
-  - AC: Log metadata refresh events
-  - AC: Track last refresh time per series
-  - AC: API endpoint: GET /api/v1/series/{id}/metadata/history
+- [x] **Scheduled refresh** ✅
+  - AC: Configurable refresh interval (default: weekly) ✅
+  - AC: Refresh series metadata ✅
+  - AC: Refresh issue list (discover new issues) ✅
+  - AC: Refresh covers (if changed) ✅
+  - AC: Background service with allowed hours ✅
+- [x] **Manual refresh** ✅
+  - AC: API endpoints for manual refresh ✅
+  - AC: "Refresh All" API endpoint ✅
+  - AC: Force refresh option (ignore cache) ✅
+  - Note: UI buttons deferred to future iteration
+- [x] **Refresh history** ✅
+  - AC: Log metadata refresh events ✅
+  - AC: Track last refresh time per series ✅
+  - AC: API endpoint: GET /api/v1/metadata/series/{id}/history ✅
 
 ### 9.8 Mylar3 ComicVine Settings Import
 - [ ] **Import ComicVine config from Mylar3**

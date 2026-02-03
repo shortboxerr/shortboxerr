@@ -1,5 +1,71 @@
 # Worklog
 
+## Iteration 029 (2026-02-03)
+**EPIC 9.7: Metadata Refresh - COMPLETED**
+
+### Commits
+1. `feat: implement metadata refresh service (EPIC 9.7)`
+
+### Deliverables
+- ✅ IMetadataRefreshService interface:
+  - RefreshSeriesAsync: Refresh single series metadata
+  - RefreshAllSeriesAsync: Refresh all matched series
+  - RefreshStaleSeriesAsync: Refresh only stale series (max per run)
+  - RefreshSeriesIssuesAsync: Discover new issues for a series
+  - RefreshEditionAsync: Refresh edition metadata
+  - GetSeriesRefreshHistoryAsync: Get refresh history
+  - GetRecentRefreshEventsAsync: Get recent events
+  - GetSettingsAsync: Get refresh settings
+  - GetStaleSeriesCountAsync: Count stale series
+
+- ✅ MetadataRefreshEvent entity for tracking history:
+  - ItemType, ItemId, ItemTitle (denormalized)
+  - Success, Error, MetadataChanged
+  - NewIssuesDiscovered
+  - Source (Manual/Scheduled/Import)
+
+- ✅ MetadataRefreshService implementation:
+  - Configurable refresh interval (default 7 days)
+  - Skip if recently refreshed (unless forced)
+  - Log refresh events for audit trail
+  - Max series per scheduled run (default 50)
+
+- ✅ MetadataRefreshBackgroundService:
+  - Runs hourly, checks for stale series
+  - Configurable allowed hours (default 2-4 AM)
+  - Respects scheduled refresh enabled setting
+
+- ✅ API Endpoints:
+  - GET /api/v1/metadata/settings
+  - GET /api/v1/metadata/stale-count
+  - POST /api/v1/metadata/series/{id}/refresh
+  - POST /api/v1/metadata/series/{id}/issues/refresh
+  - POST /api/v1/metadata/series/refresh-all
+  - POST /api/v1/metadata/series/refresh-stale
+  - POST /api/v1/metadata/editions/{id}/refresh
+  - GET /api/v1/metadata/series/{id}/history
+  - GET /api/v1/metadata/history
+
+- ✅ 14 unit tests for MetadataRefreshService
+
+### New/Modified Files
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Core/ComicVine/IMetadataRefreshService.cs` | Interface + DTOs |
+| `src/Shortboxerr.Core/Entities/MetadataRefreshEvent.cs` | Entity for history |
+| `src/Shortboxerr.Infrastructure/ComicVine/MetadataRefreshService.cs` | Implementation |
+| `src/Shortboxerr.Infrastructure/BackgroundServices/MetadataRefreshBackgroundService.cs` | Scheduled refresh |
+| `src/Shortboxerr.Api/Endpoints/MetadataRefreshEndpoints.cs` | API endpoints |
+| `...Migrations/AddMetadataRefreshEvent.cs` | DB migration |
+| `tests/Shortboxerr.Tests/MetadataRefreshServiceTests.cs` | 14 unit tests |
+
+### Notes
+- Background service starts 5 minutes after app start
+- Scheduled refresh only runs in allowed hours
+- UI buttons for refresh deferred to future iteration
+
+---
+
 ## Iteration 028 (2026-02-03)
 **EPIC 9.6: Auto-Matching & Import Integration - COMPLETED**
 
