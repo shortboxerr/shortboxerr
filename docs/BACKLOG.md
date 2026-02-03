@@ -481,22 +481,36 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: Mock IComicVineClient for all API calls
   - AC: Test confidence scoring algorithm
 
-### 9.3 Issue Metadata
-- [ ] **Issue list sync**
+### 9.3 Issue Metadata ✅ COMPLETED
+- [x] **Issue list sync**
   - AC: Fetch all issues for a matched series
   - AC: Create Issue entities for missing issues (wanted list)
   - AC: Store ComicVine issue ID
   - AC: Handle issue number formats (decimals, specials, annuals)
-- [ ] **Issue detail sync**
+- [x] **Issue detail sync**
   - AC: Fetch: issue number, title, release date, description
   - AC: Fetch: cover date vs. store date (match Mylar3 behavior)
   - AC: Fetch: story arc associations
-  - AC: Fetch: character/team appearances (optional, configurable)
-- [ ] **Special issues handling (Mylar3 parity)**
+  - AC: Fetch: character/team appearances (optional, configurable) - DEFERRED
+- [x] **Special issues handling (Mylar3 parity)**
   - AC: Annuals linked to parent series
   - AC: One-shots handling
   - AC: Issue #0, negative issues, decimal issues (1.5, etc.)
-  - AC: Variant cover detection (optional)
+  - AC: Variant cover detection (optional) - DEFERRED
+- [x] **Entity enhancements**
+  - AC: IssueStoryArc entity for story arc associations
+  - AC: Issue entity: IsAnnual, IsSpecial, SpecialType fields
+  - AC: EF Core migration: AddIssueMetadataFields
+- [x] **API endpoints**
+  - AC: GET /api/v1/issues/comicvine/{id} - preview issue from ComicVine
+  - AC: POST /api/v1/issues/{id}/refresh - refresh issue metadata
+  - AC: POST /api/v1/issues/{id}/story-arcs/sync - sync story arcs
+  - AC: POST /api/v1/series/{id}/issues/refresh - bulk refresh all issues
+  - AC: POST /api/v1/series/{id}/issues/detect-specials - detect annuals/specials
+- [x] **Tests**
+  - AC: 16 unit tests for IssueMetadataService
+  - AC: Tests for special issue detection (annuals, one-shots, etc.)
+  - AC: Tests for story arc sync
 
 ### 9.4 Cover Art
 - [ ] **Cover image fetching**

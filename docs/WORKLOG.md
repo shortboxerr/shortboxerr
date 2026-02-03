@@ -1,5 +1,76 @@
 # Worklog
 
+## Iteration 022 (2026-02-03)
+**EPIC 9.3: Issue Metadata - COMPLETED**
+
+### Commits
+1. `feat: add issue metadata service with story arcs and special detection (EPIC 9.3)`
+
+### Deliverables
+- ✅ IssueStoryArc Entity:
+  - Links issues to ComicVine story arcs
+  - Fields: ComicVineStoryArcId, Name, ComicVineUrl, Position
+- ✅ Issue Entity Enhancements:
+  - IsAnnual: boolean for annual issues
+  - IsSpecial: boolean for special issues (one-shots, giant-size, etc.)
+  - SpecialType: string describing the type of special
+- ✅ IIssueMetadataService Interface:
+  - GetIssueByComicVineIdAsync: preview issue from ComicVine
+  - RefreshIssueMetadataAsync: refresh single issue metadata
+  - RefreshSeriesIssuesMetadataAsync: bulk refresh all matched issues
+  - SyncIssueStoryArcsAsync: sync story arcs from ComicVine
+  - DetectSpecialIssuesAsync: detect annuals and specials in series
+- ✅ Special Issue Detection:
+  - Annuals: "Annual 1", "Annual 2024", etc.
+  - Special types: Giant-Size, King-Size, One-Shot, 80-Page Giant, 100-Page
+  - Other specials: Preview, Prologue, Epilogue, Finale, Secret Files
+  - Negative issue numbers detected as Preview
+- ✅ API Endpoints:
+  - GET /api/v1/issues/comicvine/{id} - preview issue from ComicVine
+  - POST /api/v1/issues/{id}/refresh - refresh issue metadata
+  - POST /api/v1/issues/{id}/story-arcs/sync - sync story arcs
+  - POST /api/v1/series/{id}/issues/refresh - bulk refresh
+  - POST /api/v1/series/{id}/issues/detect-specials - detect specials
+- ✅ 16 Unit Tests:
+  - GetIssueByComicVineIdAsync_WithValidId_ReturnsIssueDetail
+  - GetIssueByComicVineIdAsync_WithInvalidId_ReturnsError
+  - RefreshIssueMetadataAsync_WithNonExistentIssue_ReturnsError
+  - RefreshIssueMetadataAsync_WithUnmatchedIssue_ReturnsError
+  - RefreshIssueMetadataAsync_WithMatchedIssue_UpdatesMetadata
+  - SyncIssueStoryArcsAsync_AddsNewStoryArcs
+  - DetectSpecialIssuesAsync_DetectsAnnuals
+  - DetectSpecialIssuesAsync_DetectsSpecialTypes
+  - DetectSpecialIssuesAsync_CorrectlyIdentifiesIssueTypes (7 theory cases)
+  - RefreshSeriesIssuesMetadataAsync_RefreshesAllMatchedIssues
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Core/Entities/IssueStoryArc.cs` | Story arc association entity |
+| `src/Shortboxerr.Core/ComicVine/IIssueMetadataService.cs` | Interface and DTOs |
+| `src/Shortboxerr.Infrastructure/ComicVine/IssueMetadataService.cs` | Service implementation |
+| `src/Shortboxerr.Api/Endpoints/IssueMetadataEndpoints.cs` | API endpoints |
+| `tests/Shortboxerr.Tests/IssueMetadataServiceTests.cs` | Unit tests |
+| `*.cs (migration)` | AddIssueMetadataFields migration |
+
+### Modified Files
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Core/Entities/Issue.cs` | Added IsAnnual, IsSpecial, SpecialType |
+| `src/Shortboxerr.Infrastructure/Persistence/ShortboxerrDbContext.cs` | Added IssueStoryArc config |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register IssueMetadataService |
+| `src/Shortboxerr.Api/Program.cs` | Map endpoints |
+
+### Test Results
+- 423 backend tests passing (16 new)
+- All existing tests continue to pass
+
+### Deferred Items
+- Character/team appearances (optional feature, not priority for Mylar3 parity)
+- Variant cover detection (optional, complex)
+
+---
+
 ## Iteration 021 (2026-02-03)
 **EPIC 9.9: Series Detail Page - COMPLETED**
 
