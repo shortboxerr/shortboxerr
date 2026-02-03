@@ -403,6 +403,13 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: Manual search and match UI
   - AC: Store ComicVine ID (volume ID) in Series entity
   - AC: Unmatch/rematch functionality
+- [ ] **Add series by ComicVine ID**
+  - AC: Direct entry of ComicVine volume ID to add a series
+  - AC: Validate ID exists via ComicVine API before adding
+  - AC: Fetch and populate all metadata immediately on add
+  - AC: Create wanted list for all issues in series
+  - AC: UI: "Add by ComicVine ID" option in Add Series modal
+  - AC: API endpoint: POST /api/v1/series/comicvine/{volumeId}
 - [ ] **Series metadata sync**
   - AC: Fetch: title, sort title, publisher, start year, status (continuing/ended)
   - AC: Fetch: description, issue count, first/last issue dates
