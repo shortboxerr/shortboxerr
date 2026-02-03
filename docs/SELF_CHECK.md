@@ -1,89 +1,54 @@
-# Self-Check (Iteration 019)
+# Self-Check: Iteration 020
 
 ## Checklist
 
-| Item | Status | Notes |
-|------|--------|-------|
-| Vertical slice complete? | ✅ | Series metadata service + API + tests |
-| Tests pass? | ✅ | 14 new tests pass (399 total, 8 pre-existing failures in ProviderEndpointTests) |
-| Build green? | ✅ | `dotnet build` succeeds |
-| Docs updated? | ✅ | WORKLOG.md, BACKLOG.md |
-| Commits atomic? | ✅ | 2 logical commits |
-| No scope creep? | ✅ | Only EPIC 9.2 Series Metadata |
-
-## EPIC 9.2 Status: COMPLETED ✅
-
-All items in EPIC 9.2 (Series Metadata) are now complete:
-
-| Task | Status |
+| Item | Status |
 |------|--------|
-| Series search | ✅ Completed |
-| Series matching | ✅ Completed |
-| Add series by ComicVine ID | ✅ Completed |
-| Series metadata sync | ✅ Completed |
-| Entity enhancements | ✅ Completed |
-| Tests | ✅ Completed |
+| Vertical slice implemented | ✅ Add Series modal with ComicVine search |
+| API endpoint(s) added/modified | ✅ Uses existing EPIC 9.2 endpoints |
+| Service layer logic | ✅ API client functions added |
+| Tests passing | ✅ 407 tests passing |
+| WORKLOG.md updated | ✅ |
+| BACKLOG.md updated | ✅ |
+| Repo builds | ✅ UI + API builds succeed |
+| Commits at breakpoints | ✅ 3 commits this iteration |
 
-## Iteration 019 Deliverables
+## EPIC 9.9 Status: ComicVine UI
 
-### Series Metadata Service (EPIC 9.2)
-- ✅ ISeriesMetadataService interface with:
-  - SearchSeriesAsync (query, filters, paging)
-  - GetSeriesByComicVineIdAsync
-  - MatchSeriesAsync
-  - AutoMatchSeriesAsync
-  - AutoMatchAllSeriesAsync
-  - UnmatchSeriesAsync
-  - RefreshSeriesMetadataAsync
-  - AddSeriesByComicVineIdAsync
-  - SyncIssuesFromComicVineAsync
-- ✅ SeriesMetadataService implementation with:
-  - Confidence scoring algorithm
-  - Title normalization
-  - Auto-match threshold support
-  - Bulk matching
-  - Issue sync with add/update
-- ✅ API Endpoints:
-  - GET /api/v1/series/comicvine/search
-  - GET /api/v1/series/comicvine/{volumeId} (preview)
-  - POST /api/v1/series/comicvine/{volumeId} (add)
-  - POST /api/v1/series/{id}/match/{volumeId}
-  - POST /api/v1/series/{id}/automatch
-  - POST /api/v1/series/{id}/unmatch
-  - POST /api/v1/series/{id}/refresh
-  - POST /api/v1/series/{id}/sync-issues
-  - POST /api/v1/series/match-all
-- ✅ Entity Enhancements:
-  - Series: ComicVineId, Aliases, ComicVinePublisherId, ComicVineUrl, CoverImageUrl, TotalIssueCount, MetadataLastRefreshed, ComicVineLastUpdated
-  - Issue: ComicVineId, IssueNumberText, StoreDate, CoverDate, ComicVineUrl, CoverImageUrl, MetadataLastRefreshed
-  - EF Core migration: AddComicVineMetadataFields
-- ✅ 14 unit tests covering all service methods
+### Completed ✅
+- [x] Settings page (ComicVine tab) - from EPIC 9.1
+  - API key input with show/hide
+  - Test connection button
+  - Rate limit status display
+- [x] Search & match modal (Add Series)
+  - Search ComicVine by name
+  - Display results with covers and metadata
+  - Select and add series to library
+  - API key warning when not configured
+  - Existing series conflict handling
 
-## Test Summary
-```
-Passed!  - Failed: 0, Passed: 14, Skipped: 0
-(SeriesMetadataService tests only)
+### Remaining
+- [ ] Series detail integration
+  - "Match to ComicVine" button on unmatched series
+  - ComicVine link on matched series
+  - Metadata source indicator
+  - "Refresh Metadata" button
 
-Full suite: 399 total, 391 passed, 8 pre-existing failures
-(ProviderEndpointTests failures are not related to this iteration)
-```
+## Summary
 
-## Confidence Scoring
+This iteration implemented the "Add Series" modal functionality, which is the primary user-facing feature for adding comics to the library via ComicVine search. The modal provides:
 
-| Factor | Points | Description |
-|--------|--------|-------------|
-| Exact title match | +40 | Normalized title equals query |
-| Title starts with | +25 | Series title begins with query |
-| Title contains | +15 | Query found within title |
-| Alias exact match | +35 | Query matches an alias |
-| Publisher match | +10 | Publisher filter matches |
-| Year exact match | +10 | Year filter matches exactly |
-| Year close match | +5 | Year within 2 years |
-| Large issue count | +5 | Series has 50+ issues |
-| Base score | 50 | Starting confidence |
+1. **Search**: Debounced input that searches ComicVine volumes
+2. **Results**: Displays covers, titles, publishers, years, issue counts
+3. **Selection**: Click to select a series
+4. **Addition**: Add button creates series with all issues
+
+The API endpoints were already implemented in EPIC 9.2. This iteration focused on the UI implementation.
+
+### Bug Fix Included
+Fixed an API response mapping issue where the backend returns `records`/`totalRecords` but the UI expected `items`/`totalCount`. This was causing the Series and Collections pages to appear blank.
 
 ## Next Steps
-- EPIC 9.3: Issue Metadata (issue list sync, special issues handling)
-- EPIC 9.4: Cover Art (fetch and cache images)
-- EPIC 9.9: ComicVine UI (match modal, series detail integration)
-- Or continue with other EPICs as prioritized
+1. Series detail page integration (Match to ComicVine, Refresh Metadata)
+2. EPIC 9.3: Issue Metadata sync
+3. EPIC 9.4: Cover Art caching

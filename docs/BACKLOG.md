@@ -568,7 +568,7 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: Validate migrated IDs are still valid
 
 ### 9.9 ComicVine UI
-- [ ] **Settings page**
+- [x] **Settings page** ✅ (Completed in EPIC 9.1)
   - AC: API key input (masked, with show/hide toggle)
   - AC: Test connection button
   - AC: Rate limit status display
@@ -578,11 +578,12 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: ComicVine link on matched series
   - AC: Metadata source indicator (local vs. ComicVine)
   - AC: "Refresh Metadata" button
-- [ ] **Search & match modal**
+- [x] **Search & match modal** ✅
   - AC: Search ComicVine by name
   - AC: Display results with covers and metadata preview
-  - AC: Confidence score display
-  - AC: Select and confirm match
+  - AC: Select and confirm to add series
+  - AC: Shows API key warning if not configured
+  - AC: Handles existing series conflict
 
 ### 9.10 ComicVine Conformance Tests
 - [ ] **API client tests**

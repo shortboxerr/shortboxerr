@@ -1,5 +1,55 @@
 # Worklog
 
+## Iteration 020 (2026-02-03)
+**EPIC 9.9: ComicVine UI - Add Series Modal - COMPLETED**
+
+### Commits
+1. `fix: correct API response mapping for paged results in UI`
+2. `chore: update BACKLOG.md with API response mapping bug fix`
+3. `feat: add Add Series modal with ComicVine search (EPIC 9.9)`
+
+### Deliverables
+- ✅ Add Series Modal:
+  - "Add Series" button opens modal on Series page
+  - Debounced search input (400ms delay)
+  - Search ComicVine API for series by name
+  - Display results with cover images, publishers, issue counts
+  - Click result to select for addition
+  - Add button adds series to library
+  - Shows API key warning if ComicVine not configured
+  - Handles existing series conflict gracefully
+- ✅ API Client Extensions:
+  - `searchSeriesFromComicVine(query, options)` - search with filters
+  - `previewSeriesFromComicVine(volumeId)` - preview before adding
+  - `addSeriesFromComicVine(volumeId, options)` - add to library
+- ✅ New TypeScript Types:
+  - `SeriesMatchCandidate` - search result with confidence
+  - `SeriesSearchResult` - paginated search results
+  - `SeriesAddResult` - add operation result
+  - `AddSeriesFromComicVineRequest` - add options
+- ✅ UI Enhancements:
+  - Modal component styles (overlay, header, body, footer)
+  - Alert styles (warning, danger, success)
+  - Series search result card with cover, metadata, description
+  - Spin animation for loading icons
+- ✅ Bug Fix:
+  - API client now correctly maps `records`/`totalRecords` to `items`/`totalCount`
+  - Series and Collections pages display correctly
+
+### Modified Files
+| File | Purpose |
+|------|---------|
+| `ui/src/api/client.ts` | Added series metadata API functions and types |
+| `ui/src/pages/SeriesPage.tsx` | Add Series modal with ComicVine search |
+| `ui/src/App.css` | Modal and search result styles |
+
+### Test Results
+- 407 backend tests passing
+- UI TypeScript compilation passes
+- Production build successful
+
+---
+
 ## Iteration 019 (2026-02-03)
 **EPIC 9.2: Series Metadata - COMPLETED**
 
