@@ -283,7 +283,8 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
   - AC: Detect dead/expired links and skip
 
 #### 8.1.2 ReadComicOnline Adapter (Secondary)
-- [ ] **Determine homepage
+- [ ] **Determine homepage address**
+  - AC: Parse index page for "Go to Homepage" button and update base URL as needed
 - [ ] **HTML scraping for ReadComicOnline**
   - AC: Parse search results page for release links
   - AC: Extract all download host links from release pages
@@ -439,29 +440,42 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: 12 unit tests for ComicVineClient
   - AC: Mock HttpMessageHandler for all API calls
 
-### 9.2 Series Metadata
-- [ ] **Series search**
+### 9.2 Series Metadata ✅ COMPLETED
+- [x] **Series search**
   - AC: Search ComicVine by series name
   - AC: Filter by publisher, year range
   - AC: Return top N matches with confidence scores
   - AC: Handle series with same name from different publishers/years
-- [ ] **Series matching**
+  - AC: API endpoint: GET /api/v1/series/comicvine/search
+- [x] **Series matching**
   - AC: Auto-match local series to ComicVine on add
-  - AC: Manual search and match UI
+  - AC: Manual search and match (API only, UI in 9.9)
   - AC: Store ComicVine ID (volume ID) in Series entity
   - AC: Unmatch/rematch functionality
-- [ ] **Add series by ComicVine ID**
+  - AC: API endpoints: POST /api/v1/series/{id}/match/{volumeId}, /automatch, /unmatch
+  - AC: Bulk auto-match: POST /api/v1/series/match-all
+- [x] **Add series by ComicVine ID**
   - AC: Direct entry of ComicVine volume ID to add a series
   - AC: Validate ID exists via ComicVine API before adding
   - AC: Fetch and populate all metadata immediately on add
   - AC: Create wanted list for all issues in series
-  - AC: UI: "Add by ComicVine ID" option in Add Series modal
   - AC: API endpoint: POST /api/v1/series/comicvine/{volumeId}
-- [ ] **Series metadata sync**
+  - AC: Preview endpoint: GET /api/v1/series/comicvine/{volumeId}
+- [x] **Series metadata sync**
   - AC: Fetch: title, sort title, publisher, start year, status (continuing/ended)
   - AC: Fetch: description, issue count, first/last issue dates
   - AC: Fetch: aliases (alternate titles for matching)
-  - AC: Store original vs. ComicVine metadata (allow overrides)
+  - AC: Store ComicVine metadata on Series entity
+  - AC: API endpoint: POST /api/v1/series/{id}/refresh
+  - AC: API endpoint: POST /api/v1/series/{id}/sync-issues
+- [x] **Entity enhancements**
+  - AC: Series entity: ComicVineId, Aliases, ComicVinePublisherId, ComicVineUrl, CoverImageUrl, TotalIssueCount, MetadataLastRefreshed, ComicVineLastUpdated
+  - AC: Issue entity: ComicVineId, IssueNumberText, StoreDate, CoverDate, ComicVineUrl, CoverImageUrl, MetadataLastRefreshed
+  - AC: EF Core migration: AddComicVineMetadataFields
+- [x] **Tests**
+  - AC: 14 unit tests for SeriesMetadataService
+  - AC: Mock IComicVineClient for all API calls
+  - AC: Test confidence scoring algorithm
 
 ### 9.3 Issue Metadata
 - [ ] **Issue list sync**

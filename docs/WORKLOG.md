@@ -1,5 +1,94 @@
 # Worklog
 
+## Iteration 019 (2026-02-03)
+**EPIC 9.2: Series Metadata - COMPLETED**
+
+### Commits
+1. `feat: add series metadata service and ComicVine matching (EPIC 9.2)`
+2. `test: add series metadata service tests (EPIC 9.2)`
+
+### Deliverables
+- ✅ Series Search:
+  - Search ComicVine by series name with optional filters
+  - Filter by publisher, year range
+  - Return confidence scores with match reasons
+  - API endpoint: GET /api/v1/series/comicvine/search
+- ✅ Series Matching:
+  - Match local series to ComicVine volume
+  - Auto-match with configurable confidence threshold (default 85%)
+  - Bulk auto-match all unmatched series
+  - Unmatch/rematch functionality
+  - API endpoints: POST /match/{volumeId}, /automatch, /unmatch, /match-all
+- ✅ Add Series by ComicVine ID:
+  - Add new series directly from ComicVine volume ID
+  - Preview before adding with metadata and issue count
+  - Auto-create all issues on add
+  - Configurable monitoring mode (All/Future/Manual/FirstIssue)
+  - API endpoints: GET/POST /api/v1/series/comicvine/{volumeId}
+- ✅ Series Metadata Sync:
+  - Sync metadata from ComicVine (title, description, publisher, etc.)
+  - Sync issue list with add/update
+  - Refresh metadata with force option
+  - Track last refresh time
+  - API endpoints: POST /refresh, /sync-issues
+- ✅ Entity Enhancements:
+  - Series: ComicVineId, Aliases, ComicVinePublisherId, ComicVineUrl, CoverImageUrl, TotalIssueCount, MetadataLastRefreshed, ComicVineLastUpdated
+  - Issue: ComicVineId, IssueNumberText, StoreDate, CoverDate, ComicVineUrl, CoverImageUrl, MetadataLastRefreshed
+  - EF Core migration: AddComicVineMetadataFields
+- ✅ Tests (14 new):
+  - SearchSeriesAsync_WithConfiguredClient_ReturnsResults
+  - SearchSeriesAsync_WithNoApiKey_ReturnsError
+  - GetSeriesByComicVineIdAsync_WithValidId_ReturnsCandidate
+  - MatchSeriesAsync_WithValidIds_UpdatesSeries
+  - MatchSeriesAsync_WithNonExistentSeries_ReturnsError
+  - AutoMatchSeriesAsync_WithHighConfidenceMatch_MatchesAutomatically
+  - AutoMatchSeriesAsync_WithLowConfidenceMatch_RequiresManualReview
+  - UnmatchSeriesAsync_WithMatchedSeries_ClearsComicVineId
+  - AddSeriesByComicVineIdAsync_WithValidId_CreatesSeries
+  - AddSeriesByComicVineIdAsync_WithDuplicate_ReturnsConflict
+  - RefreshSeriesMetadataAsync_WithMatchedSeries_UpdatesMetadata
+  - RefreshSeriesMetadataAsync_WithUnmatchedSeries_ReturnsError
+  - SyncIssuesFromComicVineAsync_WithNewIssues_AddsToDatabase
+  - ConfidenceScore_ExactTitleMatch_GivesHighScore
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Core/ComicVine/ISeriesMetadataService.cs` | Interface and result types |
+| `src/Shortboxerr.Infrastructure/ComicVine/SeriesMetadataService.cs` | Implementation |
+| `src/Shortboxerr.Api/Endpoints/SeriesMetadataEndpoints.cs` | API endpoints |
+| `tests/Shortboxerr.Tests/SeriesMetadataServiceTests.cs` | Unit tests |
+
+### Modified Files
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Core/Entities/Series.cs` | Added ComicVine metadata fields |
+| `src/Shortboxerr.Core/Entities/Issue.cs` | Added ComicVine metadata fields |
+| `src/Shortboxerr.Infrastructure/Persistence/ShortboxerrDbContext.cs` | Entity configuration |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register service |
+| `src/Shortboxerr.Api/Program.cs` | Map endpoints |
+
+### Confidence Scoring
+| Factor | Points | Description |
+|--------|--------|-------------|
+| Exact title match | +40 | Normalized title equals query |
+| Title starts with | +25 | Series title begins with query |
+| Title contains | +15 | Query found within title |
+| Alias exact match | +35 | Query matches an alias |
+| Publisher match | +10 | Publisher filter matches |
+| Year exact match | +10 | Year filter matches exactly |
+| Year close match | +5 | Year within 2 years |
+| Large issue count | +5 | Series has 50+ issues |
+| Base score | 50 | Starting confidence |
+
+### Notes
+- Confidence threshold configurable via ComicVine settings
+- Series monitoring modes: AllIssues, FutureIssues, Manual, FirstIssue
+- Issue sync preserves existing issues, updates ComicVine IDs when matched
+- Sort title auto-generated (e.g., "The Batman" → "Batman, The")
+
+---
+
 ## Iteration 018 (2026-02-03)
 **EPIC 9.1: ComicVine API Client - COMPLETED**
 
