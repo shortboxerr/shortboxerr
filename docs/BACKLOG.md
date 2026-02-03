@@ -915,6 +915,135 @@ Track upcoming comic releases and automate wanted list management. Must achieve 
 
 ---
 
+## EPIC 12: Performance & Caching Strategy
+
+### Overview
+Implement comprehensive caching to minimize database queries and external API calls, improving responsiveness and reducing load on ComicVine API.
+
+### Current State Analysis
+**Existing Caching:**
+- ✅ ComicVine API responses (IMemoryCache, 30min-7days TTL)
+- ✅ Cover images (disk-based, permanent until manually cleared)
+- ✅ Discovery results (IMemoryCache, 30min TTL)
+- ❌ Pull list queries (no caching - queries DB on every request)
+- ❌ Series/Issue lists (no caching)
+- ❌ Dashboard stats/aggregates (no caching)
+
+### 12.1 Data Caching Strategy
+- [ ] **Pull list query caching**
+  - AC: Cache weekly pull list results with 5-minute TTL
+  - AC: Cache upcoming/past releases with 10-minute TTL
+  - AC: Invalidate on issue status change, series monitoring change
+  - AC: Use sliding expiration for frequently accessed data
+  - AC: Cache key includes filter parameters (status, publisher, etc.)
+  
+- [ ] **Series/Issue list caching**
+  - AC: Cache paginated series list with 2-minute TTL
+  - AC: Cache series detail (with issues) with 5-minute TTL
+  - AC: Invalidate on create/update/delete operations
+  - AC: Consider using ETag/Last-Modified headers for conditional requests
+
+- [ ] **Dashboard aggregates caching**
+  - AC: Cache stats (counts, totals) with 1-minute TTL
+  - AC: Cache "This Week" widget data with pull list cache
+  - AC: Invalidate on any status change
+
+### 12.2 Cache Implementation Patterns
+- [ ] **Cache-aside pattern service**
+  - AC: Create `ICacheService` abstraction
+  - AC: Implement Get/Set/Remove with TTL support
+  - AC: Support cache key generation with prefixes
+  - AC: Support bulk invalidation by prefix (e.g., all pull list caches)
+  
+- [ ] **Cache invalidation strategy**
+  - AC: Define clear invalidation triggers per data type
+  - AC: Implement invalidation events/notifications
+  - AC: Consider pub/sub for distributed cache scenarios (future)
+  - AC: Document invalidation matrix
+
+- [ ] **Cache configuration**
+  - AC: Configurable TTLs via settings
+  - AC: Ability to disable caching per category (for debugging)
+  - AC: Cache statistics endpoint (hit/miss ratios)
+
+### 12.3 HTTP Response Caching
+- [ ] **API response caching**
+  - AC: Add Cache-Control headers for read-only endpoints
+  - AC: Implement ETag support for series/issue endpoints
+  - AC: Support If-None-Match/If-Modified-Since headers
+  - AC: Vary header for authenticated vs. public responses (if applicable)
+
+- [ ] **Static asset caching**
+  - AC: Long-lived cache for cover images via HTTP headers
+  - AC: Cache-busting for UI assets (already handled by Vite build)
+
+### 12.4 ComicVine API Optimization
+- [ ] **Request batching**
+  - AC: Batch multiple issue lookups into single request where API supports
+  - AC: Queue and deduplicate concurrent identical requests
+  
+- [ ] **Prefetching**
+  - AC: Prefetch next week's releases when viewing current week
+  - AC: Background refresh of stale cache entries (proactive refresh)
+
+- [ ] **Rate limit awareness**
+  - AC: Expose rate limit status in cache service
+  - AC: Implement backoff when approaching limits
+  - AC: Queue requests during rate limit cooldown
+
+### 12.5 Cache Technology Options
+
+**Recommended: IMemoryCache (In-Process)**
+- ✅ Already in use for ComicVine responses
+- ✅ Zero additional infrastructure
+- ✅ Fast (no serialization/network)
+- ✅ Suitable for single-instance deployment
+- ⚠️ Lost on restart (acceptable for most data)
+- ⚠️ Not suitable for multi-instance (future consideration)
+
+**Alternative: IDistributedCache (Redis/SQL Server)**
+- 🔮 Future consideration for multi-instance scaling
+- Preserves cache across restarts
+- Requires additional infrastructure
+- Add serialization overhead
+
+**Decision:** Start with IMemoryCache for all caching. Design abstraction layer to allow future migration to distributed cache if needed.
+
+### Cache TTL Reference Table
+| Data Type | Recommended TTL | Invalidation Trigger |
+|-----------|-----------------|---------------------|
+| Pull list (this week) | 5 minutes | Issue status change, monitoring change |
+| Pull list (upcoming/past) | 10 minutes | Issue status change |
+| Discovery results | 30 minutes | None (external data) |
+| Series list | 2 minutes | Series CRUD |
+| Series detail | 5 minutes | Series/Issue CRUD |
+| Issue detail | 5 minutes | Issue CRUD, file association |
+| Dashboard stats | 1 minute | Any status change |
+| ComicVine volume | 24 hours | Manual refresh |
+| ComicVine issue | 24 hours | Manual refresh |
+| ComicVine publisher | 7 days | Manual refresh |
+| Cover images | Permanent (disk) | Manual clear |
+
+### 12.6 Monitoring & Diagnostics
+- [ ] **Cache metrics**
+  - AC: Track hit/miss ratios per cache category
+  - AC: Track cache size and eviction counts
+  - AC: Expose via /api/v1/system/cache/stats endpoint
+  
+- [ ] **Debug endpoints**
+  - AC: /api/v1/system/cache/clear - Clear all caches (admin only)
+  - AC: /api/v1/system/cache/clear/{category} - Clear specific cache
+
+### Implementation Priority
+1. Pull list query caching (immediate performance win)
+2. Dashboard aggregates caching (reduces DB load)
+3. Series/Issue list caching (improves navigation)
+4. HTTP response caching (reduces bandwidth)
+5. ComicVine optimization (reduces API usage)
+6. Monitoring (operational visibility)
+
+---
+
 ## Story Ordering Notes
 
 **EPIC 4 Implementation Order:**
@@ -945,3 +1074,4 @@ Track upcoming comic releases and automate wanted list management. Must achieve 
 - EPIC 11.3 depends on EPIC 4 (DDL Provider) for auto-search functionality
 - EPIC 11.5 depends on EPIC 5 (UI shell) for calendar and list views
 - EPIC 11.6 depends on EPIC 7 (Mylar3 Migration) for config import patterns
+- EPIC 12 has no hard dependencies; can be implemented incrementally alongside other work
