@@ -106,6 +106,7 @@ app.MapGet("/api/v1/system/status", () => Results.Ok(new
 app.MapSeriesEndpoints();
 app.MapSeriesMetadataEndpoints();
 app.MapIssueMetadataEndpoints();
+app.MapCoverEndpoints();
 app.MapEditionEndpoints();
 app.MapManualImportEndpoints();
 app.MapDecisionEngineEndpoints();

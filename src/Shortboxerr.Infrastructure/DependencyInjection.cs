@@ -45,6 +45,10 @@ public static class DependencyInjection
         services.AddScoped<ISeriesMetadataService, SeriesMetadataService>();
         services.AddScoped<IIssueMetadataService, IssueMetadataService>();
 
+        // Cover service
+        services.AddHttpClient("CoverDownload");
+        services.AddScoped<ICoverService, CoverService>();
+
         // Settings (can be overridden via configuration)
         services.Configure<DecisionEngineSettings>(options =>
         {
