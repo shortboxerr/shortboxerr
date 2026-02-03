@@ -717,11 +717,6 @@ Track upcoming comic releases and automate wanted list management. Must achieve 
   - AC: Pushover/Pushbullet support
 
 ### 11.5 Pull List UI
-- [ ] **Calendar view**
-  - AC: Monthly calendar showing release dates
-  - AC: Color-coding: owned (green), wanted (blue), missing (red), upcoming (gray)
-  - AC: Click to view issue details
-  - AC: Navigate between months
 - [ ] **List view**
   - AC: This week's releases prominently displayed
   - AC: Upcoming releases list (next 4 weeks)

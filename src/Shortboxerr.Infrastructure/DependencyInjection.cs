@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Core.Ddl;
 using Shortboxerr.Core.Models;
 using Shortboxerr.Core.Providers;
 using Shortboxerr.Core.Services;
+using Shortboxerr.Infrastructure.ComicVine;
 using Shortboxerr.Infrastructure.Ddl;
 using Shortboxerr.Infrastructure.Persistence;
 using Shortboxerr.Infrastructure.Providers;
@@ -36,6 +38,10 @@ public static class DependencyInjection
         // Provider system
         services.AddSingleton<IProviderFactory, ProviderFactory>();
         services.AddScoped<IProviderManager, ProviderManager>();
+
+        // ComicVine client
+        services.AddMemoryCache();
+        services.AddHttpClient<IComicVineClient, ComicVineClient>();
 
         // Settings (can be overridden via configuration)
         services.Configure<DecisionEngineSettings>(options =>

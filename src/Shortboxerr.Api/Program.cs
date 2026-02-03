@@ -111,6 +111,7 @@ app.MapProviderEndpoints();
 app.MapDdlImportEndpoints();
 app.MapMylar3ImportEndpoints();
 app.MapSettingsEndpoints();
+app.MapComicVineEndpoints();
 
 // SPA fallback - serve index.html for client-side routes
 app.MapFallbackToFile("index.html");
