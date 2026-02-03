@@ -282,28 +282,6 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
   - AC: Handle multiple mirror options with priority
   - AC: Detect dead/expired links and skip
 
-#### 8.1.2 32P (32 Pages) Adapter
-- [ ] **32P authentication**
-  - AC: Login with username/password
-  - AC: Session/cookie persistence
-  - AC: Handle invite-only registration status
-- [ ] **32P search and browse**
-  - AC: Search API integration
-  - AC: Browse by category/group
-  - AC: Parse torrent and DDL options
-- [ ] **32P notifications/RSS**
-  - AC: Personal notification feed
-  - AC: New releases feed
-
-#### 8.1.3 Additional DDL Sites
-- [ ] **Libgen/Library Genesis adapter** (comics section)
-  - AC: Search by title/author
-  - AC: Mirror selection
-- [ ] **Generic DDL adapter template**
-  - AC: Base class for rapid new site implementation
-  - AC: Configurable CSS/XPath selectors
-  - AC: Documentation for adding new sites
-
 ### 8.2 Download Host Resolvers (File Acquisition)
 
 #### 8.2.1 Direct/Main Server Downloads
@@ -550,6 +528,120 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
 
 ---
 
+## EPIC 10: NZB/Usenet Support (Mylar3/Sonarr/Radarr Parity)
+Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with Mylar3, Sonarr, and Radarr's Usenet integration.
+
+### 10.1 NZB Indexer Integration
+- [ ] **Newznab API client**
+  - AC: Standard Newznab API implementation (used by most NZB indexers)
+  - AC: API key authentication
+  - AC: Search by series name, issue number, year
+  - AC: Category filtering (comics category IDs)
+  - AC: Parse NZB search results into candidates
+- [ ] **NZBHydra2 support**
+  - AC: Aggregate searches across multiple indexers
+  - AC: Single API endpoint for multiple backends
+  - AC: Respect indexer priorities from NZBHydra
+- [ ] **Built-in indexer presets**
+  - AC: Pre-configured settings for popular NZB indexers
+  - AC: NZBgeek, DrunkenSlug, NZBFinder, etc.
+  - AC: Easy setup with just API key
+- [ ] **Indexer health monitoring**
+  - AC: Track indexer response times
+  - AC: Detect and handle rate limiting
+  - AC: Automatic failover to backup indexers
+
+### 10.2 NZB Download Client Integration
+- [ ] **SABnzbd integration**
+  - AC: Add NZB to SABnzbd via API
+  - AC: Category assignment for comics
+  - AC: Priority configuration
+  - AC: Monitor download progress
+  - AC: Detect completion and trigger import
+- [ ] **NZBGet integration**
+  - AC: Add NZB to NZBGet via API
+  - AC: Category and priority support
+  - AC: Progress monitoring
+  - AC: Post-processing script integration
+- [ ] **Download client health checks**
+  - AC: Verify connectivity on startup
+  - AC: Monitor disk space warnings
+  - AC: Handle client unavailability gracefully
+
+### 10.3 NZB Candidate Processing
+- [ ] **NZB release parsing**
+  - AC: Parse NZB release names (similar to DDL parser)
+  - AC: Extract series, issue, year, quality, format
+  - AC: Handle Usenet naming conventions
+- [ ] **NZB candidate model**
+  - AC: Store indexer source, NZB URL, size, age
+  - AC: Quality scoring aligned with DecisionEngine
+  - AC: Integrate with existing Candidate model
+- [ ] **NZB filtering rules**
+  - AC: Minimum/maximum age limits
+  - AC: Size limits (same as DDL)
+  - AC: Banned/required words (same as DDL)
+  - AC: Prefer certain indexers
+
+### 10.4 NZB → Import Handoff
+- [ ] **Post-download detection**
+  - AC: Monitor SABnzbd/NZBGet for completed downloads
+  - AC: Detect completed comic files in download directory
+  - AC: Handle unpacking (RAR, ZIP) automatically
+- [ ] **Import integration**
+  - AC: Move completed files to staging
+  - AC: Auto-match to series/issue
+  - AC: Create HistoryEvent linking NZB → import
+  - AC: Handle failed downloads (incomplete, password-protected)
+
+### 10.5 NZB Configuration & Settings
+- [ ] **Indexer configuration**
+  - AC: Add/edit/delete NZB indexers
+  - AC: Test indexer connectivity
+  - AC: Priority ordering for multiple indexers
+  - AC: Enable/disable per indexer
+- [ ] **Download client configuration**
+  - AC: SABnzbd: URL, API key, category, priority
+  - AC: NZBGet: URL, username, password, category
+  - AC: Test connection button
+  - AC: Default download client selection
+- [ ] **Mylar3 NZB settings import**
+  - AC: Parse Mylar3 config.ini for NZB settings
+  - AC: Import indexer configurations
+  - AC: Import SABnzbd/NZBGet settings
+  - AC: Validation report
+
+### 10.6 NZB UI
+- [ ] **Indexers settings page**
+  - AC: NZB Indexers section (separate from DDL)
+  - AC: Add indexer modal with Newznab fields
+  - AC: Preset selection for popular indexers
+  - AC: Test and status indicators
+- [ ] **Download clients settings page**
+  - AC: SABnzbd configuration panel
+  - AC: NZBGet configuration panel
+  - AC: Connection test results
+- [ ] **Activity integration**
+  - AC: Show NZB downloads in activity feed
+  - AC: Download progress from SABnzbd/NZBGet
+  - AC: Queue management (pause, remove, priority)
+
+### 10.7 NZB Conformance Tests
+- [ ] **Newznab API tests**
+  - AC: Mock indexer responses
+  - AC: Test search parameter encoding
+  - AC: Test result parsing
+- [ ] **Download client tests**
+  - AC: Mock SABnzbd API responses
+  - AC: Mock NZBGet API responses
+  - AC: Test add/status/remove operations
+- [ ] **Integration tests**
+  - AC: Full flow: search → download → import
+  - AC: Multi-indexer aggregation
+  - AC: Download client failover
+
+---
+
 ## Story Ordering Notes
 
 **EPIC 4 Implementation Order:**
@@ -572,3 +664,7 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
 - EPIC 9 depends on EPIC 1 (Series/Issue entities) and EPIC 5 (UI shell)
 - EPIC 9.6 depends on EPIC 2 (Import Pipeline) for auto-match on import
 - EPIC 9.8 depends on EPIC 7 (Mylar3 Migration) for config import patterns
+- EPIC 10 depends on EPIC 3 (DecisionEngine) for candidate ranking
+- EPIC 10.4 depends on EPIC 2 (Import Pipeline) for import handoff
+- EPIC 10.5 depends on EPIC 7 (Mylar3 Migration) for config import patterns
+- EPIC 10.6 depends on EPIC 5 (UI shell) for settings pages
