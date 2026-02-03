@@ -552,4 +552,317 @@ public class PullListServiceTests : IDisposable
     }
 
     #endregion
+
+    #region Weekly Export Tests
+
+    [Fact]
+    public async Task ExportCurrentWeekAsync_WhenExportDisabled_ReturnsError()
+    {
+        // Arrange
+        var settings = new PullListSettings
+        {
+            ExportWeeklyPullList = false
+        };
+        _mockSettingsService
+            .Setup(s => s.GetAsync<PullListSettings>(
+                "pulllist", It.IsAny<PullListSettings>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(settings);
+
+        // Act
+        var result = await _service.ExportCurrentWeekAsync();
+
+        // Assert
+        Assert.False(result.Success);
+        Assert.Equal("Weekly export is not enabled in settings.", result.Error);
+    }
+
+    [Fact]
+    public async Task ExportCurrentWeekAsync_WhenDirectoryNotConfigured_ReturnsError()
+    {
+        // Arrange
+        var settings = new PullListSettings
+        {
+            ExportWeeklyPullList = true,
+            WeeklyExportDirectory = null
+        };
+        _mockSettingsService
+            .Setup(s => s.GetAsync<PullListSettings>(
+                "pulllist", It.IsAny<PullListSettings>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(settings);
+
+        // Act
+        var result = await _service.ExportCurrentWeekAsync();
+
+        // Assert
+        Assert.False(result.Success);
+        Assert.Equal("Weekly export directory is not configured.", result.Error);
+    }
+
+    [Fact]
+    public async Task ExportWeekAsync_WithValidSettings_CreatesExportFile()
+    {
+        // Arrange
+        var tempDir = Path.Combine(Path.GetTempPath(), $"pulllist_export_test_{Guid.NewGuid()}");
+        try
+        {
+            var settings = new PullListSettings
+            {
+                ExportWeeklyPullList = true,
+                WeeklyExportDirectory = tempDir,
+                WeeklyExportFormat = WeeklyExportFormat.Json
+            };
+            _mockSettingsService
+                .Setup(s => s.GetAsync<PullListSettings>(
+                    "pulllist", It.IsAny<PullListSettings>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(settings);
+
+            // Add test data
+            var series = new Series { Title = "Test Series", Publisher = "Marvel", Monitored = true };
+            _dbContext.Series.Add(series);
+            await _dbContext.SaveChangesAsync();
+
+            var wednesday = DateTime.Today.AddDays((int)DayOfWeek.Wednesday - (int)DateTime.Today.DayOfWeek);
+            _dbContext.Issues.Add(new Issue 
+            { 
+                SeriesId = series.Id, 
+                IssueNumber = 1, 
+                StoreDate = wednesday, 
+                Status = IssueStatus.Wanted 
+            });
+            await _dbContext.SaveChangesAsync();
+
+            // Act
+            var result = await _service.ExportWeekAsync(wednesday);
+
+            // Assert
+            Assert.True(result.Success);
+            Assert.NotNull(result.ExportFilePath);
+            Assert.True(File.Exists(result.ExportFilePath));
+            Assert.Equal(1, result.TotalIssues);
+            Assert.Equal(1, result.WantedIssues);
+        }
+        finally
+        {
+            // Cleanup
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public async Task ExportWeekAsync_JsonFormat_GeneratesValidJson()
+    {
+        // Arrange
+        var tempDir = Path.Combine(Path.GetTempPath(), $"pulllist_export_test_{Guid.NewGuid()}");
+        try
+        {
+            var settings = new PullListSettings
+            {
+                ExportWeeklyPullList = true,
+                WeeklyExportDirectory = tempDir,
+                WeeklyExportFormat = WeeklyExportFormat.Json
+            };
+            _mockSettingsService
+                .Setup(s => s.GetAsync<PullListSettings>(
+                    "pulllist", It.IsAny<PullListSettings>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(settings);
+
+            // Add test data
+            var series = new Series { Title = "Batman", Publisher = "DC Comics", Monitored = true };
+            _dbContext.Series.Add(series);
+            await _dbContext.SaveChangesAsync();
+
+            var wednesday = DateTime.Today.AddDays((int)DayOfWeek.Wednesday - (int)DateTime.Today.DayOfWeek);
+            _dbContext.Issues.Add(new Issue 
+            { 
+                SeriesId = series.Id, 
+                IssueNumber = 100, 
+                StoreDate = wednesday, 
+                Status = IssueStatus.Owned 
+            });
+            await _dbContext.SaveChangesAsync();
+
+            // Act
+            var result = await _service.ExportWeekAsync(wednesday);
+
+            // Assert
+            Assert.True(result.Success);
+            var content = await File.ReadAllTextAsync(result.ExportFilePath!);
+            Assert.Contains("Batman", content);
+            Assert.Contains("DC Comics", content);
+            Assert.Contains("Owned", content);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public async Task ExportWeekAsync_CsvFormat_GeneratesValidCsv()
+    {
+        // Arrange
+        var tempDir = Path.Combine(Path.GetTempPath(), $"pulllist_export_test_{Guid.NewGuid()}");
+        try
+        {
+            var settings = new PullListSettings
+            {
+                ExportWeeklyPullList = true,
+                WeeklyExportDirectory = tempDir,
+                WeeklyExportFormat = WeeklyExportFormat.Csv
+            };
+            _mockSettingsService
+                .Setup(s => s.GetAsync<PullListSettings>(
+                    "pulllist", It.IsAny<PullListSettings>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(settings);
+
+            // Add test data
+            var series = new Series { Title = "Spider-Man", Publisher = "Marvel", Monitored = true };
+            _dbContext.Series.Add(series);
+            await _dbContext.SaveChangesAsync();
+
+            var wednesday = DateTime.Today.AddDays((int)DayOfWeek.Wednesday - (int)DateTime.Today.DayOfWeek);
+            _dbContext.Issues.Add(new Issue 
+            { 
+                SeriesId = series.Id, 
+                IssueNumber = 50, 
+                StoreDate = wednesday, 
+                Status = IssueStatus.Wanted 
+            });
+            await _dbContext.SaveChangesAsync();
+
+            // Act
+            var result = await _service.ExportWeekAsync(wednesday);
+
+            // Assert
+            Assert.True(result.Success);
+            Assert.EndsWith(".csv", result.ExportFilePath);
+            var content = await File.ReadAllTextAsync(result.ExportFilePath!);
+            Assert.Contains("SeriesTitle,IssueNumber", content); // Header
+            Assert.Contains("Spider-Man", content);
+            Assert.Contains("Marvel", content);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public async Task ExportWeekAsync_TextFormat_GeneratesHumanReadableText()
+    {
+        // Arrange
+        var tempDir = Path.Combine(Path.GetTempPath(), $"pulllist_export_test_{Guid.NewGuid()}");
+        try
+        {
+            var settings = new PullListSettings
+            {
+                ExportWeeklyPullList = true,
+                WeeklyExportDirectory = tempDir,
+                WeeklyExportFormat = WeeklyExportFormat.Text
+            };
+            _mockSettingsService
+                .Setup(s => s.GetAsync<PullListSettings>(
+                    "pulllist", It.IsAny<PullListSettings>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(settings);
+
+            // Add test data
+            var series = new Series { Title = "X-Men", Publisher = "Marvel", Monitored = true };
+            _dbContext.Series.Add(series);
+            await _dbContext.SaveChangesAsync();
+
+            var wednesday = DateTime.Today.AddDays((int)DayOfWeek.Wednesday - (int)DateTime.Today.DayOfWeek);
+            _dbContext.Issues.Add(new Issue 
+            { 
+                SeriesId = series.Id, 
+                IssueNumber = 25, 
+                StoreDate = wednesday, 
+                Status = IssueStatus.Wanted 
+            });
+            await _dbContext.SaveChangesAsync();
+
+            // Act
+            var result = await _service.ExportWeekAsync(wednesday);
+
+            // Assert
+            Assert.True(result.Success);
+            Assert.EndsWith(".txt", result.ExportFilePath);
+            var content = await File.ReadAllTextAsync(result.ExportFilePath!);
+            Assert.Contains("Weekly Pull List", content);
+            Assert.Contains("[Marvel]", content);
+            Assert.Contains("X-Men", content);
+            Assert.Contains("[Wanted]", content);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public async Task GetExportHistoryAsync_WhenDirectoryNotConfigured_ReturnsEmptyList()
+    {
+        // Arrange
+        var settings = new PullListSettings
+        {
+            WeeklyExportDirectory = null
+        };
+        _mockSettingsService
+            .Setup(s => s.GetAsync<PullListSettings>(
+                "pulllist", It.IsAny<PullListSettings>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(settings);
+
+        // Act
+        var result = await _service.GetExportHistoryAsync();
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task ExportWeekAsync_CreatesCorrectDirectoryStructure()
+    {
+        // Arrange
+        var tempDir = Path.Combine(Path.GetTempPath(), $"pulllist_export_test_{Guid.NewGuid()}");
+        try
+        {
+            var settings = new PullListSettings
+            {
+                ExportWeeklyPullList = true,
+                WeeklyExportDirectory = tempDir,
+                WeeklyExportFormat = WeeklyExportFormat.Json
+            };
+            _mockSettingsService
+                .Setup(s => s.GetAsync<PullListSettings>(
+                    "pulllist", It.IsAny<PullListSettings>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(settings);
+
+            // Add test data
+            var series = new Series { Title = "Test", Monitored = true };
+            _dbContext.Series.Add(series);
+            await _dbContext.SaveChangesAsync();
+
+            var wednesday = DateTime.Today.AddDays((int)DayOfWeek.Wednesday - (int)DateTime.Today.DayOfWeek);
+
+            // Act
+            var result = await _service.ExportWeekAsync(wednesday);
+
+            // Assert
+            Assert.True(result.Success);
+            // Verify directory format is YYYY-WW
+            var dirName = Path.GetFileName(result.ExportDirectory);
+            Assert.Matches(@"^\d{4}-\d{2}$", dirName);
+            Assert.Equal(result.Year.ToString(), dirName!.Split('-')[0]);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, true);
+        }
+    }
+
+    #endregion
 }

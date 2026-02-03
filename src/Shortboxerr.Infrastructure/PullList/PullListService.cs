@@ -1066,6 +1066,349 @@ public class PullListService : IPullListService
 
     #endregion
 
+    #region Weekly Export (Mylar3 Parity)
+
+    public async Task<WeeklyExportResult> ExportCurrentWeekAsync(CancellationToken cancellationToken = default)
+    {
+        return await ExportWeekAsync(DateTime.Today, cancellationToken);
+    }
+
+    public async Task<WeeklyExportResult> ExportWeekAsync(DateTime weekOf, CancellationToken cancellationToken = default)
+    {
+        var settings = await GetSettingsAsync(cancellationToken);
+        
+        if (!settings.ExportWeeklyPullList)
+        {
+            return new WeeklyExportResult
+            {
+                Success = false,
+                Error = "Weekly export is not enabled in settings."
+            };
+        }
+
+        if (string.IsNullOrWhiteSpace(settings.WeeklyExportDirectory))
+        {
+            return new WeeklyExportResult
+            {
+                Success = false,
+                Error = "Weekly export directory is not configured."
+            };
+        }
+
+        var (weekStart, weekEnd) = GetWeekBoundaries(weekOf);
+        var releaseDay = GetReleaseDay(weekStart);
+        var year = releaseDay.Year;
+        var weekNumber = GetIsoWeekNumber(releaseDay);
+
+        // Create directory structure: {export_dir}/{YYYY}-{WW}
+        var weekDirName = $"{year}-{weekNumber:D2}";
+        var exportDir = Path.Combine(settings.WeeklyExportDirectory, weekDirName);
+
+        try
+        {
+            // Ensure directory exists
+            Directory.CreateDirectory(exportDir);
+
+            // Get the pull list for this week
+            var pullList = await GetWeeklyReleasesAsync(weekOf, null, cancellationToken);
+
+            // Build export data
+            var exportData = BuildExportData(pullList, releaseDay, year, weekNumber);
+
+            // Determine filename based on format
+            var (fileName, content) = GenerateExportContent(exportData, settings.WeeklyExportFormat);
+            var exportPath = Path.Combine(exportDir, fileName);
+
+            // Write to file
+            await File.WriteAllTextAsync(exportPath, content, cancellationToken);
+
+            var fileInfo = new FileInfo(exportPath);
+
+            _logger.LogInformation(
+                "Exported weekly pull list for week {Year}-{Week} to {Path} ({IssueCount} issues)",
+                year, weekNumber, exportPath, pullList.Issues.Count);
+
+            return new WeeklyExportResult
+            {
+                Success = true,
+                ExportDirectory = exportDir,
+                ExportFilePath = exportPath,
+                Format = settings.WeeklyExportFormat,
+                Year = year,
+                WeekNumber = weekNumber,
+                ReleaseDay = releaseDay,
+                TotalIssues = pullList.TotalCount,
+                WantedIssues = pullList.WantedCount,
+                OwnedIssues = pullList.OwnedCount,
+                ExportedAt = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to export weekly pull list for week {Year}-{Week}", year, weekNumber);
+            return new WeeklyExportResult
+            {
+                Success = false,
+                Error = $"Export failed: {ex.Message}",
+                Year = year,
+                WeekNumber = weekNumber,
+                ReleaseDay = releaseDay
+            };
+        }
+    }
+
+    public Task<List<WeeklyExportInfo>> GetExportHistoryAsync(int limit = 10, CancellationToken cancellationToken = default)
+    {
+        return Task.Run(async () =>
+        {
+            var settings = await GetSettingsAsync(cancellationToken);
+            var result = new List<WeeklyExportInfo>();
+
+            if (string.IsNullOrWhiteSpace(settings.WeeklyExportDirectory) || !Directory.Exists(settings.WeeklyExportDirectory))
+            {
+                return result;
+            }
+
+            // Scan for week directories (format: YYYY-WW)
+            var weekDirs = Directory.GetDirectories(settings.WeeklyExportDirectory)
+                .Select(d => new DirectoryInfo(d))
+                .Where(d => System.Text.RegularExpressions.Regex.IsMatch(d.Name, @"^\d{4}-\d{2}$"))
+                .OrderByDescending(d => d.Name)
+                .Take(limit);
+
+            foreach (var dir in weekDirs)
+            {
+                // Parse year and week from directory name
+                var parts = dir.Name.Split('-');
+                if (parts.Length == 2 && int.TryParse(parts[0], out var year) && int.TryParse(parts[1], out var week))
+                {
+                    // Find export file in directory
+                    var exportFile = dir.GetFiles("releases.*")
+                        .OrderByDescending(f => f.LastWriteTimeUtc)
+                        .FirstOrDefault();
+
+                    if (exportFile != null)
+                    {
+                        var format = exportFile.Extension.ToLowerInvariant() switch
+                        {
+                            ".json" => WeeklyExportFormat.Json,
+                            ".txt" => WeeklyExportFormat.Text,
+                            ".csv" => WeeklyExportFormat.Csv,
+                            _ => WeeklyExportFormat.Json
+                        };
+
+                        // Calculate release day from year and week
+                        var releaseDay = GetDateFromIsoWeek(year, week, DayOfWeek.Wednesday);
+
+                        result.Add(new WeeklyExportInfo
+                        {
+                            Year = year,
+                            WeekNumber = week,
+                            ReleaseDay = releaseDay,
+                            DirectoryPath = dir.FullName,
+                            FilePath = exportFile.FullName,
+                            Format = format,
+                            ExportedAt = exportFile.LastWriteTimeUtc,
+                            FileSizeBytes = exportFile.Length,
+                            IssueCount = await GetIssueCountFromFile(exportFile.FullName, format)
+                        });
+                    }
+                }
+            }
+
+            return result;
+        }, cancellationToken);
+    }
+
+    private static WeeklyExportData BuildExportData(WeeklyPullList pullList, DateTime releaseDay, int year, int weekNumber)
+    {
+        var exportData = new WeeklyExportData
+        {
+            Metadata = new WeeklyExportMetadata
+            {
+                Year = year,
+                WeekNumber = weekNumber,
+                WeekStart = pullList.WeekStart,
+                WeekEnd = pullList.WeekEnd,
+                ReleaseDay = releaseDay,
+                ExportedAt = DateTime.UtcNow
+            },
+            Issues = pullList.Issues.Select(i => new WeeklyExportIssue
+            {
+                SeriesTitle = i.SeriesTitle,
+                IssueNumber = i.IssueNumber,
+                IssueNumberText = i.IssueNumberText,
+                IssueTitle = i.IssueTitle,
+                Publisher = i.Publisher,
+                StoreDate = i.StoreDate,
+                Status = i.Status.ToString(),
+                ComicVineIssueId = null, // Not available from PullListIssue
+                ComicVineVolumeId = null,
+                IsAnnual = i.IsAnnual,
+                IsSpecial = i.IsSpecial,
+                SpecialType = i.SpecialType
+            }).ToList(),
+            Summary = new WeeklyExportSummary
+            {
+                TotalCount = pullList.TotalCount,
+                WantedCount = pullList.WantedCount,
+                OwnedCount = pullList.OwnedCount,
+                SkippedCount = pullList.SkippedCount,
+                MissingCount = pullList.Issues.Count(i => i.Status == IssueStatus.Missing),
+                ByPublisher = pullList.Issues
+                    .Where(i => !string.IsNullOrEmpty(i.Publisher))
+                    .GroupBy(i => i.Publisher!)
+                    .ToDictionary(g => g.Key, g => g.Count()),
+                ByStatus = pullList.Issues
+                    .GroupBy(i => i.Status.ToString())
+                    .ToDictionary(g => g.Key, g => g.Count())
+            }
+        };
+
+        return exportData;
+    }
+
+    private static (string fileName, string content) GenerateExportContent(WeeklyExportData data, WeeklyExportFormat format)
+    {
+        return format switch
+        {
+            WeeklyExportFormat.Json => ("releases.json", GenerateJsonExport(data)),
+            WeeklyExportFormat.Text => ("releases.txt", GenerateTextExport(data)),
+            WeeklyExportFormat.Csv => ("releases.csv", GenerateCsvExport(data)),
+            _ => ("releases.json", GenerateJsonExport(data))
+        };
+    }
+
+    private static string GenerateJsonExport(WeeklyExportData data)
+    {
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+        return JsonSerializer.Serialize(data, options);
+    }
+
+    private static string GenerateTextExport(WeeklyExportData data)
+    {
+        var sb = new System.Text.StringBuilder();
+        
+        sb.AppendLine($"Weekly Pull List - Week {data.Metadata.WeekNumber}, {data.Metadata.Year}");
+        sb.AppendLine($"Release Day: {data.Metadata.ReleaseDay:yyyy-MM-dd}");
+        sb.AppendLine($"Exported: {data.Metadata.ExportedAt:yyyy-MM-dd HH:mm:ss} UTC");
+        sb.AppendLine(new string('-', 60));
+        sb.AppendLine();
+
+        // Group by publisher
+        var byPublisher = data.Issues
+            .GroupBy(i => i.Publisher ?? "Unknown")
+            .OrderBy(g => g.Key);
+
+        foreach (var group in byPublisher)
+        {
+            sb.AppendLine($"[{group.Key}]");
+            foreach (var issue in group.OrderBy(i => i.SeriesTitle).ThenBy(i => i.IssueNumber))
+            {
+                var issueText = issue.IssueNumberText ?? $"#{issue.IssueNumber}";
+                var status = $"[{issue.Status}]";
+                sb.AppendLine($"  {issue.SeriesTitle} {issueText} {status}");
+            }
+            sb.AppendLine();
+        }
+
+        sb.AppendLine(new string('-', 60));
+        sb.AppendLine($"Total: {data.Summary.TotalCount} | Wanted: {data.Summary.WantedCount} | Owned: {data.Summary.OwnedCount}");
+
+        return sb.ToString();
+    }
+
+    private static string GenerateCsvExport(WeeklyExportData data)
+    {
+        var sb = new System.Text.StringBuilder();
+        
+        // Header
+        sb.AppendLine("SeriesTitle,IssueNumber,IssueNumberText,IssueTitle,Publisher,StoreDate,Status,IsAnnual,IsSpecial,SpecialType");
+
+        // Data rows
+        foreach (var issue in data.Issues.OrderBy(i => i.SeriesTitle).ThenBy(i => i.IssueNumber))
+        {
+            sb.AppendLine(string.Join(",",
+                EscapeCsvField(issue.SeriesTitle),
+                issue.IssueNumber,
+                EscapeCsvField(issue.IssueNumberText ?? ""),
+                EscapeCsvField(issue.IssueTitle ?? ""),
+                EscapeCsvField(issue.Publisher ?? ""),
+                issue.StoreDate?.ToString("yyyy-MM-dd") ?? "",
+                issue.Status,
+                issue.IsAnnual,
+                issue.IsSpecial,
+                EscapeCsvField(issue.SpecialType ?? "")
+            ));
+        }
+
+        return sb.ToString();
+    }
+
+    private static string EscapeCsvField(string field)
+    {
+        if (field.Contains(',') || field.Contains('"') || field.Contains('\n'))
+        {
+            return $"\"{field.Replace("\"", "\"\"")}\"";
+        }
+        return field;
+    }
+
+    private static int GetIsoWeekNumber(DateTime date)
+    {
+        // ISO 8601 week number calculation
+        var cal = System.Globalization.CultureInfo.InvariantCulture.Calendar;
+        return cal.GetWeekOfYear(date, System.Globalization.CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+    }
+
+    private static DateTime GetDateFromIsoWeek(int year, int week, DayOfWeek targetDay)
+    {
+        // Get the first day of the year
+        var jan4 = new DateTime(year, 1, 4);
+        
+        // Get the first Monday of the first ISO week
+        var daysToMonday = (jan4.DayOfWeek == DayOfWeek.Sunday ? 6 : (int)jan4.DayOfWeek - 1);
+        var firstMonday = jan4.AddDays(-daysToMonday);
+        
+        // Add weeks and adjust to target day
+        var targetDate = firstMonday.AddDays((week - 1) * 7);
+        var daysToTarget = ((int)targetDay - (int)DayOfWeek.Monday + 7) % 7;
+        return targetDate.AddDays(daysToTarget);
+    }
+
+    private static async Task<int> GetIssueCountFromFile(string filePath, WeeklyExportFormat format)
+    {
+        try
+        {
+            if (format == WeeklyExportFormat.Json && File.Exists(filePath))
+            {
+                var content = await File.ReadAllTextAsync(filePath);
+                var data = JsonSerializer.Deserialize<WeeklyExportData>(content, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+                return data?.Issues.Count ?? 0;
+            }
+            else if (format == WeeklyExportFormat.Csv && File.Exists(filePath))
+            {
+                // Count lines minus header
+                var lines = await File.ReadAllLinesAsync(filePath);
+                return Math.Max(0, lines.Length - 1);
+            }
+        }
+        catch
+        {
+            // If we can't read the file, return 0
+        }
+        return 0;
+    }
+
+    #endregion
+
     #region Private Helpers
 
     private IQueryable<Issue> BuildIssueQuery(PullListFilter? filter)

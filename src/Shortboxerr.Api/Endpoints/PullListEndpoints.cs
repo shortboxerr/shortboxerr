@@ -410,6 +410,50 @@ public static class PullListEndpoints
         .Produces<PullListActionResult>(400);
 
         #endregion
+
+        #region Weekly Export (Mylar3 Parity)
+
+        // POST /api/v1/pulllist/export - export current week's pull list
+        group.MapPost("/export", async (
+            [FromServices] IPullListService pullListService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await pullListService.ExportCurrentWeekAsync(cancellationToken);
+            return result.Success ? Results.Ok(result) : Results.BadRequest(result);
+        })
+        .WithName("ExportCurrentWeek")
+        .WithDescription("Exports the current week's pull list to a file")
+        .Produces<WeeklyExportResult>(200)
+        .Produces<WeeklyExportResult>(400);
+
+        // POST /api/v1/pulllist/export/{date} - export specific week's pull list
+        group.MapPost("/export/{date}", async (
+            DateTime date,
+            [FromServices] IPullListService pullListService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await pullListService.ExportWeekAsync(date, cancellationToken);
+            return result.Success ? Results.Ok(result) : Results.BadRequest(result);
+        })
+        .WithName("ExportWeek")
+        .WithDescription("Exports a specific week's pull list to a file")
+        .Produces<WeeklyExportResult>(200)
+        .Produces<WeeklyExportResult>(400);
+
+        // GET /api/v1/pulllist/export/history - get export history
+        group.MapGet("/export/history", async (
+            [FromQuery] int? limit,
+            [FromServices] IPullListService pullListService,
+            CancellationToken cancellationToken) =>
+        {
+            var history = await pullListService.GetExportHistoryAsync(limit ?? 10, cancellationToken);
+            return Results.Ok(history);
+        })
+        .WithName("GetExportHistory")
+        .WithDescription("Gets the history of weekly exports")
+        .Produces<List<WeeklyExportInfo>>(200);
+
+        #endregion
     }
 
     private static PullListFilter? BuildFilter(

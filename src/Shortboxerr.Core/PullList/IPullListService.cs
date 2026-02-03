@@ -191,6 +191,30 @@ public interface IPullListService
         CancellationToken cancellationToken = default);
 
     #endregion
+
+    #region Weekly Export (Mylar3 Parity)
+
+    /// <summary>
+    /// Exports the current week's pull list to a file.
+    /// </summary>
+    Task<WeeklyExportResult> ExportCurrentWeekAsync(
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Exports a specific week's pull list to a file.
+    /// </summary>
+    Task<WeeklyExportResult> ExportWeekAsync(
+        DateTime weekOf,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets export history (list of exported weeks).
+    /// </summary>
+    Task<List<WeeklyExportInfo>> GetExportHistoryAsync(
+        int limit = 10,
+        CancellationToken cancellationToken = default);
+
+    #endregion
 }
 
 #region Models
@@ -430,6 +454,48 @@ public class PullListSettings
     /// Number of weeks to show in past view.
     /// </summary>
     public int PastWeeksToShow { get; set; } = 4;
+
+    #region Weekly Export Settings (Mylar3 Parity)
+
+    /// <summary>
+    /// Whether to enable weekly pull list export to file.
+    /// </summary>
+    public bool ExportWeeklyPullList { get; set; } = false;
+
+    /// <summary>
+    /// Directory for weekly export files (under comics root).
+    /// </summary>
+    public string? WeeklyExportDirectory { get; set; }
+
+    /// <summary>
+    /// Format for weekly export files.
+    /// </summary>
+    public WeeklyExportFormat WeeklyExportFormat { get; set; } = WeeklyExportFormat.Json;
+
+    /// <summary>
+    /// Whether to automatically export on release day.
+    /// </summary>
+    public bool AutoExportOnReleaseDay { get; set; } = true;
+
+    /// <summary>
+    /// Fields to include in export (null = all fields).
+    /// </summary>
+    public List<string>? ExportFields { get; set; }
+
+    #endregion
+}
+
+/// <summary>
+/// Format options for weekly export files.
+/// </summary>
+public enum WeeklyExportFormat
+{
+    /// <summary>JSON format - structured data for programmatic access.</summary>
+    Json = 0,
+    /// <summary>Plain text format - human-readable list.</summary>
+    Text = 1,
+    /// <summary>CSV format - spreadsheet compatible.</summary>
+    Csv = 2
 }
 
 /// <summary>
@@ -535,6 +601,119 @@ public class AddFromDiscoveryResult
     public int IssuesCreated { get; set; }
     public int? MarkedWantedIssueId { get; set; }
     public bool AlreadyExists { get; set; }
+}
+
+#endregion
+
+#region Weekly Export Models (Mylar3 Parity)
+
+/// <summary>
+/// Result of a weekly export operation.
+/// </summary>
+public class WeeklyExportResult
+{
+    public bool Success { get; set; }
+    public string? Error { get; set; }
+    
+    /// <summary>Directory path where export was saved.</summary>
+    public string? ExportDirectory { get; set; }
+    
+    /// <summary>Full file path of the exported file.</summary>
+    public string? ExportFilePath { get; set; }
+    
+    /// <summary>Format of the export.</summary>
+    public WeeklyExportFormat Format { get; set; }
+    
+    /// <summary>Week information.</summary>
+    public int Year { get; set; }
+    public int WeekNumber { get; set; }
+    public DateTime ReleaseDay { get; set; }
+    
+    /// <summary>Export content statistics.</summary>
+    public int TotalIssues { get; set; }
+    public int WantedIssues { get; set; }
+    public int OwnedIssues { get; set; }
+    
+    /// <summary>Timestamp when export was created.</summary>
+    public DateTime ExportedAt { get; set; }
+}
+
+/// <summary>
+/// Information about a previously exported week.
+/// </summary>
+public class WeeklyExportInfo
+{
+    public int Year { get; set; }
+    public int WeekNumber { get; set; }
+    public DateTime ReleaseDay { get; set; }
+    public string DirectoryPath { get; set; } = string.Empty;
+    public string FilePath { get; set; } = string.Empty;
+    public WeeklyExportFormat Format { get; set; }
+    public DateTime ExportedAt { get; set; }
+    public long FileSizeBytes { get; set; }
+    public int IssueCount { get; set; }
+}
+
+/// <summary>
+/// Data structure for weekly export file content.
+/// </summary>
+public class WeeklyExportData
+{
+    /// <summary>Metadata about the export.</summary>
+    public WeeklyExportMetadata Metadata { get; set; } = new();
+    
+    /// <summary>List of issues releasing this week.</summary>
+    public List<WeeklyExportIssue> Issues { get; set; } = new();
+    
+    /// <summary>Summary statistics.</summary>
+    public WeeklyExportSummary Summary { get; set; } = new();
+}
+
+/// <summary>
+/// Metadata for the weekly export file.
+/// </summary>
+public class WeeklyExportMetadata
+{
+    public int Year { get; set; }
+    public int WeekNumber { get; set; }
+    public DateTime WeekStart { get; set; }
+    public DateTime WeekEnd { get; set; }
+    public DateTime ReleaseDay { get; set; }
+    public DateTime ExportedAt { get; set; }
+    public string ExportVersion { get; set; } = "1.0";
+}
+
+/// <summary>
+/// Issue data for weekly export.
+/// </summary>
+public class WeeklyExportIssue
+{
+    public string SeriesTitle { get; set; } = string.Empty;
+    public decimal IssueNumber { get; set; }
+    public string? IssueNumberText { get; set; }
+    public string? IssueTitle { get; set; }
+    public string? Publisher { get; set; }
+    public DateTime? StoreDate { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public int? ComicVineIssueId { get; set; }
+    public int? ComicVineVolumeId { get; set; }
+    public bool IsAnnual { get; set; }
+    public bool IsSpecial { get; set; }
+    public string? SpecialType { get; set; }
+}
+
+/// <summary>
+/// Summary statistics for weekly export.
+/// </summary>
+public class WeeklyExportSummary
+{
+    public int TotalCount { get; set; }
+    public int WantedCount { get; set; }
+    public int OwnedCount { get; set; }
+    public int SkippedCount { get; set; }
+    public int MissingCount { get; set; }
+    public Dictionary<string, int> ByPublisher { get; set; } = new();
+    public Dictionary<string, int> ByStatus { get; set; } = new();
 }
 
 #endregion
