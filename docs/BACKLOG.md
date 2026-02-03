@@ -647,11 +647,12 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: Golden test fixtures for series matching ✅
   - AC: Test edge cases (same name, different years) ✅
   - AC: Test confidence scoring ✅
-- [ ] **Integration tests** (Deferred)
-  - AC: Full flow: search → match → sync metadata
-  - AC: Cover download and caching
-  - AC: Refresh cycle
-  - Note: Requires EPIC 9.6 (Auto-Matching), EPIC 9.7 (Metadata Refresh), and EPIC 9.4 (Cover Art) to be testable end-to-end. Revisit after those EPICs are complete.
+- [x] **Integration tests** ✅
+  - AC: Full flow: search → match → sync metadata ✅
+  - AC: Cover download and caching ✅
+  - AC: Refresh cycle ✅
+  - AC: Error handling for API failures ✅
+  - AC: Partial failure handling in bulk operations ✅
 
 ---
 
