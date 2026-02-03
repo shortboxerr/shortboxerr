@@ -81,10 +81,11 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
         Assert.Equal(JsonValueKind.Array, doc.RootElement.ValueKind);
         Assert.True(doc.RootElement.GetArrayLength() > 0);
         
-        // Should contain DDL provider
-        var hasddl = doc.RootElement.EnumerateArray()
-            .Any(e => e.GetProperty("name").GetString() == "DdlProvider");
-        Assert.True(hasddl);
+        // Should contain RSS indexer (only user-configurable provider)
+        // Note: DDL and HTTP download clients are built-in services, not user-configurable providers
+        var hasRss = doc.RootElement.EnumerateArray()
+            .Any(e => e.GetProperty("name").GetString() == "RssIndexer");
+        Assert.True(hasRss);
     }
 
     [Fact]
@@ -94,10 +95,10 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
         var client = _factory.CreateClient();
         var request = new
         {
-            name = "Test DDL Indexer",
-            implementation = "DdlProvider",
+            name = "Test RSS Indexer",
+            implementation = "RssIndexer",
             isEnabled = true,
-            baseUrl = "https://example.com"
+            baseUrl = "https://example.com/feed"
         };
 
         // Act
@@ -108,8 +109,8 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
         var content = await response.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(content);
         
-        Assert.Equal("Test DDL Indexer", doc.RootElement.GetProperty("name").GetString());
-        Assert.Equal("DdlProvider", doc.RootElement.GetProperty("implementation").GetString());
+        Assert.Equal("Test RSS Indexer", doc.RootElement.GetProperty("name").GetString());
+        Assert.Equal("RssIndexer", doc.RootElement.GetProperty("implementation").GetString());
         Assert.True(doc.RootElement.GetProperty("isEnabled").GetBoolean());
         Assert.True(doc.RootElement.GetProperty("id").GetInt32() > 0);
     }
@@ -134,27 +135,24 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
-    public async Task CreateDownloadClient_ReturnsCreated()
+    public async Task CreateDownloadClient_WithNoImplementations_ReturnsBadRequest()
     {
+        // Note: HTTP Download Client is now a built-in service, not a user-configurable provider.
+        // External download clients (torrent, usenet) are planned for EPIC 10+.
         // Arrange
         var client = _factory.CreateClient();
         var request = new
         {
-            name = "Test HTTP Client",
-            implementation = "HttpDownloadClient",
+            name = "Test Download Client",
+            implementation = "HttpDownloadClient", // Not registered as a provider
             isEnabled = true
         };
 
         // Act
         var response = await client.PostAsJsonAsync("/api/v1/providers/downloadclients", request);
 
-        // Assert
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        var content = await response.Content.ReadAsStringAsync();
-        using var doc = JsonDocument.Parse(content);
-        
-        Assert.Equal("Test HTTP Client", doc.RootElement.GetProperty("name").GetString());
-        Assert.Equal("HttpDownloadClient", doc.RootElement.GetProperty("implementation").GetString());
+        // Assert - No download client implementations exist currently
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -180,10 +178,12 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
         var createRequest = new
         {
             name = "Original Name",
-            implementation = "DdlProvider",
-            isEnabled = true
+            implementation = "RssIndexer",
+            isEnabled = true,
+            baseUrl = "https://example.com/feed"
         };
         var createResponse = await client.PostAsJsonAsync("/api/v1/providers/indexers", createRequest);
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
         var createContent = await createResponse.Content.ReadAsStringAsync();
         using var createDoc = JsonDocument.Parse(createContent);
         var id = createDoc.RootElement.GetProperty("id").GetInt32();
@@ -217,10 +217,12 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
         var createRequest = new
         {
             name = "To Delete",
-            implementation = "DdlProvider",
-            isEnabled = true
+            implementation = "RssIndexer",
+            isEnabled = true,
+            baseUrl = "https://example.com/feed"
         };
         var createResponse = await client.PostAsJsonAsync("/api/v1/providers/indexers", createRequest);
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
         var createContent = await createResponse.Content.ReadAsStringAsync();
         using var createDoc = JsonDocument.Parse(createContent);
         var id = createDoc.RootElement.GetProperty("id").GetInt32();
@@ -246,10 +248,12 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
         var createRequest = new
         {
             name = "Test Provider",
-            implementation = "DdlProvider",
-            isEnabled = true
+            implementation = "RssIndexer",
+            isEnabled = true,
+            baseUrl = "https://example.com/feed"
         };
         var createResponse = await client.PostAsJsonAsync("/api/v1/providers/indexers", createRequest);
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
         var createContent = await createResponse.Content.ReadAsStringAsync();
         using var createDoc = JsonDocument.Parse(createContent);
         var id = createDoc.RootElement.GetProperty("id").GetInt32();
@@ -262,7 +266,7 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
         var content = await response.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(content);
         
-        // Null provider returns not implemented
+        // Null provider returns not implemented (RssIndexer uses NullIndexerProvider)
         Assert.False(doc.RootElement.GetProperty("success").GetBoolean());
         Assert.Contains("not yet implemented", doc.RootElement.GetProperty("message").GetString()?.ToLower());
     }
@@ -275,8 +279,8 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
         var request = new
         {
             name = "Unsaved Provider",
-            implementation = "DdlProvider",
-            baseUrl = "https://test.example.com"
+            implementation = "RssIndexer",
+            baseUrl = "https://test.example.com/feed"
         };
 
         // Act
@@ -300,10 +304,12 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
         var createRequest = new
         {
             name = "Toggle Test",
-            implementation = "DdlProvider",
-            isEnabled = true
+            implementation = "RssIndexer",
+            isEnabled = true,
+            baseUrl = "https://example.com/feed"
         };
         var createResponse = await client.PostAsJsonAsync("/api/v1/providers/indexers", createRequest);
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
         var createContent = await createResponse.Content.ReadAsStringAsync();
         using var createDoc = JsonDocument.Parse(createContent);
         var id = createDoc.RootElement.GetProperty("id").GetInt32();
