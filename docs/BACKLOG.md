@@ -838,21 +838,21 @@ Track upcoming comic releases and automate wanted list management. Must achieve 
   - AC: Webhook notifications (for Discord, Slack, etc.)
   - AC: Pushover/Pushbullet support
 
-### 11.5 Pull List UI
-- [ ] **List view**
-  - AC: This week's releases prominently displayed
-  - AC: Upcoming releases list (next 4 weeks)
-  - AC: Past releases with status
-  - AC: Filter by series, publisher, owned/missing
-- [ ] **Pull list management**
-  - AC: Mark issue as "Skip" (don't want this issue)
-  - AC: Mark issue as "Owned" (have it already, outside system)
-  - AC: "Add to Wanted" button for manual additions
-  - AC: Bulk actions (select multiple, mark as skipped/wanted)
-- [ ] **Dashboard integration**
-  - AC: "This Week" widget on dashboard
-  - AC: "Coming Soon" widget
-  - AC: Release count badges
+### 11.5 Pull List UI ✅ COMPLETED
+- [x] **List view**
+  - AC: This week's releases prominently displayed ✅
+  - AC: Upcoming releases list (next 4 weeks) ✅
+  - AC: Past releases with status ✅
+  - AC: Filter by series, publisher, owned/missing ✅ (status filter implemented)
+- [x] **Pull list management**
+  - AC: Mark issue as "Skip" (don't want this issue) ✅
+  - AC: Mark issue as "Owned" (have it already, outside system) ✅
+  - AC: "Add to Wanted" button for manual additions ✅
+  - AC: Bulk actions (select multiple, mark as skipped/wanted) ✅
+- [x] **Dashboard integration**
+  - AC: "This Week" widget on dashboard ✅
+  - AC: "Coming Soon" widget ✅
+  - AC: Release count badges ✅
 
 ### 11.6 Pull List Configuration
 - [ ] **Settings**

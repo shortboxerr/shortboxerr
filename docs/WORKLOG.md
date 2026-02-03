@@ -1,5 +1,67 @@
 # Worklog
 
+## Iteration 033 (2026-02-03)
+**EPIC 11.5: Pull List UI - COMPLETED**
+
+### Commits
+1. `feat: add Pull List UI page (EPIC 11.5)`
+2. `feat: add This Week and Coming Soon dashboard widgets (EPIC 11.5)`
+
+### Deliverables
+- ✅ PullListPage Component:
+  - This Week/Upcoming/Past view tabs
+  - Week navigation (previous/next/today)
+  - Grid view with cover images and status badges
+  - List view with sortable table
+  - Status filter dropdown
+  - Bulk selection and status updates
+  - Issue status management buttons (Wanted/Owned/Skipped)
+- ✅ Dashboard Widgets:
+  - ThisWeekWidget: shows this week's releases with cover thumbnails
+  - ComingSoonWidget: shows upcoming stats and wanted by publisher
+  - Links to full pull list page
+- ✅ Navigation:
+  - Pull List link in sidebar (Calendar icon)
+  - Route: /pulllist
+- ✅ API Client Methods:
+  - getPullListThisWeek()
+  - getPullListWeek(date)
+  - getPullListUpcoming(weeks)
+  - getPullListPast(weeks)
+  - getPullListCalendar()
+  - getPullListStats()
+  - markIssueWanted/Owned/Skipped()
+  - bulkUpdateIssueStatus()
+  - get/setSeriesMonitoringMode()
+- ✅ TypeScript Interfaces:
+  - PullListIssue, WeeklyPullList, CalendarDay, ReleaseCalendar
+  - PullListFilter, PullListActionResult, PullListBulkResult, PullListStats
+  - IssueStatus type
+- ✅ CSS Styles:
+  - Pull list grid and card styles
+  - Widget styles for dashboard
+  - Status badges and buttons
+  - Responsive grid layout
+
+### UI Features
+| Feature | Description |
+|---------|-------------|
+| Week View | Shows releases for current or selected week |
+| Upcoming View | Shows next 4 weeks of releases |
+| Past View | Shows last 4 weeks of releases |
+| Grid Mode | Cover images with status overlays |
+| List Mode | Table with series, issue, publisher, date, status |
+| Bulk Actions | Select multiple issues, update status at once |
+| Filtering | Filter by status (Wanted/Owned/Skipped/Missing) |
+| Dashboard | This Week and Coming Soon widgets |
+
+### Test Results
+```
+Passed!  - Failed: 0, Passed: 541, Skipped: 0, Total: 541
+```
+
+---
+
 ## Iteration 032 (2026-02-03)
 **EPIC 11.1 & 11.2: Weekly Pull List - COMPLETED**
 
