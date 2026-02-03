@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, RefreshCw, Trash2, Edit, MoreVertical, Library } from 'lucide-react';
 import { api } from '../api/client';
@@ -9,6 +10,7 @@ export function CollectionsPage() {
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: editionsData, isLoading, refetch } = useQuery({
     queryKey: ['editions', search],
@@ -129,8 +131,12 @@ export function CollectionsPage() {
               </thead>
               <tbody>
                 {editions.map((item) => (
-                  <tr key={item.id}>
-                    <td className="table-checkbox">
+                  <tr 
+                    key={item.id} 
+                    className="table-row-clickable"
+                    onClick={() => navigate(`/collections/${item.id}`)}
+                  >
+                    <td className="table-checkbox" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selectedIds.has(item.id)}
@@ -143,17 +149,17 @@ export function CollectionsPage() {
                     <td>{item.seriesTitle}</td>
                     <td>
                       <span className={`badge badge-${getTypeBadge(item.editionType)}`}>
-                        {item.editionType}
+                        {formatEditionType(item.editionType)}
                       </span>
                     </td>
                     <td>{item.volumeNumber ?? '-'}</td>
-                    <td>{item.year ?? '-'}</td>
+                    <td>{formatReleaseYear(item.releaseDate)}</td>
                     <td>
                       <span className={`badge badge-${item.hasFile ? 'success' : 'warning'}`}>
                         {item.hasFile ? 'Have' : 'Missing'}
                       </span>
                     </td>
-                    <td className="table-actions">
+                    <td className="table-actions" onClick={(e) => e.stopPropagation()}>
                       <button className="btn btn-icon" title="Edit">
                         <Edit size={16} />
                       </button>
@@ -179,18 +185,58 @@ export function CollectionsPage() {
 }
 
 function getTypeBadge(type: string): string {
-  switch (type.toLowerCase()) {
+  const typeStr = String(type);
+  switch (typeStr.toLowerCase()) {
+    case '0':
+    case 'tradespaperback':
     case 'tpb':
       return 'info';
+    case '1':
     case 'hardcover':
     case 'hc':
       return 'success';
+    case '2':
     case 'omnibus':
       return 'warning';
+    case '3':
+    case 'compendium':
+      return 'warning';
+    case '4':
+    case 'absoluteedition':
+      return 'danger';
+    case '5':
+    case 'deluxeedition':
     case 'deluxe':
       return 'info';
     default:
       return 'muted';
   }
+}
+
+function formatEditionType(type: string): string {
+  const typeStr = String(type);
+  const editionTypes: Record<string, string> = {
+    '0': 'TPB',
+    '1': 'Hardcover',
+    '2': 'Omnibus',
+    '3': 'Compendium',
+    '4': 'Absolute',
+    '5': 'Deluxe',
+    '99': 'Other',
+    'TradesPaperback': 'TPB',
+    'Hardcover': 'Hardcover',
+    'Omnibus': 'Omnibus',
+    'Compendium': 'Compendium',
+    'AbsoluteEdition': 'Absolute',
+    'DeluxeEdition': 'Deluxe',
+    'Other': 'Other'
+  };
+  return editionTypes[typeStr] ?? typeStr;
+}
+
+function formatReleaseYear(dateStr: string | null): string {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  return isNaN(date.getTime()) ? '-' : String(date.getFullYear());
 }
 

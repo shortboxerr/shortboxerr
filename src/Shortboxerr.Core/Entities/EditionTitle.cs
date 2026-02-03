@@ -69,6 +69,21 @@ public class EditionTitle
     public string? Overview { get; set; }
     
     /// <summary>
+    /// Cover image URL.
+    /// </summary>
+    public string? CoverImageUrl { get; set; }
+    
+    /// <summary>
+    /// ComicVine ID if matched.
+    /// </summary>
+    public int? ComicVineId { get; set; }
+    
+    /// <summary>
+    /// ComicVine URL.
+    /// </summary>
+    public string? ComicVineUrl { get; set; }
+    
+    /// <summary>
     /// Whether this edition is monitored for acquisition.
     /// </summary>
     public bool Monitored { get; set; }

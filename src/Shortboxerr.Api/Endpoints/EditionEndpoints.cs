@@ -59,7 +59,7 @@ public static class EditionEndpoints
         })
         .WithName("GetAllEditions");
 
-        // GET single edition by ID
+        // GET single edition by ID (basic info)
         group.MapGet("/{id:int}", async (ShortboxerrDbContext db, int id) =>
         {
             var edition = await db.EditionTitles
@@ -72,6 +72,43 @@ public static class EditionEndpoints
                 : Results.Ok(EditionDto.FromEntity(edition));
         })
         .WithName("GetEditionById");
+
+        // GET edition detail with full contents
+        group.MapGet("/{id:int}/detail", async (ShortboxerrDbContext db, int id) =>
+        {
+            var edition = await db.EditionTitles
+                .Include(e => e.Series)
+                .Include(e => e.Contents)
+                    .ThenInclude(c => c.Issue)
+                        .ThenInclude(i => i!.Series)
+                .Include(e => e.Contents)
+                    .ThenInclude(c => c.Series)
+                .FirstOrDefaultAsync(e => e.Id == id);
+
+            return edition is null
+                ? Results.NotFound(new { message = $"Edition {id} not found" })
+                : Results.Ok(EditionDetailDto.FromEntity(edition));
+        })
+        .WithName("GetEditionDetail");
+
+        // GET edition contents (issues contained in the edition)
+        group.MapGet("/{id:int}/contents", async (ShortboxerrDbContext db, int id) =>
+        {
+            var edition = await db.EditionTitles.FindAsync(id);
+            if (edition is null)
+                return Results.NotFound(new { message = $"Edition {id} not found" });
+
+            var contents = await db.EditionContents
+                .Include(c => c.Issue)
+                    .ThenInclude(i => i!.Series)
+                .Include(c => c.Series)
+                .Where(c => c.EditionTitleId == id)
+                .OrderBy(c => c.SortOrder)
+                .ToListAsync();
+
+            return Results.Ok(contents.Select(EditionContentDto.FromEntity).ToList());
+        })
+        .WithName("GetEditionContents");
 
         // POST create edition
         group.MapPost("/", async (ShortboxerrDbContext db, CreateEditionRequest request) =>

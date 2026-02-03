@@ -6,6 +6,7 @@ import { Dashboard } from './pages/Dashboard';
 import { SeriesPage } from './pages/SeriesPage';
 import { SeriesDetailPage } from './pages/SeriesDetailPage';
 import { CollectionsPage } from './pages/CollectionsPage';
+import { EditionDetailPage } from './pages/EditionDetailPage';
 import { ActivityPage } from './pages/ActivityPage';
 import { ManualImportPage } from './pages/ManualImportPage';
 import { HistoryPage } from './pages/HistoryPage';
@@ -140,6 +141,7 @@ function App() {
               <Route path="series" element={<SeriesPage />} />
               <Route path="series/:id" element={<SeriesDetailPage />} />
               <Route path="collections" element={<CollectionsPage />} />
+              <Route path="collections/:id" element={<EditionDetailPage />} />
               <Route path="wanted" element={<WantedPage />} />
               <Route path="activity" element={<ActivityPage />} />
               <Route path="history" element={<HistoryPage />} />

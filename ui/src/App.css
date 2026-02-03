@@ -1285,3 +1285,228 @@ body {
   width: 14px;
   height: 14px;
 }
+
+/* Edition Detail Page */
+.edition-detail-header {
+  display: flex;
+  gap: 24px;
+  padding: 20px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+}
+
+.edition-detail-cover {
+  width: 180px;
+  height: 270px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background: var(--bg-tertiary);
+  flex-shrink: 0;
+}
+
+.edition-detail-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.edition-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.edition-detail-volume {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.edition-detail-series {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.edition-detail-series-link {
+  color: var(--accent-primary);
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.edition-detail-series-link:hover {
+  opacity: 0.8;
+}
+
+.edition-detail-label {
+  color: var(--text-muted);
+  margin-right: 6px;
+}
+
+.edition-detail-publisher {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.edition-detail-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.edition-detail-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.edition-detail-overview {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.edition-detail-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--accent-primary);
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.edition-detail-link:hover {
+  opacity: 0.8;
+}
+
+.edition-detail-section {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+.edition-detail-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.edition-detail-section-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.edition-detail-section-stats {
+  display: flex;
+  gap: 8px;
+}
+
+/* Edition Contents */
+.edition-contents {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.edition-contents-series {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.edition-contents-series-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.edition-contents-series-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--accent-primary);
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.edition-contents-series-title:hover {
+  opacity: 0.8;
+}
+
+.edition-contents-series-count {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.edition-contents-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.edition-content-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.edition-content-item:hover {
+  border-color: var(--border-light);
+}
+
+.edition-content-item.owned {
+  border-left: 3px solid var(--accent-success);
+}
+
+.edition-content-item.missing {
+  border-left: 3px solid var(--accent-warning);
+}
+
+.edition-content-cover {
+  width: 36px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  flex-shrink: 0;
+}
+
+.edition-content-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.edition-content-number {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.edition-content-title {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.edition-content-status {
+  flex-shrink: 0;
+}

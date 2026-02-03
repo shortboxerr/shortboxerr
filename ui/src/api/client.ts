@@ -192,12 +192,41 @@ export interface Issue {
 interface Edition {
   id: number;
   title: string;
-  seriesTitle: string;
+  seriesId: number | null;
+  seriesTitle: string | null;
   editionType: string;
   volumeNumber: number | null;
-  year: number | null;
+  isbn: string | null;
   publisher: string | null;
+  releaseDate: string | null;
+  pageCount: number | null;
+  overview: string | null;
+  coverImageUrl: string | null;
+  comicVineId: number | null;
+  comicVineUrl: string | null;
+  monitored: boolean;
   hasFile: boolean;
+  contentCount: number;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface EditionDetail extends Edition {
+  contents: EditionContent[];
+}
+
+export interface EditionContent {
+  id: number;
+  editionTitleId: number;
+  issueId: number | null;
+  seriesId: number | null;
+  seriesTitle: string | null;
+  issueNumber: number | null;
+  issueNumberText: string | null;
+  issueTitle: string | null;
+  issueCoverImageUrl: string | null;
+  issueHasFile: boolean;
+  sortOrder: number;
 }
 
 interface QueueItem {
@@ -611,6 +640,18 @@ export const api = {
 
   deleteEdition: async (id: number): Promise<void> => {
     await fetchApi(`/api/v1/editions/${id}`, { method: 'DELETE' });
+  },
+
+  getEditionById: async (id: number): Promise<Edition> => {
+    return await fetchApi<Edition>(`/api/v1/editions/${id}`);
+  },
+
+  getEditionDetail: async (id: number): Promise<EditionDetail> => {
+    return await fetchApi<EditionDetail>(`/api/v1/editions/${id}/detail`);
+  },
+
+  getEditionContents: async (id: number): Promise<EditionContent[]> => {
+    return await fetchApi<EditionContent[]>(`/api/v1/editions/${id}/contents`);
   },
 
   // Activity
