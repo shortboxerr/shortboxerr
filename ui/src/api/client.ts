@@ -306,10 +306,48 @@ export interface ComicVineImage {
   iconUrl: string | null;
   mediumUrl: string | null;
   screenUrl: string | null;
-  smallUrl: string | null;
-  superUrl: string | null;
-  thumbUrl: string | null;
   originalUrl: string | null;
+}
+
+// Series Metadata Types (for adding/matching series via ComicVine)
+export interface SeriesMatchCandidate {
+  comicVineId: number;
+  title: string;
+  aliases: string[];
+  publisher: string | null;
+  startYear: number | null;
+  description: string | null;
+  coverImageUrl: string | null;
+  issueCount: number;
+  confidence: number;
+  confidenceReasons: string[];
+  siteDetailUrl: string | null;
+}
+
+export interface SeriesSearchResult {
+  success: boolean;
+  error: string | null;
+  results: SeriesMatchCandidate[];
+  totalResults: number;
+  page: number;
+  limit: number;
+}
+
+export interface SeriesAddResult {
+  success: boolean;
+  error: string | null;
+  seriesId: number | null;
+  comicVineId: number | null;
+  title: string | null;
+  issuesCreated: number;
+  alreadyExists: boolean;
+  existingSeriesId: number | null;
+}
+
+export interface AddSeriesFromComicVineRequest {
+  rootFolder?: string;
+  monitored?: boolean;
+  monitoringMode?: 'AllIssues' | 'FutureIssues' | 'Manual' | 'FirstIssue';
 }
 
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
@@ -716,6 +754,63 @@ export const api = {
     return await fetchApi<ComicVineSearchResult<ComicVineIssue>>(
       `/api/v1/comicvine/volumes/${volumeId}/issues?page=${page}&limit=${limit}`
     );
+  },
+
+  // Series Metadata (ComicVine integration)
+  searchSeriesFromComicVine: async (
+    query: string,
+    options?: { publisher?: string; yearStart?: number; yearEnd?: number; page?: number; limit?: number }
+  ): Promise<SeriesSearchResult> => {
+    const params = new URLSearchParams({ q: query });
+    if (options?.publisher) params.set('publisher', options.publisher);
+    if (options?.yearStart) params.set('yearStart', String(options.yearStart));
+    if (options?.yearEnd) params.set('yearEnd', String(options.yearEnd));
+    if (options?.page) params.set('page', String(options.page));
+    if (options?.limit) params.set('limit', String(options.limit));
+
+    try {
+      return await fetchApi<SeriesSearchResult>(`/api/v1/series/comicvine/search?${params}`);
+    } catch (e) {
+      return {
+        success: false,
+        error: e instanceof Error ? e.message : 'Search failed',
+        results: [],
+        totalResults: 0,
+        page: 1,
+        limit: 10,
+      };
+    }
+  },
+
+  previewSeriesFromComicVine: async (volumeId: number): Promise<SeriesMatchCandidate | null> => {
+    try {
+      return await fetchApi<SeriesMatchCandidate>(`/api/v1/series/comicvine/${volumeId}`);
+    } catch {
+      return null;
+    }
+  },
+
+  addSeriesFromComicVine: async (
+    volumeId: number,
+    options?: AddSeriesFromComicVineRequest
+  ): Promise<SeriesAddResult> => {
+    try {
+      return await fetchApi<SeriesAddResult>(`/api/v1/series/comicvine/${volumeId}`, {
+        method: 'POST',
+        body: JSON.stringify(options ?? {}),
+      });
+    } catch (e) {
+      return {
+        success: false,
+        error: e instanceof Error ? e.message : 'Failed to add series',
+        seriesId: null,
+        comicVineId: null,
+        title: null,
+        issuesCreated: 0,
+        alreadyExists: false,
+        existingSeriesId: null,
+      };
+    }
   },
 };
 
