@@ -742,21 +742,9 @@ function DownloadClientsSettings() {
   return (
     <>
       <SettingsSection title="Download Clients">
-        <div style={{ 
-          padding: '12px 16px', 
-          marginBottom: '16px', 
-          background: 'var(--bg-tertiary)', 
-          borderRadius: 'var(--radius-md)',
-          borderLeft: '3px solid var(--accent-primary)',
-          fontSize: '13px',
-          color: 'var(--text-secondary)'
-        }}>
-          <strong>Note:</strong> HTTP/DDL downloads are handled by the built-in download client and do not need to be configured here.
-          This section is for external download clients (torrent clients, usenet).
-        </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
-            Configure external download clients for torrent or usenet downloads.
+            Configure download clients for torrent or usenet downloads.
           </p>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button className="btn btn-icon" onClick={() => refetch()} title="Refresh">
@@ -774,9 +762,9 @@ function DownloadClientsSettings() {
         ) : !clients?.length ? (
           <div className="empty-state" style={{ padding: '40px 20px' }}>
             <Download size={48} />
-            <div className="empty-state-title">No external download clients configured</div>
+            <div className="empty-state-title">No download clients configured</div>
             <div className="empty-state-text">
-              Add torrent or usenet download clients. HTTP/DDL downloads work automatically.
+              Add torrent or usenet download clients.
             </div>
           </div>
         ) : (
