@@ -201,6 +201,96 @@ export interface ApiKeyInfo {
   isNewKey?: boolean;
 }
 
+// ComicVine Types
+export interface ComicVineSettings {
+  enabled: boolean;
+  hasApiKey: boolean;
+  maskedApiKey: string | null;
+  cacheTtlHours: number;
+  coverCacheDirectory: string;
+  autoMatchThreshold: number;
+  autoRefreshEnabled: boolean;
+  refreshIntervalDays: number;
+}
+
+export interface ComicVineSettingsUpdate {
+  apiKey?: string;
+  enabled?: boolean;
+  cacheTtlHours?: number;
+  coverCacheDirectory?: string;
+  autoMatchThreshold?: number;
+  autoRefreshEnabled?: boolean;
+  refreshIntervalDays?: number;
+}
+
+export interface ComicVineTestResult {
+  success: boolean;
+  message: string;
+  latencyMs: number | null;
+  apiVersion: string | null;
+}
+
+export interface ComicVineRateLimitStatus {
+  requestsUsed: number;
+  requestLimit: number;
+  windowResetTime: string;
+  isRateLimited: boolean;
+  timeUntilReset: string;
+}
+
+export interface ComicVineSearchResult<T> {
+  success: boolean;
+  error: string | null;
+  statusCode: number;
+  results: T[];
+  totalResults: number;
+  page: number;
+  limit: number;
+  numberOfPageResults: number;
+}
+
+export interface ComicVineResult<T> {
+  success: boolean;
+  error: string | null;
+  statusCode: number;
+  data: T | null;
+}
+
+export interface ComicVineVolume {
+  id: number;
+  name: string;
+  aliases: string[];
+  startYear: number | null;
+  description: string | null;
+  deck: string | null;
+  publisher: { id: number; name: string } | null;
+  issueCount: number;
+  image: ComicVineImage | null;
+  siteDetailUrl: string | null;
+}
+
+export interface ComicVineIssue {
+  id: number;
+  name: string | null;
+  issueNumber: string;
+  description: string | null;
+  coverDate: string | null;
+  storeDate: string | null;
+  volume: { id: number; name: string } | null;
+  image: ComicVineImage | null;
+  siteDetailUrl: string | null;
+}
+
+export interface ComicVineImage {
+  iconUrl: string | null;
+  mediumUrl: string | null;
+  screenUrl: string | null;
+  smallUrl: string | null;
+  superUrl: string | null;
+  thumbUrl: string | null;
+  originalUrl: string | null;
+}
+
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
@@ -550,6 +640,55 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify({ enabled }),
     });
+  },
+
+  // ComicVine
+  getComicVineSettings: async (): Promise<ComicVineSettings> => {
+    try {
+      return await fetchApi<ComicVineSettings>('/api/v1/comicvine/settings');
+    } catch {
+      return {
+        enabled: false,
+        hasApiKey: false,
+        maskedApiKey: null,
+        cacheTtlHours: 24,
+        coverCacheDirectory: '/config/covers',
+        autoMatchThreshold: 85,
+        autoRefreshEnabled: true,
+        refreshIntervalDays: 7,
+      };
+    }
+  },
+
+  updateComicVineSettings: async (settings: ComicVineSettingsUpdate): Promise<ComicVineSettings> => {
+    return await fetchApi<ComicVineSettings>('/api/v1/comicvine/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+  },
+
+  testComicVineConnection: async (): Promise<ComicVineTestResult> => {
+    return await fetchApi<ComicVineTestResult>('/api/v1/comicvine/test', { method: 'POST' });
+  },
+
+  getComicVineRateLimit: async (): Promise<ComicVineRateLimitStatus> => {
+    return await fetchApi<ComicVineRateLimitStatus>('/api/v1/comicvine/ratelimit');
+  },
+
+  searchComicVineVolumes: async (query: string, page = 1, limit = 10): Promise<ComicVineSearchResult<ComicVineVolume>> => {
+    return await fetchApi<ComicVineSearchResult<ComicVineVolume>>(
+      `/api/v1/comicvine/search/volumes?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`
+    );
+  },
+
+  getComicVineVolume: async (volumeId: number): Promise<ComicVineResult<ComicVineVolume>> => {
+    return await fetchApi<ComicVineResult<ComicVineVolume>>(`/api/v1/comicvine/volumes/${volumeId}`);
+  },
+
+  getComicVineVolumeIssues: async (volumeId: number, page = 1, limit = 100): Promise<ComicVineSearchResult<ComicVineIssue>> => {
+    return await fetchApi<ComicVineSearchResult<ComicVineIssue>>(
+      `/api/v1/comicvine/volumes/${volumeId}/issues?page=${page}&limit=${limit}`
+    );
   },
 };
 

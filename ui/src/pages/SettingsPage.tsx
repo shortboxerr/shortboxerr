@@ -4,16 +4,17 @@ import {
   Settings, Server, Download, Shield, 
   FolderOpen, Plug, Save, Plus, Edit, Trash2, 
   CheckCircle, XCircle, AlertCircle, Play, GripVertical,
-  Copy, RefreshCw, X
+  Copy, RefreshCw, X, Database, ExternalLink
 } from 'lucide-react';
 import { api } from '../api/client';
-import type { Provider, CreateProviderRequest, ProviderTestResult } from '../api/client';
+import type { Provider, CreateProviderRequest, ProviderTestResult, ComicVineTestResult } from '../api/client';
 import { useTheme } from '../App';
 
-type SettingsTab = 'general' | 'indexers' | 'download' | 'import' | 'ui' | 'security';
+type SettingsTab = 'general' | 'indexers' | 'download' | 'import' | 'ui' | 'security' | 'comicvine';
 
 const tabs: { id: SettingsTab; icon: React.ElementType; label: string }[] = [
   { id: 'general', icon: Settings, label: 'General' },
+  { id: 'comicvine', icon: Database, label: 'ComicVine' },
   { id: 'indexers', icon: Plug, label: 'Indexers' },
   { id: 'download', icon: Download, label: 'Download Clients' },
   { id: 'import', icon: FolderOpen, label: 'Import' },
@@ -66,6 +67,7 @@ export function SettingsPage() {
           
           <div style={{ flex: 1 }}>
             {activeTab === 'general' && <GeneralSettings />}
+            {activeTab === 'comicvine' && <ComicVineSettingsTab />}
             {activeTab === 'indexers' && <IndexersSettings />}
             {activeTab === 'download' && <DownloadClientsSettings />}
             {activeTab === 'import' && <ImportSettings />}
@@ -586,6 +588,277 @@ function GeneralSettings() {
             </div>
           </div>
         </div>
+      )}
+    </>
+  );
+}
+
+// ============== COMICVINE SETTINGS ==============
+
+function ComicVineSettingsTab() {
+  const [apiKey, setApiKey] = useState('');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [testResult, setTestResult] = useState<ComicVineTestResult | null>(null);
+  const [isTesting, setIsTesting] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ['comicvineSettings'],
+    queryFn: api.getComicVineSettings,
+  });
+
+  const { data: rateLimit } = useQuery({
+    queryKey: ['comicvineRateLimit'],
+    queryFn: api.getComicVineRateLimit,
+    refetchInterval: 30000, // Refresh every 30 seconds
+    enabled: settings?.enabled ?? false,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: api.updateComicVineSettings,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comicvineSettings'] });
+    },
+  });
+
+  const handleTestConnection = async () => {
+    setIsTesting(true);
+    setTestResult(null);
+    try {
+      const result = await api.testComicVineConnection();
+      setTestResult(result);
+    } catch (e) {
+      setTestResult({
+        success: false,
+        message: e instanceof Error ? e.message : 'Connection test failed',
+        latencyMs: null,
+        apiVersion: null,
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  const handleSaveApiKey = () => {
+    if (apiKey.trim()) {
+      updateMutation.mutate({ apiKey: apiKey.trim() });
+      setApiKey('');
+    }
+  };
+
+  const handleToggleEnabled = (enabled: boolean) => {
+    updateMutation.mutate({ enabled });
+  };
+
+  if (isLoading) {
+    return <div className="loading"><div className="spinner" /></div>;
+  }
+
+  return (
+    <>
+      <SettingsSection title="ComicVine API">
+        <div style={{ 
+          padding: '12px 16px', 
+          background: 'var(--bg-tertiary)', 
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '16px',
+          fontSize: '13px',
+          color: 'var(--text-secondary)'
+        }}>
+          <p style={{ margin: 0 }}>
+            ComicVine provides metadata for comic series, issues, and collections.
+            Get your API key from{' '}
+            <a 
+              href="https://comicvine.gamespot.com/api/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}
+            >
+              comicvine.gamespot.com/api <ExternalLink size={12} style={{ verticalAlign: 'middle' }} />
+            </a>
+          </p>
+        </div>
+
+        <SettingsField label="Enable ComicVine" description="Use ComicVine for metadata lookup">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={settings?.enabled ?? false}
+              onChange={(e) => handleToggleEnabled(e.target.checked)}
+              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+            />
+            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+              {settings?.enabled ? 'Enabled' : 'Disabled'}
+            </span>
+          </label>
+        </SettingsField>
+
+        <SettingsField 
+          label="API Key" 
+          description={settings?.hasApiKey ? `Current key: ${settings.maskedApiKey}` : 'No API key configured'}
+        >
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              className="input"
+              type={showApiKey ? 'text' : 'password'}
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder={settings?.hasApiKey ? 'Enter new key to replace' : 'Enter your API key'}
+              style={{ flex: 1 }}
+            />
+            <button
+              className="btn btn-icon"
+              onClick={() => setShowApiKey(!showApiKey)}
+              title={showApiKey ? 'Hide' : 'Show'}
+            >
+              {showApiKey ? <XCircle size={16} /> : <CheckCircle size={16} />}
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleSaveApiKey}
+              disabled={!apiKey.trim() || updateMutation.isPending}
+            >
+              <Save size={16} />
+              Save Key
+            </button>
+          </div>
+        </SettingsField>
+
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '16px' }}>
+          <button
+            className="btn btn-secondary"
+            onClick={handleTestConnection}
+            disabled={!settings?.hasApiKey || isTesting}
+          >
+            {isTesting ? (
+              <><div className="spinner" style={{ width: '14px', height: '14px' }} /> Testing...</>
+            ) : (
+              <><Play size={16} /> Test Connection</>
+            )}
+          </button>
+          {testResult && (
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px',
+              color: testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)',
+              fontSize: '13px'
+            }}>
+              {testResult.success ? <CheckCircle size={16} /> : <XCircle size={16} />}
+              {testResult.message}
+              {testResult.latencyMs && <span style={{ color: 'var(--text-muted)' }}>({testResult.latencyMs}ms)</span>}
+            </div>
+          )}
+        </div>
+      </SettingsSection>
+
+      {settings?.enabled && (
+        <>
+          <SettingsSection title="Rate Limit Status">
+            {rateLimit ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                <div style={{ padding: '16px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 600, color: rateLimit.isRateLimited ? 'var(--accent-danger)' : 'var(--accent-primary)' }}>
+                    {rateLimit.requestsUsed} / {rateLimit.requestLimit}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Requests Used</div>
+                </div>
+                <div style={{ padding: '16px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {rateLimit.requestLimit - rateLimit.requestsUsed}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Remaining</div>
+                </div>
+                <div style={{ padding: '16px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>
+                    {new Date(rateLimit.windowResetTime).toLocaleTimeString()}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Window Resets</div>
+                </div>
+              </div>
+            ) : (
+              <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+                Rate limit data will be available after making API requests.
+              </p>
+            )}
+          </SettingsSection>
+
+          <SettingsSection title="Metadata Settings">
+            <SettingsField
+              label="Cache Duration"
+              description="How long to cache ComicVine responses"
+            >
+              <select
+                className="input"
+                value={settings.cacheTtlHours}
+                onChange={(e) => updateMutation.mutate({ cacheTtlHours: parseInt(e.target.value) })}
+                style={{ width: '200px' }}
+              >
+                <option value={1}>1 hour</option>
+                <option value={6}>6 hours</option>
+                <option value={12}>12 hours</option>
+                <option value={24}>24 hours (recommended)</option>
+                <option value={48}>48 hours</option>
+                <option value={168}>1 week</option>
+              </select>
+            </SettingsField>
+
+            <SettingsField
+              label="Auto-Match Threshold"
+              description="Minimum confidence score for automatic series matching (0-100)"
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <input
+                  type="range"
+                  min={50}
+                  max={100}
+                  value={settings.autoMatchThreshold}
+                  onChange={(e) => updateMutation.mutate({ autoMatchThreshold: parseInt(e.target.value) })}
+                  style={{ flex: 1 }}
+                />
+                <span style={{ minWidth: '40px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: '14px' }}>
+                  {settings.autoMatchThreshold}%
+                </span>
+              </div>
+            </SettingsField>
+          </SettingsSection>
+
+          <SettingsSection title="Auto-Refresh">
+            <SettingsField label="Enable Auto-Refresh" description="Automatically refresh metadata on a schedule">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={settings.autoRefreshEnabled}
+                  onChange={(e) => updateMutation.mutate({ autoRefreshEnabled: e.target.checked })}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                />
+                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+                  {settings.autoRefreshEnabled ? 'Enabled' : 'Disabled'}
+                </span>
+              </label>
+            </SettingsField>
+
+            {settings.autoRefreshEnabled && (
+              <SettingsField
+                label="Refresh Interval"
+                description="How often to refresh series metadata"
+              >
+                <select
+                  className="input"
+                  value={settings.refreshIntervalDays}
+                  onChange={(e) => updateMutation.mutate({ refreshIntervalDays: parseInt(e.target.value) })}
+                  style={{ width: '200px' }}
+                >
+                  <option value={1}>Daily</option>
+                  <option value={3}>Every 3 days</option>
+                  <option value={7}>Weekly (recommended)</option>
+                  <option value={14}>Every 2 weeks</option>
+                  <option value={30}>Monthly</option>
+                </select>
+              </SettingsField>
+            )}
+          </SettingsSection>
+        </>
       )}
     </>
   );
