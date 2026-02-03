@@ -381,16 +381,22 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: API key validation endpoint
   - AC: Settings UI for entering/updating API key
   - AC: API endpoint: GET/PUT /api/v1/comicvine/settings
+  - AC: API endpoint: GET /api/v1/comicvine/settings/apikey (returns full unmasked key)
+  - AC: API endpoint: POST /api/v1/comicvine/test (test connection with saved key)
 - [x] **Rate limiting (match Mylar3)**
   - AC: Respect ComicVine's rate limits (200 requests/hour or as documented)
   - AC: Request queuing with backoff
   - AC: Track request count and reset time
   - AC: Graceful handling of 420 (rate limit) responses
+  - AC: API endpoint: GET /api/v1/comicvine/ratelimit (returns current usage status)
 - [x] **API client implementation**
   - AC: IComicVineClient interface
   - AC: SearchVolumes, SearchIssues, GetVolume, GetIssue, GetPublisher, GetVolumeIssues
   - AC: Response caching (configurable TTL via IMemoryCache)
   - AC: Rate limit exception handling
+  - AC: API endpoints for search: GET /api/v1/comicvine/search/volumes, /search/issues
+  - AC: API endpoints for entities: GET /api/v1/comicvine/volumes/{id}, /issues/{id}, /publishers/{id}
+  - AC: API endpoint: GET /api/v1/comicvine/volumes/{id}/issues (all issues for a volume)
 - [x] **Settings UI**
   - AC: ComicVine tab in Settings page
   - AC: API key input field with description "Specify your own ComicVine API key here"
