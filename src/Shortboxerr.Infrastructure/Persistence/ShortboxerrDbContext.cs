@@ -18,6 +18,7 @@ public class ShortboxerrDbContext : DbContext
     public DbSet<FileAsset> FileAssets => Set<FileAsset>();
     public DbSet<HistoryEvent> HistoryEvents => Set<HistoryEvent>();
     public DbSet<ProviderDefinition> Providers => Set<ProviderDefinition>();
+    public DbSet<IssueStoryArc> IssueStoryArcs => Set<IssueStoryArc>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -68,8 +69,10 @@ public class ShortboxerrDbContext : DbContext
             // ComicVine metadata
             entity.Property(e => e.ComicVineUrl).HasMaxLength(512);
             entity.Property(e => e.CoverImageUrl).HasMaxLength(1024);
+            entity.Property(e => e.SpecialType).HasMaxLength(64);
             entity.HasIndex(e => new { e.SeriesId, e.IssueNumber });
             entity.HasIndex(e => e.ComicVineId);
+            entity.HasIndex(e => new { e.SeriesId, e.IsAnnual });
             entity.HasOne(e => e.Series)
                 .WithMany(s => s.Issues)
                 .HasForeignKey(e => e.SeriesId)
@@ -78,6 +81,21 @@ public class ShortboxerrDbContext : DbContext
                 .WithOne(f => f.Issue)
                 .HasForeignKey<FileAsset>(f => f.IssueId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // IssueStoryArc
+        modelBuilder.Entity<IssueStoryArc>(entity =>
+        {
+            entity.ToTable("IssueStoryArcs");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(512);
+            entity.Property(e => e.ComicVineUrl).HasMaxLength(512);
+            entity.HasIndex(e => e.IssueId);
+            entity.HasIndex(e => e.ComicVineStoryArcId);
+            entity.HasOne(e => e.Issue)
+                .WithMany(i => i.StoryArcs)
+                .HasForeignKey(e => e.IssueId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // EditionTitle

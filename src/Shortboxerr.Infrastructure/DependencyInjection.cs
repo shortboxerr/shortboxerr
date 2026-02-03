@@ -43,6 +43,7 @@ public static class DependencyInjection
         services.AddMemoryCache();
         services.AddHttpClient<IComicVineClient, ComicVineClient>();
         services.AddScoped<ISeriesMetadataService, SeriesMetadataService>();
+        services.AddScoped<IIssueMetadataService, IssueMetadataService>();
 
         // Settings (can be overridden via configuration)
         services.Configure<DecisionEngineSettings>(options =>

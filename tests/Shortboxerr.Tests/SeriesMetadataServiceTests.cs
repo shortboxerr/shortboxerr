@@ -81,8 +81,14 @@ public class SeriesMetadataServiceTests : IDisposable
     [Fact]
     public async Task SearchSeriesAsync_WithNoApiKey_ReturnsError()
     {
-        // Arrange
+        // Arrange - ComicVineClient returns error when no API key
         _mockComicVineClient.Setup(x => x.IsConfigured).Returns(false);
+        _mockComicVineClient.Setup(x => x.SearchVolumesAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ComicVineSearchResult<ComicVineVolume>
+            {
+                Success = false,
+                Error = "ComicVine API key not configured"
+            });
 
         // Act
         var result = await _service.SearchSeriesAsync("Batman");

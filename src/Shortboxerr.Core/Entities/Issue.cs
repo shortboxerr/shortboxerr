@@ -96,11 +96,27 @@ public class Issue
     
     #endregion
     
+    /// <summary>
+    /// Whether this is an annual (e.g., "Annual 1", "Annual 2020").
+    /// </summary>
+    public bool IsAnnual { get; set; }
+    
+    /// <summary>
+    /// Whether this is a special issue (one-shot, special edition, etc.).
+    /// </summary>
+    public bool IsSpecial { get; set; }
+    
+    /// <summary>
+    /// Type of special issue if IsSpecial is true.
+    /// </summary>
+    public string? SpecialType { get; set; }
+    
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
     
     // Navigation properties
     public Series? Series { get; set; }
     public FileAsset? File { get; set; }
+    public ICollection<IssueStoryArc> StoryArcs { get; set; } = new List<IssueStoryArc>();
 }
 
