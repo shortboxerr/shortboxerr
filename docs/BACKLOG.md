@@ -411,6 +411,7 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: HTML error responses detected and handled gracefully
   - AC: Rate limit exceeded returns user-friendly message
   - AC: Network errors logged and returned with context
+  - AC: Base URL must have trailing slash for proper HttpClient path concatenation
 - [x] **Tests**
   - AC: 12 unit tests for ComicVineClient
   - AC: Mock HttpMessageHandler for all API calls
