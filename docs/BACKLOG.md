@@ -854,6 +854,35 @@ Track upcoming comic releases and automate wanted list management. Must achieve 
   - AC: "Coming Soon" widget ✅
   - AC: Release count badges ✅
 
+### 11.8 This Week Discovery (Mylar3 Parity) ✅ COMPLETED
+- [x] **All releases view (not just monitored series)** ✅
+  - AC: Fetch all ComicVine releases for the week (not limited to monitored series) ✅
+  - AC: Show issues from unmonitored series alongside monitored ones ✅
+  - AC: Visual distinction between "in library" vs "discoverable" issues ✅
+  - AC: Toggle to show "All Releases" vs "My Pull List Only" ✅
+  - AC: Cover view and list view options (same as existing pull list) ✅
+- [x] **Add issue one-off** ✅
+  - AC: "Add Issue" button to add a single issue as wanted without adding the series ✅
+  - AC: Creates issue in database with status=Wanted, series with monitored=false ✅
+  - AC: Issue appears in Wanted list for search/download ✅
+  - AC: API endpoint: POST /api/v1/pulllist/discover/add-issue ✅
+- [x] **Add series from discovery** ✅
+  - AC: "Add Series" button to add full series and start monitoring ✅
+  - AC: Uses existing AddSeriesByComicVineIdAsync functionality ✅
+  - AC: Option to set monitoring mode when adding (All/Future/Manual/FirstIssue) ✅
+  - AC: After adding, issue status updates to reflect monitoring mode ✅
+- [x] **ComicVine weekly releases integration** ✅
+  - AC: Fetch this week's releases from ComicVine API ✅
+  - AC: Cache results to minimize API calls (30-minute TTL) ✅
+  - AC: Handle pagination for large release weeks ✅
+  - AC: Filter by publisher (in-library only for now, full publisher filter deferred) ✅
+- [x] **UI enhancements** ✅
+  - AC: Discovery filter (All/New to Me/In Library) ✅
+  - AC: "NEW" badge for series not in library ✅
+  - AC: Quick-add buttons in cover view and list view ✅
+  - AC: Confirmation modal for adding series with monitoring mode selection ✅
+  - Note: Publisher filter dropdown deferred - requires additional API work to fetch publishers from ComicVine releases
+
 ### 11.6 Pull List Configuration ✅ COMPLETED
 - [x] **Settings**
   - AC: Week start day (Sunday/Monday) ✅

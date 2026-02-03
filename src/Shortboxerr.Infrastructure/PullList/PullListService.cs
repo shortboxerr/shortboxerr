@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Core.Entities;
@@ -16,22 +17,35 @@ public class PullListService : IPullListService
 {
     private readonly ShortboxerrDbContext _dbContext;
     private readonly ISettingsService _settingsService;
+    private readonly IComicVineClient _comicVineClient;
+    private readonly ISeriesMetadataService _seriesMetadataService;
+    private readonly IMemoryCache _cache;
     private readonly ILogger<PullListService> _logger;
 
     // Settings key
     private const string PullListSettingsKey = "pulllist";
     private const string SeriesSettingsKey = "pulllist_series";
+    private const string DiscoveryCacheKey = "pulllist_discovery_{0}";
     
     // Comics typically release on Wednesday in the US
     private const DayOfWeek DefaultReleaseDay = DayOfWeek.Wednesday;
+    
+    // Cache discovery results for 30 minutes to minimize API calls
+    private static readonly TimeSpan DiscoveryCacheDuration = TimeSpan.FromMinutes(30);
 
     public PullListService(
         ShortboxerrDbContext dbContext,
         ISettingsService settingsService,
+        IComicVineClient comicVineClient,
+        ISeriesMetadataService seriesMetadataService,
+        IMemoryCache cache,
         ILogger<PullListService> logger)
     {
         _dbContext = dbContext;
         _settingsService = settingsService;
+        _comicVineClient = comicVineClient;
+        _seriesMetadataService = seriesMetadataService;
+        _cache = cache;
         _logger = logger;
     }
 
@@ -575,6 +589,405 @@ public class PullListService : IPullListService
                 Error = ex.Message
             };
         }
+    }
+
+    #endregion
+
+    #region Discovery & One-Off Additions (Mylar3 "This Week" Parity)
+
+    public async Task<WeeklyDiscoveryList> GetWeeklyDiscoveryAsync(
+        DateTime weekOf,
+        DiscoveryFilter? filter = null,
+        CancellationToken cancellationToken = default)
+    {
+        var (weekStart, weekEnd) = GetWeekBoundaries(weekOf);
+        var releaseDay = GetReleaseDay(weekStart);
+        var cacheKey = string.Format(DiscoveryCacheKey, weekStart.ToString("yyyy-MM-dd"));
+
+        // Try cache first
+        if (_cache.TryGetValue<List<ComicVineIssue>>(cacheKey, out var cachedIssues) && cachedIssues != null)
+        {
+            _logger.LogDebug("Using cached discovery results for week of {WeekStart}", weekStart);
+            return await BuildDiscoveryListAsync(cachedIssues, weekStart, weekEnd, releaseDay, filter, cancellationToken);
+        }
+
+        // Fetch from ComicVine API
+        _logger.LogInformation("Fetching ComicVine releases for week of {WeekStart}", weekStart);
+        
+        var allIssues = new List<ComicVineIssue>();
+        var offset = 0;
+        const int limit = 100;
+        
+        // Query ComicVine for issues with store_date in this week
+        // ComicVine date filter format: YYYY-MM-DD|YYYY-MM-DD
+        var dateFilter = $"{weekStart:yyyy-MM-dd}|{weekEnd.AddDays(-1):yyyy-MM-dd}";
+        
+        while (true)
+        {
+            var result = await _comicVineClient.GetIssuesByStoreDateAsync(
+                dateFilter, 
+                offset, 
+                limit, 
+                cancellationToken);
+
+            if (!result.Success || result.Results == null)
+            {
+                _logger.LogWarning("Failed to fetch ComicVine releases: {Error}", result.Error);
+                break;
+            }
+
+            allIssues.AddRange(result.Results);
+            
+            if (result.Results.Count < limit || allIssues.Count >= result.TotalResults)
+                break;
+                
+            offset += limit;
+            
+            // Rate limit protection
+            await Task.Delay(200, cancellationToken);
+        }
+
+        _logger.LogInformation("Retrieved {Count} issues from ComicVine for week of {WeekStart}", 
+            allIssues.Count, weekStart);
+
+        // Cache the results
+        _cache.Set(cacheKey, allIssues, DiscoveryCacheDuration);
+
+        return await BuildDiscoveryListAsync(allIssues, weekStart, weekEnd, releaseDay, filter, cancellationToken);
+    }
+
+    public async Task<AddOneOffResult> AddIssueOneOffAsync(
+        int comicVineIssueId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("Adding one-off issue with ComicVine ID {IssueId}", comicVineIssueId);
+
+            // Check if issue already exists in database
+            var existingIssue = await _dbContext.Issues
+                .Include(i => i.Series)
+                .FirstOrDefaultAsync(i => i.ComicVineId == comicVineIssueId, cancellationToken);
+
+            if (existingIssue != null)
+            {
+                // Issue exists, just mark it as wanted
+                existingIssue.Status = IssueStatus.Wanted;
+                await _dbContext.SaveChangesAsync(cancellationToken);
+
+                return new AddOneOffResult
+                {
+                    Success = true,
+                    IssueId = existingIssue.Id,
+                    SeriesId = existingIssue.SeriesId,
+                    SeriesTitle = existingIssue.Series?.Title,
+                    IssueNumber = existingIssue.IssueNumber,
+                    SeriesCreated = false
+                };
+            }
+
+            // Fetch issue details from ComicVine
+            var issueResult = await _comicVineClient.GetIssueAsync(comicVineIssueId, cancellationToken);
+            if (!issueResult.Success || issueResult.Data == null)
+            {
+                return new AddOneOffResult
+                {
+                    Success = false,
+                    Error = issueResult.Error ?? "Failed to fetch issue from ComicVine"
+                };
+            }
+
+            var cvIssue = issueResult.Data;
+            var volumeId = cvIssue.Volume?.Id ?? 0;
+            
+            if (volumeId == 0)
+            {
+                return new AddOneOffResult
+                {
+                    Success = false,
+                    Error = "Issue has no associated volume in ComicVine"
+                };
+            }
+
+            // Check if series exists
+            var seriesCreated = false;
+            var series = await _dbContext.Series
+                .FirstOrDefaultAsync(s => s.ComicVineId == volumeId, cancellationToken);
+
+            if (series == null)
+            {
+                // Create minimal series record (not monitored)
+                var volumeResult = await _comicVineClient.GetVolumeAsync(volumeId, cancellationToken);
+                if (!volumeResult.Success || volumeResult.Data == null)
+                {
+                    return new AddOneOffResult
+                    {
+                        Success = false,
+                        Error = "Failed to fetch series info from ComicVine"
+                    };
+                }
+
+                var cvVolume = volumeResult.Data;
+                series = new Series
+                {
+                    Title = cvVolume.Name ?? "Unknown",
+                    ComicVineId = volumeId,
+                    ComicVineUrl = cvVolume.SiteDetailUrl,
+                    Publisher = cvVolume.Publisher?.Name,
+                    StartYear = cvVolume.StartYear,
+                    CoverImageUrl = cvVolume.Image?.MediumUrl,
+                    Monitored = false, // Don't monitor - this is a one-off
+                    MonitoringMode = SeriesMonitoringMode.None,
+                    CreatedAt = DateTime.UtcNow,
+                    MetadataLastRefreshed = DateTime.UtcNow
+                };
+
+                _dbContext.Series.Add(series);
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                seriesCreated = true;
+                
+                _logger.LogInformation("Created minimal series record for one-off: {SeriesTitle}", series.Title);
+            }
+
+            // Create the issue record
+            var issue = new Issue
+            {
+                SeriesId = series.Id,
+                ComicVineId = comicVineIssueId,
+                ComicVineUrl = cvIssue.SiteDetailUrl,
+                IssueNumber = decimal.TryParse(cvIssue.IssueNumber, out var num) ? num : 0,
+                IssueNumberText = cvIssue.IssueNumber,
+                Title = cvIssue.Name,
+                StoreDate = cvIssue.StoreDate,
+                CoverDate = cvIssue.CoverDate,
+                CoverImageUrl = cvIssue.Image?.MediumUrl,
+                Overview = cvIssue.Description,
+                Status = IssueStatus.Wanted,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _dbContext.Issues.Add(issue);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Added one-off issue: {SeriesTitle} #{IssueNumber}", 
+                series.Title, issue.IssueNumber);
+
+            return new AddOneOffResult
+            {
+                Success = true,
+                IssueId = issue.Id,
+                SeriesId = series.Id,
+                SeriesTitle = series.Title,
+                IssueNumber = issue.IssueNumber,
+                SeriesCreated = seriesCreated
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to add one-off issue {IssueId}", comicVineIssueId);
+            return new AddOneOffResult
+            {
+                Success = false,
+                Error = ex.Message
+            };
+        }
+    }
+
+    public async Task<AddFromDiscoveryResult> AddSeriesFromDiscoveryAsync(
+        int comicVineVolumeId,
+        int? markIssueWantedComicVineId = null,
+        SeriesMonitoringMode monitoringMode = SeriesMonitoringMode.FutureIssues,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("Adding series from discovery with ComicVine Volume ID {VolumeId}", comicVineVolumeId);
+
+            // Check if series already exists
+            var existingSeries = await _dbContext.Series
+                .FirstOrDefaultAsync(s => s.ComicVineId == comicVineVolumeId, cancellationToken);
+
+            if (existingSeries != null)
+            {
+                // Series exists - update monitoring if needed
+                if (!existingSeries.Monitored || existingSeries.MonitoringMode != monitoringMode)
+                {
+                    existingSeries.Monitored = true;
+                    existingSeries.MonitoringMode = monitoringMode;
+                    await _dbContext.SaveChangesAsync(cancellationToken);
+                }
+
+                // Mark specific issue as wanted if requested
+                int? markedIssueId = null;
+                if (markIssueWantedComicVineId.HasValue)
+                {
+                    var issue = await _dbContext.Issues
+                        .FirstOrDefaultAsync(i => i.SeriesId == existingSeries.Id && 
+                            i.ComicVineId == markIssueWantedComicVineId.Value, cancellationToken);
+                    if (issue != null)
+                    {
+                        issue.Status = IssueStatus.Wanted;
+                        await _dbContext.SaveChangesAsync(cancellationToken);
+                        markedIssueId = issue.Id;
+                    }
+                }
+
+                return new AddFromDiscoveryResult
+                {
+                    Success = true,
+                    SeriesId = existingSeries.Id,
+                    SeriesTitle = existingSeries.Title,
+                    IssuesCreated = 0,
+                    MarkedWantedIssueId = markedIssueId,
+                    AlreadyExists = true
+                };
+            }
+
+            // Use series metadata service to add the series
+            var addResult = await _seriesMetadataService.AddSeriesByComicVineIdAsync(
+                comicVineVolumeId,
+                rootFolder: null,
+                monitored: true,
+                monitoringMode: monitoringMode,
+                cancellationToken: cancellationToken);
+
+            if (!addResult.Success || !addResult.SeriesId.HasValue)
+            {
+                return new AddFromDiscoveryResult
+                {
+                    Success = false,
+                    Error = addResult.Error ?? "Failed to add series from ComicVine"
+                };
+            }
+
+            // Mark specific issue as wanted if requested
+            int? issueMarkedId = null;
+            if (markIssueWantedComicVineId.HasValue)
+            {
+                var issue = await _dbContext.Issues
+                    .FirstOrDefaultAsync(i => i.SeriesId == addResult.SeriesId.Value && 
+                        i.ComicVineId == markIssueWantedComicVineId.Value, cancellationToken);
+                if (issue != null)
+                {
+                    issue.Status = IssueStatus.Wanted;
+                    await _dbContext.SaveChangesAsync(cancellationToken);
+                    issueMarkedId = issue.Id;
+                }
+            }
+
+            _logger.LogInformation("Added series from discovery: {SeriesTitle} with {IssueCount} issues", 
+                addResult.Title, addResult.IssuesCreated);
+
+            return new AddFromDiscoveryResult
+            {
+                Success = true,
+                SeriesId = addResult.SeriesId,
+                SeriesTitle = addResult.Title,
+                IssuesCreated = addResult.IssuesCreated,
+                MarkedWantedIssueId = issueMarkedId,
+                AlreadyExists = addResult.AlreadyExists
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to add series from discovery {VolumeId}", comicVineVolumeId);
+            return new AddFromDiscoveryResult
+            {
+                Success = false,
+                Error = ex.Message
+            };
+        }
+    }
+
+    private async Task<WeeklyDiscoveryList> BuildDiscoveryListAsync(
+        List<ComicVineIssue> comicVineIssues,
+        DateTime weekStart,
+        DateTime weekEnd,
+        DateTime releaseDay,
+        DiscoveryFilter? filter,
+        CancellationToken cancellationToken)
+    {
+        // Get all local series with ComicVine IDs for matching
+        var localSeriesLookup = await _dbContext.Series
+            .Where(s => s.ComicVineId != null)
+            .ToDictionaryAsync(s => s.ComicVineId!.Value, s => s, cancellationToken);
+
+        // Get all local issues with ComicVine IDs for matching
+        var localIssueLookup = await _dbContext.Issues
+            .Where(i => i.ComicVineId != null)
+            .ToDictionaryAsync(i => i.ComicVineId!.Value, i => i, cancellationToken);
+
+        var discoveryIssues = new List<DiscoverableIssue>();
+
+        foreach (var cvIssue in comicVineIssues)
+        {
+            var volumeId = cvIssue.Volume?.Id ?? 0;
+            var issueId = cvIssue.Id;
+
+            // Check if in library
+            var isInLibrary = localIssueLookup.ContainsKey(issueId) || 
+                              (volumeId > 0 && localSeriesLookup.ContainsKey(volumeId));
+            
+            Series? localSeries = volumeId > 0 && localSeriesLookup.TryGetValue(volumeId, out var s) ? s : null;
+            Issue? localIssue = localIssueLookup.TryGetValue(issueId, out var i) ? i : null;
+
+            // Apply filters
+            if (filter != null)
+            {
+                if (filter.InLibraryOnly == true && !isInLibrary) continue;
+                if (filter.NewOnly == true && isInLibrary) continue;
+                
+                if (filter.Publishers?.Any() == true)
+                {
+                    // Note: Volume ref doesn't include publisher, only check local series
+                    var publisher = localSeries?.Publisher;
+                    if (publisher == null || !filter.Publishers.Contains(publisher, StringComparer.OrdinalIgnoreCase))
+                        continue;
+                }
+
+                // Check for annuals/specials
+                var issueNumText = cvIssue.IssueNumber?.ToUpperInvariant() ?? "";
+                var isAnnual = issueNumText.Contains("ANNUAL") || 
+                               (cvIssue.Name?.ToUpperInvariant().Contains("ANNUAL") ?? false);
+                var isSpecial = issueNumText.Contains("SPECIAL") || 
+                                issueNumText.StartsWith("½") ||
+                                (cvIssue.Name?.ToUpperInvariant().Contains("SPECIAL") ?? false);
+
+                if (!filter.IncludeAnnuals && isAnnual) continue;
+                if (!filter.IncludeSpecials && isSpecial) continue;
+            }
+
+            discoveryIssues.Add(new DiscoverableIssue
+            {
+                ComicVineIssueId = issueId,
+                ComicVineVolumeId = volumeId,
+                SeriesTitle = cvIssue.Volume?.Name ?? "Unknown",
+                Publisher = localSeries?.Publisher, // Only from local series; volume ref doesn't include publisher
+                StartYear = localSeries?.StartYear, // Only from local series; volume ref doesn't include start year
+                IssueNumber = decimal.TryParse(cvIssue.IssueNumber, out var num) ? num : 0,
+                IssueNumberText = cvIssue.IssueNumber,
+                IssueTitle = cvIssue.Name,
+                StoreDate = cvIssue.StoreDate,
+                CoverDate = cvIssue.CoverDate,
+                CoverImageUrl = cvIssue.Image?.MediumUrl,
+                IsInLibrary = isInLibrary,
+                LocalSeriesId = localSeries?.Id,
+                LocalIssueId = localIssue?.Id,
+                Status = localIssue?.Status,
+                IsSeriesMonitored = localSeries?.Monitored ?? false
+            });
+        }
+
+        return new WeeklyDiscoveryList
+        {
+            WeekStart = weekStart,
+            WeekEnd = weekEnd,
+            ReleaseDay = releaseDay,
+            Issues = discoveryIssues
+                .OrderBy(i => i.SeriesTitle)
+                .ThenBy(i => i.IssueNumber)
+                .ToList()
+        };
     }
 
     #endregion

@@ -59,6 +59,18 @@ public interface IComicVineClient
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets issues by store date (release date) filter.
+    /// </summary>
+    /// <param name="storeDateFilter">Date filter in format "YYYY-MM-DD|YYYY-MM-DD" for range.</param>
+    /// <param name="offset">Offset for pagination.</param>
+    /// <param name="limit">Maximum results to return (max 100).</param>
+    Task<ComicVineSearchResult<ComicVineIssue>> GetIssuesByStoreDateAsync(
+        string storeDateFilter,
+        int offset = 0,
+        int limit = 100,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets the current rate limit status.
     /// </summary>
     ComicVineRateLimitStatus GetRateLimitStatus();

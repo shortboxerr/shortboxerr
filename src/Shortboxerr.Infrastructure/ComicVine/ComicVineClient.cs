@@ -459,6 +459,66 @@ public class ComicVineClient : IComicVineClient
         }
     }
 
+    public async Task<ComicVineSearchResult<ComicVineIssue>> GetIssuesByStoreDateAsync(
+        string storeDateFilter,
+        int offset = 0,
+        int limit = 100,
+        CancellationToken cancellationToken = default)
+    {
+        var cacheKey = $"cv:issues_by_store_date:{storeDateFilter}:{offset}:{limit}";
+
+        if (_cache.TryGetValue(cacheKey, out ComicVineSearchResult<ComicVineIssue>? cached) && cached != null)
+        {
+            return cached;
+        }
+
+        var apiKey = await GetApiKeyAsync(cancellationToken);
+        if (string.IsNullOrEmpty(apiKey))
+        {
+            return new ComicVineSearchResult<ComicVineIssue>
+            {
+                Success = false,
+                Error = "ComicVine API key not configured"
+            };
+        }
+
+        try
+        {
+            // ComicVine issues endpoint with filter by store_date
+            // Filter format: store_date:YYYY-MM-DD|YYYY-MM-DD (inclusive date range)
+            var url = $"issues/?api_key={apiKey}&format=json&limit={limit}&offset={offset}&filter=store_date:{Uri.EscapeDataString(storeDateFilter)}&sort=store_date:asc";
+            var response = await MakeRequestAsync<ComicVineApiResponse<List<ComicVineApiIssue>>>(url, cancellationToken);
+
+            var result = new ComicVineSearchResult<ComicVineIssue>
+            {
+                Success = response.StatusCode == 1,
+                Error = response.StatusCode != 1 ? response.Error : null,
+                StatusCode = response.StatusCode,
+                Results = response.Results?.Select(MapIssue).ToList() ?? new(),
+                TotalResults = response.NumberOfTotalResults,
+                Page = offset / limit + 1,
+                Limit = limit,
+                NumberOfPageResults = response.NumberOfPageResults
+            };
+
+            if (result.Success)
+            {
+                // Cache for 30 minutes since this is release data that's time-sensitive
+                _cache.Set(cacheKey, result, TimeSpan.FromMinutes(30));
+            }
+
+            return result;
+        }
+        catch (ComicVineRateLimitException)
+        {
+            return new ComicVineSearchResult<ComicVineIssue>
+            {
+                Success = false,
+                Error = "Rate limit exceeded"
+            };
+        }
+    }
+
     public ComicVineRateLimitStatus GetRateLimitStatus()
     {
         lock (_rateLimitLock)

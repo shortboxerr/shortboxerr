@@ -1,3 +1,83 @@
+# Self Check - Iteration 035
+
+## EPIC 11.8: This Week Discovery (Mylar3 Parity)
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Build succeeded with 0 errors |
+| Tests pass | ✅ | 570 total tests passing |
+| UI builds | ✅ | Vite build succeeded |
+| API endpoints working | ✅ | Discovery endpoints added |
+| Discovery mode UI | ✅ | "All Releases" toggle, add issue/series |
+| Git commit | ✅ | Conventional commit format |
+
+### Acceptance Criteria Status
+
+#### All Releases View
+| AC | Status |
+|----|--------|
+| Fetch all ComicVine releases for the week | ✅ |
+| Show issues from unmonitored series | ✅ |
+| Visual distinction (in library vs discoverable) | ✅ |
+| Toggle "All Releases" vs "My Pull List" | ✅ |
+| Cover/list view options | ✅ |
+
+#### Add Issue One-Off
+| AC | Status |
+|----|--------|
+| "Add Issue" button | ✅ |
+| Creates minimal series (monitored=false) | ✅ |
+| Issue appears in Wanted list | ✅ |
+| API endpoint POST /api/v1/pulllist/discover/add-issue | ✅ |
+
+#### Add Series From Discovery
+| AC | Status |
+|----|--------|
+| "Add Series" button | ✅ |
+| Uses AddSeriesByComicVineIdAsync | ✅ |
+| Monitoring mode selection | ✅ |
+| Issue status updates | ✅ |
+
+#### ComicVine Weekly Releases Integration
+| AC | Status |
+|----|--------|
+| Fetch this week's releases | ✅ |
+| Cache with 30-min TTL | ✅ |
+| Handle pagination | ✅ |
+| Publisher filter | Partial (in-library only) |
+
+#### UI Enhancements
+| AC | Status |
+|----|--------|
+| Discovery filter dropdown | ✅ |
+| "NEW" badge | ✅ |
+| Quick-add buttons | ✅ |
+| Add Series modal | ✅ |
+
+### Deferred Items
+- Publisher filter for discovery requires additional API work to fetch publishers from ComicVine releases (volume refs don't include publisher)
+
+### Files Modified
+- `src/Shortboxerr.Core/ComicVine/IComicVineClient.cs`
+- `src/Shortboxerr.Infrastructure/ComicVine/ComicVineClient.cs`
+- `src/Shortboxerr.Core/PullList/IPullListService.cs`
+- `src/Shortboxerr.Infrastructure/PullList/PullListService.cs`
+- `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs`
+- `ui/src/api/client.ts`
+- `ui/src/pages/PullListPage.tsx`
+- `ui/src/App.css`
+- `tests/Shortboxerr.Tests/PullListServiceTests.cs`
+- `tests/Shortboxerr.Tests/PullListConformanceTests.cs`
+
+### Test Results
+```
+Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
+```
+
+---
+
 # Self Check - Iteration 034
 
 ## EPIC 11.6 & 11.7: Pull List Configuration & Conformance Tests

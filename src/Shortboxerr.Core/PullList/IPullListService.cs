@@ -47,6 +47,36 @@ public interface IPullListService
         PullListFilter? filter = null,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Gets all ComicVine releases for a week (discovery mode - Mylar3 "This Week" parity).
+    /// Includes both monitored and unmonitored series.
+    /// </summary>
+    Task<WeeklyDiscoveryList> GetWeeklyDiscoveryAsync(
+        DateTime weekOf,
+        DiscoveryFilter? filter = null,
+        CancellationToken cancellationToken = default);
+
+    #endregion
+
+    #region Discovery & One-Off Additions
+
+    /// <summary>
+    /// Adds a single issue as wanted without fully adding the series (one-off).
+    /// Creates minimal series record if needed.
+    /// </summary>
+    Task<AddOneOffResult> AddIssueOneOffAsync(
+        int comicVineIssueId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Adds a series from discovery and optionally marks the current issue as wanted.
+    /// </summary>
+    Task<AddFromDiscoveryResult> AddSeriesFromDiscoveryAsync(
+        int comicVineVolumeId,
+        int? markIssueWantedComicVineId = null,
+        ComicVine.SeriesMonitoringMode monitoringMode = ComicVine.SeriesMonitoringMode.FutureIssues,
+        CancellationToken cancellationToken = default);
+
     #endregion
 
     #region Issue Management
@@ -353,6 +383,94 @@ public class SeriesPullListSettings
     /// Priority for search ordering (higher = searched first). Default is 0.
     /// </summary>
     public int SearchPriority { get; set; } = 0;
+}
+
+#endregion
+
+#region Discovery Models (Mylar3 "This Week" Parity)
+
+/// <summary>
+/// A week's worth of discoverable releases from ComicVine.
+/// </summary>
+public class WeeklyDiscoveryList
+{
+    public DateTime WeekStart { get; set; }
+    public DateTime WeekEnd { get; set; }
+    public DateTime ReleaseDay { get; set; }
+    public List<DiscoverableIssue> Issues { get; set; } = new();
+    public int TotalCount => Issues.Count;
+    public int InLibraryCount => Issues.Count(i => i.IsInLibrary);
+    public int NewCount => Issues.Count(i => !i.IsInLibrary);
+}
+
+/// <summary>
+/// An issue available for discovery (may or may not be in library).
+/// </summary>
+public class DiscoverableIssue
+{
+    // ComicVine identifiers
+    public int ComicVineIssueId { get; set; }
+    public int ComicVineVolumeId { get; set; }
+    
+    // Series info
+    public string SeriesTitle { get; set; } = string.Empty;
+    public string? Publisher { get; set; }
+    public int? StartYear { get; set; }
+    
+    // Issue info
+    public decimal IssueNumber { get; set; }
+    public string? IssueNumberText { get; set; }
+    public string? IssueTitle { get; set; }
+    public DateTime? StoreDate { get; set; }
+    public DateTime? CoverDate { get; set; }
+    public string? CoverImageUrl { get; set; }
+    
+    // Library status
+    public bool IsInLibrary { get; set; }
+    public int? LocalSeriesId { get; set; }
+    public int? LocalIssueId { get; set; }
+    public Entities.IssueStatus? Status { get; set; }
+    public bool IsSeriesMonitored { get; set; }
+}
+
+/// <summary>
+/// Filter options for discovery queries.
+/// </summary>
+public class DiscoveryFilter
+{
+    public List<string>? Publishers { get; set; }
+    public bool? InLibraryOnly { get; set; }
+    public bool? NewOnly { get; set; }
+    public bool IncludeAnnuals { get; set; } = true;
+    public bool IncludeSpecials { get; set; } = true;
+}
+
+/// <summary>
+/// Result of adding a one-off issue.
+/// </summary>
+public class AddOneOffResult
+{
+    public bool Success { get; set; }
+    public string? Error { get; set; }
+    public int? IssueId { get; set; }
+    public int? SeriesId { get; set; }
+    public string? SeriesTitle { get; set; }
+    public decimal? IssueNumber { get; set; }
+    public bool SeriesCreated { get; set; }
+}
+
+/// <summary>
+/// Result of adding a series from discovery.
+/// </summary>
+public class AddFromDiscoveryResult
+{
+    public bool Success { get; set; }
+    public string? Error { get; set; }
+    public int? SeriesId { get; set; }
+    public string? SeriesTitle { get; set; }
+    public int IssuesCreated { get; set; }
+    public int? MarkedWantedIssueId { get; set; }
+    public bool AlreadyExists { get; set; }
 }
 
 #endregion

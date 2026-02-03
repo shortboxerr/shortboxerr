@@ -293,6 +293,66 @@ export interface SeriesPullListSettingsDto {
   searchPriority: number;
 }
 
+// Discovery types for Mylar3 "This Week" parity
+export interface WeeklyDiscoveryList {
+  weekStart: string;
+  weekEnd: string;
+  releaseDay: string;
+  issues: DiscoverableIssue[];
+  totalCount: number;
+  inLibraryCount: number;
+  newCount: number;
+}
+
+export interface DiscoverableIssue {
+  comicVineIssueId: number;
+  comicVineVolumeId: number;
+  seriesTitle: string;
+  publisher: string | null;
+  startYear: number | null;
+  issueNumber: number;
+  issueNumberText: string | null;
+  issueTitle: string | null;
+  storeDate: string | null;
+  coverDate: string | null;
+  coverImageUrl: string | null;
+  isInLibrary: boolean;
+  localSeriesId: number | null;
+  localIssueId: number | null;
+  status: IssueStatus | null;
+  isSeriesMonitored: boolean;
+}
+
+export interface DiscoveryFilter {
+  publishers?: string[];
+  inLibraryOnly?: boolean;
+  newOnly?: boolean;
+  includeAnnuals?: boolean;
+  includeSpecials?: boolean;
+}
+
+export interface AddOneOffResult {
+  success: boolean;
+  error?: string;
+  issueId?: number;
+  seriesId?: number;
+  seriesTitle?: string;
+  issueNumber?: number;
+  seriesCreated?: boolean;
+}
+
+export interface AddFromDiscoveryResult {
+  success: boolean;
+  error?: string;
+  seriesId?: number;
+  seriesTitle?: string;
+  issuesCreated?: number;
+  markedWantedIssueId?: number;
+  alreadyExists?: boolean;
+}
+
+export type SeriesMonitoringMode = 'AllIssues' | 'FutureIssues' | 'Manual' | 'FirstIssue' | 'None';
+
 interface Edition {
   id: number;
   title: string;
@@ -1209,7 +1269,52 @@ export const api = {
       body: JSON.stringify(settings),
     });
   },
+
+  // Discovery (Mylar3 "This Week" parity)
+  getWeeklyDiscovery: async (filter?: DiscoveryFilter): Promise<WeeklyDiscoveryList> => {
+    const params = buildDiscoveryParams(filter);
+    return fetchApi<WeeklyDiscoveryList>(`/api/v1/pulllist/discover/week${params}`);
+  },
+
+  getWeeklyDiscoveryByDate: async (date: string, filter?: DiscoveryFilter): Promise<WeeklyDiscoveryList> => {
+    const params = buildDiscoveryParams(filter);
+    return fetchApi<WeeklyDiscoveryList>(`/api/v1/pulllist/discover/week/${date}${params}`);
+  },
+
+  addIssueOneOff: async (comicVineIssueId: number): Promise<AddOneOffResult> => {
+    return fetchApi<AddOneOffResult>('/api/v1/pulllist/discover/add-issue', {
+      method: 'POST',
+      body: JSON.stringify({ comicVineIssueId }),
+    });
+  },
+
+  addSeriesFromDiscovery: async (
+    comicVineVolumeId: number,
+    markIssueWantedComicVineId?: number,
+    monitoringMode: SeriesMonitoringMode = 'FutureIssues'
+  ): Promise<AddFromDiscoveryResult> => {
+    return fetchApi<AddFromDiscoveryResult>('/api/v1/pulllist/discover/add-series', {
+      method: 'POST',
+      body: JSON.stringify({
+        comicVineVolumeId,
+        markIssueWantedComicVineId,
+        monitoringMode,
+      }),
+    });
+  },
 };
+
+function buildDiscoveryParams(filter?: DiscoveryFilter): string {
+  if (!filter) return '';
+  const params = new URLSearchParams();
+  if (filter.publishers?.length) params.set('publishers', filter.publishers.join(','));
+  if (filter.inLibraryOnly !== undefined) params.set('inLibraryOnly', String(filter.inLibraryOnly));
+  if (filter.newOnly !== undefined) params.set('newOnly', String(filter.newOnly));
+  if (filter.includeAnnuals !== undefined) params.set('includeAnnuals', String(filter.includeAnnuals));
+  if (filter.includeSpecials !== undefined) params.set('includeSpecials', String(filter.includeSpecials));
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
 
 function buildPullListParams(filter?: PullListFilter, weeks?: number): string {
   const params = new URLSearchParams();

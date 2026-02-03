@@ -108,6 +108,93 @@ public static class PullListEndpoints
 
         #endregion
 
+        #region Discovery (Mylar3 "This Week" Parity)
+
+        // GET /api/v1/pulllist/discover/week - discover all releases this week
+        group.MapGet("/discover/week", async (
+            [FromServices] IPullListService pullListService,
+            [FromQuery] string? publishers,
+            [FromQuery] bool? inLibraryOnly,
+            [FromQuery] bool? newOnly,
+            [FromQuery] bool? includeAnnuals,
+            [FromQuery] bool? includeSpecials,
+            CancellationToken cancellationToken) =>
+        {
+            var filter = new DiscoveryFilter
+            {
+                Publishers = string.IsNullOrEmpty(publishers) ? null : publishers.Split(',').ToList(),
+                InLibraryOnly = inLibraryOnly,
+                NewOnly = newOnly,
+                IncludeAnnuals = includeAnnuals ?? true,
+                IncludeSpecials = includeSpecials ?? true
+            };
+            var result = await pullListService.GetWeeklyDiscoveryAsync(DateTime.Today, filter, cancellationToken);
+            return Results.Ok(result);
+        })
+        .WithName("GetWeeklyDiscovery")
+        .WithDescription("Gets all ComicVine releases this week (discovery mode)")
+        .Produces<WeeklyDiscoveryList>(200);
+
+        // GET /api/v1/pulllist/discover/week/{date} - discover releases for a specific week
+        group.MapGet("/discover/week/{date}", async (
+            DateTime date,
+            [FromServices] IPullListService pullListService,
+            [FromQuery] string? publishers,
+            [FromQuery] bool? inLibraryOnly,
+            [FromQuery] bool? newOnly,
+            [FromQuery] bool? includeAnnuals,
+            [FromQuery] bool? includeSpecials,
+            CancellationToken cancellationToken) =>
+        {
+            var filter = new DiscoveryFilter
+            {
+                Publishers = string.IsNullOrEmpty(publishers) ? null : publishers.Split(',').ToList(),
+                InLibraryOnly = inLibraryOnly,
+                NewOnly = newOnly,
+                IncludeAnnuals = includeAnnuals ?? true,
+                IncludeSpecials = includeSpecials ?? true
+            };
+            var result = await pullListService.GetWeeklyDiscoveryAsync(date, filter, cancellationToken);
+            return Results.Ok(result);
+        })
+        .WithName("GetWeeklyDiscoveryByDate")
+        .WithDescription("Gets all ComicVine releases for a specific week (discovery mode)")
+        .Produces<WeeklyDiscoveryList>(200);
+
+        // POST /api/v1/pulllist/discover/add-issue - add one-off issue
+        group.MapPost("/discover/add-issue", async (
+            [FromBody] AddOneOffRequest request,
+            [FromServices] IPullListService pullListService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await pullListService.AddIssueOneOffAsync(request.ComicVineIssueId, cancellationToken);
+            return result.Success ? Results.Ok(result) : Results.BadRequest(result);
+        })
+        .WithName("AddIssueOneOff")
+        .WithDescription("Adds a single issue as wanted without fully adding the series")
+        .Produces<AddOneOffResult>(200)
+        .Produces<AddOneOffResult>(400);
+
+        // POST /api/v1/pulllist/discover/add-series - add series from discovery
+        group.MapPost("/discover/add-series", async (
+            [FromBody] AddSeriesFromDiscoveryRequest request,
+            [FromServices] IPullListService pullListService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await pullListService.AddSeriesFromDiscoveryAsync(
+                request.ComicVineVolumeId,
+                request.MarkIssueWantedComicVineId,
+                request.MonitoringMode,
+                cancellationToken);
+            return result.Success ? Results.Ok(result) : Results.BadRequest(result);
+        })
+        .WithName("AddSeriesFromDiscovery")
+        .WithDescription("Adds a series from discovery and optionally marks an issue as wanted")
+        .Produces<AddFromDiscoveryResult>(200)
+        .Produces<AddFromDiscoveryResult>(400);
+
+        #endregion
+
         #region Issue Management
 
         // POST /api/v1/pulllist/issues/{id}/wanted - mark as wanted
@@ -344,5 +431,10 @@ public static class PullListEndpoints
 
 public record BulkUpdateRequest(List<int> IssueIds, IssueStatus Status);
 public record SetMonitoringRequest(SeriesMonitoringMode Mode);
+public record AddOneOffRequest(int ComicVineIssueId);
+public record AddSeriesFromDiscoveryRequest(
+    int ComicVineVolumeId, 
+    int? MarkIssueWantedComicVineId = null,
+    SeriesMonitoringMode MonitoringMode = SeriesMonitoringMode.FutureIssues);
 
 #endregion

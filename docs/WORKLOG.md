@@ -1,5 +1,73 @@
 # Worklog
 
+## Iteration 035 (2026-02-03)
+**EPIC 11.8: This Week Discovery (Mylar3 Parity) - COMPLETED**
+
+### Commits
+1. `feat: add This Week Discovery feature for Mylar3 parity (EPIC 11.8)`
+
+### Deliverables
+
+#### EPIC 11.8: This Week Discovery
+- ✅ **All Releases Discovery Mode**:
+  - Fetches all ComicVine releases for the week (not just monitored series)
+  - Shows issues from unmonitored series alongside monitored ones
+  - Visual distinction between "in library" vs "discoverable" issues
+  - Toggle between "My Pull List" and "All Releases" views
+  - Cover view and list view options
+
+- ✅ **Add Issue One-Off**:
+  - "Add Issue" button to add a single issue as wanted without adding the full series
+  - Creates minimal series record (unmonitored) if needed
+  - Issue appears in Wanted list for search/download
+  - API endpoint: POST /api/v1/pulllist/discover/add-issue
+
+- ✅ **Add Series From Discovery**:
+  - "Add Series" button to add full series and start monitoring
+  - Modal with monitoring mode selection (All/Future/Manual/FirstIssue/None)
+  - Option to mark the discovered issue as wanted
+  - API endpoint: POST /api/v1/pulllist/discover/add-series
+
+- ✅ **ComicVine Weekly Releases Integration**:
+  - New GetIssuesByStoreDateAsync method in IComicVineClient
+  - Fetches issues filtered by store_date range
+  - 30-minute cache for discovery results to minimize API calls
+  - Handles pagination for large release weeks
+
+- ✅ **UI Enhancements**:
+  - New "All Releases" / "My Pull List" toggle in toolbar
+  - Discovery filter (All / New to Me / In My Library)
+  - "NEW" badge for series not in library
+  - Monitored series indicator
+  - Add Series modal with monitoring mode selection
+
+### API Endpoints Added
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/pulllist/discover/week` | GET | Get all ComicVine releases this week |
+| `/api/v1/pulllist/discover/week/{date}` | GET | Get all ComicVine releases for specific week |
+| `/api/v1/pulllist/discover/add-issue` | POST | Add single issue as wanted (one-off) |
+| `/api/v1/pulllist/discover/add-series` | POST | Add series from discovery with monitoring mode |
+
+### Files Created/Modified
+- `src/Shortboxerr.Core/ComicVine/IComicVineClient.cs` (added GetIssuesByStoreDateAsync)
+- `src/Shortboxerr.Infrastructure/ComicVine/ComicVineClient.cs` (implemented GetIssuesByStoreDateAsync)
+- `src/Shortboxerr.Core/PullList/IPullListService.cs` (added discovery models and methods)
+- `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` (implemented discovery features)
+- `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` (added discovery endpoints)
+- `ui/src/api/client.ts` (added discovery types and API methods)
+- `ui/src/pages/PullListPage.tsx` (enhanced with discovery mode)
+- `ui/src/App.css` (added discovery-related styles and modal styles)
+- `tests/Shortboxerr.Tests/PullListServiceTests.cs` (updated constructor)
+- `tests/Shortboxerr.Tests/PullListConformanceTests.cs` (updated constructor)
+
+### Test Results
+```
+Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
+```
+
+---
+
 ## Iteration 034 (2026-02-03)
 **EPIC 11.6 & 11.7: Pull List Configuration & Conformance Tests - COMPLETED**
 

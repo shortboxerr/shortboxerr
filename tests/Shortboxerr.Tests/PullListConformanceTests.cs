@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Shortboxerr.Core.ComicVine;
@@ -20,6 +21,9 @@ public class PullListConformanceTests : IDisposable
     private readonly ShortboxerrDbContext _dbContext;
     private readonly PullListService _service;
     private readonly Mock<ISettingsService> _mockSettingsService;
+    private readonly Mock<IComicVineClient> _mockComicVineClient;
+    private readonly Mock<ISeriesMetadataService> _mockSeriesMetadataService;
+    private readonly IMemoryCache _memoryCache;
     private readonly Mock<ILogger<PullListService>> _mockLogger;
 
     public PullListConformanceTests()
@@ -30,8 +34,17 @@ public class PullListConformanceTests : IDisposable
 
         _dbContext = new ShortboxerrDbContext(options);
         _mockSettingsService = new Mock<ISettingsService>();
+        _mockComicVineClient = new Mock<IComicVineClient>();
+        _mockSeriesMetadataService = new Mock<ISeriesMetadataService>();
+        _memoryCache = new MemoryCache(new MemoryCacheOptions());
         _mockLogger = new Mock<ILogger<PullListService>>();
-        _service = new PullListService(_dbContext, _mockSettingsService.Object, _mockLogger.Object);
+        _service = new PullListService(
+            _dbContext, 
+            _mockSettingsService.Object, 
+            _mockComicVineClient.Object, 
+            _mockSeriesMetadataService.Object, 
+            _memoryCache, 
+            _mockLogger.Object);
     }
 
     public void Dispose()
