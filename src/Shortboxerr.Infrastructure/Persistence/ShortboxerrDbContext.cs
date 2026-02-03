@@ -19,6 +19,7 @@ public class ShortboxerrDbContext : DbContext
     public DbSet<HistoryEvent> HistoryEvents => Set<HistoryEvent>();
     public DbSet<ProviderDefinition> Providers => Set<ProviderDefinition>();
     public DbSet<IssueStoryArc> IssueStoryArcs => Set<IssueStoryArc>();
+    public DbSet<PendingMatch> PendingMatches => Set<PendingMatch>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
