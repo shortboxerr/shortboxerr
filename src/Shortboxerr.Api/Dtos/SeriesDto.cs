@@ -21,6 +21,13 @@ public record SeriesDto
     public int EditionCount { get; init; }
     public DateTime CreatedAt { get; init; }
     public DateTime? UpdatedAt { get; init; }
+    
+    // ComicVine metadata
+    public int? ComicVineId { get; init; }
+    public string? CoverImageUrl { get; init; }
+    public string? ComicVineUrl { get; init; }
+    public int? TotalIssueCount { get; init; }
+    public DateTime? MetadataLastRefreshed { get; init; }
 
     public static SeriesDto FromEntity(Series series) => new()
     {
@@ -40,7 +47,13 @@ public record SeriesDto
         IssueFileCount = series.Issues?.Count(i => i.HasFile) ?? 0,
         EditionCount = series.Editions?.Count ?? 0,
         CreatedAt = series.CreatedAt,
-        UpdatedAt = series.UpdatedAt
+        UpdatedAt = series.UpdatedAt,
+        // ComicVine fields
+        ComicVineId = series.ComicVineId,
+        CoverImageUrl = series.CoverImageUrl,
+        ComicVineUrl = series.ComicVineUrl,
+        TotalIssueCount = series.TotalIssueCount,
+        MetadataLastRefreshed = series.MetadataLastRefreshed
     };
 }
 

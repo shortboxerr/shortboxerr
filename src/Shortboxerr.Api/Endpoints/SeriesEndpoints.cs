@@ -66,6 +66,47 @@ public static class SeriesEndpoints
         })
         .WithName("GetSeriesById");
 
+        // GET issues for a series
+        group.MapGet("/{id:int}/issues", async (
+            ShortboxerrDbContext db,
+            int id,
+            int page = 1,
+            int pageSize = 100,
+            string? sortKey = "issueNumber",
+            string? sortDir = "asc") =>
+        {
+            var series = await db.Series.FindAsync(id);
+            if (series is null)
+                return Results.NotFound(new { message = $"Series {id} not found" });
+
+            var query = db.Issues.Where(i => i.SeriesId == id);
+
+            // Apply sorting
+            query = (sortKey?.ToLowerInvariant(), sortDir?.ToLowerInvariant()) switch
+            {
+                ("issuenumber", "desc") => query.OrderByDescending(i => i.IssueNumber),
+                ("issuenumber", _) => query.OrderBy(i => i.IssueNumber),
+                ("releasedate", "desc") => query.OrderByDescending(i => i.ReleaseDate ?? i.StoreDate),
+                ("releasedate", _) => query.OrderBy(i => i.ReleaseDate ?? i.StoreDate),
+                ("title", "desc") => query.OrderByDescending(i => i.Title),
+                ("title", _) => query.OrderBy(i => i.Title),
+                _ => query.OrderBy(i => i.IssueNumber)
+            };
+
+            var totalRecords = await query.CountAsync();
+            var records = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Results.Ok(PagedResult<IssueDto>.Create(
+                records.Select(IssueDto.FromEntity).ToList(),
+                page,
+                pageSize,
+                totalRecords));
+        })
+        .WithName("GetSeriesIssues");
+
         // POST create series
         group.MapPost("/", async (ShortboxerrDbContext db, CreateSeriesRequest request) =>
         {
