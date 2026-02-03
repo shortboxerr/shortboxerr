@@ -11,6 +11,13 @@
 - [x] Dockerfile + docker-compose
 - [x] CI workflow (build + test)
 - [x] Dev Container config (verify dotnet build/test run inside container)
+- [x] **Developer tooling** ✅
+  - AC: Makefile with common targets (restore, build, test, run, install-hooks)
+  - AC: Git commit-msg hook enforcing conventional commits (feat/fix/chore/test prefix)
+  - AC: .gitignore for build artifacts and IDE files
+- [x] **Port standardization** ✅
+  - AC: Default application port: 8585 (changed from 7878)
+  - AC: Updated in docker-compose, Dockerfile, CI workflow, launchSettings
 
 ## EPIC 1: Domain + Persistence (MINIMUM DATA MODEL) ✅ COMPLETED
 - [x] Entities: Series, Issue, EditionTitle (Collections), FileAsset, HistoryEvent
@@ -173,10 +180,27 @@ Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests sec
   - AC: All tests must pass (100% parity)
 
 ## EPIC 5: UI (ARR-LIKE UI) ✅ COMPLETED
-- [x] UI shell + nav map (Dashboard/Series/Collections/Wanted/Activity/History/Manual Import/Settings)
-- [x] Series list page (table + bulk actions)
-- [x] Collections list page
-- [x] Activity + Manual Import pages (thin but functional)
+- [x] **UI technology stack** ✅
+  - AC: React 18 with TypeScript
+  - AC: Vite for build tooling and dev server
+  - AC: React Router v6 for client-side routing
+  - AC: TanStack Query (React Query) for data fetching and state management
+  - AC: Lucide React for icons
+  - AC: CSS variables for consistent theming
+  - AC: Dark theme as default aesthetic
+- [x] **UI shell + navigation** ✅
+  - AC: Sidebar navigation (Dashboard/Series/Collections/Wanted/Activity/History/Manual Import/Settings)
+  - AC: System status indicator in sidebar
+  - AC: Responsive layout
+- [x] **Core pages** ✅
+  - AC: Series list page (table with status indicators, bulk actions)
+  - AC: Collections list page
+  - AC: Activity page (thin but functional)
+  - AC: Manual Import page (placeholder)
+- [x] **Build integration** ✅
+  - AC: Vite builds to API wwwroot folder
+  - AC: API serves static files from wwwroot
+  - AC: npm scripts: dev, build, preview
 
 ## EPIC 6: Settings Persistence & UI Enhancements
 - [x] **Theme persistence** ✅
@@ -208,6 +232,16 @@ Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests sec
   - AC: Option to auto-move from download to staging after completion
   - AC: API endpoints: GET/PUT /api/v1/settings/folders
   - AC: Validation that both paths exist and are writable
+- [x] **UI/API development infrastructure** ✅
+  - AC: CORS support enabled for local development (allows UI on different port)
+  - AC: Vite proxy configuration for API requests during development
+  - AC: API client uses relative URLs to work with Vite dev server proxy
+  - AC: Auto-save with debounce for settings fields (500ms delay)
+- [x] **Settings page structure** ✅
+  - AC: Tabbed settings layout (General, Indexers, Download Clients, Import, UI, Security)
+  - AC: General tab: Naming formats, Root folders, API key
+  - AC: UI tab: Theme selection (dark/light/system), page size
+  - AC: Security tab: Authentication method dropdown (None/Basic/Forms) - placeholder
 
 ## EPIC 7: Mylar3 Migration (BEHAVIORAL PARITY SETUP)
 - [ ] Read Mylar3 SQLite DB (read-only)
