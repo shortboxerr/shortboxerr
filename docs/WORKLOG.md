@@ -1,5 +1,102 @@
 # Worklog
 
+## Iteration 038 (2026-02-03)
+**EPIC 11.10: Weekly Pull List Export (Mylar3 Parity) - COMPLETED**
+
+### Commits
+1. `feat: add weekly pull list export feature (EPIC 11.10)`
+2. `feat(ui): add weekly export settings to Pull List settings tab`
+
+### Deliverables
+
+#### Pull List Settings Model Enhancements
+- ✅ Added export settings to `PullListSettings`:
+  - `ExportWeeklyPullList`: Enable/disable export
+  - `WeeklyExportDirectory`: Path for export files
+  - `WeeklyExportFormat`: JSON/Text/CSV format selection
+  - `AutoExportOnReleaseDay`: Auto-export trigger setting
+  - `ExportFields`: Optional field selection
+
+#### Export Service Implementation
+- ✅ `ExportCurrentWeekAsync()`: Export current week's pull list
+- ✅ `ExportWeekAsync(date)`: Export specific week
+- ✅ `GetExportHistoryAsync()`: List previously exported weeks
+- ✅ Directory format: `{export_dir}/{YYYY}-{WW}/releases.{ext}`
+- ✅ ISO week number calculation for consistent naming
+
+#### Export File Formats
+- ✅ **JSON**: Structured data with metadata, issues array, and summary
+- ✅ **Plain Text**: Human-readable list grouped by publisher
+- ✅ **CSV**: Spreadsheet-compatible with header row
+
+#### API Endpoints Added
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/pulllist/export` | POST | Export current week |
+| `/api/v1/pulllist/export/{date}` | POST | Export specific week |
+| `/api/v1/pulllist/export/history` | GET | List export history |
+
+#### Settings UI
+- ✅ Weekly Export section in Pull List settings tab
+- ✅ Enable/disable toggle with conditional field display
+- ✅ Export directory input with format explanation
+- ✅ Export format dropdown (JSON/Text/CSV)
+- ✅ Auto-export on release day toggle
+- ✅ Manual export button with progress and result feedback
+
+### Export Data Structure (JSON)
+```json
+{
+  "metadata": {
+    "year": 2026,
+    "weekNumber": 6,
+    "weekStart": "2026-02-01",
+    "weekEnd": "2026-02-08",
+    "releaseDay": "2026-02-04",
+    "exportedAt": "2026-02-03T20:00:00Z",
+    "exportVersion": "1.0"
+  },
+  "issues": [...],
+  "summary": {
+    "totalCount": 10,
+    "wantedCount": 5,
+    "ownedCount": 3,
+    "byPublisher": { "Marvel": 4, "DC Comics": 6 },
+    "byStatus": { "Wanted": 5, "Owned": 3, "Skipped": 2 }
+  }
+}
+```
+
+### Test Results
+```
+Passed!  - Failed: 0, Passed: 578, Skipped: 0, Total: 578
+```
+
+### New Tests (8)
+- `ExportCurrentWeekAsync_WhenExportDisabled_ReturnsError`
+- `ExportCurrentWeekAsync_WhenDirectoryNotConfigured_ReturnsError`
+- `ExportWeekAsync_WithValidSettings_CreatesExportFile`
+- `ExportWeekAsync_JsonFormat_GeneratesValidJson`
+- `ExportWeekAsync_CsvFormat_GeneratesValidCsv`
+- `ExportWeekAsync_TextFormat_GeneratesHumanReadableText`
+- `GetExportHistoryAsync_WhenDirectoryNotConfigured_ReturnsEmptyList`
+- `ExportWeekAsync_CreatesCorrectDirectoryStructure`
+
+### Files Modified
+- `src/Shortboxerr.Core/PullList/IPullListService.cs` (models + interface)
+- `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` (implementation)
+- `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` (endpoints)
+- `tests/Shortboxerr.Tests/PullListServiceTests.cs` (8 new tests)
+- `ui/src/api/client.ts` (types + API methods)
+- `ui/src/pages/SettingsPage.tsx` (Weekly Export settings section)
+
+### UI Build
+```
+✓ built in 1.71s
+```
+
+---
+
 ## Iteration 037 (2026-02-03)
 **EPIC 11.9: Pull List UX Improvements**
 

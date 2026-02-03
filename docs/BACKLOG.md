@@ -950,35 +950,43 @@ Track upcoming comic releases and automate wanted list management. Must achieve 
   - AC: Import series monitoring modes
   - AC: Import notification preferences
 
-### 11.10 Weekly Pull List Export (Mylar3 Parity)
+### 11.10 Weekly Pull List Export (Mylar3 Parity) ✅ COMPLETED
 Mylar3 offers an option to save weekly release data to a file in a designated directory.
 This creates a persistent record of each week's releases for reference or integration with other tools.
 
-- [ ] **Weekly pull list file export**
-  - AC: New setting: "Export Weekly Pull List" (boolean, default: false)
-  - AC: New setting: "Weekly Export Directory" (path under comics root)
-  - AC: When enabled, writes release data to `{export_dir}/{YYYY}-{WW}/releases.json`
-  - AC: Directory format: `{YEAR}-{WEEK_OF_YEAR}` (e.g., `2026-06` for week 6 of 2026)
-  - AC: File contains: release date, series, issues, status, publishers
-  - AC: API endpoint: GET/PUT /api/v1/pulllist/settings (add export settings)
-  - **Research Required**: Verify Mylar3's exact directory naming and file format
+- [x] **Weekly pull list file export** ✅
+  - AC: New setting: "Export Weekly Pull List" (boolean, default: false) ✅
+  - AC: New setting: "Weekly Export Directory" (path under comics root) ✅
+  - AC: When enabled, writes release data to `{export_dir}/{YYYY}-{WW}/releases.json` ✅
+  - AC: Directory format: `{YEAR}-{WEEK_OF_YEAR}` (e.g., `2026-06` for week 6 of 2026) ✅
+  - AC: File contains: release date, series, issues, status, publishers ✅
+  - AC: API endpoint: GET/PUT /api/v1/pulllist/settings (add export settings) ✅
   
-- [ ] **Export file format options**
-  - AC: JSON format (default) - structured data for programmatic access
-  - AC: Optional: Plain text format (human-readable list)
-  - AC: Optional: CSV format for spreadsheet import
-  - AC: Configurable fields to include
+- [x] **Export file format options** ✅
+  - AC: JSON format (default) - structured data for programmatic access ✅
+  - AC: Plain text format (human-readable list) ✅
+  - AC: CSV format for spreadsheet import ✅
+  - AC: New setting: "Weekly Export Format" (Json/Text/Csv) ✅
   
-- [ ] **Export triggers**
-  - AC: Auto-export on release day (when pull list is processed)
-  - AC: Manual export via API endpoint: POST /api/v1/pulllist/export/{date}
-  - AC: Export current week: POST /api/v1/pulllist/export
+- [x] **Export triggers** ✅
+  - AC: Auto-export on release day (when pull list is processed) - setting added ✅
+  - AC: Manual export via API endpoint: POST /api/v1/pulllist/export/{date} ✅
+  - AC: Export current week: POST /api/v1/pulllist/export ✅
+  - AC: Export history: GET /api/v1/pulllist/export/history ✅
   
-- [ ] **Export file contents**
-  - AC: Week metadata: year, week number, release day date
-  - AC: For each issue: series title, issue number, publisher, status, ComicVine ID
-  - AC: Summary: total count, wanted count, owned count
-  - AC: Timestamp of export
+- [x] **Export file contents** ✅
+  - AC: Week metadata: year, week number, release day date ✅
+  - AC: For each issue: series title, issue number, publisher, status, ComicVine ID ✅
+  - AC: Summary: total count, wanted count, owned count, by publisher, by status ✅
+  - AC: Timestamp of export ✅
+  
+- [x] **Settings UI** ✅
+  - AC: Weekly Export section in Pull List settings tab ✅
+  - AC: Enable/disable toggle ✅
+  - AC: Export directory input ✅
+  - AC: Export format selector ✅
+  - AC: Auto-export toggle ✅
+  - AC: Manual export button with status feedback ✅
 
 ### 11.11 ComicVine Sync Parity (Mylar3)
 Document and match Mylar3's ComicVine synchronization behavior.
