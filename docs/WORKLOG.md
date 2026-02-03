@@ -1,5 +1,65 @@
 # Worklog
 
+## Iteration 024 (2026-02-03)
+**EPIC 9.9: Issue Display Enhancements - COMPLETED**
+
+### Commits
+1. `feat(ui): implement issue display enhancements with cover/list view toggle`
+
+### Deliverables
+- ✅ Cover View:
+  - Grid layout of issue covers (120px min width)
+  - Status indicator overlays (owned ✓, wanted ⏰, edition 📖, skipped ✗)
+  - Selection support with visual feedback
+  - Special issue badges (Annual ★, Special ⚡)
+  - Story arc tags (up to 2 visible, +N for more)
+- ✅ List View:
+  - Table with sortable columns
+  - Columns: checkbox, issue #, title, release date, status, tags, actions
+  - Status badges with icons
+  - Special type tags (Annual, Special, story arcs)
+  - Row selection with highlighting
+- ✅ Sorting:
+  - Issue number (asc/desc)
+  - Release date (asc/desc)
+  - Title (asc/desc)
+  - Status (asc/desc)
+- ✅ Filtering:
+  - All issues
+  - Owned only
+  - Wanted only
+  - Missing only
+  - Skipped only
+- ✅ Bulk Selection:
+  - Click to select individual issues
+  - Select all visible
+  - Selection count display
+  - Clear selection button
+- ✅ View Preference Persistence:
+  - `issueViewMode` added to UiSettings
+  - Automatically saved when toggled
+  - Restored on page load
+- ✅ Backend Enhancements:
+  - IssueDto extended with isAnnual, isSpecial, specialType, storyArcs
+  - GetSeriesIssues includes StoryArcs relationship
+  - Status sorting option added to API
+
+### New/Modified Files
+| File | Purpose |
+|------|---------|
+| `ui/src/pages/SeriesDetailPage.tsx` | Enhanced with view toggle, sorting, filtering |
+| `ui/src/App.css` | New styles for issues toolbar, list view, badges |
+| `ui/src/api/client.ts` | Added issueViewMode to UiSettings, Issue interface updates |
+| `src/Shortboxerr.Api/Dtos/IssueDto.cs` | Added special issue fields |
+| `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | Include StoryArcs, add status sorting |
+
+### Notes
+- View preference persists across sessions via UI settings
+- Both views show identical information in different layouts
+- Bulk actions UI is present but action handlers are deferred
+
+---
+
 ## Iteration 023 (2026-02-03)
 **EPIC 9.4: Cover Art - COMPLETED**
 

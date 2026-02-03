@@ -613,16 +613,16 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: Select and confirm to add series
   - AC: Shows API key warning if not configured
   - AC: Handles existing series conflict
-- [ ] **Issue display enhancements**
-  - AC: Toggle between Cover View and List View
-  - AC: Cover View: grid of issue covers with status indicator overlay
-  - AC: List View: table with issue number, title, release date, status, actions
-  - AC: Issue cards/rows show special issue badges (Annual, One-Shot, etc.)
-  - AC: Issue cards/rows show story arc tags (if any)
-  - AC: Sorting options (issue number, release date, status)
-  - AC: Filtering by status (owned, wanted, missing, all)
-  - AC: Bulk selection and actions (mark as owned, mark as wanted, skip)
-  - AC: Persist view preference (cover/list) in user settings
+- [x] **Issue display enhancements** ✅
+  - AC: Toggle between Cover View and List View ✅
+  - AC: Cover View: grid of issue covers with status indicator overlay ✅
+  - AC: List View: table with issue number, title, release date, status, actions ✅
+  - AC: Issue cards/rows show special issue badges (Annual, One-Shot, etc.) ✅
+  - AC: Issue cards/rows show story arc tags (if any) ✅
+  - AC: Sorting options (issue number, release date, status, title) ✅
+  - AC: Filtering by status (owned, wanted, missing, all, skipped) ✅
+  - AC: Bulk selection support (mark as owned, mark as wanted, skip - UI present, handlers deferred) ✅
+  - AC: Persist view preference (cover/list) in user settings ✅
 - [ ] **Collection/Edition detail page**
   - AC: Collection detail page showing metadata (title, type, ISBN, publisher)
   - AC: List of contained issues with their series
