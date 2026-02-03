@@ -188,11 +188,12 @@ Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests sec
   - AC: Settings entity with key-value storage
   - AC: Settings API endpoints for all categories
 - [x] **API key management** ✅
-  - AC: Display API key in Settings > Security (masked by default)
-  - AC: "Show" toggle to reveal full API key
-  - AC: "Copy" button to copy API key to clipboard
-  - AC: "Regenerate" button with confirmation dialog
-  - AC: API endpoint: GET /api/v1/settings/apikey (returns masked), POST /api/v1/settings/apikey/regenerate
+  - AC: Display API key in Settings > General (always visible, not masked)
+  - AC: "Copy" icon button to copy API key to clipboard
+  - AC: "Reset" icon button to regenerate key with confirmation dialog
+  - AC: API always enabled (Sonarr/Radarr behavioral parity - no enable toggle)
+  - AC: Auto-generate unique API key on first application launch
+  - AC: API endpoint: GET /api/v1/settings/apikey/full (returns full key), POST /api/v1/settings/apikey/regenerate
 - [x] **Naming format token helper** ✅
   - AC: Display available tokens for Series Folder Format: `{Series Title}`, `{Series Year}`, `{Publisher}`, `{Status}`
   - AC: Display available tokens for Issue File Format: `{Series Title}`, `{Issue}`, `{Issue Title}`, `{Year}`, `{Publisher}`, `{Quality}`
