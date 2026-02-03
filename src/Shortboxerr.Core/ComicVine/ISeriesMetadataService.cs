@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Shortboxerr.Core.Entities;
 
 namespace Shortboxerr.Core.ComicVine;
@@ -256,6 +257,7 @@ public class IssueSyncResult
 /// <summary>
 /// How a series should be monitored for new issues.
 /// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum SeriesMonitoringMode
 {
     /// <summary>
