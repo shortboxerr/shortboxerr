@@ -2,12 +2,33 @@
 // In production, the UI is served from the same origin as the API
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
+// API response format for paged results (matches backend PagedResult<T>)
+interface ApiPagedResult<T> {
+  records: T[];
+  page: number;
+  pageSize: number;
+  totalRecords: number;
+  totalPages: number;
+}
+
+// UI-friendly format used by components
 interface PagedResult<T> {
   items: T[];
   page: number;
   pageSize: number;
   totalCount: number;
   totalPages: number;
+}
+
+// Helper to convert API response to UI format
+function toPagedResult<T>(response: ApiPagedResult<T>): PagedResult<T> {
+  return {
+    items: response.records,
+    page: response.page,
+    pageSize: response.pageSize,
+    totalCount: response.totalRecords,
+    totalPages: response.totalPages,
+  };
 }
 
 interface SystemStatus {
@@ -361,7 +382,8 @@ export const api = {
     if (params.pageSize) query.set('pageSize', String(params.pageSize));
 
     try {
-      return await fetchApi<PagedResult<Series>>(`/api/v1/series?${query}`);
+      const response = await fetchApi<ApiPagedResult<Series>>(`/api/v1/series?${query}`);
+      return toPagedResult(response);
     } catch {
       return { items: [], page: 1, pageSize: 50, totalCount: 0, totalPages: 0 };
     }
@@ -379,7 +401,8 @@ export const api = {
     if (params.pageSize) query.set('pageSize', String(params.pageSize));
 
     try {
-      return await fetchApi<PagedResult<Edition>>(`/api/v1/editions?${query}`);
+      const response = await fetchApi<ApiPagedResult<Edition>>(`/api/v1/editions?${query}`);
+      return toPagedResult(response);
     } catch {
       return { items: [], page: 1, pageSize: 50, totalCount: 0, totalPages: 0 };
     }
