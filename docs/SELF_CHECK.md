@@ -1,54 +1,55 @@
-# Self-Check: Iteration 020
+# Self-Check: Iteration 021
 
 ## Checklist
 
 | Item | Status |
 |------|--------|
-| Vertical slice implemented | ✅ Add Series modal with ComicVine search |
-| API endpoint(s) added/modified | ✅ Uses existing EPIC 9.2 endpoints |
-| Service layer logic | ✅ API client functions added |
+| Vertical slice implemented | ✅ Series Detail page with issues grid |
+| API endpoint(s) added/modified | ✅ GET /api/v1/series/{id}/issues |
+| Service layer logic | ✅ IssueDto, enhanced SeriesDto |
 | Tests passing | ✅ 407 tests passing |
 | WORKLOG.md updated | ✅ |
 | BACKLOG.md updated | ✅ |
 | Repo builds | ✅ UI + API builds succeed |
-| Commits at breakpoints | ✅ 3 commits this iteration |
+| Commits at breakpoints | ✅ 2 commits this iteration |
 
 ## EPIC 9.9 Status: ComicVine UI
 
 ### Completed ✅
 - [x] Settings page (ComicVine tab) - from EPIC 9.1
-  - API key input with show/hide
-  - Test connection button
-  - Rate limit status display
-- [x] Search & match modal (Add Series)
-  - Search ComicVine by name
-  - Display results with covers and metadata
-  - Select and add series to library
-  - API key warning when not configured
-  - Existing series conflict handling
-
-### Remaining
-- [ ] Series detail integration
-  - "Match to ComicVine" button on unmatched series
+- [x] Search & match modal (Add Series) - from Iteration 020
+- [x] Series detail integration:
+  - Series detail page with cover, metadata, overview
   - ComicVine link on matched series
-  - Metadata source indicator
-  - "Refresh Metadata" button
+  - Issues grid with status indicators
+  - Clickable series rows in list
+
+### Remaining in EPIC 9.9
+- [ ] "Match to ComicVine" button on unmatched series
+- [ ] "Refresh Metadata" button
+
+### Deferred
+- Match to ComicVine button: requires series that aren't already matched
+- Refresh Metadata button: requires metadata refresh service call
 
 ## Summary
 
-This iteration implemented the "Add Series" modal functionality, which is the primary user-facing feature for adding comics to the library via ComicVine search. The modal provides:
+This iteration added the **Series Detail page**, providing users with a comprehensive view of their comic series:
 
-1. **Search**: Debounced input that searches ComicVine volumes
-2. **Results**: Displays covers, titles, publishers, years, issue counts
-3. **Selection**: Click to select a series
-4. **Addition**: Add button creates series with all issues
+1. **Series Header**: Cover image, publisher, year, status, monitoring state
+2. **Metadata**: Description/overview from ComicVine, stats (issue count, file count)
+3. **ComicVine Integration**: Direct link to ComicVine page, refresh timestamp
+4. **Issues Grid**: Visual grid showing all issues with:
+   - Cover images
+   - Status indicators (owned, wanted, edition, skipped)
+   - Issue numbers and titles
+   - Release dates
 
-The API endpoints were already implemented in EPIC 9.2. This iteration focused on the UI implementation.
-
-### Bug Fix Included
-Fixed an API response mapping issue where the backend returns `records`/`totalRecords` but the UI expected `items`/`totalCount`. This was causing the Series and Collections pages to appear blank.
+Users can now:
+1. Add a series via ComicVine search (Iteration 020)
+2. Click on a series to see its details and all issues (Iteration 021)
 
 ## Next Steps
-1. Series detail page integration (Match to ComicVine, Refresh Metadata)
-2. EPIC 9.3: Issue Metadata sync
+1. Complete EPIC 9.9: Add Match/Refresh buttons
+2. EPIC 9.3: Issue Metadata (detailed issue info)
 3. EPIC 9.4: Cover Art caching

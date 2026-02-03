@@ -1,5 +1,61 @@
 # Worklog
 
+## Iteration 021 (2026-02-03)
+**EPIC 9.9: Series Detail Page - COMPLETED**
+
+### Commits
+1. `feat: enhance series/issue DTOs with ComicVine fields and add issues endpoint`
+2. `feat: add Series Detail page with issues grid (EPIC 9.9)`
+
+### Deliverables
+- ✅ Backend Enhancements:
+  - SeriesDto: added ComicVineId, CoverImageUrl, ComicVineUrl, TotalIssueCount, MetadataLastRefreshed
+  - New IssueDto with full metadata support
+  - New endpoint: GET /api/v1/series/{id}/issues with paging and sorting
+- ✅ Series Detail Page:
+  - Cover image with fallback placeholder
+  - Publisher, year range, status badges
+  - Overview/description display
+  - Stats: issue count, file count, ComicVine total
+  - Direct link to ComicVine page
+  - Metadata refresh timestamp
+- ✅ Issues Grid:
+  - Card-based display with cover images
+  - Status indicators: owned (green), wanted (yellow), edition (blue), skipped (gray)
+  - Issue number, title, release date display
+  - Responsive grid layout
+- ✅ Navigation:
+  - Clickable series rows in SeriesPage
+  - Route: /series/:id
+  - Back button to series list
+- ✅ API Client:
+  - getSeriesById(id) - fetch single series with details
+  - getSeriesIssues(seriesId, options) - fetch paged issues
+  - New types: SeriesDetail, Issue
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `ui/src/pages/SeriesDetailPage.tsx` | Series detail page component |
+| `src/Shortboxerr.Api/Dtos/IssueDto.cs` | Issue data transfer object |
+
+### Modified Files
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Api/Dtos/SeriesDto.cs` | Added ComicVine fields |
+| `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | Added /issues endpoint |
+| `ui/src/api/client.ts` | Added series detail and issues functions |
+| `ui/src/App.tsx` | Added series detail route |
+| `ui/src/pages/SeriesPage.tsx` | Made rows clickable |
+| `ui/src/App.css` | Series detail and issues grid styles |
+
+### Test Results
+- 407 backend tests passing
+- UI TypeScript compilation passes
+- Production build successful
+
+---
+
 ## Iteration 020 (2026-02-03)
 **EPIC 9.9: ComicVine UI - Add Series Modal - COMPLETED**
 

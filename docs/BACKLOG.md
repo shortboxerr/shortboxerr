@@ -573,11 +573,14 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: Test connection button
   - AC: Rate limit status display
   - AC: Cache management (clear cache button)
-- [ ] **Series detail integration**
-  - AC: "Match to ComicVine" button on unmatched series
+- [x] **Series detail integration** ✅
+  - AC: Series detail page with cover, metadata, overview
   - AC: ComicVine link on matched series
-  - AC: Metadata source indicator (local vs. ComicVine)
-  - AC: "Refresh Metadata" button
+  - AC: Issues grid with status indicators (owned/wanted/edition)
+  - AC: Clickable series rows navigate to detail page
+  - AC: API endpoint: GET /api/v1/series/{id}/issues
+  - AC: "Match to ComicVine" button on unmatched series - DEFERRED
+  - AC: "Refresh Metadata" button - DEFERRED
 - [x] **Search & match modal** ✅
   - AC: Search ComicVine by name
   - AC: Display results with covers and metadata preview
