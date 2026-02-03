@@ -4,6 +4,7 @@ using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Core.Ddl;
 using Shortboxerr.Core.Models;
 using Shortboxerr.Core.Providers;
+using Shortboxerr.Core.Notifications;
 using Shortboxerr.Core.PullList;
 using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.ComicVine;
@@ -63,6 +64,9 @@ public static class DependencyInjection
 
         // Pull list service
         services.AddScoped<IPullListService, PullListService>();
+
+        // Notification service
+        services.AddScoped<INotificationService, Notifications.NotificationService>();
 
         // Settings (can be overridden via configuration)
         services.Configure<DecisionEngineSettings>(options =>

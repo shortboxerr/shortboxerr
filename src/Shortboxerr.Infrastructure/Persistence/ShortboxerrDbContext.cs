@@ -21,6 +21,7 @@ public class ShortboxerrDbContext : DbContext
     public DbSet<IssueStoryArc> IssueStoryArcs => Set<IssueStoryArc>();
     public DbSet<PendingMatch> PendingMatches => Set<PendingMatch>();
     public DbSet<MetadataRefreshEvent> MetadataRefreshEvents => Set<MetadataRefreshEvent>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -201,6 +202,28 @@ public class ShortboxerrDbContext : DbContext
             entity.HasIndex(e => e.Name);
             entity.HasIndex(e => e.Category);
             entity.HasIndex(e => new { e.Category, e.Priority });
+        });
+
+        // Notification
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.ToTable("Notifications");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.Message).IsRequired().HasMaxLength(2048);
+            entity.Property(e => e.Link).HasMaxLength(512);
+            entity.Property(e => e.Data).HasMaxLength(4096);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.IsRead);
+            entity.HasIndex(e => e.Type);
+            entity.HasOne(e => e.Series)
+                .WithMany()
+                .HasForeignKey(e => e.SeriesId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(e => e.Issue)
+                .WithMany()
+                .HasForeignKey(e => e.IssueId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

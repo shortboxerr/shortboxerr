@@ -117,6 +117,7 @@ app.MapDecisionEngineEndpoints();
 app.MapProviderEndpoints();
 app.MapDdlImportEndpoints();
 app.MapPullListEndpoints();
+app.MapNotificationEndpoints();
 app.MapSettingsEndpoints();
 app.MapComicVineEndpoints();
 
