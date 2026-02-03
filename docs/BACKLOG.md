@@ -822,6 +822,8 @@ Track upcoming comic releases and automate wanted list management. Must achieve 
     - `ReleaseDayBackgroundService` to call it on release days (default: Wednesday)
     - Configurable schedule (check at midnight, noon, etc.)
     - Track last processed date to avoid duplicate processing
+  - Note: For full Mylar3 parity, background service should also refresh ComicVine
+    discovery data every 4 hours (currently on-demand with 30-min cache)
 - [ ] **Auto-search on release** (deferred)
   - AC: Trigger search when issue is added to wanted list
   - AC: Respect rate limits and search intervals
@@ -875,6 +877,8 @@ Track upcoming comic releases and automate wanted list management. Must achieve 
   - AC: Upcoming releases list (next 4 weeks) ✅
   - AC: Past releases with status ✅
   - AC: Filter by series, publisher, owned/missing ✅ (status filter implemented)
+  - AC: Sortable columns (series, issue, publisher, release date, status) ✅
+  - AC: Default sort by series title, then issue number ✅
 - [x] **Pull list management**
   - AC: Mark issue as "Skip" (don't want this issue) ✅
   - AC: Mark issue as "Owned" (have it already, outside system) ✅
@@ -884,6 +888,17 @@ Track upcoming comic releases and automate wanted list management. Must achieve 
   - AC: "This Week" widget on dashboard ✅
   - AC: "Coming Soon" widget ✅
   - AC: Release count badges ✅
+- [x] **Navigation improvements** ✅
+  - AC: Consolidated week navigation (< / dropdown / >) ✅
+  - AC: Dropdown combines: This Week, +/-N Weeks, Upcoming (4 weeks), Past (4 weeks) ✅
+  - AC: Arrows always navigate by week (switches to week view if in Upcoming/Past) ✅
+  - AC: Display shows Release Day date (Wednesday) not week range ✅
+- [x] **Caching & data freshness** ✅
+  - AC: React Query staleTime 30 minutes (matches backend cache) ✅
+  - AC: Uses isFetching (not just isLoading) to show spinner during refetch ✅
+  - AC: Prevents showing stale data when navigating between weeks ✅
+  - AC: Manual refresh button forces fresh fetch ✅
+  - AC: Cache-Control: no-cache header on API requests ✅
 
 ### 11.8 This Week Discovery (Mylar3 Parity) ✅ COMPLETED
 - [x] **All releases view (not just monitored series)** ✅
@@ -907,6 +922,10 @@ Track upcoming comic releases and automate wanted list management. Must achieve 
   - AC: Cache results to minimize API calls (30-minute TTL) ✅
   - AC: Handle pagination for large release weeks ✅
   - AC: Filter by publisher (in-library only for now, full publisher filter deferred) ✅
+  - **Data Source Parity with Mylar3**: Uses same ComicVine `issues/` endpoint with
+    `store_date` filter (format: `YYYY-MM-DD|YYYY-MM-DD`). Mylar3 refreshes every 4 hours
+    via background scheduler; Shortboxerr uses 30-min cache with on-demand refresh.
+    Full parity requires `ReleaseDayBackgroundService` (see 11.3).
 - [x] **UI enhancements** ✅
   - AC: Discovery filter (All/New to Me/In Library) ✅
   - AC: "NEW" badge for series not in library ✅
@@ -929,6 +948,62 @@ Track upcoming comic releases and automate wanted list management. Must achieve 
   - AC: Parse config.ini for pull list settings
   - AC: Import series monitoring modes
   - AC: Import notification preferences
+
+### 11.10 Weekly Pull List Export (Mylar3 Parity)
+Mylar3 offers an option to save weekly release data to a file in a designated directory.
+This creates a persistent record of each week's releases for reference or integration with other tools.
+
+- [ ] **Weekly pull list file export**
+  - AC: New setting: "Export Weekly Pull List" (boolean, default: false)
+  - AC: New setting: "Weekly Export Directory" (path under comics root)
+  - AC: When enabled, writes release data to `{export_dir}/{YYYY}-{WW}/releases.json`
+  - AC: Directory format: `{YEAR}-{WEEK_OF_YEAR}` (e.g., `2026-06` for week 6 of 2026)
+  - AC: File contains: release date, series, issues, status, publishers
+  - AC: API endpoint: GET/PUT /api/v1/pulllist/settings (add export settings)
+  - **Research Required**: Verify Mylar3's exact directory naming and file format
+  
+- [ ] **Export file format options**
+  - AC: JSON format (default) - structured data for programmatic access
+  - AC: Optional: Plain text format (human-readable list)
+  - AC: Optional: CSV format for spreadsheet import
+  - AC: Configurable fields to include
+  
+- [ ] **Export triggers**
+  - AC: Auto-export on release day (when pull list is processed)
+  - AC: Manual export via API endpoint: POST /api/v1/pulllist/export/{date}
+  - AC: Export current week: POST /api/v1/pulllist/export
+  
+- [ ] **Export file contents**
+  - AC: Week metadata: year, week number, release day date
+  - AC: For each issue: series title, issue number, publisher, status, ComicVine ID
+  - AC: Summary: total count, wanted count, owned count
+  - AC: Timestamp of export
+
+### 11.11 ComicVine Sync Parity (Mylar3)
+Document and match Mylar3's ComicVine synchronization behavior.
+
+**Current Implementation:**
+- Backend: 30-minute cache for ComicVine discovery results (IMemoryCache)
+- Frontend: 30-minute staleTime for React Query
+- On-demand fetching when user visits Pull List page
+
+**Mylar3 Behavior (needs verification):**
+- [ ] **Research: Mylar3 ComicVine refresh interval**
+  - Believed to be 4-hour background refresh for "This Week" releases
+  - Need to verify: config.ini setting name and default value
+  - Need to verify: Is it configurable? What's the minimum interval?
+  
+- [ ] **Background refresh service**
+  - AC: Implement `ComicVineRefreshBackgroundService`
+  - AC: Configurable refresh interval (default: 4 hours to match Mylar3)
+  - AC: Only refresh during allowed hours (configurable)
+  - AC: Track last refresh time in database
+  - AC: Skip refresh if within minimum interval
+  
+- [ ] **Refresh on schedule vs. on-demand**
+  - AC: Current on-demand approach is acceptable but not full Mylar3 parity
+  - AC: Background service ensures fresh data even if user doesn't visit UI
+  - AC: Useful for automation (auto-add to wanted list on release day)
 
 ### 11.7 Pull List Conformance Tests ✅ COMPLETED
 - [x] **Calendar generation tests**
@@ -955,10 +1030,20 @@ Implement comprehensive caching to minimize database queries and external API ca
 **Existing Caching:**
 - ✅ ComicVine API responses (IMemoryCache, 30min-7days TTL)
 - ✅ Cover images (disk-based, permanent until manually cleared)
-- ✅ Discovery results (IMemoryCache, 30min TTL)
-- ❌ Pull list queries (no caching - queries DB on every request)
+- ✅ Discovery results (IMemoryCache, 30min TTL - backend)
+- ✅ Pull list/Discovery UI (React Query, 30min staleTime - frontend)
+- ✅ Cache-Control: no-cache header on API requests (prevents browser HTTP caching)
+- ❌ Pull list queries (no server-side caching - queries DB on every request)
 - ❌ Series/Issue lists (no caching)
 - ❌ Dashboard stats/aggregates (no caching)
+
+**Frontend Caching Strategy (React Query):**
+- staleTime: 30 minutes for pull list and discovery queries
+- Uses `isFetching` check to show loading spinner during refetch
+- Prevents showing stale cached data when navigating between weeks
+- Manual refresh button forces fresh fetch
+- Rationale: ComicVine release data is set weeks in advance and rarely changes;
+  30-minute client cache matches backend cache duration
 
 ### 12.1 Data Caching Strategy
 - [ ] **Pull list query caching**
@@ -1041,19 +1126,27 @@ Implement comprehensive caching to minimize database queries and external API ca
 **Decision:** Start with IMemoryCache for all caching. Design abstraction layer to allow future migration to distributed cache if needed.
 
 ### Cache TTL Reference Table
-| Data Type | Recommended TTL | Invalidation Trigger |
-|-----------|-----------------|---------------------|
-| Pull list (this week) | 5 minutes | Issue status change, monitoring change |
-| Pull list (upcoming/past) | 10 minutes | Issue status change |
-| Discovery results | 30 minutes | None (external data) |
-| Series list | 2 minutes | Series CRUD |
-| Series detail | 5 minutes | Series/Issue CRUD |
-| Issue detail | 5 minutes | Issue CRUD, file association |
-| Dashboard stats | 1 minute | Any status change |
-| ComicVine volume | 24 hours | Manual refresh |
-| ComicVine issue | 24 hours | Manual refresh |
-| ComicVine publisher | 7 days | Manual refresh |
-| Cover images | Permanent (disk) | Manual clear |
+| Data Type | Layer | Current TTL | Recommended TTL | Invalidation Trigger |
+|-----------|-------|-------------|-----------------|---------------------|
+| Pull list (this week) | Frontend | 30 min | 30 min | Issue status change, monitoring change, manual refresh |
+| Pull list (upcoming/past) | Frontend | 30 min | 30 min | Issue status change, manual refresh |
+| Discovery results | Backend | 30 min | 30 min | None (external data), manual refresh |
+| Discovery results | Frontend | 30 min | 30 min | Manual refresh |
+| Series list | - | None | 2 minutes | Series CRUD |
+| Series detail | - | None | 5 minutes | Series/Issue CRUD |
+| Issue detail | - | None | 5 minutes | Issue CRUD, file association |
+| Dashboard stats | - | None | 1 minute | Any status change |
+| ComicVine volume | Backend | 24 hours | 24 hours | Manual refresh |
+| ComicVine issue | Backend | 24 hours | 24 hours | Manual refresh |
+| ComicVine publisher | Backend | 7 days | 7 days | Manual refresh |
+| Cover images | Disk | Permanent | Permanent | Manual clear |
+
+**Rationale for 30-minute cache on ComicVine discovery:**
+- Comic release schedules are set weeks/months in advance by publishers
+- Data is submitted to distributors (Diamond/Lunar) well ahead of release
+- ComicVine is updated by community contributors, not in real-time
+- Once a week's releases are set, they essentially never change
+- Mylar3 uses ~4-hour background refresh (we use on-demand with 30-min cache)
 
 ### 12.6 Monitoring & Diagnostics
 - [ ] **Cache metrics**

@@ -1,5 +1,67 @@
 # Worklog
 
+## Iteration 036 (2026-02-03)
+**EPIC 11.5: Pull List UI Improvements & Caching**
+
+### Commits
+1. `feat(ui): improve Pull List navigation and caching`
+
+### Deliverables
+
+#### Pull List UI Navigation Improvements
+- ✅ **Consolidated navigation controls**:
+  - Combined week navigation (`<` / `>`) with view mode dropdown
+  - Dropdown includes: This Week, +/-N Weeks, Upcoming (4 weeks), Past (4 weeks)
+  - Arrows always navigate by week (switches to week view if in Upcoming/Past)
+  - Eliminates redundant button groups
+  
+- ✅ **Release day display**:
+  - Shows Release Day date (e.g., "Wednesday, Feb 4, 2026") instead of week range
+  - Uses UTC timezone to prevent date shifting issues
+  - Correctly calculates Release Day based on pull list settings
+
+- ✅ **Sortable columns**:
+  - Series, Issue, Publisher, Release Date, Status columns
+  - Click header to toggle sort direction
+  - Default sort: series title, then issue number
+  - Sort icons indicate current sort state
+
+#### Caching & Data Freshness Fixes
+- ✅ **Fixed stale data bug when navigating weeks**:
+  - Issue: React Query showed cached data from previous week when navigating back
+  - Root cause: Using `isLoading` (only true on initial load) instead of `isFetching`
+  - Fix: Check both `isLoading || isFetching` to show spinner during refetch
+  
+- ✅ **Frontend caching strategy (React Query)**:
+  - staleTime: 30 minutes (matches backend cache)
+  - Query key includes actual date (not just offset) for consistent caching
+  - Uses queryFn parameter to read date from queryKey (avoids closure issues)
+  - Manual refresh button forces fresh fetch
+  
+- ✅ **Browser HTTP caching**:
+  - Added `Cache-Control: no-cache` header to API requests
+  - Prevents browser from serving stale responses
+  - React Query handles client-side caching appropriately
+
+### Technical Details
+- Added `useMemo` for weekDate calculation to ensure stable query key
+- Queries use `{ queryKey }` parameter in queryFn for reliable date access
+- Frontend cache TTL matches backend's 30-minute ComicVine cache
+- Rationale: Comic release schedules are set weeks in advance and rarely change
+
+### Files Modified
+- `ui/src/pages/PullListPage.tsx` (navigation, sorting, caching fixes)
+- `ui/src/api/client.ts` (Cache-Control header)
+- `ui/src/App.css` (sortable header styles)
+
+### Backlog Updates
+- Added EPIC 11.10: Weekly Pull Directory Organization (Mylar3 Parity)
+- Added EPIC 11.11: ComicVine Sync Parity (Mylar3)
+- Updated EPIC 11.5 with completed navigation and caching improvements
+- Updated EPIC 12 Cache TTL Reference Table with current implementation
+
+---
+
 ## Iteration 035 (2026-02-03)
 **EPIC 11.8: This Week Discovery (Mylar3 Parity) - COMPLETED**
 

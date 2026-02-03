@@ -336,6 +336,18 @@ public static class PullListEndpoints
         .WithDescription("Gets pull list statistics")
         .Produces<PullListStats>(200);
 
+        // GET /api/v1/pulllist/config-status - get configuration status for UX
+        group.MapGet("/config-status", async (
+            [FromServices] IPullListService pullListService,
+            CancellationToken cancellationToken) =>
+        {
+            var status = await pullListService.GetConfigStatusAsync(cancellationToken);
+            return Results.Ok(status);
+        })
+        .WithName("GetPullListConfigStatus")
+        .WithDescription("Gets pull list configuration status for UX improvements")
+        .Produces<PullListConfigStatus>(200);
+
         #endregion
 
         #region Settings

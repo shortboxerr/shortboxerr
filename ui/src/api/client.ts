@@ -271,6 +271,24 @@ export interface PullListStats {
   wantedByPublisher: Record<string, number>;
 }
 
+export type PullListSuggestedActionType = 
+  | 'None' 
+  | 'ConfigureApiKey' 
+  | 'AddSeries' 
+  | 'MatchSeries' 
+  | 'TryAllReleases';
+
+export interface PullListConfigStatus {
+  isComicVineConfigured: boolean;
+  totalSeriesCount: number;
+  matchedSeriesCount: number;
+  monitoredSeriesCount: number;
+  discoveryCacheLastRefreshed: string | null;
+  hasReleasesThisWeek: boolean;
+  suggestedAction: string | null;
+  actionType: PullListSuggestedActionType;
+}
+
 export interface PullListSettingsDto {
   weekStartDay: number;
   releaseDay: number;
@@ -678,6 +696,7 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',
       ...options?.headers,
     },
   });
@@ -1215,6 +1234,10 @@ export const api = {
 
   getPullListStats: async (): Promise<PullListStats> => {
     return fetchApi<PullListStats>('/api/v1/pulllist/stats');
+  },
+
+  getPullListConfigStatus: async (): Promise<PullListConfigStatus> => {
+    return fetchApi<PullListConfigStatus>('/api/v1/pulllist/config-status');
   },
 
   markIssueWanted: async (issueId: number): Promise<PullListActionResult> => {

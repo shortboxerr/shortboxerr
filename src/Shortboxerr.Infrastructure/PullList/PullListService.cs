@@ -62,11 +62,17 @@ public class PullListService : IPullListService
         var query = BuildIssueQuery(filter)
             .Where(i => i.StoreDate >= weekStart && i.StoreDate < weekEnd);
 
+        // Note: SQLite doesn't support ORDER BY decimal, so we sort in memory
         var issues = await query
             .OrderBy(i => i.StoreDate)
             .ThenBy(i => i.Series!.Title)
-            .ThenBy(i => i.IssueNumber)
             .ToListAsync(cancellationToken);
+        
+        // Sort by IssueNumber in memory (SQLite decimal limitation)
+        issues = issues.OrderBy(i => i.StoreDate)
+            .ThenBy(i => i.Series?.Title)
+            .ThenBy(i => i.IssueNumber)
+            .ToList();
 
         return new WeeklyPullList
         {
@@ -515,6 +521,74 @@ public class PullListService : IPullListService
         stats.WantedByPublisher = wantedByPublisher.ToDictionary(x => x.Publisher, x => x.Count);
 
         return stats;
+    }
+
+    public async Task<PullListConfigStatus> GetConfigStatusAsync(CancellationToken cancellationToken = default)
+    {
+        var status = new PullListConfigStatus();
+
+        try
+        {
+            // Check ComicVine configuration
+            status.IsComicVineConfigured = _comicVineClient.IsConfigured;
+
+            // Get series counts
+            status.TotalSeriesCount = await _dbContext.Series
+                .CountAsync(cancellationToken);
+
+            status.MatchedSeriesCount = await _dbContext.Series
+                .CountAsync(s => s.ComicVineId != null, cancellationToken);
+
+            status.MonitoredSeriesCount = await _dbContext.Series
+                .CountAsync(s => s.Monitored, cancellationToken);
+
+            // Check if there are releases this week
+            var today = DateTime.Today;
+            var (thisWeekStart, thisWeekEnd) = GetWeekBoundaries(today);
+            status.HasReleasesThisWeek = await _dbContext.Issues
+                .AnyAsync(i => i.StoreDate >= thisWeekStart && 
+                              i.StoreDate < thisWeekEnd && 
+                              i.Series!.Monitored, cancellationToken);
+
+            // Determine suggested action
+            if (!status.IsComicVineConfigured)
+            {
+                status.ActionType = PullListSuggestedActionType.ConfigureApiKey;
+                status.SuggestedAction = "Configure your ComicVine API key to enable release tracking and discovery.";
+            }
+            else if (status.TotalSeriesCount == 0)
+            {
+                status.ActionType = PullListSuggestedActionType.AddSeries;
+                status.SuggestedAction = "Add your first series to start tracking releases.";
+            }
+            else if (status.MatchedSeriesCount == 0)
+            {
+                status.ActionType = PullListSuggestedActionType.MatchSeries;
+                status.SuggestedAction = "Match your series to ComicVine to track release dates.";
+            }
+            else if (!status.HasReleasesThisWeek && status.MonitoredSeriesCount > 0)
+            {
+                status.ActionType = PullListSuggestedActionType.TryAllReleases;
+                status.SuggestedAction = "No releases from your library this week. Try All Releases to discover new comics.";
+            }
+            else
+            {
+                status.ActionType = PullListSuggestedActionType.None;
+            }
+
+            _logger.LogDebug(
+                "Pull list config status: ComicVine={IsConfigured}, Series={Total}/{Matched}/{Monitored}",
+                status.IsComicVineConfigured, 
+                status.TotalSeriesCount, 
+                status.MatchedSeriesCount, 
+                status.MonitoredSeriesCount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get pull list config status");
+        }
+
+        return status;
     }
 
     #endregion

@@ -153,6 +153,12 @@ public interface IPullListService
     Task<PullListStats> GetStatsAsync(
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Gets pull list configuration status for UX improvements.
+    /// </summary>
+    Task<PullListConfigStatus> GetConfigStatusAsync(
+        CancellationToken cancellationToken = default);
+
     #endregion
 
     #region Settings
@@ -310,6 +316,64 @@ public class PullListStats
     public int ReleasingNextWeek { get; set; }
     public int MissedIssues { get; set; } // Past releases that are still wanted
     public Dictionary<string, int> WantedByPublisher { get; set; } = new();
+}
+
+/// <summary>
+/// Configuration status for pull list UX improvements.
+/// </summary>
+public class PullListConfigStatus
+{
+    /// <summary>
+    /// Whether ComicVine API key is configured.
+    /// </summary>
+    public bool IsComicVineConfigured { get; set; }
+
+    /// <summary>
+    /// Total number of series in the library.
+    /// </summary>
+    public int TotalSeriesCount { get; set; }
+
+    /// <summary>
+    /// Number of series matched to ComicVine.
+    /// </summary>
+    public int MatchedSeriesCount { get; set; }
+
+    /// <summary>
+    /// Number of monitored series.
+    /// </summary>
+    public int MonitoredSeriesCount { get; set; }
+
+    /// <summary>
+    /// Timestamp when ComicVine discovery cache was last refreshed.
+    /// </summary>
+    public DateTime? DiscoveryCacheLastRefreshed { get; set; }
+
+    /// <summary>
+    /// Whether there are any issues releasing this week.
+    /// </summary>
+    public bool HasReleasesThisWeek { get; set; }
+
+    /// <summary>
+    /// Suggested next action for the user.
+    /// </summary>
+    public string? SuggestedAction { get; set; }
+
+    /// <summary>
+    /// Action type for UI routing.
+    /// </summary>
+    public PullListSuggestedActionType ActionType { get; set; }
+}
+
+/// <summary>
+/// Action types for pull list UX guidance.
+/// </summary>
+public enum PullListSuggestedActionType
+{
+    None = 0,
+    ConfigureApiKey = 1,
+    AddSeries = 2,
+    MatchSeries = 3,
+    TryAllReleases = 4
 }
 
 /// <summary>
