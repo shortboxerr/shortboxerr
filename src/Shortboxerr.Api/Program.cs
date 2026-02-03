@@ -110,6 +110,7 @@ app.MapCoverEndpoints();
 app.MapEditionEndpoints();
 app.MapEditionMetadataEndpoints();
 app.MapAutoMatchEndpoints();
+app.MapMetadataRefreshEndpoints();
 app.MapManualImportEndpoints();
 app.MapDecisionEngineEndpoints();
 app.MapProviderEndpoints();

@@ -46,6 +46,10 @@ public static class DependencyInjection
         services.AddScoped<IIssueMetadataService, IssueMetadataService>();
         services.AddScoped<IEditionMetadataService, EditionMetadataService>();
         services.AddScoped<IAutoMatchService, AutoMatchService>();
+        services.AddScoped<IMetadataRefreshService, MetadataRefreshService>();
+
+        // Background services
+        services.AddHostedService<BackgroundServices.MetadataRefreshBackgroundService>();
 
         // Cover service
         services.AddHttpClient("CoverDownload");
