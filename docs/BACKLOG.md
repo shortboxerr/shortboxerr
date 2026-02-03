@@ -159,6 +159,10 @@ The DDL (Direct Download) provider must achieve behavioral parity with Mylar3's 
   - AC: Used internally by DDL providers and RSS indexers for direct HTTP downloads
   - AC: Configurable via General settings only (timeout, user-agent, retries)
   - AC: Similar to how Mylar3 handles DDL downloads without external client configuration
+  - AC: Supports custom headers, cookies, user-agent rotation, basic auth
+  - AC: Retry logic on network failures (HttpRequestException)
+  - AC: Auto-creates destination directories
+  - AC: 15 unit tests covering all functionality
 - [x] **Torrent client abstraction** (placeholder for future)
   - AC: Interface only, no implementation in EPIC 4
   - AC: External torrent clients (qBittorrent, etc.) WILL be user-added providers
