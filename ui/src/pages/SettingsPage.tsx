@@ -611,7 +611,7 @@ function ComicVineSettingsTab() {
     queryKey: ['comicvineRateLimit'],
     queryFn: api.getComicVineRateLimit,
     refetchInterval: 30000, // Refresh every 30 seconds
-    enabled: settings?.enabled ?? false,
+    enabled: settings?.hasApiKey ?? false,
   });
 
   const updateMutation = useMutation({
@@ -646,10 +646,6 @@ function ComicVineSettingsTab() {
     }
   };
 
-  const handleToggleEnabled = (enabled: boolean) => {
-    updateMutation.mutate({ enabled });
-  };
-
   if (isLoading) {
     return <div className="loading"><div className="spinner" /></div>;
   }
@@ -657,53 +653,26 @@ function ComicVineSettingsTab() {
   return (
     <>
       <SettingsSection title="ComicVine API">
-        <div style={{ 
-          padding: '12px 16px', 
-          background: 'var(--bg-tertiary)', 
-          borderRadius: 'var(--radius-md)',
-          marginBottom: '16px',
-          fontSize: '13px',
-          color: 'var(--text-secondary)'
-        }}>
-          <p style={{ margin: 0 }}>
-            ComicVine provides metadata for comic series, issues, and collections.
-            Get your API key from{' '}
-            <a 
-              href="https://comicvine.gamespot.com/api/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}
-            >
-              comicvine.gamespot.com/api <ExternalLink size={12} style={{ verticalAlign: 'middle' }} />
-            </a>
-          </p>
-        </div>
-
-        <SettingsField label="Enable ComicVine" description="Use ComicVine for metadata lookup">
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={settings?.enabled ?? false}
-              onChange={(e) => handleToggleEnabled(e.target.checked)}
-              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-            />
-            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
-              {settings?.enabled ? 'Enabled' : 'Disabled'}
-            </span>
-          </label>
-        </SettingsField>
-
         <SettingsField 
           label="API Key" 
-          description={settings?.hasApiKey ? `Current key: ${settings.maskedApiKey}` : 'No API key configured'}
+          description="Specify your own ComicVine API key here. ComicVine is enabled when an API key is provided."
         >
+          {settings?.hasApiKey && (
+            <div style={{ 
+              marginBottom: '8px',
+              fontSize: '12px',
+              color: 'var(--text-muted)'
+            }}>
+              Current key: <code style={{ fontFamily: 'var(--font-mono)' }}>{settings.maskedApiKey}</code>
+            </div>
+          )}
           <div style={{ display: 'flex', gap: '8px' }}>
             <input
               className="input"
               type={showApiKey ? 'text' : 'password'}
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder={settings?.hasApiKey ? 'Enter new key to replace' : 'Enter your API key'}
+              placeholder={settings?.hasApiKey ? 'Enter new key to replace' : 'Enter your ComicVine API key'}
               style={{ flex: 1 }}
             />
             <button
@@ -719,40 +688,59 @@ function ComicVineSettingsTab() {
               disabled={!apiKey.trim() || updateMutation.isPending}
             >
               <Save size={16} />
-              Save Key
+              Save
             </button>
           </div>
-        </SettingsField>
-
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '16px' }}>
-          <button
-            className="btn btn-secondary"
-            onClick={handleTestConnection}
-            disabled={!settings?.hasApiKey || isTesting}
-          >
-            {isTesting ? (
-              <><div className="spinner" style={{ width: '14px', height: '14px' }} /> Testing...</>
-            ) : (
-              <><Play size={16} /> Test Connection</>
-            )}
-          </button>
-          {testResult && (
+          {!settings?.hasApiKey && (
             <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px',
-              color: testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)',
-              fontSize: '13px'
+              marginTop: '8px',
+              fontSize: '12px',
+              color: 'var(--text-muted)'
             }}>
-              {testResult.success ? <CheckCircle size={16} /> : <XCircle size={16} />}
-              {testResult.message}
-              {testResult.latencyMs && <span style={{ color: 'var(--text-muted)' }}>({testResult.latencyMs}ms)</span>}
+              Get your free API key from{' '}
+              <a 
+                href="https://comicvine.gamespot.com/api/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}
+              >
+                comicvine.gamespot.com/api <ExternalLink size={12} style={{ verticalAlign: 'middle' }} />
+              </a>
             </div>
           )}
-        </div>
+        </SettingsField>
+
+        {settings?.hasApiKey && (
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '16px' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={handleTestConnection}
+              disabled={isTesting}
+            >
+              {isTesting ? (
+                <><div className="spinner" style={{ width: '14px', height: '14px' }} /> Testing...</>
+              ) : (
+                <><Play size={16} /> Test Connection</>
+              )}
+            </button>
+            {testResult && (
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px',
+                color: testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)',
+                fontSize: '13px'
+              }}>
+                {testResult.success ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                {testResult.message}
+                {testResult.latencyMs && <span style={{ color: 'var(--text-muted)' }}>({testResult.latencyMs}ms)</span>}
+              </div>
+            )}
+          </div>
+        )}
       </SettingsSection>
 
-      {settings?.enabled && (
+      {settings?.hasApiKey && (
         <>
           <SettingsSection title="Rate Limit Status">
             {rateLimit ? (
