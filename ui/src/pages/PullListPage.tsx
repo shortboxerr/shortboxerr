@@ -283,9 +283,19 @@ export function PullListPage() {
     });
   };
 
-  // Sort discovery issues
+  // Sort and deduplicate discovery issues (ComicVine API sometimes returns duplicates)
   const sortDiscoveryIssues = (issues: DiscoverableIssue[]): DiscoverableIssue[] => {
-    return [...issues].sort((a, b) => {
+    // First deduplicate by comicVineIssueId
+    const seen = new Set<number>();
+    const unique = issues.filter(issue => {
+      if (seen.has(issue.comicVineIssueId)) {
+        return false;
+      }
+      seen.add(issue.comicVineIssueId);
+      return true;
+    });
+    
+    return unique.sort((a, b) => {
       let comparison = 0;
       
       switch (sortColumn) {
