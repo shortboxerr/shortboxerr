@@ -4,6 +4,7 @@ import {
   BookOpen,
   Library,
   Search,
+  Calendar,
   Activity,
   History,
   FolderInput,
@@ -17,6 +18,7 @@ const navItems = [
   { to: '/series', icon: BookOpen, label: 'Series' },
   { to: '/collections', icon: Library, label: 'Collections' },
   { to: '/wanted', icon: Search, label: 'Wanted' },
+  { to: '/pulllist', icon: Calendar, label: 'Pull List' },
   { to: '/activity', icon: Activity, label: 'Activity' },
   { to: '/history', icon: History, label: 'History' },
   { to: '/import', icon: FolderInput, label: 'Manual Import' },
@@ -37,7 +39,7 @@ export function Layout() {
         <nav className="sidebar-nav">
           <div className="nav-section">
             <div className="nav-section-title">Main</div>
-            {navItems.slice(0, 4).map((item) => (
+            {navItems.slice(0, 5).map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -54,7 +56,7 @@ export function Layout() {
           
           <div className="nav-section">
             <div className="nav-section-title">Activity</div>
-            {navItems.slice(4, 7).map((item) => (
+            {navItems.slice(5, 8).map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -70,7 +72,7 @@ export function Layout() {
           
           <div className="nav-section">
             <div className="nav-section-title">System</div>
-            {navItems.slice(7).map((item) => (
+            {navItems.slice(8).map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}

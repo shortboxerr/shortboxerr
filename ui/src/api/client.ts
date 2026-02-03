@@ -173,6 +173,7 @@ export interface Issue {
   monitored: boolean;
   hasFile: boolean;
   satisfiedByEdition: boolean;
+  status: IssueStatus;
   createdAt: string;
   updatedAt: string | null;
   // ComicVine metadata
@@ -187,6 +188,87 @@ export interface Issue {
   storyArcs: string[];
   // Computed
   displayNumber: string;
+}
+
+// Pull List types
+export type IssueStatus = 'Wanted' | 'Owned' | 'Downloading' | 'Skipped' | 'Missing' | 'Staged';
+
+export interface PullListIssue {
+  issueId: number;
+  seriesId: number;
+  seriesTitle: string;
+  publisher: string | null;
+  issueNumber: number;
+  issueNumberText: string | null;
+  issueTitle: string | null;
+  storeDate: string | null;
+  coverDate: string | null;
+  coverImageUrl: string | null;
+  status: IssueStatus;
+  isAnnual: boolean;
+  isSpecial: boolean;
+  specialType: string | null;
+}
+
+export interface WeeklyPullList {
+  weekStart: string;
+  weekEnd: string;
+  releaseDay: string;
+  issues: PullListIssue[];
+  totalCount: number;
+  wantedCount: number;
+  ownedCount: number;
+  skippedCount: number;
+}
+
+export interface CalendarDay {
+  date: string;
+  isReleaseDay: boolean;
+  issues: PullListIssue[];
+}
+
+export interface ReleaseCalendar {
+  startDate: string;
+  endDate: string;
+  days: CalendarDay[];
+  byPublisher: Record<string, PullListIssue[]>;
+  bySeries: Record<number, PullListIssue[]>;
+}
+
+export interface PullListFilter {
+  seriesIds?: number[];
+  publishers?: string[];
+  statuses?: IssueStatus[];
+  monitoredOnly?: boolean;
+  includeAnnuals?: boolean;
+  includeSpecials?: boolean;
+}
+
+export interface PullListActionResult {
+  success: boolean;
+  error?: string;
+  issueId?: number;
+  newStatus?: IssueStatus;
+}
+
+export interface PullListBulkResult {
+  success: boolean;
+  error?: string;
+  totalProcessed: number;
+  successCount: number;
+  failedCount: number;
+  failedIssueIds: number[];
+}
+
+export interface PullListStats {
+  totalMonitoredSeries: number;
+  totalWantedIssues: number;
+  totalOwnedIssues: number;
+  totalSkippedIssues: number;
+  releasingThisWeek: number;
+  releasingNextWeek: number;
+  missedIssues: number;
+  wantedByPublisher: Record<string, number>;
 }
 
 interface Edition {
@@ -1016,7 +1098,83 @@ export const api = {
       };
     }
   },
+
+  // Pull List
+  getPullListThisWeek: async (filter?: PullListFilter): Promise<WeeklyPullList> => {
+    const params = buildPullListParams(filter);
+    return fetchApi<WeeklyPullList>(`/api/v1/pulllist/week${params}`);
+  },
+
+  getPullListWeek: async (date: string, filter?: PullListFilter): Promise<WeeklyPullList> => {
+    const params = buildPullListParams(filter);
+    return fetchApi<WeeklyPullList>(`/api/v1/pulllist/week/${date}${params}`);
+  },
+
+  getPullListUpcoming: async (weeks?: number, filter?: PullListFilter): Promise<WeeklyPullList[]> => {
+    const params = buildPullListParams(filter, weeks);
+    return fetchApi<WeeklyPullList[]>(`/api/v1/pulllist/upcoming${params}`);
+  },
+
+  getPullListPast: async (weeks?: number, filter?: PullListFilter): Promise<WeeklyPullList[]> => {
+    const params = buildPullListParams(filter, weeks);
+    return fetchApi<WeeklyPullList[]>(`/api/v1/pulllist/past${params}`);
+  },
+
+  getPullListCalendar: async (startDate?: string, endDate?: string, filter?: PullListFilter): Promise<ReleaseCalendar> => {
+    const searchParams = new URLSearchParams();
+    if (startDate) searchParams.set('startDate', startDate);
+    if (endDate) searchParams.set('endDate', endDate);
+    if (filter?.publishers?.length) searchParams.set('publishers', filter.publishers.join(','));
+    if (filter?.statuses?.length) searchParams.set('statuses', filter.statuses.join(','));
+    if (filter?.monitoredOnly !== undefined) searchParams.set('monitoredOnly', String(filter.monitoredOnly));
+    const query = searchParams.toString();
+    return fetchApi<ReleaseCalendar>(`/api/v1/pulllist/calendar${query ? `?${query}` : ''}`);
+  },
+
+  getPullListStats: async (): Promise<PullListStats> => {
+    return fetchApi<PullListStats>('/api/v1/pulllist/stats');
+  },
+
+  markIssueWanted: async (issueId: number): Promise<PullListActionResult> => {
+    return fetchApi<PullListActionResult>(`/api/v1/pulllist/issues/${issueId}/wanted`, { method: 'POST' });
+  },
+
+  markIssueOwned: async (issueId: number): Promise<PullListActionResult> => {
+    return fetchApi<PullListActionResult>(`/api/v1/pulllist/issues/${issueId}/owned`, { method: 'POST' });
+  },
+
+  markIssueSkipped: async (issueId: number): Promise<PullListActionResult> => {
+    return fetchApi<PullListActionResult>(`/api/v1/pulllist/issues/${issueId}/skipped`, { method: 'POST' });
+  },
+
+  bulkUpdateIssueStatus: async (issueIds: number[], status: IssueStatus): Promise<PullListBulkResult> => {
+    return fetchApi<PullListBulkResult>('/api/v1/pulllist/issues/bulk', {
+      method: 'POST',
+      body: JSON.stringify({ issueIds, status }),
+    });
+  },
+
+  getSeriesMonitoringMode: async (seriesId: number): Promise<{ seriesId: number; monitoringMode: string }> => {
+    return fetchApi<{ seriesId: number; monitoringMode: string }>(`/api/v1/pulllist/series/${seriesId}/monitoring`);
+  },
+
+  setSeriesMonitoringMode: async (seriesId: number, mode: string): Promise<PullListActionResult> => {
+    return fetchApi<PullListActionResult>(`/api/v1/pulllist/series/${seriesId}/monitoring`, {
+      method: 'PUT',
+      body: JSON.stringify({ mode }),
+    });
+  },
 };
+
+function buildPullListParams(filter?: PullListFilter, weeks?: number): string {
+  const params = new URLSearchParams();
+  if (weeks) params.set('weeks', String(weeks));
+  if (filter?.publishers?.length) params.set('publishers', filter.publishers.join(','));
+  if (filter?.statuses?.length) params.set('statuses', filter.statuses.join(','));
+  if (filter?.monitoredOnly !== undefined) params.set('monitoredOnly', String(filter.monitoredOnly));
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
 
 function mapEventType(type: string): 'success' | 'warning' | 'info' | 'danger' {
   switch (type?.toLowerCase()) {

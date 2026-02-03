@@ -12,6 +12,7 @@ import { ManualImportPage } from './pages/ManualImportPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { WantedPage } from './pages/WantedPage';
+import { PullListPage } from './pages/PullListPage';
 import { api } from './api/client';
 import './App.css';
 
@@ -143,6 +144,7 @@ function App() {
               <Route path="collections" element={<CollectionsPage />} />
               <Route path="collections/:id" element={<EditionDetailPage />} />
               <Route path="wanted" element={<WantedPage />} />
+              <Route path="pulllist" element={<PullListPage />} />
               <Route path="activity" element={<ActivityPage />} />
               <Route path="history" element={<HistoryPage />} />
               <Route path="import" element={<ManualImportPage />} />
