@@ -1,8 +1,10 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Core.Entities;
 using Shortboxerr.Core.PullList;
+using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.Persistence;
 
 namespace Shortboxerr.Infrastructure.PullList;
@@ -13,16 +15,23 @@ namespace Shortboxerr.Infrastructure.PullList;
 public class PullListService : IPullListService
 {
     private readonly ShortboxerrDbContext _dbContext;
+    private readonly ISettingsService _settingsService;
     private readonly ILogger<PullListService> _logger;
 
+    // Settings key
+    private const string PullListSettingsKey = "pulllist";
+    private const string SeriesSettingsKey = "pulllist_series";
+    
     // Comics typically release on Wednesday in the US
     private const DayOfWeek DefaultReleaseDay = DayOfWeek.Wednesday;
 
     public PullListService(
         ShortboxerrDbContext dbContext,
+        ISettingsService settingsService,
         ILogger<PullListService> logger)
     {
         _dbContext = dbContext;
+        _settingsService = settingsService;
         _logger = logger;
     }
 
@@ -492,6 +501,80 @@ public class PullListService : IPullListService
         stats.WantedByPublisher = wantedByPublisher.ToDictionary(x => x.Publisher, x => x.Count);
 
         return stats;
+    }
+
+    #endregion
+
+    #region Settings
+
+    public async Task<PullListSettings> GetSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _settingsService.GetAsync<PullListSettings>(
+            PullListSettingsKey, 
+            null,
+            cancellationToken) ?? new PullListSettings();
+    }
+
+    public async Task<PullListActionResult> UpdateSettingsAsync(
+        PullListSettings settings,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _settingsService.SetAsync(PullListSettingsKey, settings, cancellationToken);
+            _logger.LogInformation("Updated pull list settings");
+            return new PullListActionResult { Success = true };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update pull list settings");
+            return new PullListActionResult
+            {
+                Success = false,
+                Error = ex.Message
+            };
+        }
+    }
+
+    public async Task<SeriesPullListSettings?> GetSeriesSettingsAsync(
+        int seriesId,
+        CancellationToken cancellationToken = default)
+    {
+        var settings = await _settingsService.GetAsync<Dictionary<int, SeriesPullListSettings>>(
+            SeriesSettingsKey,
+            null,
+            cancellationToken) ?? new Dictionary<int, SeriesPullListSettings>();
+
+        return settings.TryGetValue(seriesId, out var seriesSettings) ? seriesSettings : null;
+    }
+
+    public async Task<PullListActionResult> UpdateSeriesSettingsAsync(
+        SeriesPullListSettings settings,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var allSettings = await _settingsService.GetAsync<Dictionary<int, SeriesPullListSettings>>(
+                SeriesSettingsKey,
+                null,
+                cancellationToken) ?? new Dictionary<int, SeriesPullListSettings>();
+
+            allSettings[settings.SeriesId] = settings;
+
+            await _settingsService.SetAsync(SeriesSettingsKey, allSettings, cancellationToken);
+            
+            _logger.LogInformation("Updated pull list settings for series {SeriesId}", settings.SeriesId);
+            return new PullListActionResult { Success = true };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update series pull list settings");
+            return new PullListActionResult
+            {
+                Success = false,
+                Error = ex.Message
+            };
+        }
     }
 
     #endregion

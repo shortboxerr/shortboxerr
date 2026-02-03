@@ -124,6 +124,37 @@ public interface IPullListService
         CancellationToken cancellationToken = default);
 
     #endregion
+
+    #region Settings
+
+    /// <summary>
+    /// Gets pull list settings.
+    /// </summary>
+    Task<PullListSettings> GetSettingsAsync(
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates pull list settings.
+    /// </summary>
+    Task<PullListActionResult> UpdateSettingsAsync(
+        PullListSettings settings,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets per-series pull list settings.
+    /// </summary>
+    Task<SeriesPullListSettings?> GetSeriesSettingsAsync(
+        int seriesId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates per-series pull list settings.
+    /// </summary>
+    Task<PullListActionResult> UpdateSeriesSettingsAsync(
+        SeriesPullListSettings settings,
+        CancellationToken cancellationToken = default);
+
+    #endregion
 }
 
 #region Models
@@ -249,6 +280,79 @@ public class PullListStats
     public int ReleasingNextWeek { get; set; }
     public int MissedIssues { get; set; } // Past releases that are still wanted
     public Dictionary<string, int> WantedByPublisher { get; set; } = new();
+}
+
+/// <summary>
+/// Pull list configuration settings.
+/// </summary>
+public class PullListSettings
+{
+    /// <summary>
+    /// Day of week that starts a new comic week (default: Sunday).
+    /// </summary>
+    public DayOfWeek WeekStartDay { get; set; } = DayOfWeek.Sunday;
+
+    /// <summary>
+    /// Day of week when comics are released (default: Wednesday).
+    /// </summary>
+    public DayOfWeek ReleaseDay { get; set; } = DayOfWeek.Wednesday;
+
+    /// <summary>
+    /// Default monitoring mode for newly added series.
+    /// </summary>
+    public ComicVine.SeriesMonitoringMode DefaultMonitoringMode { get; set; } = ComicVine.SeriesMonitoringMode.FutureIssues;
+
+    /// <summary>
+    /// Hours after release to wait before triggering auto-search (allows for proper uploads).
+    /// </summary>
+    public int SearchDelayHours { get; set; } = 6;
+
+    /// <summary>
+    /// Whether to automatically mark new issues as wanted based on monitoring mode.
+    /// </summary>
+    public bool AutoAddToWanted { get; set; } = true;
+
+    /// <summary>
+    /// Whether to include annual issues in auto-add.
+    /// </summary>
+    public bool IncludeAnnualsInAutoAdd { get; set; } = true;
+
+    /// <summary>
+    /// Whether to include special issues in auto-add.
+    /// </summary>
+    public bool IncludeSpecialsInAutoAdd { get; set; } = false;
+
+    /// <summary>
+    /// Whether to skip variant covers (issues with letters like "1A", "1B").
+    /// </summary>
+    public bool SkipVariantCovers { get; set; } = true;
+
+    /// <summary>
+    /// Number of weeks to show in upcoming view.
+    /// </summary>
+    public int UpcomingWeeksToShow { get; set; } = 4;
+
+    /// <summary>
+    /// Number of weeks to show in past view.
+    /// </summary>
+    public int PastWeeksToShow { get; set; } = 4;
+}
+
+/// <summary>
+/// Per-series pull list overrides.
+/// </summary>
+public class SeriesPullListSettings
+{
+    public int SeriesId { get; set; }
+    public ComicVine.SeriesMonitoringMode? MonitoringModeOverride { get; set; }
+    public bool? IncludeAnnuals { get; set; }
+    public bool? IncludeSpecials { get; set; }
+    public bool? SkipVariants { get; set; }
+    
+    /// <summary>
+    /// Priority for search ordering (higher = searched first). Default is 0.
+    /// </summary>
+    public int SearchPriority { get; set; } = 0;
 }
 
 #endregion

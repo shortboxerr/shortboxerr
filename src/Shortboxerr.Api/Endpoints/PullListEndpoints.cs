@@ -250,6 +250,67 @@ public static class PullListEndpoints
         .Produces<PullListStats>(200);
 
         #endregion
+
+        #region Settings
+
+        // GET /api/v1/pulllist/settings - get pull list settings
+        group.MapGet("/settings", async (
+            [FromServices] IPullListService pullListService,
+            CancellationToken cancellationToken) =>
+        {
+            var settings = await pullListService.GetSettingsAsync(cancellationToken);
+            return Results.Ok(settings);
+        })
+        .WithName("GetPullListSettings")
+        .WithDescription("Gets pull list configuration settings")
+        .Produces<PullListSettings>(200);
+
+        // PUT /api/v1/pulllist/settings - update pull list settings
+        group.MapPut("/settings", async (
+            [FromBody] PullListSettings settings,
+            [FromServices] IPullListService pullListService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await pullListService.UpdateSettingsAsync(settings, cancellationToken);
+            return result.Success ? Results.Ok(result) : Results.BadRequest(result);
+        })
+        .WithName("UpdatePullListSettings")
+        .WithDescription("Updates pull list configuration settings")
+        .Produces<PullListActionResult>(200)
+        .Produces<PullListActionResult>(400);
+
+        // GET /api/v1/pulllist/series/{id}/settings - get per-series settings
+        group.MapGet("/series/{id}/settings", async (
+            int id,
+            [FromServices] IPullListService pullListService,
+            CancellationToken cancellationToken) =>
+        {
+            var settings = await pullListService.GetSeriesSettingsAsync(id, cancellationToken);
+            return settings != null 
+                ? Results.Ok(settings) 
+                : Results.Ok(new SeriesPullListSettings { SeriesId = id });
+        })
+        .WithName("GetSeriesPullListSettings")
+        .WithDescription("Gets per-series pull list settings")
+        .Produces<SeriesPullListSettings>(200);
+
+        // PUT /api/v1/pulllist/series/{id}/settings - update per-series settings
+        group.MapPut("/series/{id}/settings", async (
+            int id,
+            [FromBody] SeriesPullListSettings settings,
+            [FromServices] IPullListService pullListService,
+            CancellationToken cancellationToken) =>
+        {
+            settings.SeriesId = id; // Ensure ID matches route
+            var result = await pullListService.UpdateSeriesSettingsAsync(settings, cancellationToken);
+            return result.Success ? Results.Ok(result) : Results.BadRequest(result);
+        })
+        .WithName("UpdateSeriesPullListSettings")
+        .WithDescription("Updates per-series pull list settings")
+        .Produces<PullListActionResult>(200)
+        .Produces<PullListActionResult>(400);
+
+        #endregion
     }
 
     private static PullListFilter? BuildFilter(

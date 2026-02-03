@@ -4,6 +4,7 @@ using Moq;
 using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Core.Entities;
 using Shortboxerr.Core.PullList;
+using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.Persistence;
 using Shortboxerr.Infrastructure.PullList;
 using Xunit;
@@ -14,6 +15,7 @@ public class PullListServiceTests : IDisposable
 {
     private readonly ShortboxerrDbContext _dbContext;
     private readonly PullListService _service;
+    private readonly Mock<ISettingsService> _mockSettingsService;
     private readonly Mock<ILogger<PullListService>> _mockLogger;
 
     public PullListServiceTests()
@@ -23,8 +25,9 @@ public class PullListServiceTests : IDisposable
             .Options;
 
         _dbContext = new ShortboxerrDbContext(options);
+        _mockSettingsService = new Mock<ISettingsService>();
         _mockLogger = new Mock<ILogger<PullListService>>();
-        _service = new PullListService(_dbContext, _mockLogger.Object);
+        _service = new PullListService(_dbContext, _mockSettingsService.Object, _mockLogger.Object);
     }
 
     public void Dispose()
@@ -381,6 +384,158 @@ public class PullListServiceTests : IDisposable
         // Assert
         Assert.Equal(7, calendar.Days.Count);
         Assert.Single(calendar.Days.Where(d => d.Issues.Any()));
+    }
+
+    #endregion
+
+    #region Settings Tests
+
+    [Fact]
+    public async Task GetSettingsAsync_ReturnsDefaultSettings_WhenNoneStored()
+    {
+        // Arrange
+        _mockSettingsService
+            .Setup(s => s.GetAsync<PullListSettings>("pulllist", null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((PullListSettings?)null);
+
+        // Act
+        var settings = await _service.GetSettingsAsync();
+
+        // Assert
+        Assert.NotNull(settings);
+        Assert.Equal(DayOfWeek.Sunday, settings.WeekStartDay);
+        Assert.Equal(DayOfWeek.Wednesday, settings.ReleaseDay);
+        Assert.Equal(SeriesMonitoringMode.FutureIssues, settings.DefaultMonitoringMode);
+    }
+
+    [Fact]
+    public async Task GetSettingsAsync_ReturnsStoredSettings()
+    {
+        // Arrange
+        var storedSettings = new PullListSettings
+        {
+            WeekStartDay = DayOfWeek.Monday,
+            SearchDelayHours = 12,
+            AutoAddToWanted = false
+        };
+
+        _mockSettingsService
+            .Setup(s => s.GetAsync<PullListSettings>("pulllist", null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(storedSettings);
+
+        // Act
+        var settings = await _service.GetSettingsAsync();
+
+        // Assert
+        Assert.Equal(DayOfWeek.Monday, settings.WeekStartDay);
+        Assert.Equal(12, settings.SearchDelayHours);
+        Assert.False(settings.AutoAddToWanted);
+    }
+
+    [Fact]
+    public async Task UpdateSettingsAsync_SavesSettings()
+    {
+        // Arrange
+        var newSettings = new PullListSettings
+        {
+            WeekStartDay = DayOfWeek.Monday,
+            SearchDelayHours = 8
+        };
+
+        _mockSettingsService
+            .Setup(s => s.SetAsync("pulllist", It.IsAny<PullListSettings>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _service.UpdateSettingsAsync(newSettings);
+
+        // Assert
+        Assert.True(result.Success);
+        _mockSettingsService.Verify(
+            s => s.SetAsync("pulllist", It.Is<PullListSettings>(p => 
+                p.WeekStartDay == DayOfWeek.Monday && p.SearchDelayHours == 8), 
+                It.IsAny<CancellationToken>()), 
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task GetSeriesSettingsAsync_ReturnsNull_WhenNotFound()
+    {
+        // Arrange
+        _mockSettingsService
+            .Setup(s => s.GetAsync<Dictionary<int, SeriesPullListSettings>>(
+                "pulllist_series", null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Dictionary<int, SeriesPullListSettings>?)null);
+
+        // Act
+        var settings = await _service.GetSeriesSettingsAsync(999);
+
+        // Assert
+        Assert.Null(settings);
+    }
+
+    [Fact]
+    public async Task GetSeriesSettingsAsync_ReturnsSettings_WhenFound()
+    {
+        // Arrange
+        var storedSettings = new Dictionary<int, SeriesPullListSettings>
+        {
+            [1] = new SeriesPullListSettings 
+            { 
+                SeriesId = 1, 
+                SearchPriority = 5,
+                IncludeAnnuals = false 
+            }
+        };
+
+        _mockSettingsService
+            .Setup(s => s.GetAsync<Dictionary<int, SeriesPullListSettings>>(
+                "pulllist_series", null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(storedSettings);
+
+        // Act
+        var settings = await _service.GetSeriesSettingsAsync(1);
+
+        // Assert
+        Assert.NotNull(settings);
+        Assert.Equal(1, settings.SeriesId);
+        Assert.Equal(5, settings.SearchPriority);
+        Assert.False(settings.IncludeAnnuals);
+    }
+
+    [Fact]
+    public async Task UpdateSeriesSettingsAsync_SavesSeriesSettings()
+    {
+        // Arrange
+        var existingSettings = new Dictionary<int, SeriesPullListSettings>();
+        var newSettings = new SeriesPullListSettings
+        {
+            SeriesId = 5,
+            SearchPriority = 10
+        };
+
+        _mockSettingsService
+            .Setup(s => s.GetAsync<Dictionary<int, SeriesPullListSettings>>(
+                "pulllist_series", null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingSettings);
+
+        _mockSettingsService
+            .Setup(s => s.SetAsync("pulllist_series", 
+                It.IsAny<Dictionary<int, SeriesPullListSettings>>(), 
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _service.UpdateSeriesSettingsAsync(newSettings);
+
+        // Assert
+        Assert.True(result.Success);
+        _mockSettingsService.Verify(
+            s => s.SetAsync("pulllist_series", 
+                It.Is<Dictionary<int, SeriesPullListSettings>>(d => 
+                    d.ContainsKey(5) && d[5].SearchPriority == 10), 
+                It.IsAny<CancellationToken>()), 
+            Times.Once);
     }
 
     #endregion
