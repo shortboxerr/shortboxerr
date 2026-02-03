@@ -633,15 +633,15 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: API endpoint: GET /api/v1/editions/{id}/contents ✅
 
 ### 9.10 ComicVine Conformance Tests
-- [ ] **API client tests**
-  - AC: Mock ComicVine responses
-  - AC: Test rate limiting behavior
-  - AC: Test error handling (404, 420, 500)
-- [ ] **Matching algorithm tests**
-  - AC: Golden test fixtures for series matching
-  - AC: Test edge cases (same name, different years)
-  - AC: Test confidence scoring
-- [ ] **Integration tests**
+- [x] **API client tests** ✅
+  - AC: Mock ComicVine responses ✅
+  - AC: Test rate limiting behavior ✅
+  - AC: Test error handling (404, 420, 500) ✅
+- [x] **Matching algorithm tests** ✅
+  - AC: Golden test fixtures for series matching ✅
+  - AC: Test edge cases (same name, different years) ✅
+  - AC: Test confidence scoring ✅
+- [ ] **Integration tests** (Deferred - requires more infrastructure)
   - AC: Full flow: search → match → sync metadata
   - AC: Cover download and caching
   - AC: Refresh cycle

@@ -1,5 +1,50 @@
 # Worklog
 
+## Iteration 026 (2026-02-03)
+**EPIC 9.10: ComicVine Conformance Tests - COMPLETED**
+
+### Commits
+1. `test: add ComicVine conformance tests (EPIC 9.10)`
+
+### Deliverables
+- ✅ ComicVineClientTests (22 tests):
+  - Test connection with/without API key
+  - Volume and issue search tests
+  - Volume and issue retrieval tests
+  - Golden test fixtures (realistic API responses)
+  - Error handling: HTTP 404, 420, 500
+  - Network error handling
+  - Malformed JSON handling
+  - Rate limit status verification
+  - IsConfigured property behavior
+  
+- ✅ SeriesMatchingAlgorithmTests (12 tests):
+  - Exact title match → high confidence
+  - Starts-with match → medium confidence
+  - Contains match → lower confidence
+  - Year filter increases confidence
+  - Publisher filter increases confidence
+  - Multiple results sorted by confidence
+  - Large issue count bonus
+  - Same name different years handling
+  - Auto-match with no results
+  - Auto-match returns confidence score
+
+### New/Modified Files
+| File | Purpose |
+|------|---------|
+| `tests/Shortboxerr.Tests/ComicVineClientTests.cs` | New: API client conformance tests |
+| `tests/Shortboxerr.Tests/SeriesMatchingAlgorithmTests.cs` | New: Matching algorithm tests |
+
+### Notes
+- 34 tests total, all passing
+- Uses Moq for HTTP mocking
+- Uses in-memory database for service tests
+- Golden test fixtures based on actual ComicVine response structure
+- Integration tests (full flow) deferred for future iteration
+
+---
+
 ## Iteration 025 (2026-02-03)
 **EPIC 9.9: Collection/Edition Detail Page - COMPLETED**
 
