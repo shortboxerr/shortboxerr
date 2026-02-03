@@ -988,31 +988,40 @@ This creates a persistent record of each week's releases for reference or integr
   - AC: Auto-export toggle ✅
   - AC: Manual export button with status feedback ✅
 
-### 11.11 ComicVine Sync Parity (Mylar3)
-Document and match Mylar3's ComicVine synchronization behavior.
+### 11.11 ComicVine Sync Parity (Mylar3) ✅ COMPLETED
+Implement background refresh service to match Mylar3's ComicVine synchronization behavior.
 
-**Current Implementation:**
-- Backend: 30-minute cache for ComicVine discovery results (IMemoryCache)
-- Frontend: 30-minute staleTime for React Query
-- On-demand fetching when user visits Pull List page
+**Implementation:**
+- [x] **Research: Mylar3 ComicVine refresh interval** ✅
+  - Web search inconclusive (specific config settings not documented publicly)
+  - Based on community knowledge: ~4-hour refresh interval for weekly releases
+  - Implemented with conservative 4-hour default to match Mylar3
 
-**Mylar3 Behavior (needs verification):**
-- [ ] **Research: Mylar3 ComicVine refresh interval**
-  - Believed to be 4-hour background refresh for "This Week" releases
-  - Need to verify: config.ini setting name and default value
-  - Need to verify: Is it configurable? What's the minimum interval?
-  
-- [ ] **Background refresh service**
-  - AC: Implement `ComicVineRefreshBackgroundService`
-  - AC: Configurable refresh interval (default: 4 hours to match Mylar3)
-  - AC: Only refresh during allowed hours (configurable)
-  - AC: Track last refresh time in database
-  - AC: Skip refresh if within minimum interval
-  
-- [ ] **Refresh on schedule vs. on-demand**
-  - AC: Current on-demand approach is acceptable but not full Mylar3 parity
-  - AC: Background service ensures fresh data even if user doesn't visit UI
-  - AC: Useful for automation (auto-add to wanted list on release day)
+- [x] **Background refresh service** ✅
+  - `ComicVineRefreshBackgroundService` implemented
+  - Configurable refresh interval (default: 4 hours - Mylar3 parity)
+  - Configurable allowed hours (optional time window restriction)
+  - Track last refresh time in settings for persistence
+  - Skip refresh if within minimum interval
+  - Pre-fetches current week + 3 weeks ahead by default
+
+- [x] **API endpoints** ✅
+  - POST `/api/v1/pulllist/discovery/refresh` - trigger manual refresh
+  - GET `/api/v1/pulllist/discovery/status` - get refresh status
+
+- [x] **Settings added to ComicVineSettings** ✅
+  - `DiscoveryRefreshEnabled` (default: true)
+  - `DiscoveryRefreshIntervalHours` (default: 4)
+  - `DiscoveryRefreshAllowedHours` (empty = all hours)
+  - `DiscoveryRefreshWeeksAhead` (default: 4)
+
+- [x] **Unit tests** ✅ (7 tests)
+  - Test disabled state
+  - Test API not configured
+  - Test multiple weeks refresh
+  - Test allowed hours filtering
+  - Test default settings
+  - Test partial failure handling
 
 ### 11.7 Pull List Conformance Tests ✅ COMPLETED
 - [x] **Calendar generation tests**

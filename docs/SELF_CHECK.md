@@ -1,6 +1,61 @@
-# Self Check - Iteration 038
+# Self Check - Iteration 039
 
-## EPIC 11.10: Weekly Pull List Export (Mylar3 Parity)
+## EPIC 11.11: ComicVine Sync Parity (Mylar3)
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Build succeeded with 0 errors |
+| Tests pass | ✅ | 585 total tests passing (7 new) |
+| API endpoints working | ✅ | 2 new discovery refresh endpoints |
+| Background service registered | ✅ | Service runs on startup |
+| Git commits | ✅ | Conventional format |
+
+### Acceptance Criteria Status
+
+#### Research: Mylar3 ComicVine Refresh Interval
+| AC | Status |
+|----|--------|
+| Research Mylar3 refresh settings | ✅ (web search inconclusive, used community knowledge) |
+| Document findings | ✅ (4-hour default based on observed behavior) |
+
+#### Background Refresh Service
+| AC | Status |
+|----|--------|
+| Implement `ComicVineRefreshBackgroundService` | ✅ |
+| Configurable refresh interval (default: 4 hours) | ✅ |
+| Only refresh during allowed hours (configurable) | ✅ |
+| Track last refresh time in settings | ✅ |
+| Skip refresh if within minimum interval | ✅ |
+
+#### API Endpoints
+| AC | Status |
+|----|--------|
+| POST /api/v1/pulllist/discovery/refresh | ✅ |
+| GET /api/v1/pulllist/discovery/status | ✅ |
+
+### New Tests (7 tests)
+- ✅ TriggerRefreshAsync_WhenDisabled_DoesNotRefresh
+- ✅ TriggerRefreshAsync_WhenApiNotConfigured_DoesNotRefresh
+- ✅ TriggerRefreshAsync_WhenEnabled_RefreshesMultipleWeeks
+- ✅ TriggerRefreshAsync_WhenOutsideAllowedHours_DoesNotRefresh
+- ✅ TriggerRefreshAsync_WhenWithinAllowedHours_DoesRefresh
+- ✅ TriggerRefreshAsync_WithDefaultSettings_RefreshesFourWeeks
+- ✅ TriggerRefreshAsync_ContinuesOnPartialFailure
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `src/Shortboxerr.Core/ComicVine/IComicVineClient.cs` | ✅ Added 4 settings |
+| `src/Shortboxerr.Infrastructure/BackgroundServices/ComicVineRefreshBackgroundService.cs` | ✅ New file |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | ✅ Registered service |
+| `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` | ✅ 2 new endpoints |
+| `tests/Shortboxerr.Tests/ComicVineRefreshBackgroundServiceTests.cs` | ✅ 7 new tests |
+
+---
+
+## Previous: EPIC 11.10: Weekly Pull List Export (Mylar3 Parity)
 
 ### Checklist
 

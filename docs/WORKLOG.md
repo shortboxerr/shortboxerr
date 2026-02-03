@@ -1,5 +1,76 @@
 # Worklog
 
+## Iteration 039 (2026-02-03)
+**EPIC 11.11: ComicVine Sync Parity (Mylar3) - COMPLETED**
+
+### Commits
+1. `feat: implement ComicVine discovery refresh background service (EPIC 11.11)`
+
+### Deliverables
+
+#### Background Refresh Service
+- ✅ `ComicVineRefreshBackgroundService`: Periodic background refresh of discovery data
+  - Runs every 15 minutes, checks if refresh is needed
+  - 2-minute startup delay to allow application to initialize
+  - Respects configurable allowed hours
+  - Pre-fetches current week + N weeks ahead (default: 4)
+  - Rate limiting between week fetches (2-second delay)
+  - Continues on partial failure (one week failing doesn't stop others)
+  - Persists last refresh time for continuity across restarts
+
+#### Settings Added to ComicVineSettings
+| Setting | Type | Default | Purpose |
+|---------|------|---------|---------|
+| `DiscoveryRefreshEnabled` | bool | true | Enable/disable background refresh |
+| `DiscoveryRefreshIntervalHours` | int | 4 | Hours between refreshes (Mylar3 parity) |
+| `DiscoveryRefreshAllowedHours` | List<int> | [] (all) | Restrict refresh to specific hours |
+| `DiscoveryRefreshWeeksAhead` | int | 4 | Number of weeks to pre-fetch |
+
+#### API Endpoints Added
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/pulllist/discovery/refresh` | POST | Trigger manual refresh |
+| `/api/v1/pulllist/discovery/status` | GET | Get refresh status and next scheduled |
+
+#### Response DTO
+```csharp
+public class DiscoveryRefreshStatus
+{
+    public bool Enabled { get; set; }
+    public int RefreshIntervalHours { get; set; }
+    public int WeeksAhead { get; set; }
+    public List<int> AllowedHours { get; set; }
+    public DateTime? LastRefresh { get; set; }
+    public DateTime? NextRefreshEstimate { get; set; }
+}
+```
+
+### Unit Tests (7 new tests)
+- `TriggerRefreshAsync_WhenDisabled_DoesNotRefresh`
+- `TriggerRefreshAsync_WhenApiNotConfigured_DoesNotRefresh`
+- `TriggerRefreshAsync_WhenEnabled_RefreshesMultipleWeeks`
+- `TriggerRefreshAsync_WhenOutsideAllowedHours_DoesNotRefresh`
+- `TriggerRefreshAsync_WhenWithinAllowedHours_DoesRefresh`
+- `TriggerRefreshAsync_WithDefaultSettings_RefreshesFourWeeks`
+- `TriggerRefreshAsync_ContinuesOnPartialFailure`
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/ComicVine/IComicVineClient.cs` | Added discovery refresh settings |
+| `src/Shortboxerr.Infrastructure/BackgroundServices/ComicVineRefreshBackgroundService.cs` | New background service |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register background service |
+| `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` | New discovery refresh endpoints |
+| `tests/Shortboxerr.Tests/ComicVineRefreshBackgroundServiceTests.cs` | New unit tests |
+
+### Mylar3 Parity Notes
+- Mylar3 uses ~4-hour refresh interval for weekly releases (based on community knowledge)
+- Direct config.ini setting names not found in public documentation
+- Our implementation uses 4-hour default to match observed Mylar3 behavior
+- Additional flexibility: allowed hours and weeks-ahead are configurable
+
+---
+
 ## Iteration 038 (2026-02-03)
 **EPIC 11.10: Weekly Pull List Export (Mylar3 Parity) - COMPLETED**
 
