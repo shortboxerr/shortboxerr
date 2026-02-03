@@ -818,7 +818,10 @@ Track upcoming comic releases and automate wanted list management. Must achieve 
 - [ ] **Auto-add to wanted list** (deferred)
   - AC: Automatically add new issues to wanted list on release day
   - AC: Configurable: on release day, X days before, or manual only
-  - Note: Backend ready, needs background service integration
+  - Note: `ProcessReleaseDayAsync` exists in PullListService, needs:
+    - `ReleaseDayBackgroundService` to call it on release days (default: Wednesday)
+    - Configurable schedule (check at midnight, noon, etc.)
+    - Track last processed date to avoid duplicate processing
 - [ ] **Auto-search on release** (deferred)
   - AC: Trigger search when issue is added to wanted list
   - AC: Respect rate limits and search intervals
@@ -837,6 +840,34 @@ Track upcoming comic releases and automate wanted list management. Must achieve 
   - AC: Email notifications (SMTP configuration)
   - AC: Webhook notifications (for Discord, Slack, etc.)
   - AC: Pushover/Pushbullet support
+
+### 11.9 Pull List UX Improvements
+- [ ] **Empty state improvements**
+  - AC: "My Pull List" empty state shows:
+    - Check if API key configured → "Configure ComicVine API" button
+    - Check if any series exist → "Add your first series" button  
+    - If series exist but unmatched → "Match series to ComicVine" guidance
+    - "Try All Releases mode to discover new comics" suggestion
+  - AC: "All Releases" empty state shows:
+    - Check if API key configured → "Configure ComicVine API" button
+    - "No releases found" with date confirmation
+    - Check for API errors and display friendly message
+    
+- [ ] **Manual refresh controls**
+  - AC: "Refresh from ComicVine" button in Pull List toolbar
+  - AC: Shows last refresh timestamp
+  - AC: Triggers immediate metadata sync for monitored series
+  - AC: Shows progress indicator during refresh
+  
+- [ ] **Configuration status indicator**
+  - AC: Visual indicator if ComicVine not configured
+  - AC: Warning banner at top of Pull List if API key missing
+  - AC: Quick link to Settings → ComicVine page
+  
+- [ ] **First-time user experience**
+  - AC: Guided onboarding when Pull List first visited with no data
+  - AC: Step-by-step: 1) Configure API key, 2) Add series, 3) View releases
+  - AC: "Skip" option to dismiss onboarding
 
 ### 11.5 Pull List UI ✅ COMPLETED
 - [x] **List view**
