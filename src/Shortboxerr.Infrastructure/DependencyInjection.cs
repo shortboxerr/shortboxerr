@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Shortboxerr.Core.Caching;
 using Shortboxerr.Core.ComicVine;
+using Shortboxerr.Infrastructure.Caching;
 using Shortboxerr.Core.Ddl;
 using Shortboxerr.Core.Models;
 using Shortboxerr.Core.Providers;
@@ -42,8 +44,12 @@ public static class DependencyInjection
         services.AddSingleton<IProviderFactory, ProviderFactory>();
         services.AddScoped<IProviderManager, ProviderManager>();
 
-        // ComicVine client and services
+        // Memory cache and cache service
         services.AddMemoryCache();
+        services.Configure<CacheSettings>(options => { }); // Use defaults, can be overridden
+        services.AddSingleton<ICacheService, CacheService>();
+
+        // ComicVine client and services
         services.AddHttpClient<IComicVineClient, ComicVineClient>();
         services.AddScoped<ISeriesMetadataService, SeriesMetadataService>();
         services.AddScoped<IIssueMetadataService, IssueMetadataService>();
