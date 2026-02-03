@@ -216,14 +216,14 @@ public class ComicVineVolume
     public string? SiteDetailUrl { get; set; }
 
     /// <summary>
-    /// Date added to ComicVine.
+    /// Date added to ComicVine (string format: "YYYY-MM-DD HH:MM:SS").
     /// </summary>
-    public DateTime? DateAdded { get; set; }
+    public string? DateAdded { get; set; }
 
     /// <summary>
-    /// Date last updated on ComicVine.
+    /// Date last updated on ComicVine (string format: "YYYY-MM-DD HH:MM:SS").
     /// </summary>
-    public DateTime? DateLastUpdated { get; set; }
+    public string? DateLastUpdated { get; set; }
 }
 
 /// <summary>
@@ -282,14 +282,14 @@ public class ComicVineIssue
     public string? SiteDetailUrl { get; set; }
 
     /// <summary>
-    /// Date added to ComicVine.
+    /// Date added to ComicVine (string format: "YYYY-MM-DD HH:MM:SS").
     /// </summary>
-    public DateTime? DateAdded { get; set; }
+    public string? DateAdded { get; set; }
 
     /// <summary>
-    /// Date last updated on ComicVine.
+    /// Date last updated on ComicVine (string format: "YYYY-MM-DD HH:MM:SS").
     /// </summary>
-    public DateTime? DateLastUpdated { get; set; }
+    public string? DateLastUpdated { get; set; }
 
     /// <summary>
     /// Story arcs this issue is part of.

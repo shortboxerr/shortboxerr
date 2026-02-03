@@ -594,7 +594,7 @@ public class ComicVineClient : IComicVineClient
             Id = api.Id,
             Name = api.Name ?? "",
             Aliases = ParseAliases(api.Aliases),
-            StartYear = api.StartYear,
+            StartYear = int.TryParse(api.StartYear, out var startYear) ? startYear : null,
             Description = StripHtml(api.Description),
             Deck = api.Deck,
             Publisher = api.Publisher != null ? new ComicVinePublisherRef
@@ -751,7 +751,8 @@ internal class ComicVineApiVolume
     public string? Aliases { get; set; }
 
     [JsonPropertyName("start_year")]
-    public int? StartYear { get; set; }
+    [JsonConverter(typeof(NullableStringOrIntConverter))]
+    public string? StartYear { get; set; }
 
     [JsonPropertyName("description")]
     public string? Description { get; set; }
@@ -781,10 +782,10 @@ internal class ComicVineApiVolume
     public string? SiteDetailUrl { get; set; }
 
     [JsonPropertyName("date_added")]
-    public DateTime? DateAdded { get; set; }
+    public string? DateAdded { get; set; }
 
     [JsonPropertyName("date_last_updated")]
-    public DateTime? DateLastUpdated { get; set; }
+    public string? DateLastUpdated { get; set; }
 }
 
 internal class ComicVineApiIssue
@@ -820,10 +821,10 @@ internal class ComicVineApiIssue
     public string? SiteDetailUrl { get; set; }
 
     [JsonPropertyName("date_added")]
-    public DateTime? DateAdded { get; set; }
+    public string? DateAdded { get; set; }
 
     [JsonPropertyName("date_last_updated")]
-    public DateTime? DateLastUpdated { get; set; }
+    public string? DateLastUpdated { get; set; }
 
     [JsonPropertyName("story_arc_credits")]
     public List<ComicVineApiStoryArcRef>? StoryArcCredits { get; set; }
@@ -947,5 +948,31 @@ public class ComicVineRateLimitException : Exception
 public class ComicVineApiKeyInvalidException : Exception
 {
     public ComicVineApiKeyInvalidException(string message) : base(message) { }
+}
+
+/// <summary>
+/// Custom JSON converter that accepts both string and number for nullable string types.
+/// Used for fields like start_year which ComicVine returns as string but tests may have as number.
+/// </summary>
+public class NullableStringOrIntConverter : JsonConverter<string?>
+{
+    public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        return reader.TokenType switch
+        {
+            JsonTokenType.String => reader.GetString(),
+            JsonTokenType.Number => reader.GetInt32().ToString(),
+            JsonTokenType.Null => null,
+            _ => throw new JsonException($"Unexpected token type: {reader.TokenType}")
+        };
+    }
+
+    public override void Write(Utf8JsonWriter writer, string? value, JsonSerializerOptions options)
+    {
+        if (value == null)
+            writer.WriteNullValue();
+        else
+            writer.WriteStringValue(value);
+    }
 }
 

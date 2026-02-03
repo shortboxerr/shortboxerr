@@ -39,17 +39,9 @@ public class SeriesMetadataService : ISeriesMetadataService
         int limit = 10,
         CancellationToken cancellationToken = default)
     {
-        if (!_comicVineClient.IsConfigured)
-        {
-            return new SeriesSearchResult
-            {
-                Success = false,
-                Error = "ComicVine API key not configured"
-            };
-        }
-
         try
         {
+            // The ComicVineClient handles API key validation internally
             var searchResult = await _comicVineClient.SearchVolumesAsync(query, page, limit, cancellationToken);
 
             if (!searchResult.Success)
@@ -500,7 +492,7 @@ public class SeriesMetadataService : ISeriesMetadataService
             CoverImageUrl = volume.Data.Image?.MediumUrl ?? volume.Data.Image?.SmallUrl,
             TotalIssueCount = volume.Data.IssueCount,
             Aliases = volume.Data.Aliases.Any() ? string.Join("\n", volume.Data.Aliases) : null,
-            ComicVineLastUpdated = volume.Data.DateLastUpdated,
+            ComicVineLastUpdated = ParseComicVineDate(volume.Data.DateLastUpdated),
             MetadataLastRefreshed = DateTime.UtcNow,
             Monitored = monitored,
             Status = volume.Data.IssueCount > 0 && volume.Data.LastIssue != null
@@ -772,7 +764,7 @@ public class SeriesMetadataService : ISeriesMetadataService
         series.Aliases = volume.Aliases.Any() ? string.Join("\n", volume.Aliases) : series.Aliases;
         series.CoverImageUrl = volume.Image?.MediumUrl ?? volume.Image?.SmallUrl ?? series.CoverImageUrl;
         series.TotalIssueCount = volume.IssueCount;
-        series.ComicVineLastUpdated = volume.DateLastUpdated;
+        series.ComicVineLastUpdated = ParseComicVineDate(volume.DateLastUpdated);
         series.UpdatedAt = DateTime.UtcNow;
     }
 
@@ -846,6 +838,31 @@ public class SeriesMetadataService : ISeriesMetadataService
             return true;
 
         return false;
+    }
+
+    /// <summary>
+    /// Parses ComicVine date format "YYYY-MM-DD HH:MM:SS" to DateTime.
+    /// </summary>
+    private static DateTime? ParseComicVineDate(string? dateString)
+    {
+        if (string.IsNullOrWhiteSpace(dateString))
+            return null;
+
+        // ComicVine returns dates in format "YYYY-MM-DD HH:MM:SS"
+        if (DateTime.TryParseExact(dateString, "yyyy-MM-dd HH:mm:ss",
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var result))
+        {
+            return result;
+        }
+
+        // Fallback to general parsing
+        if (DateTime.TryParse(dateString, out result))
+        {
+            return result;
+        }
+
+        return null;
     }
 
     private static string NormalizeTitle(string title)
