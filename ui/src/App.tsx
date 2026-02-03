@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { SeriesPage } from './pages/SeriesPage';
+import { SeriesDetailPage } from './pages/SeriesDetailPage';
 import { CollectionsPage } from './pages/CollectionsPage';
 import { ActivityPage } from './pages/ActivityPage';
 import { ManualImportPage } from './pages/ManualImportPage';
@@ -137,6 +138,7 @@ function App() {
             <Route path="/" element={<Layout />}>
               <Route index element={<Dashboard />} />
               <Route path="series" element={<SeriesPage />} />
+              <Route path="series/:id" element={<SeriesDetailPage />} />
               <Route path="collections" element={<CollectionsPage />} />
               <Route path="wanted" element={<WantedPage />} />
               <Route path="activity" element={<ActivityPage />} />

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { Plus, RefreshCw, Trash2, Edit, MoreVertical, BookOpen, Search, X, Loader2, AlertCircle, ExternalLink } from 'lucide-react';
 import { api } from '../api/client';
 import type { SeriesMatchCandidate } from '../api/client';
@@ -9,6 +10,7 @@ export function SeriesPage() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [showAddModal, setShowAddModal] = useState(false);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: seriesData, isLoading, refetch } = useQuery({
     queryKey: ['series', search],
@@ -140,8 +142,8 @@ export function SeriesPage() {
               </thead>
               <tbody>
                 {series.map((item) => (
-                  <tr key={item.id}>
-                    <td className="table-checkbox">
+                  <tr key={item.id} className="table-row-clickable" onClick={() => navigate(`/series/${item.id}`)}>
+                    <td className="table-checkbox" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selectedIds.has(item.id)}

@@ -60,6 +60,55 @@ interface Series {
   filesCount: number;
 }
 
+// Detailed series for detail page
+export interface SeriesDetail {
+  id: number;
+  title: string;
+  sortTitle: string | null;
+  publisher: string | null;
+  startYear: number | null;
+  endYear: number | null;
+  status: string;
+  path: string | null;
+  overview: string | null;
+  monitored: boolean;
+  issueCount: number;
+  issueFileCount: number;
+  editionCount: number;
+  createdAt: string;
+  updatedAt: string | null;
+  // ComicVine metadata
+  comicVineId: number | null;
+  coverImageUrl: string | null;
+  comicVineUrl: string | null;
+  totalIssueCount: number | null;
+  metadataLastRefreshed: string | null;
+}
+
+export interface Issue {
+  id: number;
+  seriesId: number;
+  issueNumber: number;
+  issueNumberText: string | null;
+  title: string | null;
+  releaseDate: string | null;
+  storeDate: string | null;
+  coverDate: string | null;
+  overview: string | null;
+  monitored: boolean;
+  hasFile: boolean;
+  satisfiedByEdition: boolean;
+  createdAt: string;
+  updatedAt: string | null;
+  // ComicVine metadata
+  comicVineId: number | null;
+  coverImageUrl: string | null;
+  comicVineUrl: string | null;
+  metadataLastRefreshed: string | null;
+  // Computed
+  displayNumber: string;
+}
+
 interface Edition {
   id: number;
   title: string;
@@ -429,6 +478,32 @@ export const api = {
 
   deleteSeries: async (id: number): Promise<void> => {
     await fetchApi(`/api/v1/series/${id}`, { method: 'DELETE' });
+  },
+
+  getSeriesById: async (id: number): Promise<SeriesDetail | null> => {
+    try {
+      return await fetchApi<SeriesDetail>(`/api/v1/series/${id}`);
+    } catch {
+      return null;
+    }
+  },
+
+  getSeriesIssues: async (
+    seriesId: number,
+    params?: { page?: number; pageSize?: number; sortKey?: string; sortDir?: string }
+  ): Promise<PagedResult<Issue>> => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.pageSize) query.set('pageSize', String(params.pageSize));
+    if (params?.sortKey) query.set('sortKey', params.sortKey);
+    if (params?.sortDir) query.set('sortDir', params.sortDir);
+
+    try {
+      const response = await fetchApi<ApiPagedResult<Issue>>(`/api/v1/series/${seriesId}/issues?${query}`);
+      return toPagedResult(response);
+    } catch {
+      return { items: [], page: 1, pageSize: 100, totalCount: 0, totalPages: 0 };
+    }
   },
 
   // Editions (Collections)
