@@ -587,15 +587,17 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: API endpoint: GET /api/v1/metadata/series/{id}/history ✅
 
 ### 9.8 Mylar3 ComicVine Settings Import
-- [ ] **Import ComicVine config from Mylar3**
-  - AC: Parse config.ini for ComicVine API key
-  - AC: Import cover cache settings
-  - AC: Import refresh interval settings
-  - AC: Import auto-match thresholds
-- [ ] **ComicVine ID migration**
-  - AC: Map Mylar3 ComicVine IDs to Shortboxerr series
-  - AC: Preserve existing metadata matches
-  - AC: Validate migrated IDs are still valid
+- [x] **Import ComicVine config from Mylar3** ✅
+  - AC: Parse config.ini for ComicVine API key ✅
+  - AC: Import cover cache settings ✅
+  - AC: Import refresh interval settings ✅
+  - AC: Import auto-match thresholds ✅
+  - AC: Track unmapped settings ✅
+- [x] **ComicVine ID migration** ✅
+  - AC: Map Mylar3 ComicVine IDs to Shortboxerr series ✅
+  - AC: Preserve existing metadata matches ✅
+  - AC: Validate migrated IDs are still valid ✅
+  - AC: Optional metadata sync after migration ✅
 
 ### 9.9 ComicVine UI
 - [x] **Settings page** ✅ (Completed in EPIC 9.1)

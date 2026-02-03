@@ -1,69 +1,63 @@
 # Self-Check
 
-## Iteration 029 (2026-02-03)
-**EPIC 9.7: Metadata Refresh - COMPLETED**
+## Iteration 030 (2026-02-03)
+**EPIC 9.8: Mylar3 ComicVine Settings Import - COMPLETED**
 
 ### Checklist
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Vertical slice implemented | ✅ | Full metadata refresh service |
-| Tests written | ✅ | 14 unit tests for MetadataRefreshService |
-| WORKLOG updated | ✅ | Iteration 029 documented |
-| BACKLOG updated | ✅ | EPIC 9.7 marked complete |
+| Vertical slice implemented | ✅ | Full Mylar3 import service |
+| Tests written | ✅ | 12 unit tests for Mylar3ComicVineImporter |
+| WORKLOG updated | ✅ | Iteration 030 documented |
+| BACKLOG updated | ✅ | EPIC 9.8 marked complete |
 | Build succeeds | ✅ | No warnings, no errors |
-| All tests pass | ✅ | 14 new tests passing |
+| All tests pass | ✅ | 12 new tests passing |
 | Commits at breakpoints | ✅ | Single commit for feature |
 
-### EPIC 9.7 Metadata Refresh Status: COMPLETED
+### EPIC 9.8 Mylar3 ComicVine Settings Import Status: COMPLETED
 
 #### Implemented Features
 
-1. **IMetadataRefreshService Interface**
-   - RefreshSeriesAsync: Refresh single series
-   - RefreshAllSeriesAsync: Refresh all matched
-   - RefreshStaleSeriesAsync: Refresh stale only
-   - RefreshSeriesIssuesAsync: Discover new issues
-   - RefreshEditionAsync: Refresh edition
-   - GetSeriesRefreshHistoryAsync: Get history
-   - GetRecentRefreshEventsAsync: Recent events
-   - GetSettingsAsync: Get settings
-   - GetStaleSeriesCountAsync: Count stale
+1. **IMylar3ComicVineImporter Interface**
+   - ParseComicVineSettings: Parse config.ini content
+   - ParseComicVineSettingsFileAsync: Parse from file
+   - ImportComicVineSettingsAsync: Import settings
+   - ValidateComicVineIdsAsync: Validate IDs
+   - MigrateComicVineIdsAsync: Migrate IDs
 
-2. **MetadataRefreshEvent Entity**
-   - ItemType, ItemId, ItemTitle
-   - Success, Error, MetadataChanged
-   - NewIssuesDiscovered
-   - Source (Manual/Scheduled/Import)
-   - CreatedAt timestamp
+2. **Config.ini Parsing**
+   - [General] section for API key
+   - [CV] section for ComicVine settings
+   - [ComicVine] section (alternative name)
+   - Boolean format support (1/true/yes)
+   - Unmapped settings tracking
 
-3. **MetadataRefreshService Implementation**
-   - Configurable refresh interval (default 7 days)
-   - Skip if recently refreshed (unless forced)
-   - Log refresh events for audit trail
-   - Max series per scheduled run (50)
+3. **Settings Import**
+   - API key import (with overwrite option)
+   - Auto-match threshold
+   - Refresh interval (days)
+   - Cover cache settings
+   - Skip variants/annuals options
 
-4. **MetadataRefreshBackgroundService**
-   - Runs every hour
-   - Checks stale series in allowed hours (2-4 AM)
-   - Respects max per run setting
-   - 5-minute initial delay
+4. **ComicVine ID Migration**
+   - SQLite database reading
+   - Title-based series matching
+   - Optional ID validation with ComicVine
+   - Overwrite existing option
+   - Metadata sync after migration
 
 5. **API Endpoints**
-   - GET /api/v1/metadata/settings
-   - GET /api/v1/metadata/stale-count
-   - POST /api/v1/metadata/series/{id}/refresh
-   - POST /api/v1/metadata/series/{id}/issues/refresh
-   - POST /api/v1/metadata/series/refresh-all
-   - POST /api/v1/metadata/series/refresh-stale
-   - POST /api/v1/metadata/editions/{id}/refresh
-   - GET /api/v1/metadata/series/{id}/history
-   - GET /api/v1/metadata/history
+   - POST /api/v1/mylar3/comicvine/parse
+   - POST /api/v1/mylar3/comicvine/parse-file
+   - POST /api/v1/mylar3/comicvine/import
+   - POST /api/v1/mylar3/comicvine/validate-ids
+   - POST /api/v1/mylar3/comicvine/migrate-ids
 
 ### Test Results
 
 ```
-Passed!  - Failed:     0, Passed:    14, Skipped:     0, Total:    14, Duration: 334 ms
+Passed!  - Failed:     0, Passed:    12, Skipped:     0, Total:    12, Duration: 70 ms
 ```
 
 All tests passing.
@@ -76,15 +70,10 @@ Build succeeded.
     0 Error(s)
 ```
 
-### Deferred Items
-
-- UI "Refresh Metadata" button on series detail page
-- UI "Refresh All" button in settings
-- Settings page for refresh interval configuration
-
 ### Next Steps
 
-EPIC 9.7 COMPLETED. Ready for next EPIC:
-- **EPIC 9.8: Mylar3 ComicVine Settings Import** - Import from Mylar3 config
+EPIC 9.8 COMPLETED. **EPIC 9 (ComicVine Integration) FULLY COMPLETED!**
+
+Ready for next EPIC:
 - **EPIC 10: NZB/Usenet Support** - Newznab/NZBHydra2 integration
 - **EPIC 11: Weekly Pull List** - Release date tracking, pull list generation

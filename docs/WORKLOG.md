@@ -1,5 +1,54 @@
 # Worklog
 
+## Iteration 030 (2026-02-03)
+**EPIC 9.8: Mylar3 ComicVine Settings Import - COMPLETED**
+
+### Commits
+1. `feat: implement Mylar3 ComicVine settings import (EPIC 9.8)`
+
+### Deliverables
+- ✅ IMylar3ComicVineImporter interface:
+  - ParseComicVineSettings: Parse config.ini content
+  - ParseComicVineSettingsFileAsync: Parse from file path
+  - ImportComicVineSettingsAsync: Import settings into Shortboxerr
+  - ValidateComicVineIdsAsync: Validate IDs from Mylar3 database
+  - MigrateComicVineIdsAsync: Migrate IDs to local series
+
+- ✅ Mylar3ComicVineImporter implementation:
+  - INI file parsing for [General], [CV], [ComicVine] sections
+  - Extract API key, auto-match threshold, refresh interval
+  - Cover cache settings, skip variants/annuals options
+  - Track unmapped settings for transparency
+  - SQLite database reading for ComicVine ID migration
+  - Title-based series matching for migration
+  - Optional ComicVine ID validation during migration
+  - Metadata sync after ID migration
+
+- ✅ API Endpoints:
+  - POST /api/v1/mylar3/comicvine/parse
+  - POST /api/v1/mylar3/comicvine/parse-file
+  - POST /api/v1/mylar3/comicvine/import
+  - POST /api/v1/mylar3/comicvine/validate-ids
+  - POST /api/v1/mylar3/comicvine/migrate-ids
+
+- ✅ 12 unit tests for Mylar3ComicVineImporter
+
+### New/Modified Files
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Core/ComicVine/IMylar3ComicVineImporter.cs` | Interface + DTOs |
+| `src/Shortboxerr.Infrastructure/ComicVine/Mylar3ComicVineImporter.cs` | Implementation |
+| `src/Shortboxerr.Api/Endpoints/Mylar3ImportEndpoints.cs` | API endpoints |
+| `tests/Shortboxerr.Tests/Mylar3ComicVineImporterTests.cs` | 12 unit tests |
+
+### Notes
+- Uses Microsoft.Data.Sqlite for reading Mylar3 SQLite databases
+- Boolean parsing supports: 1/true/yes formats
+- Preserves raw settings for user reference
+- Migration requires title match by default (configurable)
+
+---
+
 ## Iteration 029 (2026-02-03)
 **EPIC 9.7: Metadata Refresh - COMPLETED**
 
