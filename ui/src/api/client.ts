@@ -271,6 +271,28 @@ export interface PullListStats {
   wantedByPublisher: Record<string, number>;
 }
 
+export interface PullListSettingsDto {
+  weekStartDay: number;
+  releaseDay: number;
+  defaultMonitoringMode: number;
+  searchDelayHours: number;
+  autoAddToWanted: boolean;
+  includeAnnualsInAutoAdd: boolean;
+  includeSpecialsInAutoAdd: boolean;
+  skipVariantCovers: boolean;
+  upcomingWeeksToShow: number;
+  pastWeeksToShow: number;
+}
+
+export interface SeriesPullListSettingsDto {
+  seriesId: number;
+  monitoringModeOverride?: number | null;
+  includeAnnuals?: boolean | null;
+  includeSpecials?: boolean | null;
+  skipVariants?: boolean | null;
+  searchPriority: number;
+}
+
 interface Edition {
   id: number;
   title: string;
@@ -1162,6 +1184,29 @@ export const api = {
     return fetchApi<PullListActionResult>(`/api/v1/pulllist/series/${seriesId}/monitoring`, {
       method: 'PUT',
       body: JSON.stringify({ mode }),
+    });
+  },
+
+  // Pull List Settings
+  getPullListSettings: async (): Promise<PullListSettingsDto> => {
+    return fetchApi<PullListSettingsDto>('/api/v1/pulllist/settings');
+  },
+
+  updatePullListSettings: async (settings: PullListSettingsDto): Promise<PullListActionResult> => {
+    return fetchApi<PullListActionResult>('/api/v1/pulllist/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+  },
+
+  getSeriesPullListSettings: async (seriesId: number): Promise<SeriesPullListSettingsDto> => {
+    return fetchApi<SeriesPullListSettingsDto>(`/api/v1/pulllist/series/${seriesId}/settings`);
+  },
+
+  updateSeriesPullListSettings: async (seriesId: number, settings: SeriesPullListSettingsDto): Promise<PullListActionResult> => {
+    return fetchApi<PullListActionResult>(`/api/v1/pulllist/series/${seriesId}/settings`, {
+      method: 'PUT',
+      body: JSON.stringify(settings),
     });
   },
 };

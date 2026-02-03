@@ -4,17 +4,18 @@ import {
   Settings, Server, Download, Shield, 
   FolderOpen, Plug, Save, Plus, Edit, Trash2, 
   CheckCircle, XCircle, AlertCircle, Play, GripVertical,
-  Copy, RefreshCw, X, Database, ExternalLink, Eye, EyeOff
+  Copy, RefreshCw, X, Database, ExternalLink, Eye, EyeOff, Calendar
 } from 'lucide-react';
 import { api } from '../api/client';
 import type { Provider, CreateProviderRequest, ProviderTestResult, ComicVineTestResult } from '../api/client';
 import { useTheme } from '../App';
 
-type SettingsTab = 'general' | 'indexers' | 'download' | 'import' | 'ui' | 'security' | 'comicvine';
+type SettingsTab = 'general' | 'indexers' | 'download' | 'import' | 'ui' | 'security' | 'comicvine' | 'pulllist';
 
 const tabs: { id: SettingsTab; icon: React.ElementType; label: string }[] = [
   { id: 'general', icon: Settings, label: 'General' },
   { id: 'comicvine', icon: Database, label: 'ComicVine' },
+  { id: 'pulllist', icon: Calendar, label: 'Pull List' },
   { id: 'indexers', icon: Plug, label: 'Indexers' },
   { id: 'download', icon: Download, label: 'Download Clients' },
   { id: 'import', icon: FolderOpen, label: 'Import' },
@@ -68,6 +69,7 @@ export function SettingsPage() {
           <div style={{ flex: 1 }}>
             {activeTab === 'general' && <GeneralSettings />}
             {activeTab === 'comicvine' && <ComicVineSettingsTab />}
+            {activeTab === 'pulllist' && <PullListSettingsTab />}
             {activeTab === 'indexers' && <IndexersSettings />}
             {activeTab === 'download' && <DownloadClientsSettings />}
             {activeTab === 'import' && <ImportSettings />}
@@ -896,6 +898,235 @@ function ComicVineSettingsTab() {
           </SettingsSection>
         </>
       )}
+    </>
+  );
+}
+
+// ============== PULL LIST SETTINGS ==============
+
+function PullListSettingsTab() {
+  const queryClient = useQueryClient();
+  
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ['pulllistSettings'],
+    queryFn: api.getPullListSettings,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: api.updatePullListSettings,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pulllistSettings'] });
+    },
+  });
+
+  if (isLoading) {
+    return <div className="loading"><div className="spinner" /></div>;
+  }
+
+  const currentSettings = settings ?? {
+    weekStartDay: 0,
+    releaseDay: 3,
+    defaultMonitoringMode: 1,
+    searchDelayHours: 6,
+    autoAddToWanted: true,
+    includeAnnualsInAutoAdd: true,
+    includeSpecialsInAutoAdd: false,
+    skipVariantCovers: true,
+    upcomingWeeksToShow: 4,
+    pastWeeksToShow: 4,
+  };
+
+  const dayOfWeekOptions = [
+    { value: 0, label: 'Sunday' },
+    { value: 1, label: 'Monday' },
+    { value: 2, label: 'Tuesday' },
+    { value: 3, label: 'Wednesday' },
+    { value: 4, label: 'Thursday' },
+    { value: 5, label: 'Friday' },
+    { value: 6, label: 'Saturday' },
+  ];
+
+  const monitoringModeOptions = [
+    { value: 0, label: 'All Issues (past and future)' },
+    { value: 1, label: 'Future Issues Only' },
+    { value: 2, label: 'Manual (user selects)' },
+    { value: 3, label: 'First Issue Only' },
+    { value: 4, label: 'None (don\'t monitor)' },
+  ];
+
+  const handleUpdate = (field: string, value: unknown) => {
+    updateMutation.mutate({ ...currentSettings, [field]: value });
+  };
+
+  return (
+    <>
+      <SettingsSection title="Week Configuration">
+        <SettingsField 
+          label="Week Start Day" 
+          description="The day your comic week begins (usually Sunday)"
+        >
+          <select
+            className="input"
+            value={currentSettings.weekStartDay}
+            onChange={(e) => handleUpdate('weekStartDay', parseInt(e.target.value))}
+            style={{ width: '200px' }}
+          >
+            {dayOfWeekOptions.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </SettingsField>
+
+        <SettingsField 
+          label="Release Day" 
+          description="The day comics are typically released (usually Wednesday in the US)"
+        >
+          <select
+            className="input"
+            value={currentSettings.releaseDay}
+            onChange={(e) => handleUpdate('releaseDay', parseInt(e.target.value))}
+            style={{ width: '200px' }}
+          >
+            {dayOfWeekOptions.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </SettingsField>
+      </SettingsSection>
+
+      <SettingsSection title="Monitoring Defaults">
+        <SettingsField 
+          label="Default Monitoring Mode" 
+          description="How new series are monitored when added"
+        >
+          <select
+            className="input"
+            value={currentSettings.defaultMonitoringMode}
+            onChange={(e) => handleUpdate('defaultMonitoringMode', parseInt(e.target.value))}
+            style={{ width: '300px' }}
+          >
+            {monitoringModeOptions.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </SettingsField>
+
+        <SettingsField label="Auto-Add to Wanted">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={currentSettings.autoAddToWanted}
+              onChange={(e) => handleUpdate('autoAddToWanted', e.target.checked)}
+              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+            />
+            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+              Automatically mark new issues as wanted based on monitoring mode
+            </span>
+          </label>
+        </SettingsField>
+      </SettingsSection>
+
+      <SettingsSection title="Issue Filtering">
+        <SettingsField label="Include Annuals">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={currentSettings.includeAnnualsInAutoAdd}
+              onChange={(e) => handleUpdate('includeAnnualsInAutoAdd', e.target.checked)}
+              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+            />
+            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+              Include annual issues in auto-add to wanted list
+            </span>
+          </label>
+        </SettingsField>
+
+        <SettingsField label="Include Specials">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={currentSettings.includeSpecialsInAutoAdd}
+              onChange={(e) => handleUpdate('includeSpecialsInAutoAdd', e.target.checked)}
+              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+            />
+            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+              Include special issues (one-shots, giant-size, etc.) in auto-add
+            </span>
+          </label>
+        </SettingsField>
+
+        <SettingsField label="Skip Variant Covers">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={currentSettings.skipVariantCovers}
+              onChange={(e) => handleUpdate('skipVariantCovers', e.target.checked)}
+              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+            />
+            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+              Skip variant covers (issues like #1A, #1B) when auto-adding
+            </span>
+          </label>
+        </SettingsField>
+      </SettingsSection>
+
+      <SettingsSection title="Search Settings">
+        <SettingsField 
+          label="Search Delay (Hours)" 
+          description="Hours after release day before triggering automatic searches"
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <input
+              type="range"
+              min={0}
+              max={24}
+              value={currentSettings.searchDelayHours}
+              onChange={(e) => handleUpdate('searchDelayHours', parseInt(e.target.value))}
+              style={{ flex: 1, maxWidth: '200px' }}
+            />
+            <span style={{ minWidth: '60px', fontFamily: 'var(--font-mono)', fontSize: '14px' }}>
+              {currentSettings.searchDelayHours} hours
+            </span>
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+            Waiting allows uploads to be available before searching
+          </div>
+        </SettingsField>
+      </SettingsSection>
+
+      <SettingsSection title="Display Settings">
+        <SettingsField 
+          label="Upcoming Weeks to Show" 
+          description="Number of weeks shown in upcoming releases view"
+        >
+          <select
+            className="input"
+            value={currentSettings.upcomingWeeksToShow}
+            onChange={(e) => handleUpdate('upcomingWeeksToShow', parseInt(e.target.value))}
+            style={{ width: '120px' }}
+          >
+            {[2, 4, 6, 8, 12].map(n => (
+              <option key={n} value={n}>{n} weeks</option>
+            ))}
+          </select>
+        </SettingsField>
+
+        <SettingsField 
+          label="Past Weeks to Show" 
+          description="Number of weeks shown in past releases view"
+        >
+          <select
+            className="input"
+            value={currentSettings.pastWeeksToShow}
+            onChange={(e) => handleUpdate('pastWeeksToShow', parseInt(e.target.value))}
+            style={{ width: '120px' }}
+          >
+            {[2, 4, 6, 8, 12].map(n => (
+              <option key={n} value={n}>{n} weeks</option>
+            ))}
+          </select>
+        </SettingsField>
+      </SettingsSection>
     </>
   );
 }
