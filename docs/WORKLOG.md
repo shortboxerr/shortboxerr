@@ -1,5 +1,64 @@
 # Worklog
 
+## Iteration 034 (2026-02-03)
+**EPIC 11.6 & 11.7: Pull List Configuration & Conformance Tests - COMPLETED**
+
+### Commits
+1. `feat: add Pull List settings API and service (EPIC 11.6)`
+2. `feat: add Pull List settings UI (EPIC 11.6)`
+3. `test: add Pull List conformance tests (EPIC 11.7)`
+
+### Deliverables
+
+#### EPIC 11.6: Pull List Configuration
+- ✅ PullListSettings Model:
+  - WeekStartDay, ReleaseDay (DayOfWeek)
+  - DefaultMonitoringMode (SeriesMonitoringMode)
+  - SearchDelayHours, AutoAddToWanted
+  - IncludeAnnualsInAutoAdd, IncludeSpecialsInAutoAdd
+  - SkipVariantCovers
+  - UpcomingWeeksToShow, PastWeeksToShow
+- ✅ SeriesPullListSettings Model:
+  - MonitoringModeOverride, IncludeAnnuals, IncludeSpecials
+  - SkipVariants, SearchPriority
+- ✅ API Endpoints:
+  - GET/PUT /api/v1/pulllist/settings
+  - GET/PUT /api/v1/pulllist/series/{id}/settings
+- ✅ Settings UI Tab:
+  - Week Configuration section
+  - Monitoring Defaults section
+  - Issue Filtering section
+  - Search Settings section
+  - Display Settings section
+- ✅ 6 unit tests for settings operations
+
+#### EPIC 11.7: Pull List Conformance Tests
+- ✅ 23 Conformance Tests:
+  - Week boundary calculations (5 tests)
+  - Release date grouping (4 tests)
+  - Status calculations (5 tests)
+  - Filtering tests (5 tests)
+  - Multi-series pull list tests (2 tests)
+  - Additional edge cases (2 tests)
+
+### API Endpoints Added
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/pulllist/settings` | GET | Get pull list settings |
+| `/api/v1/pulllist/settings` | PUT | Update pull list settings |
+| `/api/v1/pulllist/series/{id}/settings` | GET | Get series-specific settings |
+| `/api/v1/pulllist/series/{id}/settings` | PUT | Update series-specific settings |
+
+### Test Results
+```
+Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
+```
+
+### New Files
+- `tests/Shortboxerr.Tests/PullListConformanceTests.cs` (23 tests)
+
+---
+
 ## Iteration 033 (2026-02-03)
 **EPIC 11.5: Pull List UI - COMPLETED**
 

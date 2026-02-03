@@ -1,111 +1,114 @@
-# Self Check - Iteration 033
+# Self Check - Iteration 034
 
-## EPIC 11.5: Pull List UI
+## EPIC 11.6 & 11.7: Pull List Configuration & Conformance Tests
 
 ### Checklist
 
 | Item | Status | Notes |
 |------|--------|-------|
 | Code compiles | ✅ | Build succeeded with 0 errors |
-| Tests written | ✅ | No new backend tests (UI-only iteration) |
-| All tests pass | ✅ | 541 total tests passing |
+| Tests written | ✅ | 29 new tests (6 settings + 23 conformance) |
+| All tests pass | ✅ | 570 total tests passing |
 | UI builds | ✅ | Vite build succeeded |
-| Navigation added | ✅ | Pull List link in sidebar |
-| Route configured | ✅ | /pulllist route added |
-| Git commits | ✅ | 2 commits with conventional format |
+| API endpoints working | ✅ | Settings CRUD endpoints |
+| Settings UI added | ✅ | Pull List tab in Settings page |
+| Git commits | ✅ | 3 commits with conventional format |
 
 ### Acceptance Criteria Status
 
-#### List View
-| AC | Status |
-|----|--------|
-| This week's releases prominently displayed | ✅ |
-| Upcoming releases list (next 4 weeks) | ✅ |
-| Past releases with status | ✅ |
-| Filter by series, publisher, owned/missing | ✅ (status filter) |
+#### EPIC 11.6: Pull List Configuration
 
-#### Pull List Management
+**Settings**
 | AC | Status |
 |----|--------|
-| Mark issue as "Skip" | ✅ |
-| Mark issue as "Owned" | ✅ |
-| "Add to Wanted" button | ✅ |
-| Bulk actions (select multiple) | ✅ |
+| Week start day (Sunday/Monday) | ✅ |
+| Default add-to-wanted behavior | ✅ |
+| Search delay after release | ✅ |
+| Notification preferences | Deferred to 11.4 |
+| GET/PUT /api/v1/pulllist/settings | ✅ |
 
-#### Dashboard Integration
+**Per-Series Settings**
 | AC | Status |
 |----|--------|
-| "This Week" widget | ✅ |
-| "Coming Soon" widget | ✅ |
-| Release count badges | ✅ |
+| Override monitoring mode per series | ✅ |
+| Skip variants per series | ✅ |
+| Priority per series | ✅ |
+
+**Mylar3 Settings Import**
+| AC | Status |
+|----|--------|
+| Parse config.ini | Deferred (EPIC 7) |
+| Import monitoring modes | Deferred (EPIC 7) |
+| Import notification prefs | Deferred (EPIC 7) |
+
+#### EPIC 11.7: Pull List Conformance Tests
+
+**Calendar Generation Tests**
+| AC | Status | Test Count |
+|----|--------|------------|
+| Week boundary calculations | ✅ | 5 tests |
+| Release date grouping | ✅ | 4 tests |
+| Status calculation | ✅ | 5 tests |
+
+**Automation Tests**
+| AC | Status |
+|----|--------|
+| Auto-add timing | Deferred (EPIC 4) |
+| Auto-search trigger | Deferred (EPIC 4) |
+| Notification generation | Deferred (11.4) |
+
+**Integration Tests**
+| AC | Status |
+|----|--------|
+| Full flow | Partial (search deferred) |
+| Multi-series generation | ✅ (2 tests) |
+| UI calendar interaction | Manual ✅ |
 
 ### New Files
 
 | File | Purpose |
 |------|---------|
-| `ui/src/pages/PullListPage.tsx` | Main pull list UI page |
-| CSS additions in `ui/src/App.css` | Pull list and widget styles |
+| `tests/Shortboxerr.Tests/PullListConformanceTests.cs` | 23 conformance tests |
 
 ### Modified Files
 
 | File | Changes |
 |------|---------|
-| `ui/src/App.tsx` | Added PullListPage route |
-| `ui/src/components/Layout.tsx` | Added Pull List sidebar link |
-| `ui/src/api/client.ts` | Added pull list API methods and types |
-| `ui/src/pages/Dashboard.tsx` | Added This Week and Coming Soon widgets |
+| `IPullListService.cs` | Added settings methods |
+| `PullListService.cs` | Implemented settings persistence |
+| `PullListEndpoints.cs` | Added settings API endpoints |
+| `PullListServiceTests.cs` | Added 6 settings tests |
+| `SettingsPage.tsx` | Added Pull List settings tab |
+| `client.ts` | Added settings API methods |
 
-### UI Features Implemented
+### Test Categories
 
-1. **Pull List Page**
-   - Week view tabs: This Week / Upcoming / Past
-   - Week navigation: Previous/Next/Today buttons
-   - Display modes: Grid view / List view toggle
-   - Status filter dropdown
-   - Bulk selection with checkboxes
-   - Bulk actions: Mark Wanted/Owned/Skipped, Clear
+1. **Settings Tests (6)**
+   - GetSettingsAsync_ReturnsDefaultSettings_WhenNoneStored
+   - GetSettingsAsync_ReturnsStoredSettings
+   - UpdateSettingsAsync_SavesSettings
+   - GetSeriesSettingsAsync_ReturnsNull_WhenNotFound
+   - GetSeriesSettingsAsync_ReturnsSettings_WhenFound
+   - UpdateSeriesSettingsAsync_SavesSeriesSettings
 
-2. **Grid View**
-   - Cover images with placeholder fallback
-   - Status badges overlay
-   - Special issue badges (Annual, etc.)
-   - Series link, issue number, publisher
-   - Action buttons: Want/Own/Skip
-
-3. **List View**
-   - Sortable table columns
-   - Checkbox selection
-   - Cover thumbnails
-   - Series links
-   - Status badges
-   - Action buttons
-
-4. **Dashboard Widgets**
-   - ThisWeekWidget: Release count, wanted count, top 5 wanted issues with covers
-   - ComingSoonWidget: Next week count, total wanted, missed count, publisher breakdown
-
-### API Client Methods Added
-
-| Method | Endpoint |
-|--------|----------|
-| getPullListThisWeek() | GET /api/v1/pulllist/week |
-| getPullListWeek(date) | GET /api/v1/pulllist/week/{date} |
-| getPullListUpcoming(weeks) | GET /api/v1/pulllist/upcoming |
-| getPullListPast(weeks) | GET /api/v1/pulllist/past |
-| getPullListCalendar() | GET /api/v1/pulllist/calendar |
-| getPullListStats() | GET /api/v1/pulllist/stats |
-| markIssueWanted(id) | POST /api/v1/pulllist/issues/{id}/wanted |
-| markIssueOwned(id) | POST /api/v1/pulllist/issues/{id}/owned |
-| markIssueSkipped(id) | POST /api/v1/pulllist/issues/{id}/skipped |
-| bulkUpdateIssueStatus() | POST /api/v1/pulllist/issues/bulk |
-| getSeriesMonitoringMode(id) | GET /api/v1/pulllist/series/{id}/monitoring |
-| setSeriesMonitoringMode(id, mode) | PUT /api/v1/pulllist/series/{id}/monitoring |
+2. **Conformance Tests (23)**
+   - Week boundary calculations (5)
+   - Release day verification (2)
+   - Release grouping by date/publisher/series (4)
+   - Status counting (5)
+   - Filtering by publisher/status/annuals/specials/monitored (5)
+   - Multi-series ordering (2)
 
 ### Test Results
 ```
-Passed!  - Failed: 0, Passed: 541, Skipped: 0, Total: 541
-UI Build: SUCCESS
+Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
 ```
+
+### Deferred Items
+- Notification preferences → EPIC 11.4
+- Mylar3 settings import → depends on EPIC 7
+- Auto-search trigger tests → depends on EPIC 4
+- Full flow integration test → depends on EPIC 4
 
 ---
 
