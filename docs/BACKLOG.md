@@ -613,6 +613,20 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: Select and confirm to add series
   - AC: Shows API key warning if not configured
   - AC: Handles existing series conflict
+- [ ] **Issue display enhancements**
+  - AC: Issue cards show cover images from cover service
+  - AC: Issue cards show special issue badges (Annual, One-Shot, etc.)
+  - AC: Issue cards show story arc tags
+  - AC: Sorting options (issue number, release date, status)
+  - AC: Filtering by status (owned, wanted, missing)
+  - AC: Bulk actions (mark as owned, mark as wanted, skip)
+- [ ] **Collection/Edition detail page**
+  - AC: Collection detail page showing metadata (title, type, ISBN, publisher)
+  - AC: List of contained issues with their series
+  - AC: Cover image for collection
+  - AC: Status indicator (have file / missing)
+  - AC: Link to series for each contained issue
+  - AC: API endpoint: GET /api/v1/editions/{id}/contents
 
 ### 9.10 ComicVine Conformance Tests
 - [ ] **API client tests**
