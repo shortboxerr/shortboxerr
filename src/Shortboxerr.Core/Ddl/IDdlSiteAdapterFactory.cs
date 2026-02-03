@@ -41,3 +41,5 @@ public interface IDdlSiteAdapterFactory
     bool IsRegistered(string siteType);
 }
 
+
+

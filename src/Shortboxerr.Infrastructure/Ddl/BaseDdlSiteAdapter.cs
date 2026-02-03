@@ -157,3 +157,5 @@ public abstract class BaseDdlSiteAdapter : IDdlSiteAdapter
     }
 }
 
+
+

@@ -1,3 +1,5 @@
+using Shortboxerr.Core.ComicVine;
+
 namespace Shortboxerr.Core.Entities;
 
 /// <summary>
@@ -61,6 +63,11 @@ public class Series
     /// Whether the series is monitored for new releases.
     /// </summary>
     public bool Monitored { get; set; } = true;
+    
+    /// <summary>
+    /// Monitoring mode for automatic wanted list management.
+    /// </summary>
+    public SeriesMonitoringMode MonitoringMode { get; set; } = SeriesMonitoringMode.AllIssues;
     
     #region ComicVine Metadata
     

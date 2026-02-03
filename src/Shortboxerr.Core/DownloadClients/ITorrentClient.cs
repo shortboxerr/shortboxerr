@@ -412,3 +412,5 @@ public class TorrentClientSettings
     public bool RemoveFilesAfterImport { get; init; }
 }
 
+
+

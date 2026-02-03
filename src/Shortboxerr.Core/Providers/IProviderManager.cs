@@ -84,3 +84,5 @@ public interface IProviderManager
     Task<IReadOnlyList<IDownloadProvider>> GetDownloadClientsAsync(CancellationToken cancellationToken = default);
 }
 
+
+

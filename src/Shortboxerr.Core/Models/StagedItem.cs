@@ -107,3 +107,5 @@ public class ParsedComicInfo
     public List<string> Tags { get; set; } = new();
 }
 
+
+

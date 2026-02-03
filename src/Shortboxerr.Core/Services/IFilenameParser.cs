@@ -15,3 +15,5 @@ public interface IFilenameParser
     (ParsedComicInfo Info, int Confidence, bool IsCollection) Parse(string filename);
 }
 
+
+

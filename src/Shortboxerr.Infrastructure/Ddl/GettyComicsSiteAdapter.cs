@@ -288,3 +288,5 @@ public partial class GettyComicsSiteAdapter : BaseDdlSiteAdapter
     private static partial Regex DirectLinkRegex();
 }
 
+
+

@@ -43,7 +43,7 @@ public static class MetadataRefreshEndpoints
                 ? Results.Ok(result)
                 : Results.BadRequest(new { message = result.Error });
         })
-        .WithName("RefreshSeriesMetadata");
+        .WithName("MetadataRefreshSeries");
 
         // Refresh series issues only
         group.MapPost("/series/{seriesId:int}/issues/refresh", async (
@@ -102,7 +102,7 @@ public static class MetadataRefreshEndpoints
                 ? Results.Ok(result)
                 : Results.BadRequest(new { message = result.Error });
         })
-        .WithName("RefreshEditionMetadata");
+        .WithName("MetadataRefreshEdition");
 
         // Get refresh history for a series
         group.MapGet("/series/{seriesId:int}/history", async (

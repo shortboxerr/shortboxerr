@@ -4,11 +4,13 @@ using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Core.Ddl;
 using Shortboxerr.Core.Models;
 using Shortboxerr.Core.Providers;
+using Shortboxerr.Core.PullList;
 using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.ComicVine;
 using Shortboxerr.Infrastructure.Ddl;
 using Shortboxerr.Infrastructure.Persistence;
 using Shortboxerr.Infrastructure.Providers;
+using Shortboxerr.Infrastructure.PullList;
 using Shortboxerr.Infrastructure.Services;
 
 namespace Shortboxerr.Infrastructure;
@@ -55,6 +57,9 @@ public static class DependencyInjection
         // Cover service
         services.AddHttpClient("CoverDownload");
         services.AddScoped<ICoverService, CoverService>();
+
+        // Pull list service
+        services.AddScoped<IPullListService, PullListService>();
 
         // Settings (can be overridden via configuration)
         services.Configure<DecisionEngineSettings>(options =>

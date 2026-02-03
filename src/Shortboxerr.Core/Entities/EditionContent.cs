@@ -39,3 +39,5 @@ public class EditionContent
     public Series? Series { get; set; }
 }
 
+
+

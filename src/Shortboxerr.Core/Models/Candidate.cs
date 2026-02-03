@@ -196,3 +196,5 @@ public record ScoringFactor(string Name, int Points, string Reason);
 /// </summary>
 public record CheckResult(string CheckName, bool Passed, string Details);
 
+
+

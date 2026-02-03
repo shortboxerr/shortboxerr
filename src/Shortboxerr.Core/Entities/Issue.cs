@@ -63,6 +63,11 @@ public class Issue
     public bool HasFile { get; set; }
     
     /// <summary>
+    /// Issue status for pull list and acquisition tracking.
+    /// </summary>
+    public IssueStatus Status { get; set; } = IssueStatus.Wanted;
+    
+    /// <summary>
     /// Whether this issue is satisfied by a collected edition.
     /// </summary>
     public bool SatisfiedByEdition { get; set; }
@@ -120,3 +125,38 @@ public class Issue
     public ICollection<IssueStoryArc> StoryArcs { get; set; } = new List<IssueStoryArc>();
 }
 
+/// <summary>
+/// Status of an issue in the acquisition workflow.
+/// </summary>
+public enum IssueStatus
+{
+    /// <summary>
+    /// Issue is wanted and being searched for.
+    /// </summary>
+    Wanted = 0,
+    
+    /// <summary>
+    /// Issue has been downloaded/owned.
+    /// </summary>
+    Owned = 1,
+    
+    /// <summary>
+    /// Issue is being downloaded.
+    /// </summary>
+    Downloading = 2,
+    
+    /// <summary>
+    /// Issue was intentionally skipped by user.
+    /// </summary>
+    Skipped = 3,
+    
+    /// <summary>
+    /// Issue is missing but not being searched (low priority).
+    /// </summary>
+    Missing = 4,
+    
+    /// <summary>
+    /// Issue is in staging awaiting import.
+    /// </summary>
+    Staged = 5
+}

@@ -278,7 +278,12 @@ public enum SeriesMonitoringMode
     /// <summary>
     /// Only first issues (for new series discovery).
     /// </summary>
-    FirstIssue = 3
+    FirstIssue = 3,
+    
+    /// <summary>
+    /// Don't monitor this series at all.
+    /// </summary>
+    None = 4
 }
 
 #endregion

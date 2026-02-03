@@ -116,7 +116,7 @@ app.MapManualImportEndpoints();
 app.MapDecisionEngineEndpoints();
 app.MapProviderEndpoints();
 app.MapDdlImportEndpoints();
-app.MapMylar3ImportEndpoints();
+app.MapPullListEndpoints();
 app.MapSettingsEndpoints();
 app.MapComicVineEndpoints();
 
