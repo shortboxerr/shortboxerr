@@ -625,6 +625,12 @@ function ComicVineSettingsTab() {
     setIsTesting(true);
     setTestResult(null);
     try {
+      // If there's an unsaved key, save it first before testing
+      if (apiKey.trim()) {
+        await api.updateComicVineSettings({ apiKey: apiKey.trim() });
+        queryClient.invalidateQueries({ queryKey: ['comicvineSettings'] });
+        setApiKey('');
+      }
       const result = await api.testComicVineConnection();
       setTestResult(result);
     } catch (e) {
@@ -691,7 +697,7 @@ function ComicVineSettingsTab() {
               Save
             </button>
           </div>
-          {!settings?.hasApiKey && (
+          {!settings?.hasApiKey && !apiKey.trim() && (
             <div style={{ 
               marginTop: '8px',
               fontSize: '12px',
@@ -708,36 +714,38 @@ function ComicVineSettingsTab() {
               </a>
             </div>
           )}
+
+          {/* Test Connection - visible when API key is entered or saved */}
+          {(settings?.hasApiKey || apiKey.trim()) && (
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '12px' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={handleTestConnection}
+                disabled={isTesting}
+              >
+                {isTesting ? (
+                  <><div className="spinner" style={{ width: '14px', height: '14px' }} /> Testing...</>
+                ) : (
+                  <><Play size={16} /> Test Connection</>
+                )}
+              </button>
+              {testResult && (
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px',
+                  color: testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)',
+                  fontSize: '13px'
+                }}>
+                  {testResult.success ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                  {testResult.message}
+                  {testResult.latencyMs && <span style={{ color: 'var(--text-muted)' }}>({testResult.latencyMs}ms)</span>}
+                </div>
+              )}
+            </div>
+          )}
         </SettingsField>
 
-        {settings?.hasApiKey && (
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '16px' }}>
-            <button
-              className="btn btn-secondary"
-              onClick={handleTestConnection}
-              disabled={isTesting}
-            >
-              {isTesting ? (
-                <><div className="spinner" style={{ width: '14px', height: '14px' }} /> Testing...</>
-              ) : (
-                <><Play size={16} /> Test Connection</>
-              )}
-            </button>
-            {testResult && (
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '8px',
-                color: testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)',
-                fontSize: '13px'
-              }}>
-                {testResult.success ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                {testResult.message}
-                {testResult.latencyMs && <span style={{ color: 'var(--text-muted)' }}>({testResult.latencyMs}ms)</span>}
-              </div>
-            )}
-          </div>
-        )}
       </SettingsSection>
 
       {settings?.hasApiKey && (

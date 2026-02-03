@@ -395,8 +395,9 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: ComicVine tab in Settings page
   - AC: API key input field with description "Specify your own ComicVine API key here"
   - AC: No "Enable ComicVine" checkbox - presence of API key implies enabled
-  - AC: Link to get API key from comicvine.gamespot.com/api
-  - AC: Test connection button (only shown when API key is set)
+  - AC: Link to get API key from comicvine.gamespot.com/api (shown when no key configured)
+  - AC: Test Connection button - visible when API key is entered or saved
+  - AC: Test Connection saves unsaved key before testing (save + test in one action)
   - AC: Rate limit status display (requests used/remaining) - only shown when API key is set
   - AC: Cache duration, auto-match threshold, auto-refresh settings - only shown when API key is set
   - AC: User-friendly message when attempting actions that require ComicVine without API key
