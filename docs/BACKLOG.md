@@ -212,6 +212,10 @@ Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests sec
   - AC: Vite builds to API wwwroot folder
   - AC: API serves static files from wwwroot
   - AC: npm scripts: dev, build, preview
+- [x] **API response mapping** ✅ (Bug Fix)
+  - AC: API client correctly maps backend PagedResult format (records/totalRecords) to UI format (items/totalCount)
+  - AC: Series and Collections pages display data correctly instead of blank pages
+  - AC: Helper function toPagedResult() converts between API and UI formats
 
 ## EPIC 6: Settings Persistence & UI Enhancements
 - [x] **Theme persistence** ✅
