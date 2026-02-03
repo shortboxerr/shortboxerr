@@ -1,5 +1,56 @@
 # Worklog
 
+## Iteration 025 (2026-02-03)
+**EPIC 9.9: Collection/Edition Detail Page - COMPLETED**
+
+### Commits
+1. `feat: implement Collection/Edition detail page with contents`
+
+### Deliverables
+- ✅ EditionTitle Entity Enhancements:
+  - CoverImageUrl: cover image for edition
+  - ComicVineId: ComicVine ID when matched
+  - ComicVineUrl: link to ComicVine page
+- ✅ New DTOs:
+  - EditionDetailDto: full edition with contents array
+  - EditionContentDto: contained issue info with series
+- ✅ API Endpoints:
+  - GET /api/v1/editions/{id}/detail - full edition with contents
+  - GET /api/v1/editions/{id}/contents - just the contained issues
+- ✅ EditionDetailPage UI:
+  - Edition header with cover, metadata, status badge
+  - Type badge (TPB, Hardcover, Omnibus, etc.)
+  - Volume number, publisher, release date, page count, ISBN
+  - Overview text (truncated)
+  - ComicVine link when matched
+  - Contained issues section grouped by series
+  - Per-issue status (owned/missing) with mini covers
+  - Links to series detail pages
+- ✅ CollectionsPage Navigation:
+  - Clickable table rows navigate to detail page
+  - Improved edition type formatting
+  - Year extracted from release date
+
+### New/Modified Files
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Core/Entities/EditionTitle.cs` | Added cover/ComicVine fields |
+| `src/Shortboxerr.Api/Dtos/EditionDto.cs` | Added EditionDetailDto, EditionContentDto |
+| `src/Shortboxerr.Api/Endpoints/EditionEndpoints.cs` | Added detail and contents endpoints |
+| `ui/src/pages/EditionDetailPage.tsx` | New detail page component |
+| `ui/src/pages/CollectionsPage.tsx` | Clickable rows, type formatting |
+| `ui/src/api/client.ts` | EditionDetail, EditionContent interfaces |
+| `ui/src/App.tsx` | Added edition detail route |
+| `ui/src/App.css` | Edition detail page styles |
+| `src/Shortboxerr.Infrastructure/Persistence/Migrations/...AddEditionCoverAndComicVineFields.cs` | DB migration |
+
+### Notes
+- Contents grouped by series for better readability
+- Fallback placeholder for editions without cover images
+- Edition type displayed as friendly label (TPB, Hardcover, etc.)
+
+---
+
 ## Iteration 024 (2026-02-03)
 **EPIC 9.9: Issue Display Enhancements - COMPLETED**
 

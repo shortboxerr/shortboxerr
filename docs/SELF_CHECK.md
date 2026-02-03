@@ -1,78 +1,64 @@
 # Self-Check
 
-## Iteration 024 (2026-02-03)
-**EPIC 9.9: Issue Display Enhancements - COMPLETED**
+## Iteration 025 (2026-02-03)
+**EPIC 9.9: Collection/Edition Detail Page - COMPLETED**
 
 ### Checklist
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Vertical slice implemented | ✅ | Cover View, List View, sorting, filtering, badges |
-| Tests written | ✅ | Existing tests still passing (48 ComicVine-related) |
-| WORKLOG updated | ✅ | Iteration 024 documented |
-| BACKLOG updated | ✅ | EPIC 9.9 issue display marked complete |
+| Vertical slice implemented | ✅ | Full edition detail page with API and UI |
+| Tests written | ✅ | 7 edition endpoint tests passing |
+| WORKLOG updated | ✅ | Iteration 025 documented |
+| BACKLOG updated | ✅ | EPIC 9.9 collection detail marked complete |
 | Build succeeds | ✅ | No warnings, no errors |
-| All tests pass | ✅ | All related tests passing |
+| All tests pass | ✅ | All edition tests passing |
 | Commits at breakpoints | ✅ | Single commit for complete feature |
 
-### EPIC 9.9 Issue Display Status: COMPLETED
+### EPIC 9.9 Collection/Edition Detail Status: COMPLETED
 
 #### Implemented Features
-1. **Cover View**
-   - Grid layout with responsive columns (min 120px)
-   - Issue covers with status indicator overlays
-   - Status icons: check (owned), clock (wanted), book (edition), x (skipped)
-   - Special issue badges: star (Annual), zap (Special)
-   - Story arc tags (shows first 2, +N for more)
-   - Selection support with checkbox overlay
+1. **EditionTitle Entity Enhancements**
+   - CoverImageUrl: for edition cover images
+   - ComicVineId: ComicVine ID when matched
+   - ComicVineUrl: link to ComicVine page
 
-2. **List View**
-   - Sortable table columns
-   - Columns: checkbox, issue #, title, release date, status, tags, actions
-   - Status badges with icons and color coding
-   - Tag pills for Annual, Special, story arcs
-   - Row highlighting on selection
+2. **New DTOs**
+   - EditionDetailDto: extends EditionDto with contents array
+   - EditionContentDto: issue info, series link, cover, status
 
-3. **Sorting**
-   - Issue number (default, asc/desc)
-   - Release date (asc/desc)
-   - Title (asc/desc)
-   - Status (asc/desc)
-   - Sort direction toggle button
+3. **API Endpoints**
+   - GET /api/v1/editions/{id}/detail - full edition with all contents
+   - GET /api/v1/editions/{id}/contents - just the contained issues list
 
-4. **Filtering**
-   - All issues (default)
-   - Owned only
-   - Wanted only
-   - Missing only
-   - Skipped only
-   - Counts shown in dropdown
+4. **EditionDetailPage UI**
+   - Header section with cover image and metadata
+   - Edition type badge (TPB, Hardcover, Omnibus, etc.)
+   - Volume number, publisher, release date, page count
+   - ISBN display
+   - Status badge (Owned/Wanted)
+   - Overview/description text
+   - ComicVine external link
+   - Contained issues section
+   - Issues grouped by series
+   - Per-issue mini covers and status indicators
+   - Links to series detail pages
 
-5. **Bulk Selection**
-   - Click to select individual issues
-   - Visual feedback (border, checkbox)
-   - Selection count display
-   - Clear selection button
-   - Select all visible issues (list view header)
+5. **CollectionsPage Enhancements**
+   - Clickable table rows navigate to detail page
+   - Edition type formatted as friendly label
+   - Year extracted from release date
 
-6. **View Preference Persistence**
-   - `issueViewMode` added to UiSettings interface
-   - Saved via `updateUiSettings` API on toggle
-   - Restored from settings on page load
-   - Default: 'cover' view
-
-7. **Backend Enhancements**
-   - IssueDto: added isAnnual, isSpecial, specialType, storyArcs
-   - GetSeriesIssues: includes StoryArcs relationship
-   - Status sorting option added to API
+6. **Database Migration**
+   - Added CoverImageUrl, ComicVineId, ComicVineUrl columns
 
 ### Test Results
 
 ```
-Passed!  - Failed:     0, Passed:    48, Skipped:     0, Total:    48, Duration: 1 s
+Passed!  - Failed:     0, Passed:     7, Skipped:     0, Total:     7, Duration: 247 ms
 ```
 
-All SeriesMetadata, IssueMetadata, and Cover service tests passing.
+All edition endpoint tests passing.
 
 ### Build Status
 
@@ -86,14 +72,21 @@ Build succeeded.
 
 ```
 vite v7.3.1 building client environment for production...
-✓ 1777 modules transformed.
-✓ built in 2.08s
+✓ 1778 modules transformed.
+✓ built in 2.07s
 ```
 
 ### Next Steps
 
+EPIC 9.9 (ComicVine UI) is now COMPLETED with:
+- ✅ Settings page (API key, test connection)
+- ✅ Series detail integration
+- ✅ Search & match modal
+- ✅ Issue display enhancements
+- ✅ Collection/Edition detail page
+
 Ready for next EPIC:
-- **EPIC 9.9: Collection/Edition detail page** - Show collection metadata and contents
 - **EPIC 9.5: Collection/TPB Metadata** - ComicVine integration for collections
 - **EPIC 9.6: Auto-Matching & Import Integration** - Auto-match on file import
 - **EPIC 9.7: Metadata Refresh** - Scheduled and manual refresh
+- **EPIC 9.10: ComicVine Conformance Tests** - Mock tests, golden fixtures

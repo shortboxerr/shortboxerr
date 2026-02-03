@@ -623,13 +623,14 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: Filtering by status (owned, wanted, missing, all, skipped) ✅
   - AC: Bulk selection support (mark as owned, mark as wanted, skip - UI present, handlers deferred) ✅
   - AC: Persist view preference (cover/list) in user settings ✅
-- [ ] **Collection/Edition detail page**
-  - AC: Collection detail page showing metadata (title, type, ISBN, publisher)
-  - AC: List of contained issues with their series
-  - AC: Cover image for collection
-  - AC: Status indicator (have file / missing)
-  - AC: Link to series for each contained issue
-  - AC: API endpoint: GET /api/v1/editions/{id}/contents
+- [x] **Collection/Edition detail page** ✅
+  - AC: Collection detail page showing metadata (title, type, ISBN, publisher) ✅
+  - AC: List of contained issues with their series ✅
+  - AC: Cover image for collection ✅
+  - AC: Status indicator (have file / missing) ✅
+  - AC: Link to series for each contained issue ✅
+  - AC: API endpoint: GET /api/v1/editions/{id}/detail ✅
+  - AC: API endpoint: GET /api/v1/editions/{id}/contents ✅
 
 ### 9.10 ComicVine Conformance Tests
 - [ ] **API client tests**
