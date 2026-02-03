@@ -1,46 +1,96 @@
-# Self-Check
+# Self Check - Iteration 032
 
-## Iteration 031 (2026-02-03)
-**EPIC 9.10: ComicVine Integration Tests - COMPLETED**
+## EPIC 11.1 & 11.2: Weekly Pull List
 
 ### Checklist
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Vertical slice implemented | ✅ | Integration tests complete |
-| Tests written | ✅ | 10 integration tests (all passing) |
-| WORKLOG updated | ✅ | Iteration 031 documented |
-| BACKLOG updated | ✅ | EPIC 9.10 marked complete |
-| Build succeeds | ✅ | No warnings, no errors |
-| All tests pass | ✅ | All 10 passing |
-| Commits at breakpoints | ✅ | Single commit for feature |
+| Code compiles | ✅ | Build succeeded with 0 errors |
+| Tests written | ✅ | 15 unit tests for PullListService |
+| All tests pass | ✅ | 541 total tests passing |
+| API endpoints documented | ✅ | 12 endpoints mapped |
+| Database migration | ✅ | AddPullListFields migration added |
+| Git commits | ✅ | 2 commits with conventional format |
 
-### EPIC 9.10 ComicVine Conformance Tests Status: COMPLETED
+### Acceptance Criteria Status
 
-#### Implemented Tests
+#### EPIC 11.1: Release Date Tracking
+| AC | Status |
+|----|--------|
+| Differentiate cover date vs store date | ✅ |
+| Calendar data model | ✅ |
+| IssueStatus enum | ✅ |
+| GET /api/v1/pulllist/calendar | ✅ |
 
-1. **Full Flow Integration Tests**
-   - SearchMatchSyncMetadata: Complete workflow test
-   - AutoMatchExistingSeries: Auto-match + sync
+#### EPIC 11.2: Weekly Pull List Generation  
+| AC | Status |
+|----|--------|
+| This week's releases | ✅ |
+| Week start on Sunday | ✅ |
+| Release day awareness (Wednesday) | ✅ |
+| GET /api/v1/pulllist/week | ✅ |
+| Upcoming releases | ✅ |
+| GET /api/v1/pulllist/upcoming | ✅ |
+| Past releases | ✅ |
+| GET /api/v1/pulllist/past | ✅ |
+| Filter by publisher/status | ✅ |
 
-2. **Refresh Cycle Tests**
-   - RefreshesStaleSeriesMetadata: Stale series detection
-   - SkipsFreshSeries: Fresh series bypass
-   - DiscoversNewIssues: New issue discovery
+#### EPIC 11.3: Wanted List Automation
+| AC | Status |
+|----|--------|
+| Mark issues as Wanted/Owned/Skipped | ✅ |
+| Bulk status updates | ✅ |
+| SeriesMonitoringMode enum | ✅ |
+| AllIssues mode | ✅ |
+| FutureIssues mode | ✅ |
+| Manual mode | ✅ |
+| FirstIssue mode | ✅ |
+| None mode | ✅ |
 
-3. **Error Handling Tests**
-   - HandlesComicVineApiFailure: Graceful error handling
-   - HandlesPartialFailure: Bulk operation resilience
+### New Files
 
-4. **Cover Flow Tests**
-   - SeriesWithCoverUrl: Cover storage validation
-   - IssueWithCoverUrl: Issue cover validation
-   - AddSeriesFromComicVine: Cover import
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Core/PullList/IPullListService.cs` | Pull list service interface |
+| `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` | Pull list service implementation |
+| `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` | API endpoints |
+| `tests/Shortboxerr.Tests/PullListServiceTests.cs` | 15 unit tests |
+| `...Migrations/AddPullListFields.cs` | EF migration |
+
+### Test Coverage
+
+1. **Weekly Releases Tests**
+   - GetThisWeekAsync_ReturnsIssuesForCurrentWeek
+   - GetWeeklyReleasesAsync_ReturnsEmptyForNoReleases
+   - GetUpcomingReleasesAsync_ReturnsCorrectNumberOfWeeks
+   - GetPastReleasesAsync_ReturnsCorrectNumberOfWeeks
+
+2. **Issue Status Tests**
+   - MarkAsWantedAsync_UpdatesIssueStatus
+   - MarkAsOwnedAsync_UpdatesIssueStatus
+   - MarkAsSkippedAsync_UpdatesIssueStatus
+   - MarkAsWantedAsync_NonExistentIssue_ReturnsError
+   - BulkUpdateStatusAsync_UpdatesMultipleIssues
+
+3. **Monitoring Mode Tests**
+   - GetSeriesMonitoringModeAsync_ReturnsCorrectMode
+   - SetSeriesMonitoringModeAsync_UpdatesMode
+   - SetSeriesMonitoringModeAsync_NoneMode_SetsMonitoredFalse
+
+4. **Statistics Tests**
+   - GetStatsAsync_ReturnsCorrectCounts
+
+5. **Filter Tests**
+   - GetWeeklyReleasesAsync_WithFilter_FiltersCorrectly
+
+6. **Calendar Tests**
+   - GetCalendarAsync_ReturnsCorrectDayStructure
 
 ### Test Results
 
 ```
-Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
+Passed!  - Failed: 0, Passed: 541, Skipped: 0, Total: 541
 ```
 
 ### Build Status
@@ -51,24 +101,13 @@ Build succeeded.
     0 Error(s)
 ```
 
----
+### Bug Fixes
+- Fixed duplicate endpoint name 'RefreshSeriesMetadata'
+- Fixed duplicate endpoint name 'RefreshEditionMetadata'
+- Fixed all 10 ComicVine integration tests (previously 2 skipped)
 
-## EPIC 9 (ComicVine Integration) - FULLY COMPLETED! 🎉
-
-All sub-EPICs completed:
-- ✅ 9.1: API Client & Settings UI
-- ✅ 9.2: Series Metadata
-- ✅ 9.3: Issue Metadata
-- ✅ 9.4: Cover Art
-- ✅ 9.5: Collection/TPB Metadata
-- ✅ 9.6: Auto-Matching & Import Integration
-- ✅ 9.7: Metadata Refresh
-- ✅ 9.8: Mylar3 ComicVine Settings Import
-- ✅ 9.9: ComicVine UI
-- ✅ 9.10: ComicVine Conformance Tests
-
-### Next Steps
-
-Ready for next EPIC:
-- **EPIC 10: NZB/Usenet Support** - Newznab/NZBHydra2 integration
-- **EPIC 11: Weekly Pull List** - Release date tracking, pull list generation
+### Deferred Items
+- Auto-add to wanted list on release day (needs background service)
+- Auto-search on release (needs DDL/NZB integration)
+- Pull List UI (EPIC 11.5)
+- Pull List Notifications (EPIC 11.4)

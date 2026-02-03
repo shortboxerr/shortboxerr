@@ -1,5 +1,57 @@
 # Worklog
 
+## Iteration 032 (2026-02-03)
+**EPIC 11.1 & 11.2: Weekly Pull List - COMPLETED**
+
+### Commits
+1. `fix: enable all ComicVine integration tests (EPIC 9.10)`
+2. `feat: implement weekly pull list service (EPIC 11.1, 11.2)`
+
+### Deliverables
+- ✅ IPullListService interface with full pull list functionality
+- ✅ PullListService implementation with:
+  - Week boundary calculations (Sunday start)
+  - Release day awareness (Wednesday)
+  - Issue status management (Wanted, Owned, Skipped, etc.)
+  - Series monitoring modes
+  - Calendar generation
+  - Statistics
+- ✅ PullListEndpoints with 12 API endpoints
+- ✅ Entity enhancements:
+  - SeriesMonitoringMode enum (AllIssues, FutureIssues, Manual, FirstIssue, None)
+  - IssueStatus enum (Wanted, Owned, Downloading, Skipped, Missing, Staged)
+  - MonitoringMode field on Series entity
+  - Status field on Issue entity
+- ✅ EF migration: AddPullListFields
+- ✅ 15 unit tests for PullListService
+
+### API Endpoints
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/pulllist/week` | GET | This week's releases |
+| `/api/v1/pulllist/week/{date}` | GET | Releases for specific week |
+| `/api/v1/pulllist/upcoming` | GET | Upcoming releases (N weeks) |
+| `/api/v1/pulllist/past` | GET | Past releases (N weeks) |
+| `/api/v1/pulllist/calendar` | GET | Full calendar view |
+| `/api/v1/pulllist/issues/{id}/wanted` | POST | Mark issue as wanted |
+| `/api/v1/pulllist/issues/{id}/owned` | POST | Mark issue as owned |
+| `/api/v1/pulllist/issues/{id}/skipped` | POST | Mark issue as skipped |
+| `/api/v1/pulllist/issues/bulk` | POST | Bulk status update |
+| `/api/v1/pulllist/series/{id}/monitoring` | GET | Get monitoring mode |
+| `/api/v1/pulllist/series/{id}/monitoring` | PUT | Set monitoring mode |
+| `/api/v1/pulllist/stats` | GET | Pull list statistics |
+
+### Test Results
+```
+Passed!  - Failed: 0, Passed: 541, Skipped: 0, Total: 541
+```
+
+### Bug Fixes
+- Fixed duplicate endpoint names (RefreshSeriesMetadata, RefreshEditionMetadata)
+- Fixed all 10 ComicVine integration tests now passing
+
+---
+
 ## Iteration 031 (2026-02-03)
 **EPIC 9.10: ComicVine Integration Tests - COMPLETED**
 
