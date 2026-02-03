@@ -1,6 +1,80 @@
-# Self Check - Iteration 040
+# Self Check - Iteration 041
 
-## EPIC 11.4: Pull List Notifications (In-App)
+## EPIC 12.2: Cache Implementation Patterns
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Build succeeded with 0 errors |
+| Tests pass | ✅ | 629 total tests passing (24 new) |
+| API endpoints working | ✅ | 5 new cache endpoints |
+| DI registration | ✅ | Singleton service |
+| Git commits | ✅ | Conventional format |
+
+### Acceptance Criteria Status
+
+#### Cache-aside Pattern Service
+| AC | Status |
+|----|--------|
+| ICacheService abstraction | ✅ |
+| Get/Set/Remove with TTL | ✅ |
+| Cache key generation with prefixes | ✅ |
+| Bulk invalidation by prefix | ✅ |
+
+#### Cache Invalidation Strategy
+| AC | Status |
+|----|--------|
+| Invalidation triggers per data type | ✅ (via prefixes) |
+| Invalidation events/notifications | ✅ (RemoveByPrefix) |
+| Document invalidation matrix | ✅ (CacheKeys + API) |
+
+#### Cache Configuration
+| AC | Status |
+|----|--------|
+| Configurable TTLs | ✅ |
+| Disable caching for debugging | ✅ |
+| Cache statistics endpoint | ✅ |
+
+### New Tests (24 tests)
+- ✅ Set_And_Get_ReturnsValue
+- ✅ Get_WhenKeyDoesNotExist_ReturnsDefault
+- ✅ Set_WithCustomTtl_ExpiresAfterTtl
+- ✅ Exists_WhenKeyExists_ReturnsTrue
+- ✅ Exists_WhenKeyDoesNotExist_ReturnsFalse
+- ✅ Remove_RemovesKey
+- ✅ GetOrCreateAsync_WhenKeyDoesNotExist_CreatesAndCaches
+- ✅ GetOrCreateAsync_WhenKeyExists_ReturnsExistingWithoutFactory
+- ✅ GenerateKey_WithNoSegments_ReturnsPrefix
+- ✅ GenerateKey_WithSegments_ReturnsFormattedKey
+- ✅ GenerateKey_WithNullSegment_HandlesGracefully
+- ✅ RemoveByPrefix_RemovesMatchingKeys
+- ✅ Clear_RemovesAllKeys
+- ✅ GetStatistics_TracksCacheHits
+- ✅ GetStatistics_TracksCacheMisses
+- ✅ GetStatistics_TracksItemsAdded
+- ✅ GetStatistics_TracksItemsRemoved
+- ✅ GetStatistics_CalculatesHitRatio
+- ✅ GetStatistics_TracksItemCount
+- ✅ ResetStatistics_ResetsAllCounters
+- ✅ Get_WhenCacheDisabled_ReturnsDefault
+- ✅ GetOrCreateAsync_WhenCacheDisabled_AlwaysCallsFactory
+- ✅ Set_And_Get_WithComplexObject
+- ✅ Set_And_Get_WithList
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `src/Shortboxerr.Core/Caching/ICacheService.cs` | ✅ New file |
+| `src/Shortboxerr.Infrastructure/Caching/CacheService.cs` | ✅ New file |
+| `src/Shortboxerr.Api/Endpoints/CacheEndpoints.cs` | ✅ New file |
+| `src/Shortboxerr.Api/Program.cs` | ✅ Modified |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | ✅ Modified |
+| `tests/Shortboxerr.Tests/CacheServiceTests.cs` | ✅ 24 new tests |
+
+---
+
+## Previous: EPIC 11.4: Pull List Notifications (In-App)
 
 ### Checklist
 

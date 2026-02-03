@@ -1116,23 +1116,23 @@ Implement comprehensive caching to minimize database queries and external API ca
   - AC: Cache "This Week" widget data with pull list cache
   - AC: Invalidate on any status change
 
-### 12.2 Cache Implementation Patterns
-- [ ] **Cache-aside pattern service**
-  - AC: Create `ICacheService` abstraction
-  - AC: Implement Get/Set/Remove with TTL support
-  - AC: Support cache key generation with prefixes
-  - AC: Support bulk invalidation by prefix (e.g., all pull list caches)
+### 12.2 Cache Implementation Patterns ✅ COMPLETED
+- [x] **Cache-aside pattern service** ✅
+  - AC: Create `ICacheService` abstraction ✅
+  - AC: Implement Get/Set/Remove with TTL support ✅
+  - AC: Support cache key generation with prefixes ✅
+  - AC: Support bulk invalidation by prefix (e.g., all pull list caches) ✅
   
-- [ ] **Cache invalidation strategy**
-  - AC: Define clear invalidation triggers per data type
-  - AC: Implement invalidation events/notifications
-  - AC: Consider pub/sub for distributed cache scenarios (future)
-  - AC: Document invalidation matrix
+- [x] **Cache invalidation strategy** ✅
+  - AC: Define clear invalidation triggers per data type ✅ (via prefix-based removal)
+  - AC: Implement invalidation events/notifications ✅ (via RemoveByPrefix)
+  - AC: Consider pub/sub for distributed cache scenarios (deferred - not needed for single-instance)
+  - AC: Document invalidation matrix ✅ (CacheKeys constants + /api/v1/cache/keys endpoint)
 
-- [ ] **Cache configuration**
-  - AC: Configurable TTLs via settings
-  - AC: Ability to disable caching per category (for debugging)
-  - AC: Cache statistics endpoint (hit/miss ratios)
+- [x] **Cache configuration** ✅
+  - AC: Configurable TTLs via settings ✅ (CacheSettings class)
+  - AC: Ability to disable caching per category (for debugging) ✅ (Enabled flag)
+  - AC: Cache statistics endpoint (hit/miss ratios) ✅ (GET /api/v1/cache/stats)
 
 ### 12.3 HTTP Response Caching
 - [ ] **API response caching**

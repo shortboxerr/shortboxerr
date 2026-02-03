@@ -1,5 +1,80 @@
 # Worklog
 
+## Iteration 041 (2026-02-03)
+**EPIC 12.2: Cache Implementation Patterns - COMPLETED**
+
+### Commits
+1. `feat: implement cache service abstraction (EPIC 12.2)`
+
+### Deliverables
+
+#### ICacheService Interface
+- ✅ Core operations: Get, GetAsync, GetOrCreateAsync, Set, SetAsync, Remove, Exists
+- ✅ Key generation: GenerateKey with prefix and segments
+- ✅ Bulk operations: RemoveByPrefix, Clear
+- ✅ Statistics: GetStatistics, ResetStatistics
+
+#### CacheService Implementation
+- ✅ Wraps IMemoryCache with consistent API
+- ✅ Key tracking via ConcurrentDictionary for prefix-based invalidation
+- ✅ Statistics tracking with hit/miss counters
+- ✅ Eviction callback registration for statistics
+- ✅ Configurable via CacheSettings
+
+#### Cache Settings
+| Setting | Type | Default | Purpose |
+|---------|------|---------|---------|
+| `Enabled` | bool | true | Enable/disable caching |
+| `TrackStatistics` | bool | true | Track hit/miss statistics |
+| `DefaultTtl` | TimeSpan | 5 min | Default cache duration |
+| `PullListTtl` | TimeSpan | 5 min | Pull list queries |
+| `SeriesListTtl` | TimeSpan | 2 min | Series list queries |
+| `SeriesDetailTtl` | TimeSpan | 5 min | Series detail pages |
+| `DashboardStatsTtl` | TimeSpan | 1 min | Dashboard aggregates |
+| `ComicVineApiTtl` | TimeSpan | 30 min | ComicVine API responses |
+| `MaxItems` | int | 10000 | Maximum cache items |
+
+#### Well-Known Cache Keys (CacheKeys class)
+- `pulllist`, `pulllist:week`, `pulllist:upcoming`, `pulllist:past`, `pulllist:discovery`
+- `series`, `series:list`, `series:detail`
+- `issue`, `issue:list`
+- `dashboard`, `dashboard:stats`, `dashboard:thisweek`
+- `comicvine`, `comicvine:search`, `comicvine:volume`, `comicvine:issue`
+
+#### API Endpoints
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/cache/stats` | GET | Get cache statistics |
+| `/api/v1/cache/stats/reset` | POST | Reset statistics |
+| `/api/v1/cache` | DELETE | Clear all cache |
+| `/api/v1/cache/{prefix}` | DELETE | Clear by prefix |
+| `/api/v1/cache/keys` | GET | List known prefixes |
+
+### Unit Tests (24 new tests)
+- Core operations (7 tests)
+- Key generation (3 tests)
+- Bulk operations (2 tests)
+- Statistics tracking (7 tests)
+- Disabled cache behavior (2 tests)
+- Complex object handling (2 tests)
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Caching/ICacheService.cs` | New interface + models |
+| `src/Shortboxerr.Infrastructure/Caching/CacheService.cs` | New implementation |
+| `src/Shortboxerr.Api/Endpoints/CacheEndpoints.cs` | New endpoints |
+| `src/Shortboxerr.Api/Program.cs` | Register endpoints |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register service |
+| `tests/Shortboxerr.Tests/CacheServiceTests.cs` | 24 new tests |
+
+### Notes
+- `CacheService` registered as singleton (maintains statistics state)
+- Existing IMemoryCache usage in ComicVineClient/PullListService not migrated (can be done incrementally)
+- Foundation for EPIC 12.1 (data caching) and EPIC 12.4 (ComicVine optimization)
+
+---
+
 ## Iteration 040 (2026-02-03)
 **EPIC 11.4: Pull List Notifications (In-App) - COMPLETED**
 
