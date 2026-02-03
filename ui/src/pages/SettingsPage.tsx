@@ -598,6 +598,7 @@ function IndexersSettings() {
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
   const queryClient = useQueryClient();
 
+  // Only fetch RSS indexers (DDL indexers are built-in)
   const { data: indexers, isLoading, refetch } = useQuery({
     queryKey: ['indexers'],
     queryFn: api.getIndexers,
@@ -642,10 +643,32 @@ function IndexersSettings() {
 
   return (
     <>
-      <SettingsSection title="DDL Indexers">
+      <SettingsSection title="DDL Sites (Built-in)">
+        <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px' }}>
+          DDL indexers (GetComics, etc.) are built-in with Mylar3 parity. Configure site-specific settings below.
+        </p>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
+          gap: '12px' 
+        }}>
+          <DdlSiteCard 
+            name="GetComics.org" 
+            description="Primary DDL source for comics"
+            enabled={true}
+          />
+          <DdlSiteCard 
+            name="ReadComicOnline" 
+            description="Online comic reader with downloads"
+            enabled={false}
+          />
+        </div>
+      </SettingsSection>
+
+      <SettingsSection title="RSS Feeds">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
-            Configure DDL providers to discover and download comics.
+            Add custom RSS/Atom feeds to discover new releases.
           </p>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button className="btn btn-icon" onClick={() => refetch()} title="Refresh">
@@ -653,7 +676,7 @@ function IndexersSettings() {
             </button>
             <button className="btn btn-primary" onClick={handleAdd}>
               <Plus size={16} />
-              Add Indexer
+              Add RSS Feed
             </button>
           </div>
         </div>
@@ -663,9 +686,9 @@ function IndexersSettings() {
         ) : !indexers?.length ? (
           <div className="empty-state" style={{ padding: '40px 20px' }}>
             <Plug size={48} />
-            <div className="empty-state-title">No indexers configured</div>
+            <div className="empty-state-title">No RSS feeds configured</div>
             <div className="empty-state-text">
-              Add DDL providers like GetComics to discover new comics.
+              Add RSS feeds to discover new comic releases.
             </div>
           </div>
         ) : (
@@ -687,6 +710,31 @@ function IndexersSettings() {
         />
       )}
     </>
+  );
+}
+
+function DdlSiteCard({ name, description, enabled }: { name: string; description: string; enabled: boolean }) {
+  return (
+    <div style={{
+      padding: '16px',
+      background: 'var(--bg-tertiary)',
+      borderRadius: 'var(--radius-md)',
+      border: `1px solid ${enabled ? 'var(--accent-success)' : 'var(--border-color)'}`,
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+        <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{name}</div>
+        <div style={{ 
+          fontSize: '11px', 
+          padding: '2px 8px', 
+          borderRadius: 'var(--radius-sm)',
+          background: enabled ? 'rgba(92, 184, 92, 0.2)' : 'rgba(150, 150, 150, 0.2)',
+          color: enabled ? 'var(--accent-success)' : 'var(--text-muted)',
+        }}>
+          {enabled ? 'Enabled' : 'Disabled'}
+        </div>
+      </div>
+      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{description}</div>
+    </div>
   );
 }
 

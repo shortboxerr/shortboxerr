@@ -23,19 +23,19 @@ public class ProviderFactory : IProviderFactory
 
     private void RegisterBuiltInProviders()
     {
-        // Register DDL Provider (placeholder - will be implemented in 4.2)
-        RegisterProvider(
-            name: "DdlProvider",
-            displayName: "DDL (Direct Download)",
-            description: "Direct download link provider for comic sites (Mylar3-compatible)",
-            category: ProviderCategory.Indexer,
-            type: ProviderType.Ddl,
-            requiresBaseUrl: true,
-            requiresCredentials: false,
-            factory: def => new NullIndexerProvider(def)
-        );
+        // NOTE: DDL Indexers are NOT user-configurable providers.
+        // They are built-in services with Mylar3 parity, handling:
+        // - Site adapters (GetComics, etc.) - configured via DDL Settings
+        // - Release parsing, filtering, candidate normalization
+        // - Search aggregation across multiple sites
+        // See: IDdlSearchService, IDdlSiteAdapter, IDdlFilter registered as services in DI.
+        // 225+ unit tests cover DDL functionality.
 
-        // Register RSS Provider (placeholder - will be implemented in 4.6)
+        // NOTE: HTTP Download Client is also a built-in internal service.
+        // See: IHttpDownloadClient registered as a singleton service in DI.
+
+        // Register RSS Provider for external RSS/Atom feeds
+        // This IS user-configurable since users provide their own feed URLs
         RegisterProvider(
             name: "RssIndexer",
             displayName: "RSS Feed",
@@ -46,12 +46,6 @@ public class ProviderFactory : IProviderFactory
             requiresCredentials: false,
             factory: def => new NullIndexerProvider(def)
         );
-
-        // NOTE: HTTP Download Client is NOT a user-configurable provider.
-        // It is a built-in internal service used by DDL providers and RSS indexers.
-        // Similar to how Mylar3 handles DDL downloads internally without requiring
-        // users to "add" an HTTP download client.
-        // See: IHttpDownloadClient registered as a singleton service in DI.
     }
 
     private void RegisterProvider(

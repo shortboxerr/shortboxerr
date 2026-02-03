@@ -50,8 +50,11 @@
 - [x] **ProviderManager**: Registry for all configured providers
   - AC: CRUD operations, priority ordering, enable/disable
 
-### 4.2 DDL Provider (Mylar3-Compatible) - FIRST-CLASS PROVIDER TYPE
-The DDL (Direct Download) provider must achieve behavioral parity with Mylar3's DDL functionality.
+### 4.2 DDL Provider (Mylar3-Compatible) - BUILT-IN SERVICE
+The DDL (Direct Download) provider is a **built-in internal service** with Mylar3 parity.
+DDL indexers are NOT user-configurable providers - they are always available like in Mylar3.
+Site-specific configuration (credentials, rate limits) is done via DDL Settings, not by "adding" indexers.
+**225+ unit tests** cover DDL functionality.
 
 #### 4.2.1 DDL Discovery & Search ✅ COMPLETED
 - [x] **DDL site adapter interface (IDdlSiteAdapter)**
