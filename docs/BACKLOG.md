@@ -403,6 +403,9 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: User-friendly message when attempting actions that require ComicVine without API key
   - AC: API key persistence - key must persist across page refresh and app restart
   - AC: Display "Current key: {masked}" when API key is saved (e.g., "e218...201e")
+  - AC: API key input shows as plain text (not masked while entering)
+  - AC: Eye button to reveal/hide saved API key (fetches full key from backend)
+  - AC: Copy button appears when full key is revealed
 - [x] **Error handling**
   - AC: Invalid API key returns clear error message "Invalid ComicVine API key"
   - AC: HTML error responses detected and handled gracefully

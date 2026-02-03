@@ -17,6 +17,11 @@ public static class ComicVineEndpoints
             .WithOpenApi()
             .Produces<ComicVineSettingsResponse>(200);
 
+        group.MapGet("/settings/apikey", GetFullApiKey)
+            .WithName("GetComicVineFullApiKey")
+            .WithOpenApi()
+            .Produces<ComicVineApiKeyResponse>(200);
+
         group.MapPut("/settings", UpdateSettings)
             .WithName("UpdateComicVineSettings")
             .WithOpenApi()
@@ -87,6 +92,18 @@ public static class ComicVineEndpoints
             AutoMatchThreshold = settings?.AutoMatchThreshold ?? 85,
             AutoRefreshEnabled = settings?.AutoRefreshEnabled ?? true,
             RefreshIntervalDays = settings?.RefreshIntervalDays ?? 7
+        });
+    }
+
+    private static async Task<IResult> GetFullApiKey(
+        ISettingsService settingsService,
+        CancellationToken cancellationToken)
+    {
+        var settings = await settingsService.GetAsync<ComicVineSettings>("comicvine", new ComicVineSettings(), cancellationToken);
+        
+        return Results.Ok(new ComicVineApiKeyResponse
+        {
+            ApiKey = settings?.ApiKey ?? ""
         });
     }
 
@@ -249,6 +266,11 @@ public class ComicVineSettingsResponse
     public int AutoMatchThreshold { get; set; }
     public bool AutoRefreshEnabled { get; set; }
     public int RefreshIntervalDays { get; set; }
+}
+
+public class ComicVineApiKeyResponse
+{
+    public string ApiKey { get; set; } = "";
 }
 
 public class ComicVineSettingsRequest

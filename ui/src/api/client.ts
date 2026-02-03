@@ -667,6 +667,10 @@ export const api = {
     });
   },
 
+  getComicVineFullApiKey: async (): Promise<{ apiKey: string }> => {
+    return await fetchApi<{ apiKey: string }>('/api/v1/comicvine/settings/apikey');
+  },
+
   testComicVineConnection: async (): Promise<ComicVineTestResult> => {
     return await fetchApi<ComicVineTestResult>('/api/v1/comicvine/test', { method: 'POST' });
   },

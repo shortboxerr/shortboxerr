@@ -4,7 +4,7 @@ import {
   Settings, Server, Download, Shield, 
   FolderOpen, Plug, Save, Plus, Edit, Trash2, 
   CheckCircle, XCircle, AlertCircle, Play, GripVertical,
-  Copy, RefreshCw, X, Database, ExternalLink
+  Copy, RefreshCw, X, Database, ExternalLink, Eye, EyeOff
 } from 'lucide-react';
 import { api } from '../api/client';
 import type { Provider, CreateProviderRequest, ProviderTestResult, ComicVineTestResult } from '../api/client';
@@ -597,7 +597,9 @@ function GeneralSettings() {
 
 function ComicVineSettingsTab() {
   const [apiKey, setApiKey] = useState('');
-  const [showApiKey, setShowApiKey] = useState(false);
+  const [showSavedKey, setShowSavedKey] = useState(false);
+  const [fullApiKey, setFullApiKey] = useState<string | null>(null);
+  const [isLoadingFullKey, setIsLoadingFullKey] = useState(false);
   const [testResult, setTestResult] = useState<ComicVineTestResult | null>(null);
   const [isTesting, setIsTesting] = useState(false);
   const queryClient = useQueryClient();
@@ -618,6 +620,8 @@ function ComicVineSettingsTab() {
     mutationFn: api.updateComicVineSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comicvineSettings'] });
+      setFullApiKey(null); // Reset cached full key after save
+      setShowSavedKey(false);
     },
   });
 
@@ -666,28 +670,66 @@ function ComicVineSettingsTab() {
           {settings?.hasApiKey && (
             <div style={{ 
               marginBottom: '8px',
-              fontSize: '12px',
-              color: 'var(--text-muted)'
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
             }}>
-              Current key: <code style={{ fontFamily: 'var(--font-mono)' }}>{settings.maskedApiKey}</code>
+              <span style={{ color: 'var(--text-muted)' }}>Current key:</span>
+              <code style={{ 
+                fontFamily: 'var(--font-mono)', 
+                background: 'var(--bg-tertiary)',
+                padding: '4px 8px',
+                borderRadius: 'var(--radius-sm)',
+                minWidth: '150px'
+              }}>
+                {isLoadingFullKey ? '...' : (showSavedKey && fullApiKey ? fullApiKey : settings.maskedApiKey)}
+              </code>
+              <button
+                className="btn btn-icon"
+                onClick={async () => {
+                  if (!showSavedKey && !fullApiKey) {
+                    setIsLoadingFullKey(true);
+                    try {
+                      const result = await api.getComicVineFullApiKey();
+                      setFullApiKey(result.apiKey);
+                    } catch {
+                      // Fall back to masked key
+                    } finally {
+                      setIsLoadingFullKey(false);
+                    }
+                  }
+                  setShowSavedKey(!showSavedKey);
+                }}
+                title={showSavedKey ? 'Hide key' : 'Show key'}
+                style={{ padding: '4px' }}
+                disabled={isLoadingFullKey}
+              >
+                {showSavedKey ? <EyeOff size={14} /> : <Eye size={14} />}
+              </button>
+              {showSavedKey && fullApiKey && (
+                <button
+                  className="btn btn-icon"
+                  onClick={() => {
+                    navigator.clipboard.writeText(fullApiKey);
+                  }}
+                  title="Copy to clipboard"
+                  style={{ padding: '4px' }}
+                >
+                  <Copy size={14} />
+                </button>
+              )}
             </div>
           )}
           <div style={{ display: 'flex', gap: '8px' }}>
             <input
               className="input"
-              type={showApiKey ? 'text' : 'password'}
+              type="text"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder={settings?.hasApiKey ? 'Enter new key to replace' : 'Enter your ComicVine API key'}
               style={{ flex: 1 }}
             />
-            <button
-              className="btn btn-icon"
-              onClick={() => setShowApiKey(!showApiKey)}
-              title={showApiKey ? 'Hide' : 'Show'}
-            >
-              {showApiKey ? <XCircle size={16} /> : <CheckCircle size={16} />}
-            </button>
             <button
               className="btn btn-primary"
               onClick={handleSaveApiKey}
