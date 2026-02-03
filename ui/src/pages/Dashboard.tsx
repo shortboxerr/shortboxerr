@@ -1,11 +1,25 @@
 import { useQuery } from '@tanstack/react-query';
-import { Download, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { Download, AlertCircle, CheckCircle, Clock, Calendar, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import type { PullListIssue } from '../api/client';
 
 export function Dashboard() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: api.getSystemStatus,
+  });
+
+  const { data: thisWeek } = useQuery({
+    queryKey: ['pulllist', 'week', 'dashboard'],
+    queryFn: () => api.getPullListThisWeek(),
+    staleTime: 60000, // 1 minute
+  });
+
+  const { data: pullStats } = useQuery({
+    queryKey: ['pulllist', 'stats', 'dashboard'],
+    queryFn: () => api.getPullListStats(),
+    staleTime: 60000,
   });
 
   return (
@@ -65,6 +79,12 @@ export function Dashboard() {
               message={`${stats?.queuedDownloads ?? 0} pending`}
             />
           </div>
+        </div>
+        
+        {/* Pull List Widgets */}
+        <div className="dashboard-widgets" style={{ marginTop: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '24px' }}>
+          <ThisWeekWidget issues={thisWeek?.issues ?? []} stats={pullStats} />
+          <ComingSoonWidget stats={pullStats} />
         </div>
         
         <div style={{ marginTop: '24px' }}>
@@ -154,6 +174,134 @@ function RecentActivityList() {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+interface PullListStats {
+  totalMonitoredSeries: number;
+  totalWantedIssues: number;
+  totalOwnedIssues: number;
+  totalSkippedIssues: number;
+  releasingThisWeek: number;
+  releasingNextWeek: number;
+  missedIssues: number;
+  wantedByPublisher: Record<string, number>;
+}
+
+function ThisWeekWidget({ issues, stats }: { issues: PullListIssue[]; stats?: PullListStats }) {
+  const wantedIssues = issues.filter(i => i.status === 'Wanted').slice(0, 5);
+  const totalThisWeek = stats?.releasingThisWeek ?? issues.length;
+  const wantedCount = issues.filter(i => i.status === 'Wanted').length;
+  
+  return (
+    <div className="card dashboard-widget">
+      <div className="widget-header">
+        <div className="widget-title">
+          <Calendar size={18} className="widget-icon" />
+          This Week
+        </div>
+        <Link to="/pulllist" className="widget-link">
+          View All <ChevronRight size={14} />
+        </Link>
+      </div>
+      
+      <div className="widget-stats">
+        <div className="widget-stat">
+          <span className="widget-stat-value">{totalThisWeek}</span>
+          <span className="widget-stat-label">releasing</span>
+        </div>
+        <div className="widget-stat wanted">
+          <span className="widget-stat-value">{wantedCount}</span>
+          <span className="widget-stat-label">wanted</span>
+        </div>
+      </div>
+      
+      {wantedIssues.length > 0 ? (
+        <div className="widget-list">
+          {wantedIssues.map((issue) => (
+            <Link 
+              key={issue.issueId} 
+              to={`/series/${issue.seriesId}`}
+              className="widget-list-item"
+            >
+              {issue.coverImageUrl ? (
+                <img src={issue.coverImageUrl} alt="" className="widget-list-thumb" />
+              ) : (
+                <div className="widget-list-thumb-placeholder">
+                  <Calendar size={14} />
+                </div>
+              )}
+              <div className="widget-list-info">
+                <div className="widget-list-title">{issue.seriesTitle}</div>
+                <div className="widget-list-meta">#{issue.issueNumberText || issue.issueNumber}</div>
+              </div>
+              <span className="badge badge-warning">Wanted</span>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="widget-empty">
+          <Calendar size={24} />
+          <span>No wanted issues this week</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ComingSoonWidget({ stats }: { stats?: PullListStats }) {
+  const topPublishers = stats?.wantedByPublisher 
+    ? Object.entries(stats.wantedByPublisher)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 4)
+    : [];
+
+  return (
+    <div className="card dashboard-widget">
+      <div className="widget-header">
+        <div className="widget-title">
+          <Clock size={18} className="widget-icon" />
+          Coming Soon
+        </div>
+        <Link to="/pulllist?view=upcoming" className="widget-link">
+          View All <ChevronRight size={14} />
+        </Link>
+      </div>
+      
+      <div className="widget-stats">
+        <div className="widget-stat">
+          <span className="widget-stat-value">{stats?.releasingNextWeek ?? 0}</span>
+          <span className="widget-stat-label">next week</span>
+        </div>
+        <div className="widget-stat wanted">
+          <span className="widget-stat-value">{stats?.totalWantedIssues ?? 0}</span>
+          <span className="widget-stat-label">total wanted</span>
+        </div>
+        {(stats?.missedIssues ?? 0) > 0 && (
+          <div className="widget-stat missed">
+            <span className="widget-stat-value">{stats?.missedIssues}</span>
+            <span className="widget-stat-label">missed</span>
+          </div>
+        )}
+      </div>
+      
+      {topPublishers.length > 0 ? (
+        <div className="widget-breakdown">
+          <div className="widget-breakdown-title">Wanted by Publisher</div>
+          {topPublishers.map(([publisher, count]) => (
+            <div key={publisher} className="widget-breakdown-row">
+              <span className="widget-breakdown-label">{publisher}</span>
+              <span className="widget-breakdown-value">{count}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="widget-empty">
+          <Clock size={24} />
+          <span>No upcoming releases</span>
+        </div>
+      )}
     </div>
   );
 }
