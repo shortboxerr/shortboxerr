@@ -584,9 +584,10 @@ export function PullListPage() {
   };
 
   // Render discovery card for grid view
+  // Include weekDate in key to prevent React from confusing items across week transitions
   const renderDiscoveryCard = (issue: DiscoverableIssue) => (
     <div 
-      key={issue.comicVineIssueId} 
+      key={`${weekDate}-${issue.comicVineIssueId}`} 
       className={`pull-list-card ${issue.isInLibrary ? 'in-library' : 'discoverable'}`}
     >
       <div className="pull-list-card-cover">
@@ -685,8 +686,9 @@ export function PullListPage() {
   );
 
   // Render discovery row for list view
+  // Include weekDate in key to prevent React from confusing items across week transitions
   const renderDiscoveryRow = (issue: DiscoverableIssue) => (
-    <tr key={issue.comicVineIssueId} className={issue.isInLibrary ? 'in-library' : 'discoverable'}>
+    <tr key={`${weekDate}-${issue.comicVineIssueId}`} className={issue.isInLibrary ? 'in-library' : 'discoverable'}>
       <td>
         {issue.coverImageUrl ? (
           <img 
