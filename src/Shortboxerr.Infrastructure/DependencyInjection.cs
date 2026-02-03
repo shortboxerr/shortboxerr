@@ -44,6 +44,7 @@ public static class DependencyInjection
         services.AddHttpClient<IComicVineClient, ComicVineClient>();
         services.AddScoped<ISeriesMetadataService, SeriesMetadataService>();
         services.AddScoped<IIssueMetadataService, IssueMetadataService>();
+        services.AddScoped<IEditionMetadataService, EditionMetadataService>();
 
         // Cover service
         services.AddHttpClient("CoverDownload");
