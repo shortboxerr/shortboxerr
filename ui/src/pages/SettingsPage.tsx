@@ -739,23 +739,21 @@ function ComicVineSettingsTab() {
               Save
             </button>
           </div>
-          {!settings?.hasApiKey && !apiKey.trim() && (
-            <div style={{ 
-              marginTop: '8px',
-              fontSize: '12px',
-              color: 'var(--text-muted)'
-            }}>
-              Get your free API key from{' '}
-              <a 
-                href="https://comicvine.gamespot.com/api/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}
-              >
-                comicvine.gamespot.com/api <ExternalLink size={12} style={{ verticalAlign: 'middle' }} />
-              </a>
-            </div>
-          )}
+          <div style={{ 
+            marginTop: '8px',
+            fontSize: '12px',
+            color: 'var(--text-muted)'
+          }}>
+            Get your free API key from{' '}
+            <a 
+              href="https://comicvine.gamespot.com/api/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}
+            >
+              comicvine.gamespot.com/api <ExternalLink size={12} style={{ verticalAlign: 'middle' }} />
+            </a>
+          </div>
 
           {/* Test Connection - visible when API key is entered or saved */}
           {(settings?.hasApiKey || apiKey.trim()) && (
