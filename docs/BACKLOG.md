@@ -282,6 +282,23 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
   - AC: Handle multiple mirror options with priority
   - AC: Detect dead/expired links and skip
 
+#### 8.1.2 ReadComicOnline Adapter (Secondary)
+- [ ] **Determine homepage
+- [ ] **HTML scraping for ReadComicOnline**
+  - AC: Parse search results page for release links
+  - AC: Extract all download host links from release pages
+  - AC: Handle pagination for search results
+  - AC: Parse release details (title, size, date posted, tags)
+- [ ] **ReadComicOnline search integration**
+  - AC: Search by series name, issue number
+  - AC: Search by keyword/tag/category
+  - AC: RSS feed polling for new releases (/feed/)
+  - AC: Category browsing (DC, Marvel, Image, etc.)
+- [ ] **ReadComicOnline link resolution**
+  - AC: Follow redirects to actual download URLs
+  - AC: Handle multiple mirror options with priority
+  - AC: Detect dead/expired links and skip
+
 ### 8.2 Download Host Resolvers (File Acquisition)
 
 #### 8.2.1 Direct/Main Server Downloads
