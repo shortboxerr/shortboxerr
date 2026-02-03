@@ -1,69 +1,61 @@
 # Self-Check
 
-## Iteration 027 (2026-02-03)
-**EPIC 9.5: Collection/TPB Metadata - COMPLETED**
+## Iteration 028 (2026-02-03)
+**EPIC 9.6: Auto-Matching & Import Integration - COMPLETED**
 
 ### Checklist
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Vertical slice implemented | ✅ | Full edition metadata service |
-| Tests written | ✅ | 15 unit tests for EditionMetadataService |
-| WORKLOG updated | ✅ | Iteration 027 documented |
-| BACKLOG updated | ✅ | EPIC 9.5 marked complete |
+| Vertical slice implemented | ✅ | Full auto-match service |
+| Tests written | ✅ | 13 unit tests for AutoMatchService |
+| WORKLOG updated | ✅ | Iteration 028 documented |
+| BACKLOG updated | ✅ | EPIC 9.6 marked complete |
 | Build succeeds | ✅ | No warnings, no errors |
-| All tests pass | ✅ | 15 new tests passing |
+| All tests pass | ✅ | 13 new tests passing |
 | Commits at breakpoints | ✅ | Single commit for feature |
 
-### EPIC 9.5 Collection/TPB Metadata Status: COMPLETED
+### EPIC 9.6 Auto-Matching & Import Integration Status: COMPLETED
 
 #### Implemented Features
 
-1. **IEditionMetadataService Interface**
-   - SearchEditionsAsync: Search ComicVine for collected editions
-   - GetEditionByComicVineIdAsync: Get preview by volume ID
-   - MatchEditionAsync: Match local edition to ComicVine
-   - AutoMatchEditionAsync: Auto-match with confidence scoring
-   - UnmatchEditionAsync: Remove ComicVine match
-   - RefreshEditionMetadataAsync: Refresh from ComicVine
-   - SyncEditionContentsAsync: Sync contained issues
+1. **IAutoMatchService Interface**
+   - AutoMatchStagedItemAsync: Auto-match on import
+   - AutoMatchAllUnmatchedSeriesAsync: Bulk series matching
+   - AutoMatchAllUnmatchedEditionsAsync: Bulk edition matching  
+   - GetPendingMatchesAsync: Get matches requiring review
+   - AcceptPendingMatchAsync/RejectPendingMatchAsync: Resolve pending
+   - GetSettingsAsync: Get auto-match settings
 
-2. **Edition Type Detection**
-   - Omnibus detection (omnibus, omni)
-   - Absolute Edition detection
-   - Hardcover detection (hardcover, hc, deluxe)
-   - Compendium detection
-   - TPB detection (tpb, trade, paperback, vol.)
+2. **PendingMatch Entity**
+   - ItemType (Series/Edition)
+   - ItemId, ItemTitle (denormalized)
+   - CandidatesJson (serialized candidates)
+   - TopConfidenceScore
+   - Status (Pending/Accepted/Rejected)
+   - SelectedComicVineId (when accepted)
+   - CreatedAt, ResolvedAt timestamps
 
-3. **Confidence Scoring**
-   - Exact title match: +40
-   - Title starts with query: +25
-   - Title contains query: +15
-   - Alias match: +35
-   - Publisher match: +10
-   - Year exact match: +10
-   - Year close match: +5
-   - Edition type detected: +5
+3. **Auto-Match Logic**
+   - Check for existing local series/edition first
+   - Search ComicVine if no local match
+   - Compare confidence score against threshold
+   - Auto-match if above threshold, queue for review if below
+   - Track progress during bulk operations
 
-4. **Content Synchronization**
-   - Fetch issues from ComicVine volume
-   - Map to EditionContent entities
-   - Link to local issues when matched
-   - Track sort order
-
-5. **API Endpoints**
-   - GET /api/v1/editions/comicvine/search
-   - GET /api/v1/editions/comicvine/{volumeId}
-   - POST /api/v1/editions/{id}/match/{comicVineId}
-   - POST /api/v1/editions/{id}/auto-match
-   - DELETE /api/v1/editions/{id}/match
-   - POST /api/v1/editions/{id}/refresh
-   - POST /api/v1/editions/{id}/sync-contents
+4. **API Endpoints**
+   - GET /api/v1/auto-match/settings
+   - POST /api/v1/auto-match/series/bulk
+   - POST /api/v1/auto-match/editions/bulk
+   - GET /api/v1/auto-match/pending
+   - POST /api/v1/auto-match/pending/{id}/accept
+   - POST /api/v1/auto-match/pending/{id}/reject
+   - GET /api/v1/auto-match/stats
 
 ### Test Results
 
 ```
-Passed!  - Failed:     0, Passed:    15, Skipped:     0, Total:    15, Duration: 685 ms
+Passed!  - Failed:     0, Passed:    13, Skipped:     0, Total:    13, Duration: 180 ms
 ```
 
 All tests passing.
@@ -76,10 +68,13 @@ Build succeeded.
     0 Error(s)
 ```
 
+### Deferred Items
+
+- Match conflict resolution UI (frontend) - will implement when needed
+
 ### Next Steps
 
-EPIC 9.5 COMPLETED. Ready for next EPIC:
-- **EPIC 9.6: Auto-Matching & Import Integration** - Auto-match on file import
+EPIC 9.6 COMPLETED. Ready for next EPIC:
 - **EPIC 9.7: Metadata Refresh** - Scheduled and manual refresh
 - **EPIC 9.8: Mylar3 ComicVine Settings Import** - Import from Mylar3 config
 - **EPIC 10: NZB/Usenet Support** - Newznab/NZBHydra2 integration

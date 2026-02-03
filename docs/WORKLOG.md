@@ -1,5 +1,61 @@
 # Worklog
 
+## Iteration 028 (2026-02-03)
+**EPIC 9.6: Auto-Matching & Import Integration - COMPLETED**
+
+### Commits
+1. `feat: implement auto-matching and bulk matching service (EPIC 9.6)`
+
+### Deliverables
+- ✅ IAutoMatchService interface:
+  - AutoMatchStagedItemAsync: Auto-match on import
+  - AutoMatchAllUnmatchedSeriesAsync: Bulk series matching
+  - AutoMatchAllUnmatchedEditionsAsync: Bulk edition matching
+  - GetPendingMatchesAsync: Get matches requiring review
+  - AcceptPendingMatchAsync/RejectPendingMatchAsync: Resolve pending
+  - GetSettingsAsync: Get auto-match settings
+
+- ✅ PendingMatch entity for storing matches requiring review:
+  - ItemType (Series/Edition)
+  - ItemId, ItemTitle
+  - CandidatesJson (serialized match candidates)
+  - Status (Pending/Accepted/Rejected)
+
+- ✅ AutoMatchService implementation:
+  - Local series/edition lookup before ComicVine search
+  - Confidence-based auto-match vs manual review decision
+  - Progress reporting for bulk operations
+  - Collection vs single issue detection
+
+- ✅ API Endpoints:
+  - GET /api/v1/auto-match/settings
+  - POST /api/v1/auto-match/series/bulk
+  - POST /api/v1/auto-match/editions/bulk
+  - GET /api/v1/auto-match/pending
+  - POST /api/v1/auto-match/pending/{id}/accept
+  - POST /api/v1/auto-match/pending/{id}/reject
+  - GET /api/v1/auto-match/stats
+
+- ✅ 13 unit tests for AutoMatchService
+
+### New/Modified Files
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Core/ComicVine/IAutoMatchService.cs` | Interface + DTOs |
+| `src/Shortboxerr.Core/Entities/PendingMatch.cs` | Pending match entity |
+| `src/Shortboxerr.Infrastructure/ComicVine/AutoMatchService.cs` | Implementation |
+| `src/Shortboxerr.Api/Endpoints/AutoMatchEndpoints.cs` | API endpoints |
+| `...Migrations/AddPendingMatchEntity.cs` | DB migration |
+| `tests/Shortboxerr.Tests/AutoMatchServiceTests.cs` | 13 unit tests |
+
+### Notes
+- Auto-match uses configurable confidence threshold (default 85%)
+- Low-confidence matches queued for manual review
+- Bulk operations support progress reporting via IProgress<>
+- Match conflict resolution UI deferred to future iteration
+
+---
+
 ## Iteration 027 (2026-02-03)
 **EPIC 9.5: Collection/TPB Metadata - COMPLETED**
 
