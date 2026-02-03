@@ -540,17 +540,18 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: Tests for caching, fallback, download, statistics
 
 ### 9.5 Collection/TPB Metadata
-- [ ] **Volume/TPB search**
-  - AC: Search ComicVine for collected editions
-  - AC: Match TPB/HC/Omnibus to ComicVine volume entries
-  - AC: Handle editions that span multiple series
-- [ ] **Collection content mapping**
-  - AC: Fetch issues contained in collection
-  - AC: Map to EditionContent entities
-  - AC: Handle issue ranges (e.g., "collects #1-6")
-- [ ] **Collection cover art**
-  - AC: Fetch collection/TPB covers
-  - AC: Same caching rules as issue covers
+- [x] **Volume/TPB search** ✅
+  - AC: Search ComicVine for collected editions ✅
+  - AC: Match TPB/HC/Omnibus to ComicVine volume entries ✅
+  - AC: Handle editions that span multiple series ✅
+  - AC: Detect edition type from title (Omnibus, Absolute, HC, TPB) ✅
+- [x] **Collection content mapping** ✅
+  - AC: Fetch issues contained in collection ✅
+  - AC: Map to EditionContent entities ✅
+  - AC: Handle issue ranges (e.g., "collects #1-6") ✅
+- [x] **Collection cover art** ✅
+  - AC: Fetch collection/TPB covers ✅
+  - AC: Same caching rules as issue covers ✅ (via existing CoverService)
 
 ### 9.6 Auto-Matching & Import Integration
 - [ ] **Import auto-match**

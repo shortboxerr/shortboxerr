@@ -1,5 +1,56 @@
 # Worklog
 
+## Iteration 027 (2026-02-03)
+**EPIC 9.5: Collection/TPB Metadata - COMPLETED**
+
+### Commits
+1. `feat: implement Collection/TPB metadata service (EPIC 9.5)`
+
+### Deliverables
+- ✅ IEditionMetadataService interface:
+  - SearchEditionsAsync: Search ComicVine for collected editions
+  - GetEditionByComicVineIdAsync: Get preview by volume ID
+  - MatchEditionAsync: Match local edition to ComicVine
+  - AutoMatchEditionAsync: Auto-match with confidence scoring
+  - UnmatchEditionAsync: Remove ComicVine match
+  - RefreshEditionMetadataAsync: Refresh from ComicVine
+  - SyncEditionContentsAsync: Sync contained issues
+
+- ✅ EditionMetadataService implementation:
+  - Edition type detection (Omnibus, Absolute, Hardcover, Compendium, TPB)
+  - Confidence scoring with title matching
+  - Metadata sync from ComicVine volumes
+  - Content mapping for contained issues
+  - Title normalization for matching
+
+- ✅ API Endpoints:
+  - GET /api/v1/editions/comicvine/search
+  - GET /api/v1/editions/comicvine/{volumeId}
+  - POST /api/v1/editions/{id}/match/{comicVineId}
+  - POST /api/v1/editions/{id}/auto-match
+  - DELETE /api/v1/editions/{id}/match
+  - POST /api/v1/editions/{id}/refresh
+  - POST /api/v1/editions/{id}/sync-contents
+
+- ✅ 15 unit tests for EditionMetadataService
+
+### New/Modified Files
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Core/ComicVine/IEditionMetadataService.cs` | Interface + DTOs |
+| `src/Shortboxerr.Infrastructure/ComicVine/EditionMetadataService.cs` | Implementation |
+| `src/Shortboxerr.Api/Endpoints/EditionMetadataEndpoints.cs` | API endpoints |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Service registration |
+| `src/Shortboxerr.Api/Program.cs` | Endpoint registration |
+| `tests/Shortboxerr.Tests/EditionMetadataServiceTests.cs` | 15 unit tests |
+
+### Notes
+- Edition type detection uses regex patterns for Omnibus, Absolute, Hardcover, etc.
+- Content sync maps ComicVine issues to local EditionContent entities
+- Cover art handled by existing CoverService with edition support
+
+---
+
 ## Iteration 026 (2026-02-03)
 **EPIC 9.10: ComicVine Conformance Tests - COMPLETED**
 

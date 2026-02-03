@@ -1,73 +1,69 @@
 # Self-Check
 
-## Iteration 026 (2026-02-03)
-**EPIC 9.10: ComicVine Conformance Tests - COMPLETED**
+## Iteration 027 (2026-02-03)
+**EPIC 9.5: Collection/TPB Metadata - COMPLETED**
 
 ### Checklist
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Vertical slice implemented | ✅ | 34 tests for API client + matching |
-| Tests written | ✅ | ComicVineClientTests + SeriesMatchingAlgorithmTests |
-| WORKLOG updated | ✅ | Iteration 026 documented |
-| BACKLOG updated | ✅ | EPIC 9.10 marked mostly complete |
+| Vertical slice implemented | ✅ | Full edition metadata service |
+| Tests written | ✅ | 15 unit tests for EditionMetadataService |
+| WORKLOG updated | ✅ | Iteration 027 documented |
+| BACKLOG updated | ✅ | EPIC 9.5 marked complete |
 | Build succeeds | ✅ | No warnings, no errors |
-| All tests pass | ✅ | 34 new tests passing |
-| Commits at breakpoints | ✅ | Single commit for test suite |
+| All tests pass | ✅ | 15 new tests passing |
+| Commits at breakpoints | ✅ | Single commit for feature |
 
-### EPIC 9.10 ComicVine Conformance Tests Status: MOSTLY COMPLETE
+### EPIC 9.5 Collection/TPB Metadata Status: COMPLETED
 
-#### Implemented Tests
+#### Implemented Features
 
-**ComicVineClientTests (22 tests):**
-1. TestConnectionAsync_WithValidApiKey_ReturnsSuccess
-2. TestConnectionAsync_WithNoApiKey_ReturnsFailure
-3. TestConnectionAsync_WithInvalidApiKey_ReturnsError
-4. SearchVolumesAsync_WithValidQuery_ReturnsResults
-5. SearchVolumesAsync_WithNoResults_ReturnsEmptyList
-6. SearchVolumesAsync_WithEmptyQuery_ReturnsEmptyResults
-7. GetVolumeAsync_WithValidId_ReturnsVolume
-8. GetVolumeAsync_WithInvalidId_ReturnsNotFound
-9. GetIssueAsync_WithValidId_ReturnsIssue
-10. GetIssueAsync_WithDecimalIssueNumber_ParsesCorrectly
-11. GetVolumeIssuesAsync_WithValidVolumeId_ReturnsIssues
-12. ApiCall_With404Response_ThrowsHttpRequestException
-13. ApiCall_With500Response_ThrowsHttpRequestException
-14. ApiCall_WithNetworkError_ThrowsHttpRequestException
-15. ApiCall_WithRateLimitResponse_ThrowsHttpRequestException
-16. ApiCall_WithMalformedJson_ThrowsException
-17. GetRateLimitStatus_ReturnsValidStatus
-18. IsConfigured_AfterSuccessfulRequest_ReturnsTrue
-19. IsConfigured_BeforeAnyRequest_ReturnsFalse
-20. ParseVolumeResponse_GoldenTest_Batman2016
-21. ParseIssueResponse_GoldenTest_Batman1
-22. SearchVolumes_GoldenTest_BatmanResults
+1. **IEditionMetadataService Interface**
+   - SearchEditionsAsync: Search ComicVine for collected editions
+   - GetEditionByComicVineIdAsync: Get preview by volume ID
+   - MatchEditionAsync: Match local edition to ComicVine
+   - AutoMatchEditionAsync: Auto-match with confidence scoring
+   - UnmatchEditionAsync: Remove ComicVine match
+   - RefreshEditionMetadataAsync: Refresh from ComicVine
+   - SyncEditionContentsAsync: Sync contained issues
 
-**SeriesMatchingAlgorithmTests (12 tests):**
-1. Search_ExactTitleMatch_ReturnsHighConfidence
-2. Search_TitleStartsWithQuery_ReturnsMediumConfidence
-3. Search_TitleContainsQuery_ReturnsLowerConfidence
-4. Search_YearMatch_IncreasesConfidence
-5. Search_PublisherMatch_IncreasesConfidence
-6. Search_MultipleResults_SortedByConfidence
-7. Search_LargeIssueCount_IncreasesConfidence
-8. Search_SameNameDifferentYears_ReturnsAllWithoutYearFilter
-9. Search_WithYearFilter_FiltersResults
-10. AutoMatch_NonexistentSeries_ReturnsError
-11. AutoMatch_NoResults_ReturnsFailure
-12. AutoMatch_WithResults_ReturnsConfidenceScore
+2. **Edition Type Detection**
+   - Omnibus detection (omnibus, omni)
+   - Absolute Edition detection
+   - Hardcover detection (hardcover, hc, deluxe)
+   - Compendium detection
+   - TPB detection (tpb, trade, paperback, vol.)
 
-#### Deferred
-- Full integration tests (search → match → sync metadata)
-- Cover download and caching tests
-- Refresh cycle tests
+3. **Confidence Scoring**
+   - Exact title match: +40
+   - Title starts with query: +25
+   - Title contains query: +15
+   - Alias match: +35
+   - Publisher match: +10
+   - Year exact match: +10
+   - Year close match: +5
+   - Edition type detected: +5
 
-These require more complex infrastructure and are deferred for future iterations.
+4. **Content Synchronization**
+   - Fetch issues from ComicVine volume
+   - Map to EditionContent entities
+   - Link to local issues when matched
+   - Track sort order
+
+5. **API Endpoints**
+   - GET /api/v1/editions/comicvine/search
+   - GET /api/v1/editions/comicvine/{volumeId}
+   - POST /api/v1/editions/{id}/match/{comicVineId}
+   - POST /api/v1/editions/{id}/auto-match
+   - DELETE /api/v1/editions/{id}/match
+   - POST /api/v1/editions/{id}/refresh
+   - POST /api/v1/editions/{id}/sync-contents
 
 ### Test Results
 
 ```
-Passed!  - Failed:     0, Passed:    34, Skipped:     0, Total:    34, Duration: 690 ms
+Passed!  - Failed:     0, Passed:    15, Skipped:     0, Total:    15, Duration: 685 ms
 ```
 
 All tests passing.
@@ -82,9 +78,9 @@ Build succeeded.
 
 ### Next Steps
 
-EPIC 9.10 mostly complete. Ready for next EPIC:
-- **EPIC 9.5: Collection/TPB Metadata** - ComicVine integration for collections
+EPIC 9.5 COMPLETED. Ready for next EPIC:
 - **EPIC 9.6: Auto-Matching & Import Integration** - Auto-match on file import
 - **EPIC 9.7: Metadata Refresh** - Scheduled and manual refresh
+- **EPIC 9.8: Mylar3 ComicVine Settings Import** - Import from Mylar3 config
 - **EPIC 10: NZB/Usenet Support** - Newznab/NZBHydra2 integration
 - **EPIC 11: Weekly Pull List** - Release date tracking, pull list generation
