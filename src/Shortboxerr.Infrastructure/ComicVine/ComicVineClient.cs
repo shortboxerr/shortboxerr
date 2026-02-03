@@ -109,6 +109,15 @@ public class ComicVineClient : IComicVineClient
                 LatencyMs = (int)stopwatch.ElapsedMilliseconds
             };
         }
+        catch (ComicVineApiKeyInvalidException)
+        {
+            return new ComicVineTestResult
+            {
+                Success = false,
+                Message = "Invalid ComicVine API key. Please check your key and try again.",
+                LatencyMs = (int)stopwatch.ElapsedMilliseconds
+            };
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to test ComicVine connection");
@@ -502,9 +511,21 @@ public class ComicVineClient : IComicVineClient
                 throw new ComicVineRateLimitException("ComicVine rate limit exceeded");
             }
 
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+            
+            // Check if response is HTML (invalid API key or error page)
+            if (content.TrimStart().StartsWith("<"))
+            {
+                if (content.Contains("Invalid API Key", StringComparison.OrdinalIgnoreCase) ||
+                    response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    throw new ComicVineApiKeyInvalidException("Invalid ComicVine API key");
+                }
+                throw new InvalidOperationException("ComicVine returned an unexpected HTML response. Please verify your API key.");
+            }
+
             response.EnsureSuccessStatusCode();
 
-            var content = await response.Content.ReadAsStringAsync(cancellationToken);
             var result = JsonSerializer.Deserialize<T>(content, _jsonOptions);
 
             if (result == null)
@@ -917,5 +938,13 @@ internal class ComicVineApiImage
 public class ComicVineRateLimitException : Exception
 {
     public ComicVineRateLimitException(string message) : base(message) { }
+}
+
+/// <summary>
+/// Exception thrown when the ComicVine API key is invalid.
+/// </summary>
+public class ComicVineApiKeyInvalidException : Exception
+{
+    public ComicVineApiKeyInvalidException(string message) : base(message) { }
 }
 

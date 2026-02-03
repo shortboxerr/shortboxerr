@@ -401,6 +401,13 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: Rate limit status display (requests used/remaining) - only shown when API key is set
   - AC: Cache duration, auto-match threshold, auto-refresh settings - only shown when API key is set
   - AC: User-friendly message when attempting actions that require ComicVine without API key
+  - AC: API key persistence - key must persist across page refresh and app restart
+  - AC: Display "Current key: {masked}" when API key is saved (e.g., "e218...201e")
+- [x] **Error handling**
+  - AC: Invalid API key returns clear error message "Invalid ComicVine API key"
+  - AC: HTML error responses detected and handled gracefully
+  - AC: Rate limit exceeded returns user-friendly message
+  - AC: Network errors logged and returned with context
 - [x] **Tests**
   - AC: 12 unit tests for ComicVineClient
   - AC: Mock HttpMessageHandler for all API calls
