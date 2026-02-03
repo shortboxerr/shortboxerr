@@ -39,9 +39,10 @@ public static class DependencyInjection
         services.AddSingleton<IProviderFactory, ProviderFactory>();
         services.AddScoped<IProviderManager, ProviderManager>();
 
-        // ComicVine client
+        // ComicVine client and services
         services.AddMemoryCache();
         services.AddHttpClient<IComicVineClient, ComicVineClient>();
+        services.AddScoped<ISeriesMetadataService, SeriesMetadataService>();
 
         // Settings (can be overridden via configuration)
         services.Configure<DecisionEngineSettings>(options =>

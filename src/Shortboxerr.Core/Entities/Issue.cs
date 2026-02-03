@@ -18,6 +18,11 @@ public class Issue
     public decimal IssueNumber { get; set; }
     
     /// <summary>
+    /// Issue number as string (handles specials like "½", "Annual 1", etc.)
+    /// </summary>
+    public string? IssueNumberText { get; set; }
+    
+    /// <summary>
     /// Display title (e.g., "The Death of Gwen Stacy").
     /// </summary>
     public string? Title { get; set; }
@@ -26,6 +31,11 @@ public class Issue
     /// Cover date or release date.
     /// </summary>
     public DateTime? ReleaseDate { get; set; }
+    
+    /// <summary>
+    /// Store date (actual release date, different from cover date).
+    /// </summary>
+    public DateTime? StoreDate { get; set; }
     
     /// <summary>
     /// External ID from metadata provider.
@@ -56,6 +66,35 @@ public class Issue
     /// Whether this issue is satisfied by a collected edition.
     /// </summary>
     public bool SatisfiedByEdition { get; set; }
+    
+    #region ComicVine Metadata
+    
+    /// <summary>
+    /// ComicVine issue ID.
+    /// </summary>
+    public int? ComicVineId { get; set; }
+    
+    /// <summary>
+    /// Cover date from ComicVine (may differ from store date).
+    /// </summary>
+    public DateTime? CoverDate { get; set; }
+    
+    /// <summary>
+    /// URL to cover image.
+    /// </summary>
+    public string? CoverImageUrl { get; set; }
+    
+    /// <summary>
+    /// Link to ComicVine page.
+    /// </summary>
+    public string? ComicVineUrl { get; set; }
+    
+    /// <summary>
+    /// When metadata was last refreshed from ComicVine.
+    /// </summary>
+    public DateTime? MetadataLastRefreshed { get; set; }
+    
+    #endregion
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }

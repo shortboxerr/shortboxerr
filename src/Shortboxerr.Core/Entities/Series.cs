@@ -62,6 +62,50 @@ public class Series
     /// </summary>
     public bool Monitored { get; set; } = true;
     
+    #region ComicVine Metadata
+    
+    /// <summary>
+    /// ComicVine volume ID (integer for easier lookups).
+    /// </summary>
+    public int? ComicVineId { get; set; }
+    
+    /// <summary>
+    /// Alternate names/aliases from ComicVine (newline-separated).
+    /// </summary>
+    public string? Aliases { get; set; }
+    
+    /// <summary>
+    /// ComicVine publisher ID.
+    /// </summary>
+    public int? ComicVinePublisherId { get; set; }
+    
+    /// <summary>
+    /// Link to ComicVine page.
+    /// </summary>
+    public string? ComicVineUrl { get; set; }
+    
+    /// <summary>
+    /// URL to cover image (cached locally).
+    /// </summary>
+    public string? CoverImageUrl { get; set; }
+    
+    /// <summary>
+    /// Total issue count from ComicVine.
+    /// </summary>
+    public int? TotalIssueCount { get; set; }
+    
+    /// <summary>
+    /// When metadata was last refreshed from ComicVine.
+    /// </summary>
+    public DateTime? MetadataLastRefreshed { get; set; }
+    
+    /// <summary>
+    /// Date the series was last updated on ComicVine.
+    /// </summary>
+    public DateTime? ComicVineLastUpdated { get; set; }
+    
+    #endregion
+    
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
     

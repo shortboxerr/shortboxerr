@@ -45,8 +45,13 @@ public class ShortboxerrDbContext : DbContext
             entity.Property(e => e.ExternalId).HasMaxLength(128);
             entity.Property(e => e.ExternalSource).HasMaxLength(64);
             entity.Property(e => e.Overview).HasMaxLength(4096);
+            // ComicVine metadata
+            entity.Property(e => e.Aliases).HasMaxLength(2048);
+            entity.Property(e => e.ComicVineUrl).HasMaxLength(512);
+            entity.Property(e => e.CoverImageUrl).HasMaxLength(1024);
             entity.HasIndex(e => e.Title);
             entity.HasIndex(e => new { e.ExternalSource, e.ExternalId });
+            entity.HasIndex(e => e.ComicVineId);
         });
 
         // Issue
@@ -55,11 +60,16 @@ public class ShortboxerrDbContext : DbContext
             entity.ToTable("Issues");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.IssueNumber).HasPrecision(10, 2);
+            entity.Property(e => e.IssueNumberText).HasMaxLength(32);
             entity.Property(e => e.Title).HasMaxLength(512);
             entity.Property(e => e.ExternalId).HasMaxLength(128);
             entity.Property(e => e.ExternalSource).HasMaxLength(64);
             entity.Property(e => e.Overview).HasMaxLength(4096);
+            // ComicVine metadata
+            entity.Property(e => e.ComicVineUrl).HasMaxLength(512);
+            entity.Property(e => e.CoverImageUrl).HasMaxLength(1024);
             entity.HasIndex(e => new { e.SeriesId, e.IssueNumber });
+            entity.HasIndex(e => e.ComicVineId);
             entity.HasOne(e => e.Series)
                 .WithMany(s => s.Issues)
                 .HasForeignKey(e => e.SeriesId)
