@@ -50,6 +50,26 @@ interface Activity {
   timestamp: string;
 }
 
+// API response format for Series list
+interface ApiSeries {
+  id: number;
+  title: string;
+  sortTitle: string | null;
+  publisher: string | null;
+  startYear: number | null;
+  endYear: number | null;
+  status: number; // Enum: 0=Continuing, 1=Ended
+  path: string | null;
+  overview: string | null;
+  monitored: boolean;
+  issueCount: number;
+  issueFileCount: number;
+  editionCount: number;
+  comicVineId: number | null;
+  coverImageUrl: string | null;
+}
+
+// UI-friendly format for Series
 interface Series {
   id: number;
   title: string;
@@ -58,6 +78,25 @@ interface Series {
   status: string;
   issueCount: number;
   filesCount: number;
+  coverImageUrl: string | null;
+}
+
+// Map API series to UI series
+function toSeries(api: ApiSeries): Series {
+  const statusMap: Record<number, string> = {
+    0: 'Continuing',
+    1: 'Ended',
+  };
+  return {
+    id: api.id,
+    title: api.title,
+    year: api.startYear,
+    publisher: api.publisher,
+    status: statusMap[api.status] ?? 'Unknown',
+    issueCount: api.issueCount,
+    filesCount: api.issueFileCount,
+    coverImageUrl: api.coverImageUrl,
+  };
 }
 
 // Detailed series for detail page
@@ -469,8 +508,14 @@ export const api = {
     if (params.pageSize) query.set('pageSize', String(params.pageSize));
 
     try {
-      const response = await fetchApi<ApiPagedResult<Series>>(`/api/v1/series?${query}`);
-      return toPagedResult(response);
+      const response = await fetchApi<ApiPagedResult<ApiSeries>>(`/api/v1/series?${query}`);
+      return {
+        items: response.records.map(toSeries),
+        page: response.page,
+        pageSize: response.pageSize,
+        totalCount: response.totalRecords,
+        totalPages: response.totalPages,
+      };
     } catch {
       return { items: [], page: 1, pageSize: 50, totalCount: 0, totalPages: 0 };
     }
