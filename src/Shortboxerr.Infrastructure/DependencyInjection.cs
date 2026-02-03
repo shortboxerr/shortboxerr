@@ -47,6 +47,7 @@ public static class DependencyInjection
         services.AddScoped<IEditionMetadataService, EditionMetadataService>();
         services.AddScoped<IAutoMatchService, AutoMatchService>();
         services.AddScoped<IMetadataRefreshService, MetadataRefreshService>();
+        services.AddScoped<IMylar3ComicVineImporter, Mylar3ComicVineImporter>();
 
         // Background services
         services.AddHostedService<BackgroundServices.MetadataRefreshBackgroundService>();

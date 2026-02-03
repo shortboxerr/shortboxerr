@@ -111,6 +111,7 @@ app.MapEditionEndpoints();
 app.MapEditionMetadataEndpoints();
 app.MapAutoMatchEndpoints();
 app.MapMetadataRefreshEndpoints();
+app.MapMylar3ImportEndpoints();
 app.MapManualImportEndpoints();
 app.MapDecisionEngineEndpoints();
 app.MapProviderEndpoints();
