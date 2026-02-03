@@ -491,6 +491,37 @@ public class ComicVineSettings
     /// How often to refresh metadata in days.
     /// </summary>
     public int RefreshIntervalDays { get; set; } = 7;
+
+    #region Discovery Refresh Settings (Mylar3 Parity)
+
+    /// <summary>
+    /// Whether to enable automatic background refresh of ComicVine discovery data.
+    /// When enabled, release schedules are refreshed periodically even if the user
+    /// doesn't visit the UI (useful for automation like auto-add to wanted list).
+    /// </summary>
+    public bool DiscoveryRefreshEnabled { get; set; } = true;
+
+    /// <summary>
+    /// How often to refresh discovery data (in hours). Default: 4 hours (Mylar3 parity).
+    /// ComicVine typically updates release schedules weekly, but publishers may
+    /// adjust dates. 4 hours balances freshness with API rate limits.
+    /// </summary>
+    public int DiscoveryRefreshIntervalHours { get; set; } = 4;
+
+    /// <summary>
+    /// Hours during which discovery refresh is allowed.
+    /// Empty means all hours are allowed.
+    /// Example: [6, 7, 8, 12, 18] = 6am, 7am, 8am, 12pm, 6pm
+    /// </summary>
+    public List<int> DiscoveryRefreshAllowedHours { get; set; } = new();
+
+    /// <summary>
+    /// Number of weeks to pre-fetch in discovery refresh.
+    /// Default: 4 weeks (current + 3 future).
+    /// </summary>
+    public int DiscoveryRefreshWeeksAhead { get; set; } = 4;
+
+    #endregion
 }
 
 #endregion

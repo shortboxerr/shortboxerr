@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Core.Entities;
 using Shortboxerr.Core.PullList;
+using Shortboxerr.Core.Services;
+using Shortboxerr.Infrastructure;
 
 namespace Shortboxerr.Api.Endpoints;
 
@@ -454,6 +456,47 @@ public static class PullListEndpoints
         .Produces<List<WeeklyExportInfo>>(200);
 
         #endregion
+
+        #region Discovery Refresh
+
+        // POST /api/v1/pulllist/discovery/refresh - trigger manual discovery refresh
+        group.MapPost("/discovery/refresh", async (
+            [FromServices] Infrastructure.BackgroundServices.ComicVineRefreshBackgroundService refreshService,
+            CancellationToken cancellationToken) =>
+        {
+            await refreshService.TriggerRefreshAsync(cancellationToken);
+            return Results.Ok(new { Success = true, Message = "Discovery refresh triggered" });
+        })
+        .WithName("TriggerDiscoveryRefresh")
+        .WithDescription("Triggers a manual refresh of ComicVine discovery data")
+        .Produces<object>(200);
+
+        // GET /api/v1/pulllist/discovery/status - get discovery refresh status
+        group.MapGet("/discovery/status", async (
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var settings = await settingsService.GetAsync<ComicVineSettings>("comicvine", new(), cancellationToken) 
+                ?? new ComicVineSettings();
+            var lastRefresh = await settingsService.GetAsync<DateTime?>("comicvine_discovery_last_refresh", null, cancellationToken);
+            
+            return Results.Ok(new DiscoveryRefreshStatus
+            {
+                Enabled = settings.DiscoveryRefreshEnabled,
+                RefreshIntervalHours = settings.DiscoveryRefreshIntervalHours,
+                WeeksAhead = settings.DiscoveryRefreshWeeksAhead,
+                AllowedHours = settings.DiscoveryRefreshAllowedHours,
+                LastRefresh = lastRefresh,
+                NextRefreshEstimate = lastRefresh.HasValue 
+                    ? lastRefresh.Value.AddHours(settings.DiscoveryRefreshIntervalHours)
+                    : null
+            });
+        })
+        .WithName("GetDiscoveryRefreshStatus")
+        .WithDescription("Gets the status of ComicVine discovery refresh")
+        .Produces<DiscoveryRefreshStatus>(200);
+
+        #endregion
     }
 
     private static PullListFilter? BuildFilter(
@@ -492,5 +535,33 @@ public record AddSeriesFromDiscoveryRequest(
     int ComicVineVolumeId, 
     int? MarkIssueWantedComicVineId = null,
     SeriesMonitoringMode MonitoringMode = SeriesMonitoringMode.FutureIssues);
+
+#endregion
+
+#region Response DTOs
+
+/// <summary>
+/// Status of the ComicVine discovery refresh background service.
+/// </summary>
+public class DiscoveryRefreshStatus
+{
+    /// <summary>Whether automatic discovery refresh is enabled.</summary>
+    public bool Enabled { get; set; }
+    
+    /// <summary>Refresh interval in hours.</summary>
+    public int RefreshIntervalHours { get; set; }
+    
+    /// <summary>Number of weeks ahead to refresh.</summary>
+    public int WeeksAhead { get; set; }
+    
+    /// <summary>Hours during which refresh is allowed (empty = all hours).</summary>
+    public List<int> AllowedHours { get; set; } = new();
+    
+    /// <summary>When the last refresh occurred.</summary>
+    public DateTime? LastRefresh { get; set; }
+    
+    /// <summary>Estimated next refresh time (based on interval).</summary>
+    public DateTime? NextRefreshEstimate { get; set; }
+}
 
 #endregion
