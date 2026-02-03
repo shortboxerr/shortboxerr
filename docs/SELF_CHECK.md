@@ -1,71 +1,76 @@
 # Self-Check
 
-## Iteration 022 (2026-02-03)
-**EPIC 9.3: Issue Metadata - COMPLETED**
+## Iteration 023 (2026-02-03)
+**EPIC 9.4: Cover Art - COMPLETED**
 
 ### Checklist
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Vertical slice implemented | ✅ | Full issue metadata service with API endpoints |
-| Tests written | ✅ | 16 new unit tests, all passing |
-| WORKLOG updated | ✅ | Iteration 022 documented |
-| BACKLOG updated | ✅ | EPIC 9.3 marked complete |
+| Vertical slice implemented | ✅ | Full cover service with caching and API |
+| Tests written | ✅ | 17 new unit tests, all passing |
+| WORKLOG updated | ✅ | Iteration 023 documented |
+| BACKLOG updated | ✅ | EPIC 9.4 marked complete |
 | Build succeeds | ✅ | No warnings, no errors |
-| All tests pass | ✅ | 423 tests passing |
+| All tests pass | ✅ | 440 tests passing |
 | Commits at breakpoints | ✅ | Single commit for complete feature |
 
-### EPIC 9.3 Status: COMPLETED
+### EPIC 9.4 Status: COMPLETED
 
 #### Implemented Features
-1. **Issue Metadata Refresh**
-   - Individual issue refresh from ComicVine
-   - Bulk refresh all issues in series
-   - Metadata fields: title, description, cover date, store date, cover image
-   - Respects refresh interval setting (won't re-fetch within interval unless forced)
+1. **Cover Service Interface (ICoverService)**
+   - GetSeriesCoverAsync: get/download series cover
+   - GetIssueCoverAsync: get/download issue cover with fallback
+   - DownloadCoverAsync: download from any URL
+   - Cache management methods (clear series, issue, all)
+   - GetCacheStatsAsync: retrieve cache statistics
 
-2. **Story Arc Sync**
-   - IssueStoryArc entity for storing associations
-   - Sync adds new arcs and removes stale ones
-   - Stores ComicVine ID, name, and URL for each arc
+2. **CoverService Implementation**
+   - Disk-based caching in configurable directory
+   - Multiple sizes: thumb (35px), small (90px), medium (~400px), large (original)
+   - ComicVine URL rewriting for different sizes
+   - Concurrent download limiting via semaphore
+   - HTTP client factory for proper connection handling
+   - Fallback chain: issue cover → series cover → placeholder
 
-3. **Special Issue Detection**
-   - Automatic detection of annuals (Annual 1, Annual 2024, etc.)
-   - Detection of special types:
-     - One-Shot, Giant-Size, King-Size, 80-Page Giant, 100-Page
-     - Preview, Prologue, Epilogue, Finale
-     - Secret Files, Sourcebook, Handbook, Who's Who
-   - Negative issue numbers marked as Preview
+3. **Cover Caching**
+   - File-based caching by type/id/size
+   - Cache structure: `{cacheDir}/{type}/{entityId}/{size}.jpg`
+   - Cache statistics: count, size, dates
+   - Cache clearing: per-entity and global
 
-4. **Entity Enhancements**
-   - Issue: IsAnnual, IsSpecial, SpecialType fields
-   - IssueStoryArc: links issues to story arcs
-   - EF Core migration for new fields and table
+4. **Cover Fallbacks**
+   - Placeholder: minimal 1x1 gray PNG (67 bytes)
+   - Series cover used when issue cover unavailable
+   - Clear indication in result (IsFallback, IsPlaceholder)
 
 5. **API Endpoints**
-   - GET /api/v1/issues/comicvine/{id} - preview ComicVine issue
-   - POST /api/v1/issues/{id}/refresh - refresh issue metadata
-   - POST /api/v1/issues/{id}/story-arcs/sync - sync story arcs
-   - POST /api/v1/series/{id}/issues/refresh - bulk refresh
-   - POST /api/v1/series/{id}/issues/detect-specials - detect specials
-
-#### Deferred Items (Not required for Mylar3 parity)
-- Character/team appearances (complex, optional feature)
-- Variant cover detection (complex, optional feature)
+   - All endpoints return proper content types for images
+   - Size selection via query parameter
+   - Refresh endpoints clear cache before re-downloading
+   - Statistics endpoint for monitoring
 
 ### Test Results
 
 ```
-Passed!  - Failed:     0, Passed:   423, Skipped:     0, Total:   423, Duration: 1 s
+Passed!  - Failed:     0, Passed:   440, Skipped:     0, Total:   440, Duration: 1 s
 ```
 
-New tests:
-- IssueMetadataServiceTests (16 tests)
-  - GetIssueByComicVineIdAsync scenarios
-  - RefreshIssueMetadataAsync scenarios
-  - SyncIssueStoryArcsAsync scenarios
-  - DetectSpecialIssuesAsync scenarios
-  - Issue type detection theory tests
+New tests (17):
+- GetSeriesCoverAsync_WithNonExistentSeries_ReturnsNotFound
+- GetSeriesCoverAsync_WithNoCoverUrl_ReturnsPlaceholder
+- GetSeriesCoverAsync_WithCachedCover_ReturnsCachedFile
+- GetSeriesCoverAsync_WithValidUrl_DownloadsAndCaches
+- GetIssueCoverAsync_WithNonExistentIssue_ReturnsNotFound
+- GetIssueCoverAsync_WithNoCoverUrl_FallsBackToSeriesCover
+- GetIssueCoverAsync_WithNoCoverAnywhere_ReturnsPlaceholder
+- DownloadCoverAsync_WithEmptyUrl_ReturnsNotFound
+- DownloadCoverAsync_WithFailedDownload_ReturnsError
+- DownloadCoverAsync_WithInvalidContentType_ReturnsError
+- ClearSeriesCoverCacheAsync_DeletesCacheDirectory
+- GetCacheStatsAsync_ReturnsCorrectStatistics
+- ClearAllCacheAsync_RemovesAllCachedCovers
+- GetSeriesCoverAsync_RequestsCorrectSize (4 theory cases)
 
 ### Build Status
 
@@ -78,6 +83,6 @@ Build succeeded.
 ### Next Steps
 
 Ready for next EPIC:
-- **EPIC 9.4: Cover Art** - Download and cache cover images
 - **EPIC 9.5: Collection/TPB Metadata** - ComicVine integration for collections
 - **EPIC 9.6: Auto-Matching & Import Integration** - Auto-match on file import
+- **EPIC 9.7: Metadata Refresh** - Scheduled and manual refresh

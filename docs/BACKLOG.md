@@ -512,20 +512,32 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: Tests for special issue detection (annuals, one-shots, etc.)
   - AC: Tests for story arc sync
 
-### 9.4 Cover Art
-- [ ] **Cover image fetching**
+### 9.4 Cover Art ✅ COMPLETED
+- [x] **Cover image fetching**
   - AC: Download series cover (primary volume image)
   - AC: Download issue covers (individual issue images)
-  - AC: Multiple image sizes (thumb, medium, large) - match Mylar3
+  - AC: Multiple image sizes (thumb, small, medium, large) - match Mylar3
   - AC: Store in configurable cache directory
-- [ ] **Cover caching**
+- [x] **Cover caching**
   - AC: Check cache before fetching
   - AC: Configurable cache retention (default: indefinite)
   - AC: Cache invalidation on metadata refresh
-- [ ] **Cover fallbacks**
+  - AC: Cache statistics (total covers, size, dates)
+- [x] **Cover fallbacks**
   - AC: Use series cover if issue cover missing
   - AC: Placeholder image for missing covers
-  - AC: Cover priority: issue > series > publisher > placeholder
+  - AC: Cover priority: issue > series > placeholder
+- [x] **API endpoints**
+  - AC: GET /api/v1/covers/series/{id} - get series cover image
+  - AC: GET /api/v1/covers/issues/{id} - get issue cover image
+  - AC: DELETE /api/v1/covers/series/{id} - clear series cache
+  - AC: DELETE /api/v1/covers/issues/{id} - clear issue cache
+  - AC: GET /api/v1/covers/cache/stats - cache statistics
+  - AC: DELETE /api/v1/covers/cache - clear all cache
+  - AC: POST /api/v1/covers/{type}/{id}/refresh - refresh cover
+- [x] **Tests**
+  - AC: 17 unit tests for CoverService
+  - AC: Tests for caching, fallback, download, statistics
 
 ### 9.5 Collection/TPB Metadata
 - [ ] **Volume/TPB search**

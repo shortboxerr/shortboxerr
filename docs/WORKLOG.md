@@ -1,5 +1,76 @@
 # Worklog
 
+## Iteration 023 (2026-02-03)
+**EPIC 9.4: Cover Art - COMPLETED**
+
+### Commits
+1. `feat: add cover service with caching and fallback (EPIC 9.4)`
+
+### Deliverables
+- ✅ ICoverService Interface:
+  - GetSeriesCoverAsync: get series cover with caching
+  - GetIssueCoverAsync: get issue cover with fallback
+  - DownloadCoverAsync: download from URL
+  - ClearSeriesCoverCacheAsync: clear series cache
+  - ClearIssueCoverCacheAsync: clear issue cache
+  - GetCacheStatsAsync: cache statistics
+  - ClearAllCacheAsync: clear all covers
+- ✅ CoverService Implementation:
+  - Disk-based caching with configurable directory
+  - Multiple sizes: thumb, small, medium, large
+  - ComicVine URL size segment replacement
+  - Concurrent download limiting (semaphore)
+  - Fallback: issue → series → placeholder
+  - Placeholder PNG generation (1x1 gray pixel)
+- ✅ CoverSettings Configuration:
+  - CacheDirectory: where covers are stored
+  - RetentionDays: cache expiration (0 = indefinite)
+  - DefaultSize: default image size
+  - DownloadTimeoutSeconds: HTTP timeout
+  - MaxConcurrentDownloads: concurrency limit
+- ✅ API Endpoints:
+  - GET /api/v1/covers/series/{id} - returns image file
+  - GET /api/v1/covers/issues/{id} - returns image file
+  - DELETE /api/v1/covers/series/{id} - clears cache
+  - DELETE /api/v1/covers/issues/{id} - clears cache
+  - GET /api/v1/covers/cache/stats - statistics
+  - DELETE /api/v1/covers/cache - clear all
+  - POST /api/v1/covers/series/{id}/refresh - re-download
+  - POST /api/v1/covers/issues/{id}/refresh - re-download
+- ✅ 17 Unit Tests covering:
+  - Series cover retrieval (cached, downloaded, placeholder)
+  - Issue cover retrieval (cached, fallback, placeholder)
+  - Download success and failure scenarios
+  - Cache clearing and statistics
+  - Size-specific URL generation
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Core/Services/ICoverService.cs` | Interface, enums, DTOs |
+| `src/Shortboxerr.Infrastructure/Services/CoverService.cs` | Implementation |
+| `src/Shortboxerr.Api/Endpoints/CoverEndpoints.cs` | API endpoints |
+| `tests/Shortboxerr.Tests/CoverServiceTests.cs` | Unit tests |
+
+### Modified Files
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register CoverService |
+| `src/Shortboxerr.Api/Program.cs` | Map CoverEndpoints |
+
+### Test Results
+- 440 backend tests passing (17 new)
+
+### Cover Size Mapping
+| CoverSize | ComicVine URL Segment | Usage |
+|-----------|----------------------|-------|
+| Thumb | scale_avatar | Thumbnails, lists |
+| Small | scale_small | Grid views |
+| Medium | scale_medium | Detail pages |
+| Large | original | Full-size display |
+
+---
+
 ## Iteration 022 (2026-02-03)
 **EPIC 9.3: Issue Metadata - COMPLETED**
 
