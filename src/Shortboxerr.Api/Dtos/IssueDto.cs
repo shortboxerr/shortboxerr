@@ -25,6 +25,14 @@ public record IssueDto
     public string? ComicVineUrl { get; init; }
     public DateTime? MetadataLastRefreshed { get; init; }
     
+    // Special issue flags
+    public bool IsAnnual { get; init; }
+    public bool IsSpecial { get; init; }
+    public string? SpecialType { get; init; }
+    
+    // Story arcs
+    public List<string> StoryArcs { get; init; } = new();
+    
     // Computed display properties
     public string DisplayNumber => IssueNumberText ?? $"#{IssueNumber:0.##}";
     
@@ -48,7 +56,12 @@ public record IssueDto
         ComicVineId = issue.ComicVineId,
         CoverImageUrl = issue.CoverImageUrl,
         ComicVineUrl = issue.ComicVineUrl,
-        MetadataLastRefreshed = issue.MetadataLastRefreshed
+        MetadataLastRefreshed = issue.MetadataLastRefreshed,
+        // Special issue fields
+        IsAnnual = issue.IsAnnual,
+        IsSpecial = issue.IsSpecial,
+        SpecialType = issue.SpecialType,
+        StoryArcs = issue.StoryArcs?.Select(sa => sa.Name).ToList() ?? new List<string>()
     };
 }
 

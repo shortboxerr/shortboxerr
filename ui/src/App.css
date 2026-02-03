@@ -935,3 +935,353 @@ body {
   color: var(--text-muted);
   margin-top: 4px;
 }
+
+/* Issue Card Selection */
+.issue-card {
+  cursor: pointer;
+  position: relative;
+}
+
+.issue-card.selected {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(93, 156, 236, 0.3);
+}
+
+.issue-card-selected {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Issue Card Special Badges */
+.issue-card-badges {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  display: flex;
+  gap: 4px;
+}
+
+.issue-badge {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+
+.issue-badge-annual {
+  background: var(--accent-warning);
+  color: white;
+}
+
+.issue-badge-special {
+  background: var(--accent-info);
+  color: white;
+}
+
+/* Issue Card Story Arcs */
+.issue-card-arcs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.arc-tag {
+  padding: 2px 6px;
+  font-size: 10px;
+  background: rgba(93, 156, 236, 0.15);
+  color: var(--accent-primary);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+}
+
+.arc-tag-more {
+  background: var(--bg-active);
+  color: var(--text-muted);
+}
+
+/* Issues Toolbar */
+.issues-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.view-toggle {
+  display: flex;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.view-toggle .btn-icon {
+  border-radius: 0;
+  border: none;
+}
+
+.view-toggle .btn-icon.active {
+  background: var(--accent-primary);
+  color: white;
+}
+
+/* Filter & Sort Dropdowns */
+.filter-dropdown,
+.sort-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+}
+
+.filter-select,
+.sort-select {
+  padding: 6px 10px;
+  font-size: 13px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  cursor: pointer;
+  outline: none;
+}
+
+.filter-select:focus,
+.sort-select:focus {
+  border-color: var(--accent-primary);
+}
+
+/* Bulk Actions */
+.bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  padding: 6px 12px;
+  background: rgba(93, 156, 236, 0.1);
+  border-radius: var(--radius-md);
+}
+
+.selection-count {
+  font-size: 13px;
+  color: var(--accent-primary);
+  font-weight: 500;
+}
+
+/* Issues Table (List View) */
+.issues-table-wrapper {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.issues-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.issues-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.issues-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s;
+}
+
+.issues-table th.sortable:hover {
+  color: var(--text-primary);
+}
+
+.issues-table th.sortable svg {
+  display: inline-block;
+  margin-left: 4px;
+  vertical-align: middle;
+  opacity: 0.7;
+}
+
+.issues-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+
+.issues-table tr:last-child td {
+  border-bottom: none;
+}
+
+.issue-row {
+  transition: background 0.15s;
+}
+
+.issue-row:hover {
+  background: var(--bg-hover);
+}
+
+.issue-row.selected {
+  background: rgba(93, 156, 236, 0.1);
+}
+
+/* Table Columns */
+.col-checkbox {
+  width: 40px;
+  text-align: center;
+}
+
+.col-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.col-number {
+  width: 70px;
+}
+
+.issue-number {
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.col-title {
+  min-width: 200px;
+}
+
+.issue-title-cell {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.no-title {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.col-date {
+  width: 130px;
+  white-space: nowrap;
+}
+
+.col-status {
+  width: 110px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.status-owned {
+  background: rgba(92, 184, 92, 0.15);
+  color: var(--accent-success);
+}
+
+.status-wanted {
+  background: rgba(240, 173, 78, 0.15);
+  color: var(--accent-warning);
+}
+
+.status-edition {
+  background: rgba(91, 192, 222, 0.15);
+  color: var(--accent-info);
+}
+
+.status-skipped,
+.status-missing {
+  background: var(--bg-active);
+  color: var(--text-muted);
+}
+
+.col-tags {
+  min-width: 150px;
+}
+
+.issue-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tag {
+  padding: 2px 6px;
+  font-size: 10px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.tag-annual {
+  background: rgba(240, 173, 78, 0.2);
+  color: var(--accent-warning);
+}
+
+.tag-special {
+  background: rgba(91, 192, 222, 0.2);
+  color: var(--accent-info);
+}
+
+.tag-arc {
+  background: rgba(93, 156, 236, 0.15);
+  color: var(--accent-primary);
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tag-more {
+  background: var(--bg-active);
+  color: var(--text-muted);
+}
+
+.col-actions {
+  width: 60px;
+  text-align: center;
+}
+
+/* Small button variant */
+.btn-sm {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.btn-sm svg {
+  width: 14px;
+  height: 14px;
+}

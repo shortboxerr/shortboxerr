@@ -180,6 +180,11 @@ export interface Issue {
   coverImageUrl: string | null;
   comicVineUrl: string | null;
   metadataLastRefreshed: string | null;
+  // Special issue flags
+  isAnnual: boolean;
+  isSpecial: boolean;
+  specialType: string | null;
+  storyArcs: string[];
   // Computed
   displayNumber: string;
 }
@@ -306,6 +311,7 @@ export interface UiSettings {
   pageSize: number;
   showFileSizes: boolean;
   relativeTimestamps: boolean;
+  issueViewMode: 'cover' | 'list';
 }
 
 export interface GeneralSettings {
@@ -777,7 +783,7 @@ export const api = {
     try {
       return await fetchApi<UiSettings>('/api/v1/settings/ui');
     } catch {
-      return { theme: 'dark', pageSize: 50, showFileSizes: true, relativeTimestamps: true };
+      return { theme: 'dark', pageSize: 50, showFileSizes: true, relativeTimestamps: true, issueViewMode: 'cover' };
     }
   },
 

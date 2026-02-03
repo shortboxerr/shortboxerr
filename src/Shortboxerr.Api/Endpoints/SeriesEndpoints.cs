@@ -79,7 +79,9 @@ public static class SeriesEndpoints
             if (series is null)
                 return Results.NotFound(new { message = $"Series {id} not found" });
 
-            var query = db.Issues.Where(i => i.SeriesId == id);
+            var query = db.Issues
+                .Include(i => i.StoryArcs)
+                .Where(i => i.SeriesId == id);
 
             // Apply sorting
             query = (sortKey?.ToLowerInvariant(), sortDir?.ToLowerInvariant()) switch
@@ -90,6 +92,8 @@ public static class SeriesEndpoints
                 ("releasedate", _) => query.OrderBy(i => i.ReleaseDate ?? i.StoreDate),
                 ("title", "desc") => query.OrderByDescending(i => i.Title),
                 ("title", _) => query.OrderBy(i => i.Title),
+                ("status", "desc") => query.OrderByDescending(i => i.HasFile).ThenByDescending(i => i.Monitored),
+                ("status", _) => query.OrderBy(i => i.HasFile).ThenBy(i => i.Monitored),
                 _ => query.OrderBy(i => i.IssueNumber)
             };
 
