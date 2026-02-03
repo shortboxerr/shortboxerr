@@ -1,5 +1,78 @@
 # Worklog
 
+## Iteration 018 (2026-02-03)
+**EPIC 9.1: ComicVine API Client - COMPLETED**
+
+### Commits
+1. `feat: add ComicVine API client with rate limiting (EPIC 9.1)`
+2. `feat: add ComicVine settings UI (EPIC 9.1)`
+3. `test: add ComicVine client tests (EPIC 9.1)`
+
+### Deliverables
+- ✅ ComicVine API Client:
+  - IComicVineClient interface with full API methods
+  - ComicVineClient implementation with rate limiting (200 req/hour)
+  - Response caching via IMemoryCache
+  - HTML stripping for descriptions
+  - Alias parsing from newline-separated strings
+  - ComicVineRateLimitException for 429 responses
+- ✅ API Endpoints:
+  - GET/PUT /api/v1/comicvine/settings (configuration)
+  - POST /api/v1/comicvine/test (connection test)
+  - GET /api/v1/comicvine/ratelimit (rate limit status)
+  - GET /api/v1/comicvine/search/volumes (volume search)
+  - GET /api/v1/comicvine/search/issues (issue search)
+  - GET /api/v1/comicvine/volumes/{id} (volume details)
+  - GET /api/v1/comicvine/volumes/{id}/issues (volume issues list)
+  - GET /api/v1/comicvine/issues/{id} (issue details)
+  - GET /api/v1/comicvine/publishers/{id} (publisher details)
+- ✅ Settings UI:
+  - New ComicVine tab in Settings page
+  - API key input with show/hide toggle
+  - Test Connection button with latency display
+  - Rate limit status display (requests used/remaining/reset time)
+  - Cache duration dropdown (1h to 1 week)
+  - Auto-match threshold slider (50-100%)
+  - Auto-refresh toggle and interval setting
+  - External link to ComicVine API page
+- ✅ Tests (12 new):
+  - TestConnectionAsync_WithValidApiKey_ReturnsSuccess
+  - TestConnectionAsync_WithNoApiKey_ReturnsFailure
+  - TestConnectionAsync_WithInvalidApiKey_ReturnsError
+  - SearchVolumesAsync_WithValidQuery_ReturnsResults
+  - SearchVolumesAsync_WithNoApiKey_ReturnsError
+  - GetVolumeAsync_WithValidId_ReturnsVolume
+  - GetIssueAsync_WithValidId_ReturnsIssue
+  - GetVolumeIssuesAsync_WithValidVolumeId_ReturnsIssues
+  - GetPublisherAsync_WithValidId_ReturnsPublisher
+  - GetRateLimitStatus_ReturnsStatus
+  - SearchVolumesAsync_CachesResults
+  - TestConnectionAsync_WithRateLimitResponse_ThrowsRateLimitException
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Core/ComicVine/IComicVineClient.cs` | Interface and models |
+| `src/Shortboxerr.Infrastructure/ComicVine/ComicVineClient.cs` | Implementation |
+| `src/Shortboxerr.Api/Endpoints/ComicVineEndpoints.cs` | API endpoints |
+| `tests/Shortboxerr.Tests/ComicVineClientTests.cs` | Unit tests |
+
+### Modified Files
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register ComicVine client |
+| `src/Shortboxerr.Api/Program.cs` | Map ComicVine endpoints |
+| `ui/src/api/client.ts` | ComicVine API functions and types |
+| `ui/src/pages/SettingsPage.tsx` | ComicVine settings tab |
+
+### Notes
+- Rate limiting tracks requests per hour with automatic window reset
+- Caching prevents redundant API calls (1h for search, 24h for details, 7d for publishers)
+- Settings stored via ISettingsService with key "comicvine"
+- UI shows helpful information about getting an API key
+
+---
+
 ## Iteration 017 (2026-02-02)
 **EPIC 6: API Key Management - COMPLETED**
 

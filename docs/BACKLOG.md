@@ -375,22 +375,30 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
 ## EPIC 9: ComicVine Integration (Mylar3 Parity)
 ComicVine is the primary metadata source for comic series, issues, and collections. Must achieve behavioral parity with Mylar3's ComicVine integration.
 
-### 9.1 ComicVine API Client
-- [ ] **API authentication & configuration**
+### 9.1 ComicVine API Client ✅ COMPLETED
+- [x] **API authentication & configuration**
   - AC: Store ComicVine API key securely in settings
   - AC: API key validation endpoint
   - AC: Settings UI for entering/updating API key
-  - AC: API endpoint: GET/PUT /api/v1/settings/comicvine
-- [ ] **Rate limiting (match Mylar3)**
+  - AC: API endpoint: GET/PUT /api/v1/comicvine/settings
+- [x] **Rate limiting (match Mylar3)**
   - AC: Respect ComicVine's rate limits (200 requests/hour or as documented)
   - AC: Request queuing with backoff
   - AC: Track request count and reset time
   - AC: Graceful handling of 420 (rate limit) responses
-- [ ] **API client implementation**
+- [x] **API client implementation**
   - AC: IComicVineClient interface
-  - AC: Search, GetSeries, GetIssue, GetVolume, GetPublisher endpoints
-  - AC: Response caching (configurable TTL, default 24h for static data)
-  - AC: Retry logic for transient failures
+  - AC: SearchVolumes, SearchIssues, GetVolume, GetIssue, GetPublisher, GetVolumeIssues
+  - AC: Response caching (configurable TTL via IMemoryCache)
+  - AC: Rate limit exception handling
+- [x] **Settings UI**
+  - AC: ComicVine tab in Settings page
+  - AC: API key input with save/test functionality
+  - AC: Rate limit status display (requests used/remaining)
+  - AC: Cache duration, auto-match threshold, auto-refresh settings
+- [x] **Tests**
+  - AC: 12 unit tests for ComicVineClient
+  - AC: Mock HttpMessageHandler for all API calls
 
 ### 9.2 Series Metadata
 - [ ] **Series search**

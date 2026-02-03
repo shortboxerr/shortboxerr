@@ -1360,6 +1360,250 @@ Removes a setting. Returns 204 on success, 404 if not found.
 
 ---
 
+## ComicVine Integration
+
+The ComicVine integration provides metadata lookup for comic series, issues, and publishers. ComicVine API key required.
+
+### Get ComicVine Settings
+```
+GET /api/v1/comicvine/settings
+```
+Returns current ComicVine configuration.
+
+**Response (200 OK)**
+```json
+{
+  "enabled": true,
+  "hasApiKey": true,
+  "maskedApiKey": "abcd...wxyz",
+  "cacheTtlHours": 24,
+  "coverCacheDirectory": "/config/covers",
+  "autoMatchThreshold": 85,
+  "autoRefreshEnabled": true,
+  "refreshIntervalDays": 7
+}
+```
+
+### Update ComicVine Settings
+```
+PUT /api/v1/comicvine/settings
+Content-Type: application/json
+
+{
+  "apiKey": "your-comicvine-api-key",
+  "enabled": true,
+  "cacheTtlHours": 24,
+  "autoMatchThreshold": 85,
+  "autoRefreshEnabled": true,
+  "refreshIntervalDays": 7
+}
+```
+All fields are optional. Only provided fields will be updated.
+
+### Test ComicVine Connection
+```
+POST /api/v1/comicvine/test
+```
+Tests the ComicVine API connection using the configured API key.
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "message": "ComicVine connection successful",
+  "latencyMs": 245,
+  "apiVersion": "1.0"
+}
+```
+
+### Get Rate Limit Status
+```
+GET /api/v1/comicvine/ratelimit
+```
+Returns current ComicVine API rate limit status.
+
+**Response (200 OK)**
+```json
+{
+  "requestsUsed": 45,
+  "requestLimit": 200,
+  "windowResetTime": "2026-02-03T12:00:00Z",
+  "isRateLimited": false,
+  "timeUntilReset": "00:45:30"
+}
+```
+
+### Search Volumes (Series)
+```
+GET /api/v1/comicvine/search/volumes?q=Batman&page=1&limit=10
+```
+Searches ComicVine for volumes (series) by name.
+
+**Query Parameters:**
+- `q` (string, required): Search query
+- `page` (int, default: 1): Page number
+- `limit` (int, default: 10): Results per page
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "error": null,
+  "statusCode": 1,
+  "results": [
+    {
+      "id": 18166,
+      "name": "Batman",
+      "aliases": ["The Dark Knight", "Caped Crusader"],
+      "startYear": 2011,
+      "description": "The New 52 Batman series featuring...",
+      "deck": "The New 52 Batman series",
+      "publisher": { "id": 10, "name": "DC Comics" },
+      "issueCount": 52,
+      "image": {
+        "mediumUrl": "https://comicvine.gamespot.com/...",
+        "originalUrl": "https://comicvine.gamespot.com/..."
+      },
+      "siteDetailUrl": "https://comicvine.gamespot.com/batman/4050-18166/"
+    }
+  ],
+  "totalResults": 150,
+  "page": 1,
+  "limit": 10,
+  "numberOfPageResults": 10
+}
+```
+
+### Search Issues
+```
+GET /api/v1/comicvine/search/issues?q=Batman+Court+of+Owls&page=1&limit=10
+```
+Searches ComicVine for issues by name/description.
+
+### Get Volume Details
+```
+GET /api/v1/comicvine/volumes/{volumeId}
+```
+Returns detailed information about a specific volume (series).
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "error": null,
+  "statusCode": 1,
+  "data": {
+    "id": 18166,
+    "name": "Batman",
+    "aliases": ["The Dark Knight"],
+    "startYear": 2011,
+    "description": "The New 52 Batman series...",
+    "publisher": { "id": 10, "name": "DC Comics" },
+    "issueCount": 52,
+    "firstIssue": { "id": 324500, "name": "Court of Owls", "issueNumber": "1" },
+    "lastIssue": { "id": 484834, "name": "Superheavy", "issueNumber": "52" },
+    "image": { "mediumUrl": "...", "originalUrl": "..." },
+    "siteDetailUrl": "https://comicvine.gamespot.com/batman/4050-18166/",
+    "dateAdded": "2011-09-21T00:00:00Z",
+    "dateLastUpdated": "2024-01-15T00:00:00Z"
+  }
+}
+```
+
+### Get Volume Issues
+```
+GET /api/v1/comicvine/volumes/{volumeId}/issues?page=1&limit=100
+```
+Returns all issues for a specific volume, sorted by issue number.
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "results": [
+    {
+      "id": 324500,
+      "name": "Court of Owls",
+      "issueNumber": "1",
+      "coverDate": "2011-11-01",
+      "storeDate": "2011-09-21",
+      "image": { "mediumUrl": "..." }
+    },
+    {
+      "id": 324501,
+      "name": "Trust Fall",
+      "issueNumber": "2",
+      "coverDate": "2011-12-01",
+      "storeDate": "2011-10-19"
+    }
+  ],
+  "totalResults": 52,
+  "page": 1,
+  "limit": 100
+}
+```
+
+### Get Issue Details
+```
+GET /api/v1/comicvine/issues/{issueId}
+```
+Returns detailed information about a specific issue.
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 324500,
+    "name": "Court of Owls",
+    "issueNumber": "1",
+    "description": "Batman discovers a secret society...",
+    "coverDate": "2011-11-01",
+    "storeDate": "2011-09-21",
+    "volume": { "id": 18166, "name": "Batman" },
+    "image": { "mediumUrl": "...", "originalUrl": "..." },
+    "storyArcs": [
+      { "id": 55766, "name": "Night of the Owls" }
+    ],
+    "siteDetailUrl": "https://comicvine.gamespot.com/..."
+  }
+}
+```
+
+### Get Publisher Details
+```
+GET /api/v1/comicvine/publishers/{publisherId}
+```
+Returns detailed information about a publisher.
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 10,
+    "name": "DC Comics",
+    "aliases": ["Detective Comics", "DC"],
+    "description": "DC Comics is a major American comic book publisher...",
+    "image": { "mediumUrl": "..." },
+    "siteDetailUrl": "https://comicvine.gamespot.com/dc-comics/4010-10/"
+  }
+}
+```
+
+### ComicVine Error Codes
+| Status Code | Meaning |
+|-------------|---------|
+| 1 | OK - Success |
+| 100 | Invalid API Key |
+| 101 | Object Not Found |
+| 102 | URL Format Error |
+| 103 | JSON Parse Error |
+| 104 | Filter Error |
+| 105 | Subscriber Only Video |
+
+---
+
 ## API Key Management
 
 ### Get API Key (Masked)

@@ -1,47 +1,65 @@
-# Self-Check (Iteration 017)
+# Self-Check (Iteration 018)
 
 ## Checklist
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Vertical slice complete? | ✅ | API key backend + UI + tests |
-| Tests pass? | ✅ | 19 settings tests pass (5 new API key tests) |
+| Vertical slice complete? | ✅ | ComicVine API client + UI + tests |
+| Tests pass? | ✅ | 12 new ComicVine tests pass |
 | Build green? | ✅ | `dotnet build` succeeds |
 | UI builds? | ✅ | `npm run build` succeeds |
 | Docs updated? | ✅ | API.md, WORKLOG.md, BACKLOG.md |
 | Commits atomic? | ✅ | 4 logical commits |
-| No scope creep? | ✅ | Only API key management |
+| No scope creep? | ✅ | Only EPIC 9.1 ComicVine API Client |
 
-## EPIC 6 Status: COMPLETED ✅
+## EPIC 9.1 Status: COMPLETED ✅
 
-All items in EPIC 6 (Settings Persistence & UI Enhancements) are now complete:
+All items in EPIC 9.1 (ComicVine API Client) are now complete:
 
 | Task | Status |
 |------|--------|
-| Theme persistence | ✅ Completed (Iteration 016) |
-| General settings persistence | ✅ Completed (Iteration 016) |
-| API key management | ✅ Completed (Iteration 017) |
-| Naming format token helper | ✅ Completed (Iteration 016) |
-| Separate Download and Staging folders | ✅ Completed (Iteration 016) |
+| API authentication & configuration | ✅ Completed |
+| Rate limiting (match Mylar3) | ✅ Completed |
+| API client implementation | ✅ Completed |
+| Settings UI | ✅ Completed |
+| Tests | ✅ Completed |
 
-## Iteration 017 Deliverables
+## Iteration 018 Deliverables
 
-### API Key Management (EPIC 6)
-- ✅ Backend: ISettingsService extended with API key methods
-- ✅ Cryptographic key generation (`sk_live_{32 hex}`)
-- ✅ GET /api/v1/settings/apikey (masked)
-- ✅ GET /api/v1/settings/apikey/full (full key)
-- ✅ POST /api/v1/settings/apikey/regenerate
-- ✅ UI: SecuritySettings with show/hide, copy, regenerate
-- ✅ Confirmation dialog for regeneration
-- ✅ Creation date and last used tracking
-- ✅ 5 new integration tests
+### ComicVine API Client (EPIC 9.1)
+- ✅ IComicVineClient interface with full API methods
+- ✅ ComicVineClient implementation with:
+  - Rate limiting (200 req/hour, Mylar3 parity)
+  - Response caching via IMemoryCache
+  - Retry-safe HTTP requests
+  - HTML stripping for descriptions
+  - Alias parsing
+- ✅ API Endpoints:
+  - GET/PUT /api/v1/comicvine/settings
+  - POST /api/v1/comicvine/test
+  - GET /api/v1/comicvine/ratelimit
+  - GET /api/v1/comicvine/search/volumes
+  - GET /api/v1/comicvine/search/issues
+  - GET /api/v1/comicvine/volumes/{id}
+  - GET /api/v1/comicvine/volumes/{id}/issues
+  - GET /api/v1/comicvine/issues/{id}
+  - GET /api/v1/comicvine/publishers/{id}
+- ✅ Settings UI:
+  - ComicVine tab in Settings
+  - API key input with save/test
+  - Rate limit status display
+  - Cache duration setting
+  - Auto-match threshold slider
+  - Auto-refresh toggle and interval
+- ✅ 12 unit tests covering all client methods
 
 ## Test Summary
 ```
-Passed!  - Failed: 0, Passed: 19, Skipped: 0
+Passed!  - Failed: 0, Passed: 12, Skipped: 0
+(ComicVine tests only)
 ```
 
 ## Next Steps
-- EPIC 6 is complete
-- Proceed to EPIC 7 (Mylar3 Migration) or EPIC 8 (DDL Site Adapters)
+- EPIC 9.2: Series Metadata (search, matching, sync)
+- EPIC 9.3: Issue Metadata (issue list sync, details)
+- Or continue with other EPICs as prioritized
