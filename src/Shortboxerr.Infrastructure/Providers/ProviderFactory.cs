@@ -47,17 +47,11 @@ public class ProviderFactory : IProviderFactory
             factory: def => new NullIndexerProvider(def)
         );
 
-        // Register HTTP Download Client (placeholder - will be implemented in 4.2.3)
-        RegisterProvider(
-            name: "HttpDownloadClient",
-            displayName: "HTTP Download Client",
-            description: "Direct HTTP download client for DDL files",
-            category: ProviderCategory.DownloadClient,
-            type: ProviderType.HttpDownload,
-            requiresBaseUrl: false,
-            requiresCredentials: false,
-            factory: def => new NullDownloadProvider(def)
-        );
+        // NOTE: HTTP Download Client is NOT a user-configurable provider.
+        // It is a built-in internal service used by DDL providers and RSS indexers.
+        // Similar to how Mylar3 handles DDL downloads internally without requiring
+        // users to "add" an HTTP download client.
+        // See: IHttpDownloadClient registered as a singleton service in DI.
     }
 
     private void RegisterProvider(

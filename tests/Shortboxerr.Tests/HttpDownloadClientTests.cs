@@ -3,11 +3,13 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
 using Shortboxerr.Core.DownloadClients;
-using Shortboxerr.Core.Models;
-using Shortboxerr.Core.Providers;
 
 namespace Shortboxerr.Tests;
 
+/// <summary>
+/// Tests for the built-in HTTP download client.
+/// Note: This is an internal service, not a user-configurable download client provider.
+/// </summary>
 public class HttpDownloadClientTests : IDisposable
 {
     private readonly string _testDownloadDir;
@@ -24,33 +26,6 @@ public class HttpDownloadClientTests : IDisposable
         {
             try { Directory.Delete(_testDownloadDir, true); } catch { }
         }
-    }
-
-    [Fact]
-    public async Task Test_WithValidDirectory_ReturnsSuccess()
-    {
-        // Arrange
-        var client = CreateClient();
-
-        // Act
-        var result = await client.TestAsync();
-
-        // Assert
-        Assert.True(result.Success);
-        Assert.Contains("accessible", result.Message);
-    }
-
-    [Fact]
-    public async Task GetHealth_WithValidConfig_ReturnsHealthy()
-    {
-        // Arrange
-        var client = CreateClient();
-
-        // Act
-        var result = await client.GetHealthAsync();
-
-        // Assert
-        Assert.Equal(HealthStatus.Healthy, result.Status);
     }
 
     [Fact]
@@ -93,52 +68,6 @@ public class HttpDownloadClientTests : IDisposable
         Assert.False(result.Success);
         Assert.Equal(404, result.StatusCode);
         Assert.False(File.Exists(destPath));
-    }
-
-    [Fact]
-    public async Task Download_WithCandidate_DownloadsToDirectory()
-    {
-        // Arrange
-        var content = "Comic file content";
-        var mockHandler = CreateMockHandler(HttpStatusCode.OK, content);
-        var client = CreateClient(mockHandler);
-        
-        var candidate = new Candidate
-        {
-            Id = "test-1",
-            ReleaseTitle = "Batman 001 (2023) (Digital).cbz",
-            Source = "Test",
-            DownloadUrl = "https://example.com/batman001.cbz"
-        };
-
-        // Act
-        var result = await client.DownloadAsync(candidate);
-
-        // Assert
-        Assert.True(result.Success);
-        Assert.NotNull(result.DownloadId);
-    }
-
-    [Fact]
-    public async Task Download_WithNoUrl_ReturnsFailed()
-    {
-        // Arrange
-        var client = CreateClient();
-        
-        var candidate = new Candidate
-        {
-            Id = "test-1",
-            ReleaseTitle = "Batman 001 (2023) (Digital).cbz",
-            Source = "Test",
-            DownloadUrl = null
-        };
-
-        // Act
-        var result = await client.DownloadAsync(candidate);
-
-        // Assert
-        Assert.False(result.Success);
-        Assert.Contains("No download URL", result.Error);
     }
 
     [Fact]
@@ -192,30 +121,6 @@ public class HttpDownloadClientTests : IDisposable
 
         // Assert
         Assert.False(reachable);
-    }
-
-    [Fact]
-    public void SupportedProtocols_IncludesHttpAndHttps()
-    {
-        // Arrange
-        var client = CreateClient();
-
-        // Assert
-        Assert.Contains("http", client.SupportedProtocols);
-        Assert.Contains("https", client.SupportedProtocols);
-    }
-
-    [Fact]
-    public async Task GetActiveDownloads_WhenNoDownloads_ReturnsEmpty()
-    {
-        // Arrange
-        var client = CreateClient();
-
-        // Act
-        var downloads = await client.GetActiveDownloadsAsync();
-
-        // Assert
-        Assert.Empty(downloads);
     }
 
     [Fact]

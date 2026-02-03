@@ -153,11 +153,15 @@ The DDL (Direct Download) provider must achieve behavioral parity with Mylar3's 
 - [x] **RSS/Atom indexer adapter**
   - AC: Poll RSS feeds for new releases
   - AC: Parse feed items into candidates
-- [x] **Generic HTTP download client**
-  - AC: Simple URL → file download
-  - AC: For use with RSS-discovered direct links
+- [x] **Built-in HTTP download client** (Mylar3 parity)
+  - AC: Internal service, NOT a user-configurable download client
+  - AC: Always available - no need to "add" in Download Clients settings
+  - AC: Used internally by DDL providers and RSS indexers for direct HTTP downloads
+  - AC: Configurable via General settings only (timeout, user-agent, retries)
+  - AC: Similar to how Mylar3 handles DDL downloads without external client configuration
 - [x] **Torrent client abstraction** (placeholder for future)
   - AC: Interface only, no implementation in EPIC 4
+  - AC: External torrent clients (qBittorrent, etc.) WILL be user-added providers
 
 ### 4.7 DDL Parser Enhancements (Mylar3 Parity) ✅ COMPLETED
 Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests section.

@@ -1,12 +1,13 @@
-using Shortboxerr.Core.Providers;
-
 namespace Shortboxerr.Core.DownloadClients;
 
 /// <summary>
-/// Generic HTTP download client for simple URL-to-file downloads.
-/// Used with RSS-discovered direct links and other HTTP sources.
+/// Built-in HTTP download client for direct URL-to-file downloads.
+/// This is an internal service used by DDL providers and RSS indexers.
+/// Unlike external download clients (qBittorrent, SABnzbd), this is NOT
+/// a user-configurable provider - it's always available as a built-in service.
+/// Similar to Mylar3's internal DDL download handling.
 /// </summary>
-public interface IHttpDownloadClient : IDownloadProvider
+public interface IHttpDownloadClient
 {
     /// <summary>
     /// Download a file directly from a URL.

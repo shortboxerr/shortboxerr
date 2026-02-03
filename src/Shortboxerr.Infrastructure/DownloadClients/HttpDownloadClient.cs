@@ -3,14 +3,14 @@ using System.Net.Http.Headers;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Shortboxerr.Core.DownloadClients;
-using Shortboxerr.Core.Models;
-using Shortboxerr.Core.Providers;
 
 namespace Shortboxerr.Infrastructure.DownloadClients;
 
 /// <summary>
-/// Generic HTTP download client implementation.
-/// Handles simple URL-to-file downloads with retry logic.
+/// Built-in HTTP download client implementation.
+/// This is an internal service, NOT a user-configurable download client provider.
+/// It's always available and used by DDL providers and RSS indexers for direct HTTP downloads.
+/// Similar to how Mylar3 handles DDL downloads internally.
 /// </summary>
 public class HttpDownloadClient : IHttpDownloadClient
 {
@@ -33,144 +33,6 @@ public class HttpDownloadClient : IHttpDownloadClient
         _downloadSemaphore = new SemaphoreSlim(_settings.MaxConcurrentDownloads);
         ConfigureHttpClient();
     }
-
-    #region IProvider Implementation
-
-    public int Id => _settings.Id;
-    public string Name => _settings.Name;
-    public ProviderType Type => ProviderType.HttpDownload;
-    public bool IsEnabled { get => _settings.Enabled; set => _settings.Enabled = value; }
-    public int Priority { get => _settings.Priority; set => _settings.Priority = value; }
-
-    public async Task<ProviderTestResult> TestAsync(CancellationToken cancellationToken = default)
-    {
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        
-        try
-        {
-            // Test by checking if download directory exists or can be created
-            if (!Directory.Exists(_settings.DownloadDirectory))
-            {
-                Directory.CreateDirectory(_settings.DownloadDirectory);
-            }
-            
-            // Test write permissions
-            var testFile = Path.Combine(_settings.DownloadDirectory, ".shortboxerr_test");
-            await File.WriteAllTextAsync(testFile, "test", cancellationToken);
-            File.Delete(testFile);
-            
-            stopwatch.Stop();
-            
-            return ProviderTestResult.Ok(
-                $"Download directory is accessible: {_settings.DownloadDirectory}",
-                latencyMs: stopwatch.ElapsedMilliseconds);
-        }
-        catch (Exception ex)
-        {
-            stopwatch.Stop();
-            _logger.LogError(ex, "HTTP download client test failed");
-            return ProviderTestResult.Fail(ex.Message, ex.Message);
-        }
-    }
-
-    public Task<ProviderHealth> GetHealthAsync(CancellationToken cancellationToken = default)
-    {
-        var isHealthy = IsEnabled && Directory.Exists(_settings.DownloadDirectory);
-        var activeCount = _activeDownloads.Count;
-        
-        return Task.FromResult(new ProviderHealth
-        {
-            Status = isHealthy ? HealthStatus.Healthy : HealthStatus.Unhealthy,
-            Message = isHealthy 
-                ? $"HTTP client healthy, {activeCount} active downloads" 
-                : "HTTP client misconfigured or download directory missing",
-            CheckedAt = DateTime.UtcNow
-        });
-    }
-
-    #endregion
-
-    #region IDownloadProvider Implementation
-
-    public IReadOnlyList<string> SupportedProtocols => new[] { "http", "https" };
-
-    public async Task<DownloadResult> DownloadAsync(Candidate candidate, CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrEmpty(candidate.DownloadUrl))
-        {
-            return DownloadResult.Fail("No download URL provided");
-        }
-        
-        var downloadId = Guid.NewGuid().ToString();
-        var fileName = SanitizeFileName(candidate.ReleaseTitle);
-        var destinationPath = Path.Combine(_settings.DownloadDirectory, fileName);
-        
-        var result = await DownloadUrlAsync(candidate.DownloadUrl, destinationPath, null, cancellationToken);
-        
-        if (result.Success)
-        {
-            return DownloadResult.Ok(downloadId, candidate);
-        }
-        
-        return DownloadResult.Fail(result.Error ?? "Download failed");
-    }
-
-    public Task<DownloadStatus> GetStatusAsync(string downloadId, CancellationToken cancellationToken = default)
-    {
-        if (_activeDownloads.TryGetValue(downloadId, out var active))
-        {
-            return Task.FromResult(new DownloadStatus
-            {
-                DownloadId = downloadId,
-                State = DownloadState.Downloading,
-                Progress = active.Progress,
-                TotalBytes = active.TotalBytes,
-                DownloadedBytes = active.DownloadedBytes,
-                SpeedBytesPerSecond = active.SpeedBytesPerSecond,
-                StartedAt = active.StartedAt,
-                CandidateTitle = active.Title,
-                SourceUrl = active.Url
-            });
-        }
-        
-        return Task.FromResult(new DownloadStatus
-        {
-            DownloadId = downloadId,
-            State = DownloadState.Completed
-        });
-    }
-
-    public Task<bool> CancelAsync(string downloadId, CancellationToken cancellationToken = default)
-    {
-        if (_activeDownloads.TryGetValue(downloadId, out var active))
-        {
-            active.CancellationTokenSource.Cancel();
-            _activeDownloads.TryRemove(downloadId, out _);
-            return Task.FromResult(true);
-        }
-        
-        return Task.FromResult(false);
-    }
-
-    public Task<IReadOnlyList<DownloadStatus>> GetActiveDownloadsAsync(CancellationToken cancellationToken = default)
-    {
-        var statuses = _activeDownloads.Values.Select(a => new DownloadStatus
-        {
-            DownloadId = a.Id,
-            State = DownloadState.Downloading,
-            Progress = a.Progress,
-            TotalBytes = a.TotalBytes,
-            DownloadedBytes = a.DownloadedBytes,
-            SpeedBytesPerSecond = a.SpeedBytesPerSecond,
-            StartedAt = a.StartedAt,
-            CandidateTitle = a.Title,
-            SourceUrl = a.Url
-        }).ToList();
-        
-        return Task.FromResult<IReadOnlyList<DownloadStatus>>(statuses);
-    }
-
-    #endregion
 
     #region IHttpDownloadClient Implementation
 
