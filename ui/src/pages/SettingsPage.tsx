@@ -4,7 +4,7 @@ import {
   Settings, Server, Download, Shield, 
   FolderOpen, Plug, Save, Plus, Edit, Trash2, 
   CheckCircle, XCircle, AlertCircle, Play, GripVertical,
-  Copy, RefreshCw, X, Database, ExternalLink, Eye, EyeOff, Calendar
+  Copy, RefreshCw, X, Database, ExternalLink, Eye, EyeOff, Calendar, FileText
 } from 'lucide-react';
 import { api } from '../api/client';
 import type { Provider, CreateProviderRequest, ProviderTestResult, ComicVineTestResult } from '../api/client';
@@ -934,6 +934,12 @@ function PullListSettingsTab() {
     skipVariantCovers: true,
     upcomingWeeksToShow: 4,
     pastWeeksToShow: 4,
+    // Export settings
+    exportWeeklyPullList: false,
+    weeklyExportDirectory: null,
+    weeklyExportFormat: 'Json' as const,
+    autoExportOnReleaseDay: true,
+    exportFields: null,
   };
 
   const dayOfWeekOptions = [
@@ -1127,7 +1133,153 @@ function PullListSettingsTab() {
           </select>
         </SettingsField>
       </SettingsSection>
+
+      <SettingsSection title="Weekly Export (Mylar3 Parity)">
+        <SettingsField label="Enable Weekly Export">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={currentSettings.exportWeeklyPullList}
+              onChange={(e) => handleUpdate('exportWeeklyPullList', e.target.checked)}
+              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+            />
+            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+              Export weekly pull list data to a file on release day
+            </span>
+          </label>
+        </SettingsField>
+
+        {currentSettings.exportWeeklyPullList && (
+          <>
+            <SettingsField 
+              label="Export Directory" 
+              description="Directory where weekly exports will be saved (under comics root)"
+            >
+              <input
+                type="text"
+                className="input"
+                placeholder="/path/to/comics/weekly-exports"
+                value={currentSettings.weeklyExportDirectory ?? ''}
+                onChange={(e) => handleUpdate('weeklyExportDirectory', e.target.value || null)}
+                style={{ width: '400px' }}
+              />
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                Export files will be saved in subdirectories like: YYYY-WW/releases.json
+              </div>
+            </SettingsField>
+
+            <SettingsField 
+              label="Export Format" 
+              description="File format for the exported data"
+            >
+              <select
+                className="input"
+                value={currentSettings.weeklyExportFormat}
+                onChange={(e) => handleUpdate('weeklyExportFormat', e.target.value)}
+                style={{ width: '200px' }}
+              >
+                <option value="Json">JSON (structured data)</option>
+                <option value="Text">Plain Text (human readable)</option>
+                <option value="Csv">CSV (spreadsheet)</option>
+              </select>
+            </SettingsField>
+
+            <SettingsField label="Auto Export on Release Day">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={currentSettings.autoExportOnReleaseDay}
+                  onChange={(e) => handleUpdate('autoExportOnReleaseDay', e.target.checked)}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                />
+                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+                  Automatically export when processing release day
+                </span>
+              </label>
+            </SettingsField>
+
+            <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+                Manual Export
+              </div>
+              <ManualExportSection />
+            </div>
+          </>
+        )}
+      </SettingsSection>
     </>
+  );
+}
+
+// Manual Export Section Component
+function ManualExportSection() {
+  const [exporting, setExporting] = useState(false);
+  const [exportResult, setExportResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const handleExport = async () => {
+    setExporting(true);
+    setExportResult(null);
+    try {
+      const result = await api.exportCurrentWeek();
+      if (result.success) {
+        setExportResult({
+          success: true,
+          message: `Exported ${result.totalIssues} issues to ${result.exportFilePath}`
+        });
+      } else {
+        setExportResult({
+          success: false,
+          message: result.error ?? 'Export failed'
+        });
+      }
+    } catch (err) {
+      setExportResult({
+        success: false,
+        message: 'Failed to export: ' + (err instanceof Error ? err.message : 'Unknown error')
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  return (
+    <div>
+      <button 
+        className="btn btn-secondary"
+        onClick={handleExport}
+        disabled={exporting}
+        style={{ marginRight: '12px' }}
+      >
+        {exporting ? (
+          <>
+            <RefreshCw size={16} className="spin" style={{ marginRight: '8px' }} />
+            Exporting...
+          </>
+        ) : (
+          <>
+            <FileText size={16} style={{ marginRight: '8px' }} />
+            Export This Week
+          </>
+        )}
+      </button>
+      
+      {exportResult && (
+        <div style={{
+          marginTop: '12px',
+          padding: '12px',
+          borderRadius: 'var(--radius-md)',
+          backgroundColor: exportResult.success 
+            ? 'rgba(34, 197, 94, 0.1)' 
+            : 'rgba(239, 68, 68, 0.1)',
+          color: exportResult.success 
+            ? 'var(--accent-success)' 
+            : 'var(--accent-danger)',
+          fontSize: '13px'
+        }}>
+          {exportResult.message}
+        </div>
+      )}
+    </div>
   );
 }
 

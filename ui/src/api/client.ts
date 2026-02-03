@@ -300,6 +300,41 @@ export interface PullListSettingsDto {
   skipVariantCovers: boolean;
   upcomingWeeksToShow: number;
   pastWeeksToShow: number;
+  // Weekly Export Settings (Mylar3 Parity)
+  exportWeeklyPullList: boolean;
+  weeklyExportDirectory?: string | null;
+  weeklyExportFormat: WeeklyExportFormat;
+  autoExportOnReleaseDay: boolean;
+  exportFields?: string[] | null;
+}
+
+export type WeeklyExportFormat = 'Json' | 'Text' | 'Csv';
+
+export interface WeeklyExportResult {
+  success: boolean;
+  error?: string | null;
+  exportDirectory?: string | null;
+  exportFilePath?: string | null;
+  format: WeeklyExportFormat;
+  year: number;
+  weekNumber: number;
+  releaseDay: string;
+  totalIssues: number;
+  wantedIssues: number;
+  ownedIssues: number;
+  exportedAt: string;
+}
+
+export interface WeeklyExportInfo {
+  year: number;
+  weekNumber: number;
+  releaseDay: string;
+  directoryPath: string;
+  filePath: string;
+  format: WeeklyExportFormat;
+  exportedAt: string;
+  fileSizeBytes: number;
+  issueCount: number;
 }
 
 export interface SeriesPullListSettingsDto {
@@ -1291,6 +1326,23 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(settings),
     });
+  },
+
+  // Weekly Export (Mylar3 Parity)
+  exportCurrentWeek: async (): Promise<WeeklyExportResult> => {
+    return fetchApi<WeeklyExportResult>('/api/v1/pulllist/export', {
+      method: 'POST',
+    });
+  },
+
+  exportWeek: async (date: string): Promise<WeeklyExportResult> => {
+    return fetchApi<WeeklyExportResult>(`/api/v1/pulllist/export/${date}`, {
+      method: 'POST',
+    });
+  },
+
+  getExportHistory: async (limit = 10): Promise<WeeklyExportInfo[]> => {
+    return fetchApi<WeeklyExportInfo[]>(`/api/v1/pulllist/export/history?limit=${limit}`);
   },
 
   // Discovery (Mylar3 "This Week" parity)
