@@ -45,8 +45,13 @@ public class DdlImportService : IDdlImportService
         options ??= new DdlImportOptions();
         var importId = Guid.NewGuid().ToString();
         
+        _logger?.LogInformation("Processing download for import: {Title} from {Source}", 
+            candidate.ReleaseTitle, candidate.SourceSite);
+        
         if (!downloadResult.Success || string.IsNullOrEmpty(downloadResult.FilePath))
         {
+            _logger?.LogWarning("Import skipped: download was unsuccessful. Reason: {Reason}", 
+                downloadResult.FailureReason);
             return DdlImportResult.Failed(importId, DdlImportState.VerificationFailed, 
                 $"Download was not successful: {downloadResult.ErrorMessage}");
         }
@@ -269,13 +274,18 @@ public class DdlImportService : IDdlImportService
         var confidenceReductions = new List<string>();
         var confidence = 100;
         
+        _logger?.LogDebug("Auto-matching candidate: {Title}, Parsed: Series={Series}, Issue={Issue}, Collection={IsCollection}", 
+            candidate.ReleaseTitle, parsed.SeriesTitle, parsed.IssueNumber, parsed.IsCollection);
+        
         if (string.IsNullOrWhiteSpace(parsed.SeriesTitle))
         {
+            _logger?.LogDebug("Match failed: no series title parsed from release name");
             return DdlMatchResult.NoMatch("No series title could be parsed from release name");
         }
         
         // Try to find matching series
         var normalizedTitle = _releaseParser.NormalizeTitle(parsed.SeriesTitle);
+        _logger?.LogDebug("Normalized title for matching: '{NormalizedTitle}'", normalizedTitle);
         
         var matchingSeries = await _dbContext.Series
             .Where(s => EF.Functions.Like(s.Title.ToLower(), $"%{normalizedTitle}%") ||

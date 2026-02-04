@@ -39,6 +39,9 @@ public class DdlDownloadService : IDdlDownloadService
     {
         options ??= new DdlDownloadOptions();
         
+        _logger?.LogInformation("Download initiated: {Title} from {Source}", candidate.ReleaseTitle, candidate.SourceSite);
+        _logger?.LogDebug("Candidate has {LinkCount} download links", candidate.DownloadLinks.Count);
+        
         // Find a valid download link
         var downloadLink = candidate.DownloadLinks
             .Where(l => l.LinkType == DdlLinkType.Direct)
@@ -54,12 +57,15 @@ public class DdlDownloadService : IDdlDownloadService
         
         if (downloadLink == null)
         {
+            _logger?.LogWarning("Download failed: No valid links for {Title}", candidate.ReleaseTitle);
             return DdlDownloadResult.Failed(
                 Guid.NewGuid().ToString(),
                 DdlDownloadFailureReason.NoValidLinks,
                 "No download links available for candidate"
             );
         }
+        
+        _logger?.LogDebug("Selected link: {LinkType} priority {Priority}", downloadLink.LinkType, downloadLink.Priority);
         
         // Determine filename
         var filename = options.CustomFilename ?? DeriveFilename(candidate, downloadLink.Url);
@@ -72,9 +78,12 @@ public class DdlDownloadService : IDdlDownloadService
         // Try alternate links if primary failed
         if (!result.Success && candidate.DownloadLinks.Count > 1)
         {
+            var alternateCount = 0;
             foreach (var alternateLink in candidate.DownloadLinks.Where(l => l.Url != downloadLink.Url))
             {
-                _logger?.LogInformation("Trying alternate link: {Url}", alternateLink.Url);
+                alternateCount++;
+                _logger?.LogInformation("Trying alternate link {Num}/{Total}: {LinkType}", 
+                    alternateCount, candidate.DownloadLinks.Count - 1, alternateLink.LinkType);
                 
                 result = await DownloadWithRetriesAsync(alternateLink.Url, destinationPath, options, cancellationToken);
                 
@@ -87,6 +96,18 @@ public class DdlDownloadService : IDdlDownloadService
         
         // Record history
         RecordHistory(candidate, result);
+        
+        // Log final result
+        if (result.Success)
+        {
+            _logger?.LogInformation("Download completed: {Title}, Size: {Size:N0} bytes, Duration: {Duration}", 
+                candidate.ReleaseTitle, result.FileSize, result.Duration);
+        }
+        else
+        {
+            _logger?.LogWarning("Download failed: {Title}, Reason: {Reason}, Error: {Error}", 
+                candidate.ReleaseTitle, result.FailureReason, result.ErrorMessage);
+        }
         
         return result;
     }
