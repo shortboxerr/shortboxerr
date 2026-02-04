@@ -1,5 +1,42 @@
 # Worklog
 
+## Iteration 059 (2026-02-04)
+**EPIC 13.2: Background Service Logging - COMPLETED**
+
+### Commits
+1. `feat: add background service logging (EPIC 13.2)`
+
+### Deliverables
+
+#### Scheduled Task Logging
+- ✅ Service start with check interval
+- ✅ Initial delay logging before first check
+- ✅ Each task execution start logged
+- ✅ Next check interval timing
+
+#### Error Recovery Logging
+- ✅ Consecutive error tracking
+- ✅ Error attempt number logged
+- ✅ Warning after 3+ consecutive errors
+- ✅ Error count reset on success
+
+#### Applied To All Services
+- ✅ MetadataRefreshBackgroundService
+- ✅ ComicVineRefreshBackgroundService
+- ✅ ReleaseDayBackgroundService
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/BackgroundServices/MetadataRefreshBackgroundService.cs` | Enhanced logging |
+| `src/Shortboxerr.Infrastructure/BackgroundServices/ComicVineRefreshBackgroundService.cs` | Enhanced logging |
+| `src/Shortboxerr.Infrastructure/BackgroundServices/ReleaseDayBackgroundService.cs` | Enhanced logging |
+
+### Test Results
+- Backend: 712 tests passing
+
+---
+
 ## Iteration 058 (2026-02-04)
 **EPIC 13.2: Import Pipeline Logging - COMPLETED**
 
