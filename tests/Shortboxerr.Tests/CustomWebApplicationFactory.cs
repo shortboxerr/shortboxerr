@@ -29,6 +29,15 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IDisp
                 services.Remove(descriptor);
             }
 
+            // Remove background services to prevent delays during testing
+            var hostedServiceDescriptors = services
+                .Where(d => d.ServiceType == typeof(IHostedService))
+                .ToList();
+            foreach (var hostedService in hostedServiceDescriptors)
+            {
+                services.Remove(hostedService);
+            }
+
             // Create and open an in-memory SQLite connection
             // This connection must stay open for the lifetime of the factory
             _connection = new SqliteConnection("DataSource=:memory:");

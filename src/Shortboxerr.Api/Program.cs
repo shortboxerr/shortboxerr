@@ -32,10 +32,24 @@ Log.Logger = SerilogConfiguration.CreateLoggerConfiguration(
     consoleLevel: isDebug ? LogEventLevel.Debug : minimumLevel)
     .CreateLogger();
 
+// Log startup banner immediately after logger configuration
+Log.Information("=== Shortboxerr Starting ===");
+Log.Information("Version: 0.1.0");
+Log.Information("Runtime: {Runtime}", System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription);
+Log.Information("OS: {OS}", System.Runtime.InteropServices.RuntimeInformation.OSDescription);
+Log.Information("Architecture: {Arch}", System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture);
+Log.Information("Debug mode: {DebugMode}", isDebug);
+Log.Information("Log directory: {LogDirectory}", logDirectory);
+Log.Information("Log level: {LogLevel}", minimumLevel);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Use Serilog for logging
 builder.Host.UseSerilog();
+
+// Log configuration sources
+Log.Debug("Configuration sources loaded: {Sources}", 
+    string.Join(", ", builder.Configuration.AsEnumerable().Select(c => c.Key).Take(10)));
 
 // Add CORS for development
 builder.Services.AddCors(options =>
@@ -74,14 +88,35 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ShortboxerrDbContext>();
+    
+    Log.Information("Database connection string configured: {DatabasePath}", 
+        connectionString.Contains("Source=") ? connectionString.Split("Source=").Last().Split(";").First() : "configured");
+    
+    var pendingMigrations = db.Database.GetPendingMigrations().ToList();
+    if (pendingMigrations.Count > 0)
+    {
+        Log.Information("Applying {Count} pending database migrations: {Migrations}", 
+            pendingMigrations.Count, string.Join(", ", pendingMigrations));
+    }
+    else
+    {
+        Log.Debug("No pending database migrations");
+    }
+    
     db.Database.Migrate();
     
-    // Log startup
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    logger.LogInformation("Shortboxerr starting up - Version 0.1.0");
-    logger.LogInformation("Log directory: {LogDirectory}", logDirectory);
-    logger.LogInformation("Log level: {LogLevel}", minimumLevel);
+    var appliedMigrations = db.Database.GetAppliedMigrations().ToList();
+    Log.Information("Database ready with {Count} migrations applied", appliedMigrations.Count);
 }
+
+// Register application lifetime logging
+var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+lifetime.ApplicationStarted.Register(() =>
+    Log.Information("Application started. Now listening for requests."));
+lifetime.ApplicationStopping.Register(() =>
+    Log.Information("Application stopping. Graceful shutdown initiated."));
+lifetime.ApplicationStopped.Register(() =>
+    Log.Information("=== Shortboxerr Stopped ==="));
 
 // Configure the HTTP request pipeline
 app.UseCors(); // Enable CORS for development
