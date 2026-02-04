@@ -1,5 +1,46 @@
 # Worklog
 
+## Iteration 061 (2026-02-04)
+**EPIC 13.4: Health Check Logging - COMPLETED**
+
+### Commits
+1. `feat: add health check logging (EPIC 13.4)`
+
+### Deliverables
+
+#### HealthCheckBackgroundService
+- ✅ Periodic health checks (configurable interval, default 5 min)
+- ✅ Health summary logging (healthy/degraded/unhealthy counts)
+- ✅ Individual check result logging with appropriate log level
+- ✅ Error recovery tracking for consecutive failures
+
+#### Database Connectivity Check
+- ✅ Test database connection
+- ✅ Execute simple query (series count)
+- ✅ Report connection status with details
+
+#### ComicVine API Check
+- ✅ Test API connection using TestConnectionAsync
+- ✅ Report latency information
+- ✅ Handle missing client configuration
+
+#### Disk Space Check
+- ✅ Check available space on data directory drive
+- ✅ Configurable warning threshold (default 1GB)
+- ✅ Report space as GB and percentage used
+- ✅ Unhealthy below threshold, degraded below 2x threshold
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/BackgroundServices/HealthCheckBackgroundService.cs` | New service |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register service |
+
+### Test Results
+- Backend: 712 tests passing
+
+---
+
 ## Iteration 060 (2026-02-04)
 **EPIC 13.3: Log Viewer UI - COMPLETED**
 

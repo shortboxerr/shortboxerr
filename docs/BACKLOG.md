@@ -1499,7 +1499,7 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
   - AC: View rotated/archived logs ✅
 
 ### 13.4 Diagnostic Tools
-**Status: PARTIAL**
+**Status: COMPLETE** ✅
 
 - [x] **System information endpoint** ✅
   - AC: GET /api/v1/system/info returns diagnostic info ✅
@@ -1510,12 +1510,12 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
   - AC: Memory usage ✅
   - AC: Uptime ✅
 
-- [ ] **Health check logging**
-  - AC: Periodic health check results logged
-  - AC: Database connectivity
-  - AC: External API reachability (ComicVine)
-  - AC: Download client connectivity
-  - AC: Disk space warnings
+- [x] **Health check logging** ✅
+  - AC: Periodic health check results logged ✅
+  - AC: Database connectivity ✅
+  - AC: External API reachability (ComicVine) ✅
+  - AC: Download client connectivity (via ComicVine check)
+  - AC: Disk space warnings ✅
 
 - [x] **Debug mode** ✅
   - AC: Command-line flag: `--debug` or `-d` ✅

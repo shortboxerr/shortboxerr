@@ -1,3 +1,37 @@
+# Self Check - Iteration 061
+
+## EPIC 13.4: Health Check Logging
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Backend builds |
+| Tests pass | ✅ | 712 tests passing |
+| Database check | ✅ | Connect + query |
+| ComicVine check | ✅ | With latency |
+| Disk space check | ✅ | With thresholds |
+| Periodic logging | ✅ | Every 5 min |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+#### Health Check Logging
+| AC | Status |
+|----|--------|
+| Periodic health check results logged | ✅ |
+| Database connectivity | ✅ |
+| External API reachability (ComicVine) | ✅ |
+| Disk space warnings | ✅ |
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `HealthCheckBackgroundService.cs` | ✅ Created |
+| `DependencyInjection.cs` | ✅ Modified |
+
+---
+
 # Self Check - Iteration 060
 
 ## EPIC 13.3: Log Viewer UI
