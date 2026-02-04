@@ -1395,6 +1395,21 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
 ### 13.1 File-Based Logging
 **Status: READY**
 
+⚠️ **CRITICAL SECURITY REQUIREMENT: NEVER LOG SENSITIVE DATA**
+- API keys (ComicVine, indexers, download clients) MUST be masked/redacted
+- Passwords and authentication tokens MUST be masked
+- Use `***REDACTED***` or `***API_KEY***` placeholders in logs
+- Apply masking at the logging sink level (not per-call)
+- Audit all log statements for potential credential leaks
+
+- [ ] **Sensitive data protection**
+  - AC: Implement Serilog destructuring policy to mask sensitive fields
+  - AC: Auto-detect and mask: `apiKey`, `api_key`, `password`, `token`, `secret`, `credential`
+  - AC: Mask query string parameters containing sensitive keys
+  - AC: Mask Authorization headers in HTTP logs
+  - AC: Mask connection strings (show server/database only, not credentials)
+  - AC: Unit tests to verify no credentials appear in log output
+
 - [ ] **Log file configuration**
   - AC: Configurable log directory (default: `{data}/logs/`)
   - AC: Log file naming: `shortboxerr.log`, `shortboxerr.txt`, or configurable
@@ -1435,7 +1450,9 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
   - AC: HTTP request/response logging (configurable verbosity)
   - AC: Request duration timing
   - AC: Error responses with details
-  - AC: Sensitive data masking (API keys, passwords)
+  - AC: **MANDATORY**: Mask API keys, passwords, tokens in all request/response logs
+  - AC: **MANDATORY**: Mask Authorization headers (show type only, e.g., "Bearer ***")
+  - AC: **MANDATORY**: Mask sensitive query parameters (?apikey=***)
 
 - [ ] **ComicVine API logging**
   - AC: API calls with endpoint and parameters
@@ -1554,6 +1571,13 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
 - Use `ILogger<T>` throughout codebase (already standard)
 - Store log settings in `SystemSettings` table
 - Consider `Serilog.Sinks.Async` for file performance
+
+**⚠️ Security Implementation (MANDATORY):**
+- Implement `IDestructuringPolicy` for Serilog to auto-mask sensitive properties
+- Create `SensitiveDataMaskingEnricher` to scrub logs before writing
+- Regex patterns for common sensitive field names: `/api[_-]?key/i`, `/password/i`, `/token/i`, `/secret/i`
+- Test with actual API keys to verify they NEVER appear in log files
+- Code review checklist item: "No credentials in log statements"
 
 ---
 
