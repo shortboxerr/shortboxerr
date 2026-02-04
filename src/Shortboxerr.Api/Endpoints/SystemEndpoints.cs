@@ -29,6 +29,200 @@ public static class SystemEndpoints
             .WithName("GetLogFiles")
             .WithOpenApi()
             .Produces<LogFilesResponse>(200);
+
+        group.MapGet("/logs/{filename}", GetLogFileContent)
+            .WithName("GetLogFileContent")
+            .WithOpenApi()
+            .Produces<LogContentResponse>(200)
+            .Produces(404);
+
+        group.MapGet("/logs/recent", GetRecentLogs)
+            .WithName("GetRecentLogs")
+            .WithOpenApi()
+            .Produces<LogContentResponse>(200);
+
+        group.MapDelete("/logs/{filename}", DeleteLogFile)
+            .WithName("DeleteLogFile")
+            .WithOpenApi()
+            .Produces(204)
+            .Produces(404);
+    }
+
+    private static IResult GetLogFileContent(string filename, int? lines = 500, string? level = null, string? search = null)
+    {
+        var logDirectory = GetLogDirectory();
+        var filePath = Path.Combine(logDirectory, filename);
+
+        // Security: ensure the file is within the log directory
+        var fullPath = Path.GetFullPath(filePath);
+        if (!fullPath.StartsWith(Path.GetFullPath(logDirectory)))
+        {
+            return Results.NotFound("Log file not found");
+        }
+
+        if (!File.Exists(fullPath))
+        {
+            return Results.NotFound("Log file not found");
+        }
+
+        var allLines = File.ReadAllLines(fullPath);
+        var filteredLines = FilterLogLines(allLines, level, search);
+        
+        // Take last N lines
+        var resultLines = filteredLines.TakeLast(lines ?? 500).ToList();
+
+        return Results.Ok(new LogContentResponse
+        {
+            FileName = filename,
+            TotalLines = allLines.Length,
+            FilteredLines = filteredLines.Count,
+            ReturnedLines = resultLines.Count,
+            Lines = resultLines.Select(ParseLogLine).ToList()
+        });
+    }
+
+    private static IResult GetRecentLogs(int? lines = 100, string? level = null, string? search = null)
+    {
+        var logDirectory = GetLogDirectory();
+        
+        if (!Directory.Exists(logDirectory))
+        {
+            return Results.Ok(new LogContentResponse
+            {
+                FileName = "recent",
+                TotalLines = 0,
+                FilteredLines = 0,
+                ReturnedLines = 0,
+                Lines = new List<LogLine>()
+            });
+        }
+
+        // Get the most recent log file
+        var recentFile = Directory.GetFiles(logDirectory, "*.log")
+            .Select(f => new FileInfo(f))
+            .OrderByDescending(f => f.LastWriteTimeUtc)
+            .FirstOrDefault();
+
+        if (recentFile == null)
+        {
+            return Results.Ok(new LogContentResponse
+            {
+                FileName = "recent",
+                TotalLines = 0,
+                FilteredLines = 0,
+                ReturnedLines = 0,
+                Lines = new List<LogLine>()
+            });
+        }
+
+        return GetLogFileContent(recentFile.Name, lines, level, search);
+    }
+
+    private static IResult DeleteLogFile(string filename)
+    {
+        var logDirectory = GetLogDirectory();
+        var filePath = Path.Combine(logDirectory, filename);
+
+        // Security: ensure the file is within the log directory
+        var fullPath = Path.GetFullPath(filePath);
+        if (!fullPath.StartsWith(Path.GetFullPath(logDirectory)))
+        {
+            return Results.NotFound("Log file not found");
+        }
+
+        if (!File.Exists(fullPath))
+        {
+            return Results.NotFound("Log file not found");
+        }
+
+        File.Delete(fullPath);
+        return Results.NoContent();
+    }
+
+    private static string GetLogDirectory()
+    {
+        return Environment.GetEnvironmentVariable("SHORTBOXERR_LOG_DIR")
+            ?? Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "shortboxerr",
+                "logs");
+    }
+
+    private static List<string> FilterLogLines(string[] lines, string? level, string? search)
+    {
+        IEnumerable<string> filtered = lines;
+
+        if (!string.IsNullOrEmpty(level))
+        {
+            var levels = GetLevelsAtOrAbove(level);
+            filtered = filtered.Where(line => levels.Any(l => line.Contains($"[{l}]", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        if (!string.IsNullOrEmpty(search))
+        {
+            filtered = filtered.Where(line => line.Contains(search, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return filtered.ToList();
+    }
+
+    private static List<string> GetLevelsAtOrAbove(string level)
+    {
+        var allLevels = new[] { "VRB", "DBG", "INF", "WRN", "ERR", "FTL" };
+        var levelIndex = Array.FindIndex(allLevels, l => l.Equals(level, StringComparison.OrdinalIgnoreCase));
+        
+        if (levelIndex < 0)
+        {
+            // Try full names
+            var fullLevels = new[] { "VERBOSE", "DEBUG", "INFORMATION", "WARNING", "ERROR", "FATAL" };
+            levelIndex = Array.FindIndex(fullLevels, l => l.Equals(level, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return levelIndex >= 0 ? allLevels.Skip(levelIndex).ToList() : allLevels.ToList();
+    }
+
+    private static LogLine ParseLogLine(string line)
+    {
+        // Parse format: [2026-02-04 21:57:42.630] [INF] [Category] Message
+        var logLine = new LogLine { Raw = line };
+
+        try
+        {
+            // Extract timestamp
+            var timestampMatch = System.Text.RegularExpressions.Regex.Match(line, @"\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})\]");
+            if (timestampMatch.Success)
+            {
+                logLine.Timestamp = DateTime.TryParse(timestampMatch.Groups[1].Value, out var ts) ? ts : null;
+            }
+
+            // Extract level
+            var levelMatch = System.Text.RegularExpressions.Regex.Match(line, @"\[(VRB|DBG|INF|WRN|ERR|FTL)\]");
+            if (levelMatch.Success)
+            {
+                logLine.Level = levelMatch.Groups[1].Value;
+            }
+
+            // Extract category
+            var categoryMatch = System.Text.RegularExpressions.Regex.Match(line, @"\[(?:VRB|DBG|INF|WRN|ERR|FTL)\] \[([^\]]+)\]");
+            if (categoryMatch.Success)
+            {
+                logLine.Category = categoryMatch.Groups[1].Value;
+            }
+
+            // Extract message (everything after the category or level)
+            var messageStart = line.LastIndexOf(']');
+            if (messageStart >= 0 && messageStart < line.Length - 1)
+            {
+                logLine.Message = line[(messageStart + 1)..].Trim();
+            }
+        }
+        catch
+        {
+            // If parsing fails, just use the raw line
+            logLine.Message = line;
+        }
+
+        return logLine;
     }
 
     private static IResult GetSystemInfo(
@@ -270,6 +464,24 @@ public class LogFileInfo
             return $"{len:0.##} {sizes[order]}";
         }
     }
+}
+
+public class LogContentResponse
+{
+    public required string FileName { get; set; }
+    public int TotalLines { get; set; }
+    public int FilteredLines { get; set; }
+    public int ReturnedLines { get; set; }
+    public List<LogLine> Lines { get; set; } = new();
+}
+
+public class LogLine
+{
+    public required string Raw { get; set; }
+    public DateTime? Timestamp { get; set; }
+    public string? Level { get; set; }
+    public string? Category { get; set; }
+    public string? Message { get; set; }
 }
 
 #endregion

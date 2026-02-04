@@ -12,7 +12,7 @@ export function SeriesPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  const { data: seriesData, isLoading, refetch } = useQuery({
+  const { data: seriesData, isLoading } = useQuery({
     queryKey: ['series', search],
     queryFn: () => api.getSeries({ search, page: 1, pageSize: 50 }),
   });

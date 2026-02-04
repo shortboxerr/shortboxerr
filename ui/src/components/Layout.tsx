@@ -10,6 +10,7 @@ import {
   FolderInput,
   Settings,
   Zap,
+  ScrollText,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -23,6 +24,7 @@ const navItems = [
   { to: '/history', icon: History, label: 'History' },
   { to: '/import', icon: FolderInput, label: 'Manual Import' },
   { to: '/settings', icon: Settings, label: 'Settings' },
+  { to: '/logs', icon: ScrollText, label: 'Logs' },
 ];
 
 export function Layout() {

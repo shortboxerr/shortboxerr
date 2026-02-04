@@ -43,6 +43,31 @@ interface SystemStatus {
   queuedDownloads: number;
 }
 
+export interface LogFile {
+  fileName: string;
+  filePath: string;
+  sizeBytes: number;
+  sizeFormatted: string;
+  lastModified: string;
+  created: string;
+}
+
+export interface LogLine {
+  raw: string;
+  timestamp?: string;
+  level?: string;
+  category?: string;
+  message?: string;
+}
+
+export interface LogContent {
+  fileName: string;
+  totalLines: number;
+  filteredLines: number;
+  returnedLines: number;
+  lines: LogLine[];
+}
+
 interface Activity {
   id: string;
   title: string;
@@ -787,6 +812,55 @@ export const api = {
     } catch {
       return [];
     }
+  },
+
+  // Logs
+  getLogFiles: async (): Promise<LogFile[]> => {
+    try {
+      const response = await fetchApi<{ logDirectory: string; files: any[] }>('/api/v1/system/logs');
+      return response.files.map((f: any) => ({
+        fileName: f.fileName,
+        filePath: f.filePath,
+        sizeBytes: f.sizeBytes,
+        sizeFormatted: f.sizeFormatted,
+        lastModified: f.lastModified,
+        created: f.created,
+      }));
+    } catch {
+      return [];
+    }
+  },
+
+  getLogContent: async (filename: string, lines = 500, level?: string, search?: string): Promise<LogContent> => {
+    const params = new URLSearchParams();
+    params.set('lines', String(lines));
+    if (level) params.set('level', level);
+    if (search) params.set('search', search);
+    
+    try {
+      const response = await fetchApi<LogContent>(`/api/v1/system/logs/${encodeURIComponent(filename)}?${params}`);
+      return response;
+    } catch {
+      return { fileName: filename, totalLines: 0, filteredLines: 0, returnedLines: 0, lines: [] };
+    }
+  },
+
+  getRecentLogs: async (lines = 100, level?: string, search?: string): Promise<LogContent> => {
+    const params = new URLSearchParams();
+    params.set('lines', String(lines));
+    if (level) params.set('level', level);
+    if (search) params.set('search', search);
+    
+    try {
+      const response = await fetchApi<LogContent>(`/api/v1/system/logs/recent?${params}`);
+      return response;
+    } catch {
+      return { fileName: 'recent', totalLines: 0, filteredLines: 0, returnedLines: 0, lines: [] };
+    }
+  },
+
+  deleteLogFile: async (filename: string): Promise<void> => {
+    await fetchApi(`/api/v1/system/logs/${encodeURIComponent(filename)}`, { method: 'DELETE' });
   },
 
   // Series

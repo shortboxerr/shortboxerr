@@ -13,6 +13,7 @@ import { HistoryPage } from './pages/HistoryPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { WantedPage } from './pages/WantedPage';
 import { PullListPage } from './pages/PullListPage';
+import LogsPage from './pages/LogsPage';
 import { api } from './api/client';
 import './App.css';
 
@@ -149,6 +150,7 @@ function App() {
               <Route path="history" element={<HistoryPage />} />
               <Route path="import" element={<ManualImportPage />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="logs" element={<LogsPage />} />
             </Route>
           </Routes>
         </BrowserRouter>
