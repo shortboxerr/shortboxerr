@@ -729,6 +729,47 @@ This is a regression or incomplete implementation that needs to be addressed.
   - AC: Select all / deselect all toggle
   - AC: Show count of selected issues
 
+### 9.12 Series Status Accuracy (FIX REQUIRED)
+**Status: READY**
+
+Series status (Continuing vs Ended) is not being correctly determined. Ongoing series like "Absolute Batman" correctly show "Continuing", but ended series like "Deadman" also incorrectly show as "Continuing" when they've been ended for years.
+
+- [ ] **ComicVine status sync**
+  - AC: Fetch series status from ComicVine API during metadata sync
+  - AC: ComicVine `count_of_issues` vs actual issues can indicate completion
+  - AC: ComicVine `date_last_updated` may indicate staleness
+  - AC: Map ComicVine status values to Shortboxerr `SeriesStatus` enum
+
+- [ ] **Status determination logic**
+  - AC: If ComicVine explicitly marks series as "ended" or "cancelled", set to Ended
+  - AC: If last issue was published > N years ago (configurable, default: 2 years), consider Ended
+  - AC: If series has no new issues in > N months and total issues matches expected, consider Ended
+  - AC: If actively publishing or recent issue, set to Continuing
+  - AC: Handle edge cases: mini-series (always end), one-shots, annuals
+
+- [ ] **Status refresh**
+  - AC: Update series status during metadata refresh
+  - AC: Periodic background check for status changes (weekly scan)
+  - AC: Manual "Refresh Status" button on series detail page
+  - AC: Bulk status refresh for all series
+
+- [ ] **UI indicators**
+  - AC: Clear visual distinction between Continuing and Ended series
+  - AC: Show "Ended" badge on series that have concluded
+  - AC: Filter series list by status (Continuing/Ended/All)
+  - AC: Sort series by status
+
+- [ ] **Status override**
+  - AC: Allow manual override of series status (user knows better)
+  - AC: Track if status was manually set vs auto-detected
+  - AC: Don't overwrite manual status during auto-refresh
+
+**Implementation Notes:**
+- Check `ISeriesMetadataService.RefreshSeriesMetadataAsync` for where status is set
+- ComicVine API: `volume` endpoint returns status info
+- Consider adding `StatusSource` field: Auto, ComicVine, Manual
+- May need heuristics when ComicVine data is incomplete
+
 ---
 
 ## EPIC 10: NZB/Usenet Support (Mylar3/Sonarr/Radarr Parity)
