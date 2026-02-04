@@ -1388,6 +1388,175 @@ Different caching behavior based on whether a week is "active" (before/on releas
 
 ---
 
+## EPIC 13: Logging & Diagnostics (Mylar3/Sonarr/Radarr Parity)
+
+Comprehensive logging system for troubleshooting, monitoring, and operational visibility. Must achieve behavioral parity with Mylar3, Sonarr, and Radarr logging capabilities.
+
+### 13.1 File-Based Logging
+**Status: READY**
+
+- [ ] **Log file configuration**
+  - AC: Configurable log directory (default: `{data}/logs/`)
+  - AC: Log file naming: `shortboxerr.log`, `shortboxerr.txt`, or configurable
+  - AC: Configurable log level: Trace, Debug, Info, Warn, Error, Fatal
+  - AC: Default log level: Info
+  - AC: Separate log level for console vs file output
+
+- [ ] **Log rotation**
+  - AC: Configurable max log file size (default: 10MB, Sonarr default: 1MB)
+  - AC: Configurable number of rotated files to keep (default: 5)
+  - AC: Automatic rotation when size limit reached
+  - AC: Date-based rotation option (daily/weekly)
+  - AC: Compressed archive of rotated logs (optional)
+
+- [ ] **Log format**
+  - AC: Timestamp with milliseconds: `2026-02-04 20:30:45.123`
+  - AC: Log level indicator: `[Info]`, `[Warn]`, `[Error]`, etc.
+  - AC: Source/category: `[PullListService]`, `[ComicVineClient]`, etc.
+  - AC: Correlation ID for request tracing (optional)
+  - AC: Structured logging support (JSON format option)
+
+- [ ] **Serilog integration**
+  - AC: Use Serilog as logging provider (industry standard for .NET)
+  - AC: Configure sinks: Console, File, (optional: Seq, Elasticsearch)
+  - AC: Enrichers for context: Machine name, environment, version
+  - AC: Async file writing for performance
+
+### 13.2 Log Categories & Content
+**Status: READY**
+
+- [ ] **Application lifecycle logs**
+  - AC: Startup/shutdown events with version info
+  - AC: Configuration loaded events
+  - AC: Database migration events
+  - AC: Background service start/stop
+
+- [ ] **API request logging**
+  - AC: HTTP request/response logging (configurable verbosity)
+  - AC: Request duration timing
+  - AC: Error responses with details
+  - AC: Sensitive data masking (API keys, passwords)
+
+- [ ] **ComicVine API logging**
+  - AC: API calls with endpoint and parameters
+  - AC: Rate limiting events
+  - AC: Cache hits/misses
+  - AC: Response times and status codes
+  - AC: Error responses with retry info
+
+- [ ] **Download client logging**
+  - AC: Search requests and results count
+  - AC: Download initiated/completed/failed events
+  - AC: Provider connection status
+  - AC: Candidate ranking decisions (verbose mode)
+
+- [ ] **Import pipeline logging**
+  - AC: File detection events
+  - AC: Parsing results (series, issue, format)
+  - AC: Match decisions with confidence scores
+  - AC: Import success/failure with paths
+  - AC: Duplicate detection events
+
+- [ ] **Background service logging**
+  - AC: Scheduled task execution start/complete
+  - AC: Metadata refresh progress
+  - AC: Release day processing events
+  - AC: Error recovery attempts
+
+### 13.3 Log Viewer UI
+**Status: READY**
+
+- [ ] **Logs page**
+  - AC: System > Logs navigation item
+  - AC: Real-time log streaming (WebSocket or polling)
+  - AC: Log level filtering (show only errors, warnings, etc.)
+  - AC: Text search/filter within logs
+  - AC: Category/source filtering
+  - AC: Time range filtering
+
+- [ ] **Log display**
+  - AC: Color-coded log levels (red=error, yellow=warn, etc.)
+  - AC: Expandable log entries for full details
+  - AC: Copy log entry to clipboard
+  - AC: Monospace font for readability
+  - AC: Auto-scroll with pause option
+
+- [ ] **Log file management**
+  - AC: List of log files with sizes and dates
+  - AC: Download log files
+  - AC: Delete old log files
+  - AC: View rotated/archived logs
+
+### 13.4 Diagnostic Tools
+**Status: READY**
+
+- [ ] **System information endpoint**
+  - AC: GET /api/v1/system/info returns diagnostic info
+  - AC: .NET runtime version
+  - AC: OS and architecture
+  - AC: Database provider and version
+  - AC: Disk space (data directory)
+  - AC: Memory usage
+  - AC: Uptime
+
+- [ ] **Health check logging**
+  - AC: Periodic health check results logged
+  - AC: Database connectivity
+  - AC: External API reachability (ComicVine)
+  - AC: Download client connectivity
+  - AC: Disk space warnings
+
+- [ ] **Debug mode**
+  - AC: Command-line flag: `--debug` or `-d`
+  - AC: Environment variable: `SHORTBOXERR_DEBUG=true`
+  - AC: Enables verbose logging without config change
+  - AC: Logs full stack traces
+  - AC: Logs SQL queries (EF Core)
+
+### 13.5 Log Settings UI
+**Status: READY**
+
+- [ ] **Settings page integration**
+  - AC: Settings > General > Logging section
+  - AC: Log level dropdown (Trace to Fatal)
+  - AC: Log file path configuration
+  - AC: Max file size setting
+  - AC: Rotation file count setting
+  - AC: Enable/disable console logging
+
+- [ ] **Advanced settings**
+  - AC: Enable SQL query logging (debug)
+  - AC: Enable HTTP request body logging (debug)
+  - AC: Enable full stack traces
+  - AC: Log retention days (auto-cleanup)
+
+### 13.6 Parity Reference
+
+**Sonarr/Radarr logging features:**
+- Log files in `logs/` subdirectory
+- `sonarr.txt` / `radarr.txt` main log
+- `sonarr.debug.txt` for verbose logging
+- Configurable log level in UI
+- Log file rotation by size
+- Logs page with filtering and search
+- Trace ID for request correlation
+
+**Mylar3 logging features:**
+- `mylar.log` in data directory
+- Configurable log level in config
+- Rotation with numbered backups
+- Verbose mode for debugging
+- Separate logs for post-processing
+
+**Implementation Notes:**
+- Use Serilog with File and Console sinks
+- Add `Serilog.AspNetCore` for request logging
+- Use `ILogger<T>` throughout codebase (already standard)
+- Store log settings in `SystemSettings` table
+- Consider `Serilog.Sinks.Async` for file performance
+
+---
+
 ## Story Ordering Notes
 
 **EPIC 4 Implementation Order:**
