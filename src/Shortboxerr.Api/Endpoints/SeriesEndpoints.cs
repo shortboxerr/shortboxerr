@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Shortboxerr.Api.Caching;
 using Shortboxerr.Api.Dtos;
 using Shortboxerr.Core.Entities;
 using Shortboxerr.Infrastructure.Persistence;
@@ -50,21 +51,39 @@ public static class SeriesEndpoints
                 pageSize,
                 totalRecords));
         })
-        .WithName("GetAllSeries");
+        .WithName("GetAllSeries")
+        .WithHttpCache(120); // 2 minutes cache for list view
 
-        // GET single series by ID
-        group.MapGet("/{id:int}", async (ShortboxerrDbContext db, int id) =>
+        // GET single series by ID (with ETag support)
+        group.MapGet("/{id:int}", async (HttpContext httpContext, ShortboxerrDbContext db, int id) =>
         {
             var series = await db.Series
                 .Include(s => s.Issues)
                 .Include(s => s.Editions)
                 .FirstOrDefaultAsync(s => s.Id == id);
 
-            return series is null
-                ? Results.NotFound(new { message = $"Series {id} not found" })
-                : Results.Ok(SeriesDto.FromEntity(series));
+            if (series is null)
+                return Results.NotFound(new { message = $"Series {id} not found" });
+
+            // Generate ETag from series ID and UpdatedAt
+            var lastModified = series.UpdatedAt ?? series.CreatedAt;
+            var etag = ETagHelper.GenerateETag(series.Id, lastModified);
+            
+            // Check If-None-Match header
+            if (ETagHelper.IsNotModified(httpContext.Request, etag))
+            {
+                httpContext.Response.Headers.ETag = etag;
+                return Results.StatusCode(304); // Not Modified
+            }
+            
+            // Set ETag and Last-Modified headers
+            httpContext.Response.Headers.ETag = etag;
+            httpContext.Response.Headers.LastModified = lastModified.ToString("R"); // RFC1123 format
+            
+            return Results.Ok(SeriesDto.FromEntity(series));
         })
-        .WithName("GetSeriesById");
+        .WithName("GetSeriesById")
+        .WithHttpCache(300); // 5 minutes cache for detail view
 
         // GET issues for a series
         group.MapGet("/{id:int}/issues", async (
@@ -109,7 +128,8 @@ public static class SeriesEndpoints
                 pageSize,
                 totalRecords));
         })
-        .WithName("GetSeriesIssues");
+        .WithName("GetSeriesIssues")
+        .WithHttpCache(120); // 2 minutes cache for issue list
 
         // POST create series
         group.MapPost("/", async (ShortboxerrDbContext db, CreateSeriesRequest request) =>

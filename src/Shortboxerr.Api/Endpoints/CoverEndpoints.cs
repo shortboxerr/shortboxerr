@@ -1,23 +1,27 @@
 using Microsoft.AspNetCore.Mvc;
+using Shortboxerr.Api.Caching;
 using Shortboxerr.Core.Services;
 
 namespace Shortboxerr.Api.Endpoints;
 
 public static class CoverEndpoints
 {
+    // Cover images are cached for 1 day (can be manually refreshed)
+    private const int CoverCacheSeconds = 86400; // 1 day
+    
     public static void MapCoverEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/v1/covers")
             .WithTags("Covers");
 
-        // Get series cover
+        // Get series cover (with long-lived cache)
         group.MapGet("/series/{seriesId:int}", GetSeriesCover)
             .WithName("GetSeriesCover")
             .WithOpenApi()
             .Produces(200, contentType: "image/jpeg")
             .Produces(404);
 
-        // Get issue cover
+        // Get issue cover (with long-lived cache)
         group.MapGet("/issues/{issueId:int}", GetIssueCover)
             .WithName("GetIssueCover")
             .WithOpenApi()
@@ -67,6 +71,7 @@ public static class CoverEndpoints
     }
 
     private static async Task<IResult> GetSeriesCover(
+        HttpContext httpContext,
         int seriesId,
         [FromQuery] CoverSize size,
         ICoverService coverService,
@@ -84,10 +89,27 @@ public static class CoverEndpoints
             return Results.NotFound(new { error = "Cover file not found" });
         }
 
+        // Add Cache-Control header for cover images (1 day)
+        httpContext.Response.Headers.CacheControl = $"public, max-age={CoverCacheSeconds}";
+        
+        // Add ETag based on file modification time
+        var fileInfo = new FileInfo(result.FilePath);
+        var etag = ETagHelper.GenerateETag(seriesId, fileInfo.LastWriteTimeUtc);
+        
+        if (ETagHelper.IsNotModified(httpContext.Request, etag))
+        {
+            httpContext.Response.Headers.ETag = etag;
+            return Results.StatusCode(304);
+        }
+        
+        httpContext.Response.Headers.ETag = etag;
+        httpContext.Response.Headers.LastModified = fileInfo.LastWriteTimeUtc.ToString("R");
+
         return Results.File(result.FilePath, result.ContentType ?? "image/jpeg");
     }
 
     private static async Task<IResult> GetIssueCover(
+        HttpContext httpContext,
         int issueId,
         [FromQuery] CoverSize size,
         ICoverService coverService,
@@ -104,6 +126,22 @@ public static class CoverEndpoints
         {
             return Results.NotFound(new { error = "Cover file not found" });
         }
+
+        // Add Cache-Control header for cover images (1 day)
+        httpContext.Response.Headers.CacheControl = $"public, max-age={CoverCacheSeconds}";
+        
+        // Add ETag based on file modification time
+        var fileInfo = new FileInfo(result.FilePath);
+        var etag = ETagHelper.GenerateETag(issueId, fileInfo.LastWriteTimeUtc);
+        
+        if (ETagHelper.IsNotModified(httpContext.Request, etag))
+        {
+            httpContext.Response.Headers.ETag = etag;
+            return Results.StatusCode(304);
+        }
+        
+        httpContext.Response.Headers.ETag = etag;
+        httpContext.Response.Headers.LastModified = fileInfo.LastWriteTimeUtc.ToString("R");
 
         return Results.File(result.FilePath, result.ContentType ?? "image/jpeg");
     }
