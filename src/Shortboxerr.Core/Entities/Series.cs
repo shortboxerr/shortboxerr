@@ -40,6 +40,11 @@ public class Series
     public SeriesStatus Status { get; set; } = SeriesStatus.Continuing;
     
     /// <summary>
+    /// Source of the series status (how it was determined).
+    /// </summary>
+    public StatusSource StatusSource { get; set; } = StatusSource.Auto;
+    
+    /// <summary>
     /// Path to the series folder on disk.
     /// </summary>
     public string? Path { get; set; }
@@ -128,3 +133,23 @@ public enum SeriesStatus
     Hiatus = 2
 }
 
+/// <summary>
+/// Source of the series status determination.
+/// </summary>
+public enum StatusSource
+{
+    /// <summary>
+    /// Status was automatically determined by heuristics.
+    /// </summary>
+    Auto = 0,
+    
+    /// <summary>
+    /// Status was set from ComicVine data.
+    /// </summary>
+    ComicVine = 1,
+    
+    /// <summary>
+    /// Status was manually set by the user.
+    /// </summary>
+    Manual = 2
+}
