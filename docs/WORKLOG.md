@@ -1,5 +1,54 @@
 # Worklog
 
+## Iteration 044 (2026-02-03)
+**EPIC 12.1: Series/Issue List Caching - COMPLETED**
+
+### Commits
+1. `feat: add server-side caching to SeriesEndpoints (EPIC 12.1)`
+2. `test: add HTTP caching tests for SeriesEndpoints (EPIC 12.1)`
+
+### Deliverables
+
+#### Server-Side Caching for Series Endpoints
+- ✅ Series list endpoint (GET /api/v1/series) - 2-minute TTL
+- ✅ Series detail endpoint (GET /api/v1/series/{id}) - 5-minute TTL
+- ✅ Series issues endpoint (GET /api/v1/series/{id}/issues) - 2-minute TTL
+- ✅ Cache keys include query parameters for proper isolation
+
+#### Cache Invalidation
+- ✅ POST /api/v1/series - Invalidates series list cache
+- ✅ PUT /api/v1/series/{id} - Invalidates series list, detail, and issues caches
+- ✅ DELETE /api/v1/series/{id} - Invalidates series list, detail, and issues caches
+
+#### SQLite Compatibility Fix
+- ✅ Fixed decimal ordering issue in issues endpoint
+- ✅ Sort in memory for IssueNumber (SQLite limitation)
+
+### Cache Strategy
+| Endpoint | Server Cache TTL | HTTP Cache | Invalidation |
+|----------|------------------|-------------|--------------|
+| Series list | 2 min | 2 min | On CRUD |
+| Series detail | 5 min | 5 min | On update/delete |
+| Series issues | 2 min | 2 min | On series update/delete |
+
+### Unit Tests (4 new tests)
+- ✅ GetAllSeries_ReturnsCacheControlHeader
+- ✅ GetSeriesById_ReturnsCacheControlAndETagHeaders
+- ✅ GetSeriesById_WithIfNoneMatch_Returns304
+- ✅ GetSeriesIssues_ReturnsCacheControlHeader
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | Added ICacheService + invalidation |
+| `tests/Shortboxerr.Tests/SeriesEndpointTests.cs` | 4 new tests |
+
+### Test Results
+- Total: 652 tests passing (4 new)
+- Build: 0 errors
+
+---
+
 ## Iteration 043 (2026-02-03)
 **EPIC 12.3: HTTP Response Caching - COMPLETED**
 

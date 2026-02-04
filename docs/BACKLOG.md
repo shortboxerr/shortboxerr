@@ -1105,11 +1105,11 @@ Implement comprehensive caching to minimize database queries and external API ca
   - AC: Use sliding expiration for frequently accessed data ⏸️ (future enhancement)
   - AC: Cache key includes filter parameters (status, publisher, etc.) ⏸️ (future enhancement)
   
-- [ ] **Series/Issue list caching** (future enhancement)
-  - AC: Cache paginated series list with 2-minute TTL
-  - AC: Cache series detail (with issues) with 5-minute TTL
-  - AC: Invalidate on create/update/delete operations
-  - AC: Consider using ETag/Last-Modified headers for conditional requests
+- [x] **Series/Issue list caching** ✅
+  - AC: Cache paginated series list with 2-minute TTL ✅
+  - AC: Cache series detail (with issues) with 5-minute TTL ✅
+  - AC: Invalidate on create/update/delete operations ✅
+  - AC: Consider using ETag/Last-Modified headers for conditional requests ✅ (implemented in EPIC 12.3)
 
 - [x] **Dashboard aggregates caching** ✅
   - AC: Cache stats (counts, totals) with 1-minute TTL ✅

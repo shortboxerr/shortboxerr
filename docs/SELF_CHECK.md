@@ -1,6 +1,43 @@
-# Self Check - Iteration 043
+# Self Check - Iteration 044
 
-## EPIC 12.3: HTTP Response Caching
+## EPIC 12.1: Series/Issue List Caching
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Build succeeded with 0 errors |
+| Tests pass | ✅ | 652 total tests passing (4 new) |
+| Server-side caching | ✅ | Series list, detail, issues |
+| Cache invalidation | ✅ | On CRUD operations |
+| SQLite compatibility | ✅ | Fixed decimal ordering |
+| Git commits | ✅ | Conventional format |
+
+### Acceptance Criteria Status
+
+#### Series/Issue List Caching
+| AC | Status |
+|----|--------|
+| Cache paginated series list (2 min) | ✅ |
+| Cache series detail (5 min) | ✅ |
+| Invalidate on CRUD | ✅ |
+| ETag/Last-Modified headers | ✅ (from EPIC 12.3) |
+
+### New Tests (4 tests)
+- ✅ GetAllSeries_ReturnsCacheControlHeader
+- ✅ GetSeriesById_ReturnsCacheControlAndETagHeaders
+- ✅ GetSeriesById_WithIfNoneMatch_Returns304
+- ✅ GetSeriesIssues_ReturnsCacheControlHeader
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | ✅ Modified |
+| `tests/Shortboxerr.Tests/SeriesEndpointTests.cs` | ✅ 4 new tests |
+
+---
+
+## Previous: EPIC 12.3: HTTP Response Caching
 
 ### Checklist
 
