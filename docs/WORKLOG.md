@@ -1,5 +1,52 @@
 # Worklog
 
+## Iteration 046 (2026-02-04)
+**EPIC 12.4: ComicVine API Optimization - Prefetching - COMPLETED**
+
+### Commits
+1. `feat: add prefetching for adjacent weeks (EPIC 12.4)`
+
+### Deliverables
+
+#### Prefetch Implementation
+- ✅ `PrefetchAdjacentWeeksAsync` method in IPullListService
+- ✅ Fire-and-forget background task implementation in PullListService
+- ✅ Prefetches next and previous week's data when viewing current week
+- ✅ Separate control for pull list vs. discovery prefetching
+- ✅ Skips already-cached weeks to avoid redundant work
+
+#### API Integration
+- ✅ `prefetch` query parameter on `/week` endpoint (default: true)
+- ✅ `prefetch` query parameter on `/week/{date}` endpoint (default: true)
+- ✅ `prefetch` query parameter on `/discover/week` endpoint (default: true)
+- ✅ `prefetch` query parameter on `/discover/week/{date}` endpoint (default: true)
+
+### How It Works
+1. User requests current week's pull list or discovery data
+2. API returns the data immediately
+3. In background, service prefetches next and previous week's data
+4. Subsequent navigation to adjacent weeks is instant (cached)
+5. Prefetch is best-effort - failures don't affect main request
+
+### Unit Tests (3 new tests)
+- ✅ PrefetchAdjacentWeeksAsync_DoesNotThrow
+- ✅ PrefetchAdjacentWeeksAsync_PrefetchesPullList
+- ✅ PrefetchAdjacentWeeksAsync_SkipsAlreadyCachedWeeks
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/PullList/IPullListService.cs` | Add PrefetchAdjacentWeeksAsync |
+| `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` | Implement prefetch |
+| `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` | Add prefetch triggers |
+| `tests/Shortboxerr.Tests/PullListServiceTests.cs` | 3 new tests |
+
+### Test Results
+- Total: 661 tests passing (3 new)
+- Build: 0 errors
+
+---
+
 ## Iteration 045 (2026-02-04)
 **EPIC 11.3: Auto-Add to Wanted List - COMPLETED**
 

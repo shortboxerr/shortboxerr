@@ -1147,15 +1147,17 @@ Implement comprehensive caching to minimize database queries and external API ca
   - AC: Cache-busting for UI assets (already handled by Vite build) ✅
 
 ### 12.4 ComicVine API Optimization
-- [ ] **Request batching**
+- [ ] **Request batching** (deferred)
   - AC: Batch multiple issue lookups into single request where API supports
   - AC: Queue and deduplicate concurrent identical requests
   
-- [ ] **Prefetching**
-  - AC: Prefetch next week's releases when viewing current week
-  - AC: Background refresh of stale cache entries (proactive refresh)
+- [x] **Prefetching** ✅
+  - AC: Prefetch next week's releases when viewing current week ✅
+  - AC: Background refresh of stale cache entries (proactive refresh) ✅
+  - AC: `PrefetchAdjacentWeeksAsync` method in PullListService ✅
+  - AC: `prefetch` query parameter on /week and /discover/week endpoints ✅
 
-- [ ] **Rate limit awareness**
+- [ ] **Rate limit awareness** (deferred)
   - AC: Expose rate limit status in cache service
   - AC: Implement backoff when approaching limits
   - AC: Queue requests during rate limit cooldown
