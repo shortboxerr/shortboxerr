@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Shortboxerr.Core.ComicVine;
+using Shortboxerr.Core.Mylar3Migration;
 
 namespace Shortboxerr.Api.Endpoints;
 
@@ -10,6 +11,102 @@ public static class Mylar3ImportEndpoints
         var group = app.MapGroup("/api/v1/mylar3")
             .WithTags("Mylar3 Import")
             .WithOpenApi();
+
+        #region Full Database Migration
+
+        // POST /api/v1/mylar3/migration/analyze - Analyze Mylar3 database
+        group.MapPost("/migration/analyze", async (
+            IMylar3MigrationService migrationService,
+            [FromBody] AnalyzeDatabaseRequest request,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrEmpty(request.DatabasePath))
+            {
+                return Results.BadRequest(new { message = "Database path is required" });
+            }
+
+            var result = await migrationService.AnalyzeDatabaseAsync(request.DatabasePath, cancellationToken);
+            return result.Success
+                ? Results.Ok(result)
+                : Results.BadRequest(new { message = result.Error, result });
+        })
+        .WithName("AnalyzeMylar3Database");
+
+        // POST /api/v1/mylar3/migration/export - Export snapshot to JSON
+        group.MapPost("/migration/export", async (
+            IMylar3MigrationService migrationService,
+            [FromBody] ExportSnapshotRequest request,
+            CancellationToken cancellationToken) =>
+        {
+            if (request.Snapshot == null)
+            {
+                return Results.BadRequest(new { message = "Snapshot is required" });
+            }
+            if (string.IsNullOrEmpty(request.OutputPath))
+            {
+                return Results.BadRequest(new { message = "Output path is required" });
+            }
+
+            try
+            {
+                var path = await migrationService.ExportSnapshotAsync(
+                    request.Snapshot, request.OutputPath, cancellationToken);
+                return Results.Ok(new { path, message = "Snapshot exported successfully" });
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = $"Export failed: {ex.Message}" });
+            }
+        })
+        .WithName("ExportMylar3Snapshot");
+
+        // POST /api/v1/mylar3/migration/import - Import from snapshot
+        group.MapPost("/migration/import", async (
+            IMylar3MigrationService migrationService,
+            [FromBody] ImportFromSnapshotRequest request,
+            CancellationToken cancellationToken) =>
+        {
+            if (request.Snapshot == null)
+            {
+                return Results.BadRequest(new { message = "Snapshot is required" });
+            }
+
+            var result = await migrationService.ImportAsync(
+                request.Snapshot,
+                request.Options ?? new Mylar3MigrationOptions(),
+                cancellationToken);
+
+            return result.Success
+                ? Results.Ok(result)
+                : Results.BadRequest(new { message = result.Error, result });
+        })
+        .WithName("ImportMylar3Snapshot");
+
+        // POST /api/v1/mylar3/migration/migrate - Full migration (analyze + import)
+        group.MapPost("/migration/migrate", async (
+            IMylar3MigrationService migrationService,
+            [FromBody] FullMigrationRequest request,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrEmpty(request.DatabasePath))
+            {
+                return Results.BadRequest(new { message = "Database path is required" });
+            }
+
+            var result = await migrationService.MigrateAsync(
+                request.DatabasePath,
+                request.Options ?? new Mylar3MigrationOptions(),
+                cancellationToken);
+
+            return result.Success
+                ? Results.Ok(result)
+                : Results.BadRequest(new { message = result.Error, result });
+        })
+        .WithName("MigrateMylar3Database");
+
+        #endregion
+
+        #region ComicVine Settings Import
 
         // Parse ComicVine settings from config content
         group.MapPost("/comicvine/parse", (
@@ -105,11 +202,38 @@ public static class Mylar3ImportEndpoints
                 : Results.BadRequest(new { message = result.Error, result });
         })
         .WithName("MigrateMylar3ComicVineIds");
+
+        #endregion
     }
 }
 
 #region Request DTOs
 
+// Full Migration DTOs
+public record AnalyzeDatabaseRequest
+{
+    public string? DatabasePath { get; init; }
+}
+
+public record ExportSnapshotRequest
+{
+    public Mylar3Snapshot? Snapshot { get; init; }
+    public string? OutputPath { get; init; }
+}
+
+public record ImportFromSnapshotRequest
+{
+    public Mylar3Snapshot? Snapshot { get; init; }
+    public Mylar3MigrationOptions? Options { get; init; }
+}
+
+public record FullMigrationRequest
+{
+    public string? DatabasePath { get; init; }
+    public Mylar3MigrationOptions? Options { get; init; }
+}
+
+// ComicVine Import DTOs
 public record ParseConfigRequest
 {
     public string? ConfigContent { get; init; }

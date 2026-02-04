@@ -4,6 +4,7 @@ using Shortboxerr.Core.Caching;
 using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Infrastructure.Caching;
 using Shortboxerr.Core.Ddl;
+using Shortboxerr.Core.Mylar3Migration;
 using Shortboxerr.Core.Models;
 using Shortboxerr.Core.Providers;
 using Shortboxerr.Core.Notifications;
@@ -11,6 +12,7 @@ using Shortboxerr.Core.PullList;
 using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.ComicVine;
 using Shortboxerr.Infrastructure.Ddl;
+using Shortboxerr.Infrastructure.Mylar3Migration;
 using Shortboxerr.Infrastructure.Persistence;
 using Shortboxerr.Infrastructure.Providers;
 using Shortboxerr.Infrastructure.PullList;
@@ -57,6 +59,9 @@ public static class DependencyInjection
         services.AddScoped<IAutoMatchService, AutoMatchService>();
         services.AddScoped<IMetadataRefreshService, MetadataRefreshService>();
         services.AddScoped<IMylar3ComicVineImporter, Mylar3ComicVineImporter>();
+
+        // Migration services
+        services.AddScoped<IMylar3MigrationService, Mylar3MigrationService>();
 
         // Background services
         services.AddHostedService<BackgroundServices.MetadataRefreshBackgroundService>();
