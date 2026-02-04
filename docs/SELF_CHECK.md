@@ -1,3 +1,49 @@
+# Self Check - Iteration 062
+
+## EPIC 13.5: Log Settings UI
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Backend + Frontend |
+| Tests pass | ✅ | 712 tests passing |
+| Settings API | ✅ | GET/PUT endpoints |
+| Settings UI | ✅ | In General Settings |
+| Log level dropdown | ✅ | 6 levels |
+| File settings | ✅ | Size, count, retention |
+| Advanced settings | ✅ | SQL, HTTP, traces |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+#### Settings Page Integration
+| AC | Status |
+|----|--------|
+| Settings > General > Logging section | ✅ |
+| Log level dropdown | ✅ |
+| Log file path configuration | ✅ (read-only) |
+| Max file size setting | ✅ |
+| Rotation file count setting | ✅ |
+| Enable/disable console logging | ✅ |
+
+#### Advanced Settings
+| AC | Status |
+|----|--------|
+| Enable SQL query logging | ✅ |
+| Enable HTTP request body logging | ✅ |
+| Enable full stack traces | ✅ |
+| Log retention days | ✅ |
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `SettingsEndpoints.cs` | ✅ Modified |
+| `client.ts` | ✅ Modified |
+| `SettingsPage.tsx` | ✅ Modified |
+
+---
+
 # Self Check - Iteration 061
 
 ## EPIC 13.4: Health Check Logging

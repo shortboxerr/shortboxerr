@@ -1,5 +1,42 @@
 # Worklog
 
+## Iteration 062 (2026-02-04)
+**EPIC 13.5: Log Settings UI - COMPLETED**
+
+### Commits
+1. `feat: add log settings UI (EPIC 13.5)`
+
+### Deliverables
+
+#### Backend API
+- ✅ GET /api/v1/settings/logging - retrieve logging settings
+- ✅ PUT /api/v1/settings/logging - update logging settings
+- ✅ LoggingSettings DTO with all configuration options
+- ✅ Validation for log levels, file sizes, retention days
+
+#### Frontend UI
+- ✅ LoggingSettingsSection component
+- ✅ Log level dropdown (Verbose → Fatal)
+- ✅ Max file size setting (1-100 MB)
+- ✅ Rotation file count setting (1-20)
+- ✅ Log retention days (1-365)
+- ✅ Console logging toggle
+- ✅ Advanced debug settings section
+- ✅ Save button with status feedback
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` | Add logging settings endpoints |
+| `ui/src/api/client.ts` | Add LoggingSettings interface and API methods |
+| `ui/src/pages/SettingsPage.tsx` | Add LoggingSettingsSection component |
+
+### Test Results
+- Backend: 712 tests passing
+- Frontend: Build successful
+
+---
+
 ## Iteration 061 (2026-02-04)
 **EPIC 13.4: Health Check Logging - COMPLETED**
 

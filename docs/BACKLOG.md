@@ -1525,21 +1525,21 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
   - AC: Logs SQL queries (EF Core) ✅
 
 ### 13.5 Log Settings UI
-**Status: READY**
+**Status: COMPLETE** ✅
 
-- [ ] **Settings page integration**
-  - AC: Settings > General > Logging section
-  - AC: Log level dropdown (Trace to Fatal)
-  - AC: Log file path configuration
-  - AC: Max file size setting
-  - AC: Rotation file count setting
-  - AC: Enable/disable console logging
+- [x] **Settings page integration** ✅
+  - AC: Settings > General > Logging section ✅
+  - AC: Log level dropdown (Trace to Fatal) ✅
+  - AC: Log file path configuration ✅ (read-only, env-based)
+  - AC: Max file size setting ✅
+  - AC: Rotation file count setting ✅
+  - AC: Enable/disable console logging ✅
 
-- [ ] **Advanced settings**
-  - AC: Enable SQL query logging (debug)
-  - AC: Enable HTTP request body logging (debug)
-  - AC: Enable full stack traces
-  - AC: Log retention days (auto-cleanup)
+- [x] **Advanced settings** ✅
+  - AC: Enable SQL query logging (debug) ✅
+  - AC: Enable HTTP request body logging (debug) ✅
+  - AC: Enable full stack traces ✅
+  - AC: Log retention days (auto-cleanup) ✅
 
 ### 13.6 Parity Reference
 
