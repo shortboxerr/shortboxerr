@@ -143,28 +143,31 @@ public static class SeriesEndpoints
                     .Include(i => i.StoryArcs)
                     .Where(i => i.SeriesId == id);
 
-                // Apply sorting
-                query = (sortKey?.ToLowerInvariant(), sortDir?.ToLowerInvariant()) switch
+                // Note: SQLite doesn't support ORDER BY decimal, so we sort in memory for IssueNumber
+                var allRecords = await query.ToListAsync();
+                var totalRecords = allRecords.Count;
+
+                // Apply sorting in memory
+                var sortedRecords = (sortKey?.ToLowerInvariant(), sortDir?.ToLowerInvariant()) switch
                 {
-                    ("issuenumber", "desc") => query.OrderByDescending(i => i.IssueNumber),
-                    ("issuenumber", _) => query.OrderBy(i => i.IssueNumber),
-                    ("releasedate", "desc") => query.OrderByDescending(i => i.ReleaseDate ?? i.StoreDate),
-                    ("releasedate", _) => query.OrderBy(i => i.ReleaseDate ?? i.StoreDate),
-                    ("title", "desc") => query.OrderByDescending(i => i.Title),
-                    ("title", _) => query.OrderBy(i => i.Title),
-                    ("status", "desc") => query.OrderByDescending(i => i.HasFile).ThenByDescending(i => i.Monitored),
-                    ("status", _) => query.OrderBy(i => i.HasFile).ThenBy(i => i.Monitored),
-                    _ => query.OrderBy(i => i.IssueNumber)
+                    ("issuenumber", "desc") => allRecords.OrderByDescending(i => i.IssueNumber),
+                    ("issuenumber", _) => allRecords.OrderBy(i => i.IssueNumber),
+                    ("releasedate", "desc") => allRecords.OrderByDescending(i => i.ReleaseDate ?? i.StoreDate),
+                    ("releasedate", _) => allRecords.OrderBy(i => i.ReleaseDate ?? i.StoreDate),
+                    ("title", "desc") => allRecords.OrderByDescending(i => i.Title),
+                    ("title", _) => allRecords.OrderBy(i => i.Title),
+                    ("status", "desc") => allRecords.OrderByDescending(i => i.HasFile).ThenByDescending(i => i.Monitored),
+                    ("status", _) => allRecords.OrderBy(i => i.HasFile).ThenBy(i => i.Monitored),
+                    _ => allRecords.OrderBy(i => i.IssueNumber)
                 };
 
-                var totalRecords = await query.CountAsync();
-                var records = await query
+                var pagedRecords = sortedRecords
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
-                    .ToListAsync();
+                    .ToList();
 
                 return PagedResult<IssueDto>.Create(
-                    records.Select(IssueDto.FromEntity).ToList(),
+                    pagedRecords.Select(IssueDto.FromEntity).ToList(),
                     page,
                     pageSize,
                     totalRecords);

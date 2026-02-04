@@ -127,5 +127,101 @@ public class SeriesEndpointTests : IClassFixture<CustomWebApplicationFactory>
         var getResponse = await client.GetAsync($"/api/v1/series/{seriesId}");
         Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
     }
+
+    [Fact]
+    public async Task GetAllSeries_ReturnsCacheControlHeader()
+    {
+        // Arrange
+        var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.GetAsync("/api/v1/series");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(response.Headers.CacheControl is not null);
+        Assert.Contains("max-age", response.Headers.CacheControl.ToString());
+    }
+
+    [Fact]
+    public async Task GetSeriesById_ReturnsCacheControlAndETagHeaders()
+    {
+        // Arrange
+        var client = _factory.CreateClient();
+        
+        // Create a series first
+        var createRequest = new
+        {
+            title = "Series For Cache Test " + Guid.NewGuid().ToString("N")[..8]
+        };
+        var createResponse = await client.PostAsJsonAsync("/api/v1/series", createRequest);
+        var createdContent = await createResponse.Content.ReadAsStringAsync();
+        using var createdDoc = JsonDocument.Parse(createdContent);
+        var seriesId = createdDoc.RootElement.GetProperty("id").GetInt32();
+
+        // Act
+        var response = await client.GetAsync($"/api/v1/series/{seriesId}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(response.Headers.CacheControl is not null);
+        Assert.Contains("max-age", response.Headers.CacheControl.ToString());
+        Assert.True(response.Headers.ETag is not null);
+        Assert.True(response.Content.Headers.LastModified is not null);
+    }
+
+    [Fact]
+    public async Task GetSeriesById_WithIfNoneMatch_Returns304()
+    {
+        // Arrange
+        var client = _factory.CreateClient();
+        
+        // Create a series first
+        var createRequest = new
+        {
+            title = "Series For ETag Test " + Guid.NewGuid().ToString("N")[..8]
+        };
+        var createResponse = await client.PostAsJsonAsync("/api/v1/series", createRequest);
+        var createdContent = await createResponse.Content.ReadAsStringAsync();
+        using var createdDoc = JsonDocument.Parse(createdContent);
+        var seriesId = createdDoc.RootElement.GetProperty("id").GetInt32();
+
+        // First request to get ETag
+        var firstResponse = await client.GetAsync($"/api/v1/series/{seriesId}");
+        var etag = firstResponse.Headers.ETag?.Tag;
+
+        // Act - Second request with If-None-Match header
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/series/{seriesId}");
+        request.Headers.Add("If-None-Match", etag);
+        var secondResponse = await client.SendAsync(request);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotModified, secondResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetSeriesIssues_ReturnsCacheControlHeader()
+    {
+        // Arrange
+        var client = _factory.CreateClient();
+        
+        // Create a series first
+        var createRequest = new
+        {
+            title = "Series For Issues Cache Test " + Guid.NewGuid().ToString("N")[..8]
+        };
+        var createResponse = await client.PostAsJsonAsync("/api/v1/series", createRequest);
+        var createdContent = await createResponse.Content.ReadAsStringAsync();
+        using var createdDoc = JsonDocument.Parse(createdContent);
+        var seriesId = createdDoc.RootElement.GetProperty("id").GetInt32();
+
+        // Act
+        var response = await client.GetAsync($"/api/v1/series/{seriesId}/issues");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(response.Headers.CacheControl is not null);
+        Assert.Contains("max-age", response.Headers.CacheControl.ToString());
+    }
 }
 
