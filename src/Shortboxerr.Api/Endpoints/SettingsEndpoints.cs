@@ -31,6 +31,17 @@ public static class SettingsEndpoints
             .WithOpenApi()
             .Produces<GeneralSettings>(200);
 
+        // Logging Settings
+        group.MapGet("/logging", GetLoggingSettings)
+            .WithName("GetLoggingSettings")
+            .WithOpenApi()
+            .Produces<LoggingSettings>(200);
+
+        group.MapPut("/logging", UpdateLoggingSettings)
+            .WithName("UpdateLoggingSettings")
+            .WithOpenApi()
+            .Produces<LoggingSettings>(200);
+
         // Folder Settings (convenience endpoints)
         group.MapGet("/folders", GetFolderSettings)
             .WithName("GetFolderSettings")
@@ -130,6 +141,80 @@ public static class SettingsEndpoints
         CancellationToken cancellationToken)
     {
         await settingsService.SetGeneralSettingsAsync(request, cancellationToken);
+        return Results.Ok(request);
+    }
+
+    private static async Task<IResult> GetLoggingSettings(ISettingsService settingsService, CancellationToken cancellationToken)
+    {
+        var logLevel = await settingsService.GetAsync("Logging:LogLevel", cancellationToken) ?? "Information";
+        var logPath = await settingsService.GetAsync("Logging:LogPath", cancellationToken) ?? "";
+        var maxFileSizeMb = int.TryParse(await settingsService.GetAsync("Logging:MaxFileSizeMb", cancellationToken), out var size) ? size : 10;
+        var rotationFileCount = int.TryParse(await settingsService.GetAsync("Logging:RotationFileCount", cancellationToken), out var count) ? count : 5;
+        var consoleLoggingEnabled = bool.TryParse(await settingsService.GetAsync("Logging:ConsoleLoggingEnabled", cancellationToken), out var console) && console;
+        var sqlQueryLogging = bool.TryParse(await settingsService.GetAsync("Logging:SqlQueryLogging", cancellationToken), out var sql) && sql;
+        var httpRequestBodyLogging = bool.TryParse(await settingsService.GetAsync("Logging:HttpRequestBodyLogging", cancellationToken), out var http) && http;
+        var fullStackTraces = bool.TryParse(await settingsService.GetAsync("Logging:FullStackTraces", cancellationToken), out var stack) && stack;
+        var retentionDays = int.TryParse(await settingsService.GetAsync("Logging:RetentionDays", cancellationToken), out var days) ? days : 30;
+
+        // Get actual log path from environment or default
+        var actualLogPath = Environment.GetEnvironmentVariable("SHORTBOXERR_LOG_DIR")
+            ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "shortboxerr", "logs");
+
+        return Results.Ok(new LoggingSettings
+        {
+            LogLevel = logLevel,
+            LogPath = string.IsNullOrEmpty(logPath) ? actualLogPath : logPath,
+            MaxFileSizeMb = maxFileSizeMb,
+            RotationFileCount = rotationFileCount,
+            ConsoleLoggingEnabled = consoleLoggingEnabled,
+            SqlQueryLogging = sqlQueryLogging,
+            HttpRequestBodyLogging = httpRequestBodyLogging,
+            FullStackTraces = fullStackTraces,
+            RetentionDays = retentionDays
+        });
+    }
+
+    private static async Task<IResult> UpdateLoggingSettings(
+        LoggingSettings request,
+        ISettingsService settingsService,
+        CancellationToken cancellationToken)
+    {
+        // Validate log level
+        var validLevels = new[] { "Verbose", "Debug", "Information", "Warning", "Error", "Fatal" };
+        if (!validLevels.Contains(request.LogLevel, StringComparer.OrdinalIgnoreCase))
+        {
+            return Results.BadRequest(new { error = $"Invalid log level. Must be one of: {string.Join(", ", validLevels)}" });
+        }
+
+        // Validate file size (1-100 MB)
+        if (request.MaxFileSizeMb < 1 || request.MaxFileSizeMb > 100)
+        {
+            return Results.BadRequest(new { error = "MaxFileSizeMb must be between 1 and 100." });
+        }
+
+        // Validate rotation count (1-20)
+        if (request.RotationFileCount < 1 || request.RotationFileCount > 20)
+        {
+            return Results.BadRequest(new { error = "RotationFileCount must be between 1 and 20." });
+        }
+
+        // Validate retention days (1-365)
+        if (request.RetentionDays < 1 || request.RetentionDays > 365)
+        {
+            return Results.BadRequest(new { error = "RetentionDays must be between 1 and 365." });
+        }
+
+        await settingsService.SetAsync("Logging:LogLevel", request.LogLevel, cancellationToken);
+        if (!string.IsNullOrEmpty(request.LogPath))
+            await settingsService.SetAsync("Logging:LogPath", request.LogPath, cancellationToken);
+        await settingsService.SetAsync("Logging:MaxFileSizeMb", request.MaxFileSizeMb.ToString(), cancellationToken);
+        await settingsService.SetAsync("Logging:RotationFileCount", request.RotationFileCount.ToString(), cancellationToken);
+        await settingsService.SetAsync("Logging:ConsoleLoggingEnabled", request.ConsoleLoggingEnabled.ToString(), cancellationToken);
+        await settingsService.SetAsync("Logging:SqlQueryLogging", request.SqlQueryLogging.ToString(), cancellationToken);
+        await settingsService.SetAsync("Logging:HttpRequestBodyLogging", request.HttpRequestBodyLogging.ToString(), cancellationToken);
+        await settingsService.SetAsync("Logging:FullStackTraces", request.FullStackTraces.ToString(), cancellationToken);
+        await settingsService.SetAsync("Logging:RetentionDays", request.RetentionDays.ToString(), cancellationToken);
+
         return Results.Ok(request);
     }
 
@@ -365,3 +450,50 @@ public class ApiKeyResponse
     public bool IsNewKey { get; set; }
 }
 
+public class LoggingSettings
+{
+    /// <summary>
+    /// Minimum log level: Verbose, Debug, Information, Warning, Error, Fatal
+    /// </summary>
+    public string LogLevel { get; set; } = "Information";
+
+    /// <summary>
+    /// Directory path where log files are stored
+    /// </summary>
+    public string LogPath { get; set; } = "";
+
+    /// <summary>
+    /// Maximum size of each log file in MB before rotation
+    /// </summary>
+    public int MaxFileSizeMb { get; set; } = 10;
+
+    /// <summary>
+    /// Number of rotated log files to keep
+    /// </summary>
+    public int RotationFileCount { get; set; } = 5;
+
+    /// <summary>
+    /// Whether to also log to console
+    /// </summary>
+    public bool ConsoleLoggingEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Enable SQL query logging (debug feature)
+    /// </summary>
+    public bool SqlQueryLogging { get; set; }
+
+    /// <summary>
+    /// Enable HTTP request body logging (debug feature)
+    /// </summary>
+    public bool HttpRequestBodyLogging { get; set; }
+
+    /// <summary>
+    /// Enable full stack traces in error logs
+    /// </summary>
+    public bool FullStackTraces { get; set; }
+
+    /// <summary>
+    /// Number of days to retain log files before auto-cleanup
+    /// </summary>
+    public int RetentionDays { get; set; } = 30;
+}

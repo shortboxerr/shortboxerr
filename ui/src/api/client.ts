@@ -602,6 +602,18 @@ export interface FolderSettings {
   autoMoveToStaging: boolean;
 }
 
+export interface LoggingSettings {
+  logLevel: string;
+  logPath: string;
+  maxFileSizeMb: number;
+  rotationFileCount: number;
+  consoleLoggingEnabled: boolean;
+  sqlQueryLogging: boolean;
+  httpRequestBodyLogging: boolean;
+  fullStackTraces: boolean;
+  retentionDays: number;
+}
+
 export interface NamingToken {
   token: string;
   description: string;
@@ -1171,6 +1183,32 @@ export const api = {
 
   updateFolderSettings: async (settings: Partial<FolderSettings>): Promise<FolderSettings> => {
     return await fetchApi<FolderSettings>('/api/v1/settings/folders', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+  },
+
+  // Logging Settings
+  getLoggingSettings: async (): Promise<LoggingSettings> => {
+    try {
+      return await fetchApi<LoggingSettings>('/api/v1/settings/logging');
+    } catch {
+      return {
+        logLevel: 'Information',
+        logPath: '',
+        maxFileSizeMb: 10,
+        rotationFileCount: 5,
+        consoleLoggingEnabled: true,
+        sqlQueryLogging: false,
+        httpRequestBodyLogging: false,
+        fullStackTraces: false,
+        retentionDays: 30,
+      };
+    }
+  },
+
+  updateLoggingSettings: async (settings: LoggingSettings): Promise<LoggingSettings> => {
+    return await fetchApi<LoggingSettings>('/api/v1/settings/logging', {
       method: 'PUT',
       body: JSON.stringify(settings),
     });

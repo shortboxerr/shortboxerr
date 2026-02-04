@@ -542,6 +542,8 @@ function GeneralSettings() {
         </SettingsField>
       </SettingsSection>
 
+      <LoggingSettingsSection />
+
       {/* Reset API Key Confirmation Modal */}
       {showResetConfirm && (
         <div style={{
@@ -592,6 +594,249 @@ function GeneralSettings() {
         </div>
       )}
     </>
+  );
+}
+
+// ============== LOGGING SETTINGS ==============
+
+const LOG_LEVELS = ['Verbose', 'Debug', 'Information', 'Warning', 'Error', 'Fatal'];
+
+function LoggingSettingsSection() {
+  const queryClient = useQueryClient();
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ['loggingSettings'],
+    queryFn: api.getLoggingSettings,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: api.updateLoggingSettings,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['loggingSettings'] });
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    },
+    onError: () => {
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    },
+  });
+
+  const [localSettings, setLocalSettings] = useState({
+    logLevel: 'Information',
+    logPath: '',
+    maxFileSizeMb: 10,
+    rotationFileCount: 5,
+    consoleLoggingEnabled: true,
+    sqlQueryLogging: false,
+    httpRequestBodyLogging: false,
+    fullStackTraces: false,
+    retentionDays: 30,
+  });
+
+  // Update local state when settings load
+  useEffect(() => {
+    if (settings) {
+      setLocalSettings(settings);
+    }
+  }, [settings]);
+
+  const handleSave = () => {
+    setSaveStatus('saving');
+    updateMutation.mutate(localSettings);
+  };
+
+  if (isLoading) {
+    return (
+      <SettingsSection title="Logging">
+        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          Loading logging settings...
+        </div>
+      </SettingsSection>
+    );
+  }
+
+  return (
+    <SettingsSection title="Logging">
+      {saveStatus !== 'idle' && (
+        <div style={{
+          padding: '8px 12px',
+          marginBottom: '16px',
+          borderRadius: 'var(--radius-sm)',
+          fontSize: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          background: saveStatus === 'saving' ? 'var(--bg-tertiary)' :
+                     saveStatus === 'saved' ? 'rgba(92, 184, 92, 0.1)' :
+                     'rgba(217, 83, 79, 0.1)',
+          border: `1px solid ${
+            saveStatus === 'saving' ? 'var(--border-color)' :
+            saveStatus === 'saved' ? 'var(--accent-success)' :
+            'var(--accent-danger)'
+          }`,
+          color: saveStatus === 'saving' ? 'var(--text-secondary)' :
+                 saveStatus === 'saved' ? 'var(--accent-success)' :
+                 'var(--accent-danger)',
+        }}>
+          {saveStatus === 'saving' && <><div className="spinner" style={{ width: '12px', height: '12px' }} /> Saving...</>}
+          {saveStatus === 'saved' && <><CheckCircle size={14} /> Saved</>}
+          {saveStatus === 'error' && <><AlertCircle size={14} /> Failed to save</>}
+        </div>
+      )}
+
+      <SettingsField 
+        label="Log Level" 
+        description="Minimum severity level for log messages"
+      >
+        <select
+          className="input"
+          style={{ width: '200px' }}
+          value={localSettings.logLevel}
+          onChange={(e) => setLocalSettings({ ...localSettings, logLevel: e.target.value })}
+        >
+          {LOG_LEVELS.map((level) => (
+            <option key={level} value={level}>{level}</option>
+          ))}
+        </select>
+      </SettingsField>
+
+      <SettingsField 
+        label="Log File Path" 
+        description="Directory where log files are stored (read-only, set via environment)"
+      >
+        <input
+          className="input"
+          style={{ width: '400px' }}
+          value={localSettings.logPath}
+          readOnly
+          disabled
+        />
+      </SettingsField>
+
+      <SettingsField 
+        label="Max File Size (MB)" 
+        description="Maximum size of each log file before rotation"
+      >
+        <input
+          type="number"
+          className="input"
+          style={{ width: '100px' }}
+          min={1}
+          max={100}
+          value={localSettings.maxFileSizeMb}
+          onChange={(e) => setLocalSettings({ ...localSettings, maxFileSizeMb: parseInt(e.target.value) || 10 })}
+        />
+      </SettingsField>
+
+      <SettingsField 
+        label="Rotation File Count" 
+        description="Number of rotated log files to keep"
+      >
+        <input
+          type="number"
+          className="input"
+          style={{ width: '100px' }}
+          min={1}
+          max={20}
+          value={localSettings.rotationFileCount}
+          onChange={(e) => setLocalSettings({ ...localSettings, rotationFileCount: parseInt(e.target.value) || 5 })}
+        />
+      </SettingsField>
+
+      <SettingsField 
+        label="Log Retention (Days)" 
+        description="Automatically delete logs older than this"
+      >
+        <input
+          type="number"
+          className="input"
+          style={{ width: '100px' }}
+          min={1}
+          max={365}
+          value={localSettings.retentionDays}
+          onChange={(e) => setLocalSettings({ ...localSettings, retentionDays: parseInt(e.target.value) || 30 })}
+        />
+      </SettingsField>
+
+      <SettingsField 
+        label="Console Logging" 
+        description="Also output logs to console"
+      >
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={localSettings.consoleLoggingEnabled}
+            onChange={(e) => setLocalSettings({ ...localSettings, consoleLoggingEnabled: e.target.checked })}
+            style={{ width: '18px', height: '18px' }}
+          />
+          <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Enabled</span>
+        </label>
+      </SettingsField>
+
+      <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+        <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: 'var(--text-primary)' }}>
+          Advanced Logging (Debug)
+        </h4>
+
+        <SettingsField 
+          label="SQL Query Logging" 
+          description="Log all database queries (verbose, development only)"
+        >
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={localSettings.sqlQueryLogging}
+              onChange={(e) => setLocalSettings({ ...localSettings, sqlQueryLogging: e.target.checked })}
+              style={{ width: '18px', height: '18px' }}
+            />
+            <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Enabled</span>
+          </label>
+        </SettingsField>
+
+        <SettingsField 
+          label="HTTP Request Body Logging" 
+          description="Log full HTTP request/response bodies"
+        >
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={localSettings.httpRequestBodyLogging}
+              onChange={(e) => setLocalSettings({ ...localSettings, httpRequestBodyLogging: e.target.checked })}
+              style={{ width: '18px', height: '18px' }}
+            />
+            <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Enabled</span>
+          </label>
+        </SettingsField>
+
+        <SettingsField 
+          label="Full Stack Traces" 
+          description="Include complete stack traces in error logs"
+        >
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={localSettings.fullStackTraces}
+              onChange={(e) => setLocalSettings({ ...localSettings, fullStackTraces: e.target.checked })}
+              style={{ width: '18px', height: '18px' }}
+            />
+            <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Enabled</span>
+          </label>
+        </SettingsField>
+      </div>
+
+      <div style={{ marginTop: '20px' }}>
+        <button
+          className="btn btn-primary"
+          onClick={handleSave}
+          disabled={updateMutation.isPending}
+        >
+          <Save size={16} />
+          {updateMutation.isPending ? 'Saving...' : 'Save Logging Settings'}
+        </button>
+      </div>
+    </SettingsSection>
   );
 }
 
