@@ -45,6 +45,8 @@ public class StagingService : IStagingService
     {
         var items = new List<StagedItem>();
 
+        _logger.LogInformation("Scanning staging folder: {StagingFolder}", _stagingFolder);
+
         if (!Directory.Exists(_stagingFolder))
         {
             _logger.LogWarning("Staging folder does not exist: {StagingFolder}", _stagingFolder);
@@ -52,14 +54,26 @@ public class StagingService : IStagingService
         }
 
         var files = Directory.EnumerateFiles(_stagingFolder, "*.*", SearchOption.AllDirectories)
-            .Where(f => _allowedExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()));
+            .Where(f => _allowedExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+            .ToList();
+
+        _logger.LogInformation("Found {Count} files to process in staging folder", files.Count);
 
         foreach (var file in files)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             var fileInfo = new FileInfo(file);
+            _logger.LogDebug("File detected: {FileName}, Size: {Size:N0} bytes", fileInfo.Name, fileInfo.Length);
+
             var (parsedInfo, confidence, isCollection) = _parser.Parse(fileInfo.Name);
+            
+            _logger.LogDebug("Parse result: Series={Series}, Issue={Issue}, Year={Year}, Confidence={Confidence}%, Collection={IsCollection}",
+                parsedInfo.SeriesTitle ?? "(none)", 
+                parsedInfo.IssueNumber?.ToString() ?? "(none)", 
+                parsedInfo.Year?.ToString() ?? "(none)",
+                confidence, 
+                isCollection);
 
             var item = new StagedItem
             {
@@ -82,8 +96,18 @@ public class StagingService : IStagingService
             // Validate file
             ValidateStagedItem(item);
 
+            if (!string.IsNullOrEmpty(item.RejectionReason))
+            {
+                _logger.LogDebug("File rejected: {FileName}, Reason: {Reason}", fileInfo.Name, item.RejectionReason);
+            }
+
             items.Add(item);
         }
+
+        _logger.LogInformation("Staging scan complete: {Total} files, {Valid} valid, {Rejected} rejected",
+            items.Count,
+            items.Count(i => string.IsNullOrEmpty(i.RejectionReason)),
+            items.Count(i => !string.IsNullOrEmpty(i.RejectionReason)));
 
         return items.OrderByDescending(i => i.ParseConfidence).ToList();
     }
@@ -198,16 +222,30 @@ public class StagingService : IStagingService
         int? editionId, 
         CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation("Import initiated: {SourcePath}", sourcePath);
+        _logger.LogDebug("Import target: SeriesId={SeriesId}, IssueId={IssueId}, EditionId={EditionId}", 
+            seriesId, issueId, editionId);
+        
         var preview = await GetImportPreviewAsync(sourcePath, seriesId, issueId, editionId, cancellationToken);
         
         if (!preview.CanImport)
         {
+            _logger.LogWarning("Import blocked: {SourcePath}, Reason: {Reason}", sourcePath, preview.BlockReason);
             return new ImportResult
             {
                 Success = false,
                 SourcePath = sourcePath,
                 ErrorMessage = preview.BlockReason
             };
+        }
+
+        // Check for duplicate detection
+        var existingAsset = await _db.FileAssets
+            .FirstOrDefaultAsync(f => f.Path == preview.DestinationPath, cancellationToken);
+        if (existingAsset != null)
+        {
+            _logger.LogWarning("Duplicate detected: existing file at {Destination} (Asset ID: {AssetId})",
+                preview.DestinationPath, existingAsset.Id);
         }
 
         try
@@ -217,9 +255,11 @@ public class StagingService : IStagingService
             if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
             {
                 Directory.CreateDirectory(destDir);
+                _logger.LogDebug("Created destination directory: {Directory}", destDir);
             }
 
             // Move the file (atomic on same filesystem)
+            _logger.LogDebug("Moving file: {Source} → {Destination}", sourcePath, preview.DestinationPath);
             File.Move(sourcePath, preview.DestinationPath, overwrite: true);
 
             // Create FileAsset record
@@ -245,6 +285,7 @@ public class StagingService : IStagingService
                 {
                     issue.HasFile = true;
                     issue.UpdatedAt = DateTime.UtcNow;
+                    _logger.LogDebug("Updated Issue {IssueId}: HasFile=true", issueId);
                 }
             }
             else if (editionId.HasValue)
@@ -254,6 +295,7 @@ public class StagingService : IStagingService
                 {
                     edition.HasFile = true;
                     edition.UpdatedAt = DateTime.UtcNow;
+                    _logger.LogDebug("Updated Edition {EditionId}: HasFile=true", editionId);
                 }
             }
 
@@ -273,7 +315,8 @@ public class StagingService : IStagingService
             _db.HistoryEvents.Add(historyEvent);
             await _db.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Successfully imported {Source} to {Destination}", sourcePath, preview.DestinationPath);
+            _logger.LogInformation("Import success: {Source} → {Destination}, Size: {Size:N0} bytes, Format: {Format}",
+                Path.GetFileName(sourcePath), preview.DestinationPath, fileInfo.Length, fileAsset.Format);
 
             return new ImportResult
             {
@@ -286,7 +329,8 @@ public class StagingService : IStagingService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to import {Source}", sourcePath);
+            _logger.LogError(ex, "Import failed: {Source} → {Destination}, Error: {Error}",
+                sourcePath, preview.DestinationPath, ex.Message);
 
             // Log failure event
             var failEvent = new HistoryEvent
@@ -358,6 +402,8 @@ public class StagingService : IStagingService
 
     private async Task TryMatchSeriesAsync(StagedItem item, string seriesTitle, CancellationToken cancellationToken)
     {
+        _logger.LogDebug("Attempting series match for: '{SeriesTitle}'", seriesTitle);
+        
         // Try exact match first
         var series = await _db.Series
             .FirstOrDefaultAsync(s => s.Title == seriesTitle || s.SortTitle == seriesTitle, cancellationToken);
@@ -367,12 +413,29 @@ public class StagingService : IStagingService
             // Try contains match
             series = await _db.Series
                 .FirstOrDefaultAsync(s => s.Title.Contains(seriesTitle) || seriesTitle.Contains(s.Title), cancellationToken);
+            
+            if (series != null)
+            {
+                _logger.LogDebug("Series match (partial): '{ParsedTitle}' → '{SeriesTitle}' (ID: {SeriesId})",
+                    seriesTitle, series.Title, series.Id);
+            }
+        }
+        else
+        {
+            _logger.LogDebug("Series match (exact): '{ParsedTitle}' → '{SeriesTitle}' (ID: {SeriesId})",
+                seriesTitle, series.Title, series.Id);
         }
 
         if (series != null)
         {
             item.SuggestedSeriesId = series.Id;
+            var oldConfidence = item.ParseConfidence;
             item.ParseConfidence = Math.Min(100, item.ParseConfidence + 15);
+            _logger.LogDebug("Confidence adjusted: {OldConfidence}% → {NewConfidence}%", oldConfidence, item.ParseConfidence);
+        }
+        else
+        {
+            _logger.LogDebug("No series match found for: '{SeriesTitle}'", seriesTitle);
         }
     }
 
