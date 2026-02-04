@@ -871,4 +871,152 @@ public class PullListServiceTests : IDisposable
     }
 
     #endregion
+
+    #region Caching Integration Tests
+
+    [Fact]
+    public async Task GetStatsAsync_SecondCallUsesCache()
+    {
+        // Arrange - Add some test data
+        var series = new Series { Title = "Test", Monitored = true };
+        _dbContext.Series.Add(series);
+        await _dbContext.SaveChangesAsync();
+
+        var issue = new Issue
+        {
+            SeriesId = series.Id,
+            IssueNumber = 1,
+            Title = "Test Issue",
+            Status = IssueStatus.Wanted
+        };
+        _dbContext.Issues.Add(issue);
+        await _dbContext.SaveChangesAsync();
+
+        // Act - First call should hit DB
+        var stats1 = await _service.GetStatsAsync();
+        
+        // Modify DB directly (bypassing service)
+        _dbContext.Issues.Remove(issue);
+        await _dbContext.SaveChangesAsync();
+        
+        // Second call should use cache
+        var stats2 = await _service.GetStatsAsync();
+
+        // Assert - Both calls should return same result (cached)
+        Assert.Equal(stats1.TotalWantedIssues, stats2.TotalWantedIssues);
+        Assert.Equal(1, stats2.TotalWantedIssues); // Still shows 1 from cache
+    }
+
+    [Fact]
+    public async Task MarkAsOwnedAsync_InvalidatesStatsCache()
+    {
+        // Arrange
+        var series = new Series { Title = "Test", Monitored = true };
+        _dbContext.Series.Add(series);
+        await _dbContext.SaveChangesAsync();
+
+        var issue = new Issue
+        {
+            SeriesId = series.Id,
+            IssueNumber = 1,
+            Title = "Test Issue",
+            Status = IssueStatus.Wanted
+        };
+        _dbContext.Issues.Add(issue);
+        await _dbContext.SaveChangesAsync();
+
+        // Act - Get stats first (populates cache)
+        var statsBefore = await _service.GetStatsAsync();
+        
+        // Change status (should invalidate cache)
+        await _service.MarkAsOwnedAsync(issue.Id);
+        
+        // Get stats again (should reflect change)
+        var statsAfter = await _service.GetStatsAsync();
+
+        // Assert
+        Assert.Equal(1, statsBefore.TotalWantedIssues);
+        Assert.Equal(0, statsAfter.TotalWantedIssues);
+        Assert.Equal(1, statsAfter.TotalOwnedIssues);
+    }
+
+    [Fact]
+    public async Task BulkUpdateStatusAsync_InvalidatesStatsCache()
+    {
+        // Arrange
+        var series = new Series { Title = "Test", Monitored = true };
+        _dbContext.Series.Add(series);
+        await _dbContext.SaveChangesAsync();
+
+        var issues = new[]
+        {
+            new Issue { SeriesId = series.Id, IssueNumber = 1, Title = "Issue 1", Status = IssueStatus.Wanted },
+            new Issue { SeriesId = series.Id, IssueNumber = 2, Title = "Issue 2", Status = IssueStatus.Wanted },
+            new Issue { SeriesId = series.Id, IssueNumber = 3, Title = "Issue 3", Status = IssueStatus.Wanted }
+        };
+        _dbContext.Issues.AddRange(issues);
+        await _dbContext.SaveChangesAsync();
+
+        // Act - Get stats first (populates cache)
+        var statsBefore = await _service.GetStatsAsync();
+        
+        // Bulk update (should invalidate cache)
+        await _service.BulkUpdateStatusAsync(issues.Select(i => i.Id), IssueStatus.Owned);
+        
+        // Get stats again (should reflect change)
+        var statsAfter = await _service.GetStatsAsync();
+
+        // Assert
+        Assert.Equal(3, statsBefore.TotalWantedIssues);
+        Assert.Equal(0, statsAfter.TotalWantedIssues);
+        Assert.Equal(3, statsAfter.TotalOwnedIssues);
+    }
+
+    [Fact]
+    public async Task GetWeeklyDiscoveryAsync_UsesCache()
+    {
+        // Arrange
+        var weekOf = new DateTime(2026, 2, 4);
+        var mockResult = new ComicVineSearchResult<ComicVineIssue>
+        {
+            Success = true,
+            Results = new List<ComicVineIssue>
+            {
+                new ComicVineIssue
+                {
+                    Id = 1001,
+                    Name = "Test Issue",
+                    IssueNumber = "1",
+                    StoreDate = new DateTime(2026, 2, 4),
+                    Volume = new ComicVineVolumeRef { Id = 1, Name = "Test Volume" }
+                }
+            },
+            TotalResults = 1
+        };
+        
+        _mockComicVineClient
+            .Setup(c => c.GetIssuesByStoreDateAsync(
+                It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(mockResult);
+        
+        _mockComicVineClient
+            .Setup(c => c.IsConfiguredAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        // Act - First call should hit API
+        var result1 = await _service.GetWeeklyDiscoveryAsync(weekOf);
+        
+        // Second call should use cache (API won't be called again)
+        var result2 = await _service.GetWeeklyDiscoveryAsync(weekOf);
+
+        // Assert
+        Assert.Equal(result1.Issues.Count, result2.Issues.Count);
+        
+        // API should only be called once due to caching
+        _mockComicVineClient.Verify(
+            c => c.GetIssuesByStoreDateAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Once());
+    }
+
+    #endregion
 }
