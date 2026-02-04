@@ -16,6 +16,7 @@ public class SeriesMetadataService : ISeriesMetadataService
     private readonly ShortboxerrDbContext _dbContext;
     private readonly ISettingsService _settingsService;
     private readonly ILogger<SeriesMetadataService> _logger;
+    private readonly SeriesStatusDeterminer _statusDeterminer;
 
     public SeriesMetadataService(
         IComicVineClient comicVineClient,
@@ -27,6 +28,7 @@ public class SeriesMetadataService : ISeriesMetadataService
         _dbContext = dbContext;
         _settingsService = settingsService;
         _logger = logger;
+        _statusDeterminer = new SeriesStatusDeterminer(logger as ILogger<SeriesStatusDeterminer>);
     }
 
     /// <inheritdoc />
@@ -427,6 +429,34 @@ public class SeriesMetadataService : ISeriesMetadataService
         // Sync issues
         var syncResult = await SyncIssuesFromComicVineInternalAsync(series, cancellationToken);
 
+        // Update series status (only if not manually set)
+        if (series.StatusSource != StatusSource.Manual)
+        {
+            var lastIssueDate = volume.Data.LastIssue != null 
+                ? await GetIssueReleaseDateAsync(volume.Data.LastIssue.Id, cancellationToken)
+                : null;
+            var firstIssueDate = volume.Data.FirstIssue != null
+                ? await GetIssueReleaseDateAsync(volume.Data.FirstIssue.Id, cancellationToken)
+                : null;
+                
+            var (status, statusSource, statusReasons) = _statusDeterminer.DetermineStatusFromComicVine(
+                volume.Data.Name,
+                volume.Data.StartYear,
+                volume.Data.IssueCount,
+                firstIssueDate,
+                lastIssueDate,
+                ParseComicVineDate(volume.Data.DateLastUpdated));
+                
+            if (series.Status != status)
+            {
+                _logger.LogInformation("Updated series {SeriesId} ({Title}) status from {OldStatus} to {NewStatus}. Reasons: {Reasons}",
+                    seriesId, series.Title, series.Status, status, string.Join("; ", statusReasons));
+                series.Status = status;
+                series.StatusSource = statusSource;
+                metadataChanged = true;
+            }
+        }
+
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return new SeriesRefreshResult
@@ -495,11 +525,33 @@ public class SeriesMetadataService : ISeriesMetadataService
             ComicVineLastUpdated = ParseComicVineDate(volume.Data.DateLastUpdated),
             MetadataLastRefreshed = DateTime.UtcNow,
             Monitored = monitored,
-            Status = volume.Data.IssueCount > 0 && volume.Data.LastIssue != null
-                ? SeriesStatus.Continuing
-                : SeriesStatus.Ended,
+            // Status will be set after we determine it from available data
+            Status = SeriesStatus.Continuing,
+            StatusSource = StatusSource.ComicVine,
             Path = rootFolder != null ? System.IO.Path.Combine(rootFolder, SanitizeFolderName(volume.Data.Name)) : null
         };
+
+        // Determine series status from ComicVine data
+        var lastIssueDate = volume.Data.LastIssue != null 
+            ? await GetIssueReleaseDateAsync(volume.Data.LastIssue.Id, cancellationToken)
+            : null;
+        var firstIssueDate = volume.Data.FirstIssue != null
+            ? await GetIssueReleaseDateAsync(volume.Data.FirstIssue.Id, cancellationToken)
+            : null;
+            
+        var (status, statusSource, statusReasons) = _statusDeterminer.DetermineStatusFromComicVine(
+            volume.Data.Name,
+            volume.Data.StartYear,
+            volume.Data.IssueCount,
+            firstIssueDate,
+            lastIssueDate,
+            ParseComicVineDate(volume.Data.DateLastUpdated));
+            
+        series.Status = status;
+        series.StatusSource = statusSource;
+        
+        _logger.LogInformation("Determined series status: {Status} (source: {Source}). Reasons: {Reasons}",
+            status, statusSource, string.Join("; ", statusReasons));
 
         _dbContext.Series.Add(series);
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -555,6 +607,27 @@ public class SeriesMetadataService : ISeriesMetadataService
     }
 
     #region Private Methods
+
+    /// <summary>
+    /// Gets the release date of an issue from ComicVine.
+    /// </summary>
+    private async Task<DateTime?> GetIssueReleaseDateAsync(int issueId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var issueResult = await _comicVineClient.GetIssueAsync(issueId, cancellationToken);
+            if (issueResult.Success && issueResult.Data != null)
+            {
+                // Prefer store date, then cover date
+                return issueResult.Data.StoreDate ?? issueResult.Data.CoverDate;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get release date for issue {IssueId}", issueId);
+        }
+        return null;
+    }
 
     private async Task<IssueSyncResult> SyncIssuesFromComicVineInternalAsync(
         Series series,
