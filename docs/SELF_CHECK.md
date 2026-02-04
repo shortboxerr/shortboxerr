@@ -1,3 +1,55 @@
+# Self Check - Iteration 048
+
+## EPIC 11.6: Mylar3 Settings Import
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Build succeeded with 0 errors |
+| Tests pass | ✅ | 677 total tests passing (7 new) |
+| Pull list settings parsing | ✅ | Mylar3PullListSettings model |
+| Monitoring mode import | ✅ | Series.Monitor field + mapping |
+| API endpoints | ✅ | 4 pull list settings endpoints |
+| Unit tests | ✅ | 7 tests for parsing scenarios |
+| Git commits | ⏳ | Ready to commit |
+
+### Acceptance Criteria Status
+
+#### Parse config.ini for pull list settings
+| AC | Status |
+|----|--------|
+| Weekly export folder | ✅ |
+| Weekly export format | ✅ |
+| Weekly export enabled | ✅ |
+| Default monitoring mode | ✅ |
+| Auto-add settings | ✅ |
+| Include annuals/specials | ✅ |
+| Skip variants | ✅ |
+| Search delay hours | ✅ |
+| Week start day | ✅ |
+| Track unmapped settings | ✅ |
+
+#### Import series monitoring modes
+| AC | Status |
+|----|--------|
+| Mylar3Series.Monitor field | ✅ |
+| Derive mode from status/ignored | ✅ |
+| Read Monitor column if exists | ✅ |
+| Map to SeriesMonitoringMode | ✅ |
+| Apply during migration | ✅ |
+| ImportMonitoringModes option | ✅ |
+
+#### API Endpoints
+| AC | Status |
+|----|--------|
+| POST /api/v1/mylar3/pulllist/parse | ✅ |
+| POST /api/v1/mylar3/pulllist/parse-file | ✅ |
+| POST /api/v1/mylar3/pulllist/import | ✅ |
+| POST /api/v1/mylar3/pulllist/import-from-file | ✅ |
+
+---
+
 # Self Check - Iteration 047
 
 ## EPIC 7: Mylar3 Migration

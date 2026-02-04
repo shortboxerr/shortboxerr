@@ -221,6 +221,7 @@ public class Mylar3MigrationService : IMylar3MigrationService
         var command = connection.CreateCommand();
         
         // Common columns in Mylar3's comics table
+        // Note: Some Mylar3 versions have different column names for monitoring
         command.CommandText = @"
             SELECT 
                 ComicID,
@@ -243,6 +244,7 @@ public class Mylar3MigrationService : IMylar3MigrationService
             while (await reader.ReadAsync(ct))
             {
                 var comicId = GetString(reader, 0);
+                var status = GetString(reader, 5);
                 var item = new Mylar3Series
                 {
                     ComicId = comicId,
@@ -250,13 +252,17 @@ public class Mylar3MigrationService : IMylar3MigrationService
                     ComicYear = GetInt(reader, 2),
                     ComicPublisher = GetString(reader, 3),
                     ComicImageUrl = GetString(reader, 4),
-                    Status = GetString(reader, 5),
+                    Status = status,
                     TotalIssues = GetInt(reader, 6),
                     HaveIssues = GetInt(reader, 7),
                     ComicLocation = GetString(reader, 8),
                     IsIgnored = GetInt(reader, 9) == 1,
                     DateAdded = GetDateTime(reader, 10),
-                    LastUpdated = GetDateTime(reader, 11)
+                    LastUpdated = GetDateTime(reader, 11),
+                    // Derive monitoring mode from status/ignored
+                    Monitor = DeriveMonitoringMode(status, GetInt(reader, 9) == 1),
+                    IsComplete = status?.Equals("Ended", StringComparison.OrdinalIgnoreCase) == true ||
+                                 status?.Equals("Complete", StringComparison.OrdinalIgnoreCase) == true
                 };
 
                 // Try to parse ComicVine ID from ComicID
@@ -275,7 +281,78 @@ public class Mylar3MigrationService : IMylar3MigrationService
             series = await ReadSeriesSimpleAsync(connection, ct);
         }
 
+        // Try to read monitoring info from annuals table or separate monitoring config
+        await EnrichWithMonitoringInfoAsync(connection, series, ct);
+
         return series;
+    }
+
+    /// <summary>
+    /// Derive monitoring mode from Mylar3 status and ignored flag.
+    /// </summary>
+    private static string? DeriveMonitoringMode(string? status, bool isIgnored)
+    {
+        if (isIgnored)
+            return "none";
+
+        // In Mylar3, if not ignored and status is Active/Continuing, it's usually "all"
+        // If Paused, it's "manual"
+        // If Ended, it's typically "all" (to catch any remaining issues)
+        return status?.ToLowerInvariant() switch
+        {
+            "paused" => "manual",
+            "ended" or "complete" => "all",  // Complete series - want all missing
+            "loading" => "future",            // Still loading - monitor future
+            _ => "all"                        // Default to all for active series
+        };
+    }
+
+    /// <summary>
+    /// Try to enrich series with additional monitoring info from other tables.
+    /// </summary>
+    private async Task EnrichWithMonitoringInfoAsync(
+        SqliteConnection connection, 
+        List<Mylar3Series> series, 
+        CancellationToken ct)
+    {
+        try
+        {
+            // Check if there's a monitor column we can query
+            var checkCommand = connection.CreateCommand();
+            checkCommand.CommandText = "SELECT Monitor FROM comics LIMIT 1";
+            
+            try
+            {
+                await using var reader = await checkCommand.ExecuteReaderAsync(ct);
+                if (await reader.ReadAsync(ct))
+                {
+                    // Monitor column exists - re-read with it
+                    var monitorCommand = connection.CreateCommand();
+                    monitorCommand.CommandText = "SELECT ComicID, Monitor FROM comics";
+                    
+                    await using var monitorReader = await monitorCommand.ExecuteReaderAsync(ct);
+                    while (await monitorReader.ReadAsync(ct))
+                    {
+                        var comicId = GetString(monitorReader, 0);
+                        var monitor = GetString(monitorReader, 1);
+                        
+                        var matching = series.FirstOrDefault(s => s.ComicId == comicId);
+                        if (matching != null && !string.IsNullOrEmpty(monitor))
+                        {
+                            matching.Monitor = monitor;
+                        }
+                    }
+                }
+            }
+            catch (SqliteException)
+            {
+                // Monitor column doesn't exist - that's fine, use derived values
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Could not enrich with monitoring info - using derived values");
+        }
     }
 
     private async Task<List<Mylar3Series>> ReadSeriesSimpleAsync(SqliteConnection connection, CancellationToken ct)
@@ -479,6 +556,14 @@ public class Mylar3MigrationService : IMylar3MigrationService
                     {
                         existingSeries.Path = mylarSeries.ComicLocation;
                     }
+                    
+                    // Import monitoring mode from Mylar3
+                    if (options.ImportMonitoringModes && !string.IsNullOrEmpty(mylarSeries.Monitor))
+                    {
+                        existingSeries.MonitoringMode = MapMonitoringMode(mylarSeries.Monitor);
+                        existingSeries.Monitored = mylarSeries.Monitor != "none" && !mylarSeries.IsIgnored;
+                    }
+                    
                     existingSeries.UpdatedAt = DateTime.UtcNow;
 
                     result.SeriesUpdated++;
@@ -509,6 +594,10 @@ public class Mylar3MigrationService : IMylar3MigrationService
             // Create new series
             if (!options.DryRun)
             {
+                var monitoringMode = options.ImportMonitoringModes && !string.IsNullOrEmpty(mylarSeries.Monitor)
+                    ? MapMonitoringMode(mylarSeries.Monitor)
+                    : SeriesMonitoringMode.AllIssues;
+                    
                 var newSeries = new Series
                 {
                     Title = mylarSeries.ComicName,
@@ -517,7 +606,8 @@ public class Mylar3MigrationService : IMylar3MigrationService
                     ComicVineId = mylarSeries.ComicVineId,
                     CoverImageUrl = mylarSeries.ComicImageUrl,
                     Path = mylarSeries.ComicLocation,
-                    Monitored = true,
+                    Monitored = mylarSeries.Monitor != "none" && !mylarSeries.IsIgnored,
+                    MonitoringMode = monitoringMode,
                     Status = MapSeriesStatus(mylarSeries.Status),
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
@@ -665,6 +755,22 @@ public class Mylar3MigrationService : IMylar3MigrationService
             "ended" => SeriesStatus.Ended,
             "hiatus" => SeriesStatus.Continuing, // Map hiatus to continuing
             _ => SeriesStatus.Continuing
+        };
+    }
+
+    /// <summary>
+    /// Maps Mylar3 monitoring mode to Shortboxerr's SeriesMonitoringMode.
+    /// </summary>
+    private static SeriesMonitoringMode MapMonitoringMode(string? mylarMonitor)
+    {
+        return mylarMonitor?.ToLowerInvariant() switch
+        {
+            "all" or "all_issues" => SeriesMonitoringMode.AllIssues,
+            "future" or "future_issues" => SeriesMonitoringMode.FutureIssues,
+            "manual" => SeriesMonitoringMode.Manual,
+            "first" or "first_issue" => SeriesMonitoringMode.FirstIssue,
+            "none" => SeriesMonitoringMode.None,
+            _ => SeriesMonitoringMode.AllIssues // Default to all for active series
         };
     }
 

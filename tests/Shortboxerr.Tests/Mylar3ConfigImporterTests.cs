@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using Shortboxerr.Core.Ddl;
+using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.Ddl;
 using Shortboxerr.Infrastructure.Persistence;
 
@@ -8,6 +10,7 @@ namespace Shortboxerr.Tests;
 public class Mylar3ConfigImporterTests : IDisposable
 {
     private readonly ShortboxerrDbContext _context;
+    private readonly Mock<ISettingsService> _mockSettingsService;
     private readonly Mylar3ConfigImporter _importer;
 
     public Mylar3ConfigImporterTests()
@@ -16,7 +19,8 @@ public class Mylar3ConfigImporterTests : IDisposable
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
         _context = new ShortboxerrDbContext(options);
-        _importer = new Mylar3ConfigImporter(_context);
+        _mockSettingsService = new Mock<ISettingsService>();
+        _importer = new Mylar3ConfigImporter(_context, _mockSettingsService.Object);
     }
 
     public void Dispose()
@@ -448,6 +452,144 @@ public class Mylar3ConfigImporterTests : IDisposable
         Assert.False(restored.AutoGrabEnabled);
         Assert.Equal(2, restored.BannedWords.Count);
     }
+
+    #region Pull List Settings Parsing Tests
+
+    [Fact]
+    public void ParseConfig_WithPullListSettings_ExtractsPullListSettings()
+    {
+        var config = """
+            [General]
+            comic_location = /data/comics
+            weeklypull_folder = /data/exports/weekly
+            weeklypull_format = json
+            weeklypull_enable = true
+            default_monitoring = all
+            auto_add = true
+            include_annuals = true
+            skip_variants = true
+            search_delay = 8
+            """;
+
+        var result = _importer.ParseConfig(config);
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.PullListSettings);
+        Assert.Equal("/data/exports/weekly", result.PullListSettings.WeeklyPullFolder);
+        Assert.Equal("json", result.PullListSettings.WeeklyPullFormat);
+        Assert.True(result.PullListSettings.WeeklyPullEnabled);
+        Assert.Equal("all", result.PullListSettings.DefaultMonitoringMode);
+        Assert.True(result.PullListSettings.AutoAddToWanted);
+        Assert.True(result.PullListSettings.IncludeAnnuals);
+        Assert.True(result.PullListSettings.SkipVariants);
+        Assert.Equal(8, result.PullListSettings.SearchDelayHours);
+    }
+
+    [Fact]
+    public void ParseConfig_WithWeeklyPullSection_ExtractsPullListSettings()
+    {
+        var config = """
+            [WeeklyPull]
+            pull_folder = /data/weekly
+            pull_format = csv
+            default_monitoring = future
+            auto_add_wanted = false
+            include_specials = true
+            ignore_variants = false
+            """;
+
+        var result = _importer.ParseConfig(config);
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.PullListSettings);
+        Assert.Equal("/data/weekly", result.PullListSettings.WeeklyPullFolder);
+        Assert.Equal("csv", result.PullListSettings.WeeklyPullFormat);
+        Assert.Equal("future", result.PullListSettings.DefaultMonitoringMode);
+        Assert.False(result.PullListSettings.AutoAddToWanted);
+        Assert.True(result.PullListSettings.IncludeSpecials);
+        Assert.False(result.PullListSettings.SkipVariants);
+    }
+
+    [Fact]
+    public void ParseConfig_WithAlternativeKeyNames_ExtractsPullListSettings()
+    {
+        var config = """
+            [General]
+            weekly_pull_folder = /data/pulls
+            weekly_pull_format = text
+            weekly_pull_enabled = true
+            series_monitoring = manual
+            add_new_issues = true
+            annuals = false
+            """;
+
+        var result = _importer.ParseConfig(config);
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.PullListSettings);
+        Assert.Equal("/data/pulls", result.PullListSettings.WeeklyPullFolder);
+        Assert.Equal("text", result.PullListSettings.WeeklyPullFormat);
+        Assert.True(result.PullListSettings.WeeklyPullEnabled);
+        Assert.Equal("manual", result.PullListSettings.DefaultMonitoringMode);
+        Assert.True(result.PullListSettings.AutoAddToWanted);
+        Assert.False(result.PullListSettings.IncludeAnnuals);
+    }
+
+    [Fact]
+    public void ParseConfig_WithWeekStartDay_ParsesCorrectly()
+    {
+        var config = """
+            [General]
+            week_start = 1
+            """;
+
+        var result = _importer.ParseConfig(config);
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.PullListSettings);
+        Assert.Equal(1, result.PullListSettings.WeekStartDay);
+    }
+
+    [Fact]
+    public void ParseConfig_WithNoPullListSettings_ReturnsEmptyPullListSettings()
+    {
+        var config = """
+            [General]
+            comic_location = /data/comics
+            
+            [DDL-1]
+            name = Provider
+            site_type = GettyComics
+            """;
+
+        var result = _importer.ParseConfig(config);
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.PullListSettings);
+        // All settings should be null or empty since no pull list settings were provided
+        Assert.Null(result.PullListSettings.WeeklyPullFolder);
+        Assert.Null(result.PullListSettings.DefaultMonitoringMode);
+    }
+
+    [Fact]
+    public void ParseConfig_TracksUnmappedPullListSettings()
+    {
+        var config = """
+            [General]
+            weekly_custom_setting = value
+            pull_unknown_option = test
+            """;
+
+        var result = _importer.ParseConfig(config);
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.PullListSettings);
+        // Check that unmapped settings are tracked
+        Assert.Contains("weekly_custom_setting", result.PullListSettings.UnmappedSettings);
+        Assert.Contains("pull_unknown_option", result.PullListSettings.UnmappedSettings);
+    }
+
+    #endregion
 }
 
 

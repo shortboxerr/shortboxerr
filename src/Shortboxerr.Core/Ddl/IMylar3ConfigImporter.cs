@@ -28,6 +28,50 @@ public interface IMylar3ConfigImporter
     /// Execute the import, creating provider definitions in the database.
     /// </summary>
     Task<Mylar3ExecutionResult> ExecuteImportAsync(Mylar3ImportResult importResult, Mylar3ImportOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Import pull list settings from parsed config.
+    /// </summary>
+    Task<Mylar3PullListImportResult> ImportPullListSettingsAsync(
+        Mylar3PullListSettings settings, 
+        bool overwriteExisting = false,
+        CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Result of importing pull list settings from Mylar3.
+/// </summary>
+public class Mylar3PullListImportResult
+{
+    /// <summary>
+    /// Whether the import was successful.
+    /// </summary>
+    public bool Success { get; set; }
+
+    /// <summary>
+    /// Error message if failed.
+    /// </summary>
+    public string? Error { get; set; }
+
+    /// <summary>
+    /// Settings that were imported.
+    /// </summary>
+    public List<string> ImportedSettings { get; set; } = new();
+
+    /// <summary>
+    /// Settings that were skipped (already set and overwrite=false).
+    /// </summary>
+    public List<string> SkippedSettings { get; set; } = new();
+
+    /// <summary>
+    /// Settings that couldn't be mapped to Shortboxerr equivalents.
+    /// </summary>
+    public List<string> UnmappedSettings { get; set; } = new();
+
+    /// <summary>
+    /// Warnings during import.
+    /// </summary>
+    public List<string> Warnings { get; set; } = new();
 }
 
 /// <summary>
@@ -54,6 +98,11 @@ public record Mylar3ImportResult
     /// General settings extracted from the config.
     /// </summary>
     public Mylar3GeneralSettings? GeneralSettings { get; init; }
+    
+    /// <summary>
+    /// Pull list settings extracted from the config.
+    /// </summary>
+    public Mylar3PullListSettings? PullListSettings { get; init; }
     
     /// <summary>
     /// Sections that were found but not mapped.
@@ -176,6 +225,72 @@ public class Mylar3GeneralSettings
     /// Database path.
     /// </summary>
     public string? DatabasePath { get; init; }
+}
+
+/// <summary>
+/// Pull list settings extracted from Mylar3 config.
+/// </summary>
+public class Mylar3PullListSettings
+{
+    /// <summary>
+    /// Weekly pull list export folder path.
+    /// </summary>
+    public string? WeeklyPullFolder { get; init; }
+
+    /// <summary>
+    /// Weekly pull list export format (json, text, csv).
+    /// </summary>
+    public string? WeeklyPullFormat { get; init; }
+
+    /// <summary>
+    /// Whether to enable weekly pull list export.
+    /// </summary>
+    public bool? WeeklyPullEnabled { get; init; }
+
+    /// <summary>
+    /// Default series monitoring mode (all, future, manual, first_issue).
+    /// </summary>
+    public string? DefaultMonitoringMode { get; init; }
+
+    /// <summary>
+    /// Whether to auto-add new issues to wanted list.
+    /// </summary>
+    public bool? AutoAddToWanted { get; init; }
+
+    /// <summary>
+    /// Whether to include annuals in auto-add.
+    /// </summary>
+    public bool? IncludeAnnuals { get; init; }
+
+    /// <summary>
+    /// Whether to include specials in auto-add.
+    /// </summary>
+    public bool? IncludeSpecials { get; init; }
+
+    /// <summary>
+    /// Whether to skip variant covers.
+    /// </summary>
+    public bool? SkipVariants { get; init; }
+
+    /// <summary>
+    /// Hours to delay search after release.
+    /// </summary>
+    public int? SearchDelayHours { get; init; }
+
+    /// <summary>
+    /// Day of week to start the comic week (0=Sunday).
+    /// </summary>
+    public int? WeekStartDay { get; init; }
+
+    /// <summary>
+    /// Raw settings from the INI file for reference.
+    /// </summary>
+    public Dictionary<string, string> RawSettings { get; init; } = new();
+
+    /// <summary>
+    /// Settings that couldn't be mapped.
+    /// </summary>
+    public List<string> UnmappedSettings { get; init; } = new();
 }
 
 /// <summary>

@@ -1,9 +1,12 @@
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Core.Ddl;
 using Shortboxerr.Core.Entities;
 using Shortboxerr.Core.Providers;
+using Shortboxerr.Core.PullList;
+using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.Persistence;
 
 namespace Shortboxerr.Infrastructure.Ddl;
@@ -15,6 +18,7 @@ namespace Shortboxerr.Infrastructure.Ddl;
 public partial class Mylar3ConfigImporter : IMylar3ConfigImporter
 {
     private readonly ShortboxerrDbContext _dbContext;
+    private readonly ISettingsService _settingsService;
     private readonly ILogger<Mylar3ConfigImporter>? _logger;
     
     // Known DDL sections in Mylar3 config
@@ -36,9 +40,26 @@ public partial class Mylar3ConfigImporter : IMylar3ConfigImporter
         { "generic", "Generic" }
     };
 
-    public Mylar3ConfigImporter(ShortboxerrDbContext dbContext, ILogger<Mylar3ConfigImporter>? logger = null)
+    // Mapping of Mylar3 monitoring modes to Shortboxerr
+    private static readonly Dictionary<string, SeriesMonitoringMode> MonitoringModeMapping = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { "all", SeriesMonitoringMode.AllIssues },
+        { "all_issues", SeriesMonitoringMode.AllIssues },
+        { "future", SeriesMonitoringMode.FutureIssues },
+        { "future_issues", SeriesMonitoringMode.FutureIssues },
+        { "manual", SeriesMonitoringMode.Manual },
+        { "none", SeriesMonitoringMode.None },
+        { "first", SeriesMonitoringMode.FirstIssue },
+        { "first_issue", SeriesMonitoringMode.FirstIssue }
+    };
+
+    public Mylar3ConfigImporter(
+        ShortboxerrDbContext dbContext, 
+        ISettingsService settingsService,
+        ILogger<Mylar3ConfigImporter>? logger = null)
     {
         _dbContext = dbContext;
+        _settingsService = settingsService;
         _logger = logger;
     }
 
@@ -50,6 +71,7 @@ public partial class Mylar3ConfigImporter : IMylar3ConfigImporter
         var unmappedSettings = new Dictionary<string, List<string>>();
         var providers = new List<Mylar3DdlProvider>();
         Mylar3GeneralSettings? generalSettings = null;
+        Mylar3PullListSettings? pullListSettings = null;
         
         try
         {
@@ -62,6 +84,16 @@ public partial class Mylar3ConfigImporter : IMylar3ConfigImporter
                 if (sectionName.Equals("General", StringComparison.OrdinalIgnoreCase))
                 {
                     generalSettings = ParseGeneralSettings(settings, warnings);
+                    // Also extract pull list settings from General section
+                    pullListSettings = ParsePullListSettings(settings, warnings);
+                    continue;
+                }
+                
+                // Handle WeeklyPull / PullList section (separate section in some configs)
+                if (sectionName.Equals("WeeklyPull", StringComparison.OrdinalIgnoreCase) ||
+                    sectionName.Equals("PullList", StringComparison.OrdinalIgnoreCase))
+                {
+                    pullListSettings = ParsePullListSettings(settings, warnings);
                     continue;
                 }
                 
@@ -87,6 +119,7 @@ public partial class Mylar3ConfigImporter : IMylar3ConfigImporter
             {
                 DdlProviders = providers,
                 GeneralSettings = generalSettings,
+                PullListSettings = pullListSettings,
                 UnmappedSections = unmappedSections,
                 UnmappedSettings = unmappedSettings,
                 Warnings = warnings
@@ -490,9 +523,289 @@ public partial class Mylar3ConfigImporter : IMylar3ConfigImporter
         {
             "General", "Newznab", "Torznab", "SABnzbd", "NZBGet", "Transmission",
             "qBittorrent", "Deluge", "rTorrent", "ComicVine", "Metadata", "Notifications",
-            "Email", "Pushover", "Slack", "Discord", "Telegram", "Prowl"
+            "Email", "Pushover", "Slack", "Discord", "Telegram", "Prowl",
+            "WeeklyPull", "PullList"  // Pull list sections
         };
         return knownSections.Contains(sectionName);
+    }
+
+    private static Mylar3PullListSettings ParsePullListSettings(Dictionary<string, string> settings, List<string> warnings)
+    {
+        var rawSettings = new Dictionary<string, string>(settings);
+        var unmapped = new List<string>();
+
+        // Common key variants in Mylar3 config
+        var weeklyPullFolder = settings.GetValueOrDefault("weeklypull_folder") ??
+                               settings.GetValueOrDefault("weekly_pull_folder") ??
+                               settings.GetValueOrDefault("pull_folder");
+
+        var weeklyPullFormat = settings.GetValueOrDefault("weeklypull_format") ??
+                               settings.GetValueOrDefault("weekly_pull_format") ??
+                               settings.GetValueOrDefault("pull_format");
+
+        var weeklyPullEnabled = settings.GetValueOrDefault("weeklypull_enable") ??
+                                settings.GetValueOrDefault("weekly_pull_enabled") ??
+                                settings.GetValueOrDefault("enable_weeklypull");
+
+        var defaultMonitoring = settings.GetValueOrDefault("default_monitoring") ??
+                                settings.GetValueOrDefault("series_monitoring") ??
+                                settings.GetValueOrDefault("monitoring_mode");
+
+        var autoAdd = settings.GetValueOrDefault("auto_add") ??
+                      settings.GetValueOrDefault("auto_add_wanted") ??
+                      settings.GetValueOrDefault("add_new_issues");
+
+        var includeAnnuals = settings.GetValueOrDefault("include_annuals") ??
+                             settings.GetValueOrDefault("annuals");
+
+        var includeSpecials = settings.GetValueOrDefault("include_specials") ??
+                              settings.GetValueOrDefault("specials");
+
+        var skipVariants = settings.GetValueOrDefault("skip_variants") ??
+                           settings.GetValueOrDefault("ignore_variants");
+
+        var searchDelay = settings.GetValueOrDefault("search_delay") ??
+                          settings.GetValueOrDefault("search_delay_hours") ??
+                          settings.GetValueOrDefault("delay_hours");
+
+        var weekStart = settings.GetValueOrDefault("week_start") ??
+                        settings.GetValueOrDefault("week_start_day");
+
+        // Track which settings were mapped
+        var mappedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "weeklypull_folder", "weekly_pull_folder", "pull_folder",
+            "weeklypull_format", "weekly_pull_format", "pull_format",
+            "weeklypull_enable", "weekly_pull_enabled", "enable_weeklypull",
+            "default_monitoring", "series_monitoring", "monitoring_mode",
+            "auto_add", "auto_add_wanted", "add_new_issues",
+            "include_annuals", "annuals", "include_specials", "specials",
+            "skip_variants", "ignore_variants",
+            "search_delay", "search_delay_hours", "delay_hours",
+            "week_start", "week_start_day"
+        };
+
+        // Find unmapped pull list related settings
+        foreach (var key in settings.Keys)
+        {
+            if (!mappedKeys.Contains(key) && 
+                (key.Contains("pull", StringComparison.OrdinalIgnoreCase) ||
+                 key.Contains("weekly", StringComparison.OrdinalIgnoreCase) ||
+                 key.Contains("monitor", StringComparison.OrdinalIgnoreCase)))
+            {
+                unmapped.Add(key);
+            }
+        }
+
+        return new Mylar3PullListSettings
+        {
+            WeeklyPullFolder = weeklyPullFolder,
+            WeeklyPullFormat = weeklyPullFormat,
+            WeeklyPullEnabled = !string.IsNullOrEmpty(weeklyPullEnabled) ? ParseBool(weeklyPullEnabled, false) : null,
+            DefaultMonitoringMode = defaultMonitoring,
+            AutoAddToWanted = !string.IsNullOrEmpty(autoAdd) ? ParseBool(autoAdd, true) : null,
+            IncludeAnnuals = !string.IsNullOrEmpty(includeAnnuals) ? ParseBool(includeAnnuals, true) : null,
+            IncludeSpecials = !string.IsNullOrEmpty(includeSpecials) ? ParseBool(includeSpecials, false) : null,
+            SkipVariants = !string.IsNullOrEmpty(skipVariants) ? ParseBool(skipVariants, true) : null,
+            SearchDelayHours = int.TryParse(searchDelay, out var delay) ? delay : null,
+            WeekStartDay = int.TryParse(weekStart, out var day) ? day : null,
+            RawSettings = rawSettings,
+            UnmappedSettings = unmapped
+        };
+    }
+
+    public async Task<Mylar3PullListImportResult> ImportPullListSettingsAsync(
+        Mylar3PullListSettings settings,
+        bool overwriteExisting = false,
+        CancellationToken cancellationToken = default)
+    {
+        var result = new Mylar3PullListImportResult { Success = true };
+
+        try
+        {
+            // Get current pull list settings
+            var currentSettings = await _settingsService.GetAsync<PullListSettings>("pulllist", new PullListSettings(), cancellationToken)
+                ?? new PullListSettings();
+
+            // Import weekly export folder
+            if (!string.IsNullOrEmpty(settings.WeeklyPullFolder))
+            {
+                if (string.IsNullOrEmpty(currentSettings.WeeklyExportDirectory) || overwriteExisting)
+                {
+                    currentSettings.WeeklyExportDirectory = settings.WeeklyPullFolder;
+                    result.ImportedSettings.Add($"WeeklyExportDirectory: {settings.WeeklyPullFolder}");
+                }
+                else
+                {
+                    result.SkippedSettings.Add("WeeklyExportDirectory (already set)");
+                }
+            }
+
+            // Import weekly export format
+            if (!string.IsNullOrEmpty(settings.WeeklyPullFormat))
+            {
+                var format = MapWeeklyPullFormat(settings.WeeklyPullFormat);
+                if (currentSettings.WeeklyExportFormat == default || overwriteExisting)
+                {
+                    currentSettings.WeeklyExportFormat = format;
+                    result.ImportedSettings.Add($"WeeklyExportFormat: {format}");
+                }
+                else
+                {
+                    result.SkippedSettings.Add("WeeklyExportFormat (already set)");
+                }
+            }
+
+            // Import weekly export enabled
+            if (settings.WeeklyPullEnabled.HasValue)
+            {
+                if (!currentSettings.ExportWeeklyPullList || overwriteExisting)
+                {
+                    currentSettings.ExportWeeklyPullList = settings.WeeklyPullEnabled.Value;
+                    result.ImportedSettings.Add($"ExportWeeklyPullList: {settings.WeeklyPullEnabled.Value}");
+                }
+                else
+                {
+                    result.SkippedSettings.Add("ExportWeeklyPullList (already set)");
+                }
+            }
+
+            // Import default monitoring mode
+            if (!string.IsNullOrEmpty(settings.DefaultMonitoringMode))
+            {
+                if (MonitoringModeMapping.TryGetValue(settings.DefaultMonitoringMode, out var mode))
+                {
+                    if (currentSettings.DefaultMonitoringMode == SeriesMonitoringMode.FutureIssues || overwriteExisting)
+                    {
+                        currentSettings.DefaultMonitoringMode = mode;
+                        result.ImportedSettings.Add($"DefaultMonitoringMode: {mode}");
+                    }
+                    else
+                    {
+                        result.SkippedSettings.Add("DefaultMonitoringMode (already set)");
+                    }
+                }
+                else
+                {
+                    result.UnmappedSettings.Add($"DefaultMonitoringMode: {settings.DefaultMonitoringMode}");
+                    result.Warnings.Add($"Unknown monitoring mode '{settings.DefaultMonitoringMode}'");
+                }
+            }
+
+            // Import auto-add to wanted
+            if (settings.AutoAddToWanted.HasValue)
+            {
+                if (overwriteExisting || currentSettings.AutoAddToWanted)
+                {
+                    currentSettings.AutoAddToWanted = settings.AutoAddToWanted.Value;
+                    result.ImportedSettings.Add($"AutoAddToWanted: {settings.AutoAddToWanted.Value}");
+                }
+                else
+                {
+                    result.SkippedSettings.Add("AutoAddToWanted (already set)");
+                }
+            }
+
+            // Import include annuals
+            if (settings.IncludeAnnuals.HasValue)
+            {
+                if (overwriteExisting || currentSettings.IncludeAnnualsInAutoAdd)
+                {
+                    currentSettings.IncludeAnnualsInAutoAdd = settings.IncludeAnnuals.Value;
+                    result.ImportedSettings.Add($"IncludeAnnualsInAutoAdd: {settings.IncludeAnnuals.Value}");
+                }
+                else
+                {
+                    result.SkippedSettings.Add("IncludeAnnualsInAutoAdd (already set)");
+                }
+            }
+
+            // Import include specials
+            if (settings.IncludeSpecials.HasValue)
+            {
+                if (overwriteExisting || !currentSettings.IncludeSpecialsInAutoAdd)
+                {
+                    currentSettings.IncludeSpecialsInAutoAdd = settings.IncludeSpecials.Value;
+                    result.ImportedSettings.Add($"IncludeSpecialsInAutoAdd: {settings.IncludeSpecials.Value}");
+                }
+                else
+                {
+                    result.SkippedSettings.Add("IncludeSpecialsInAutoAdd (already set)");
+                }
+            }
+
+            // Import skip variants
+            if (settings.SkipVariants.HasValue)
+            {
+                if (overwriteExisting || currentSettings.SkipVariantCovers)
+                {
+                    currentSettings.SkipVariantCovers = settings.SkipVariants.Value;
+                    result.ImportedSettings.Add($"SkipVariantCovers: {settings.SkipVariants.Value}");
+                }
+                else
+                {
+                    result.SkippedSettings.Add("SkipVariantCovers (already set)");
+                }
+            }
+
+            // Import search delay
+            if (settings.SearchDelayHours.HasValue)
+            {
+                if (currentSettings.SearchDelayHours == 6 || overwriteExisting) // 6 is default
+                {
+                    currentSettings.SearchDelayHours = settings.SearchDelayHours.Value;
+                    result.ImportedSettings.Add($"SearchDelayHours: {settings.SearchDelayHours.Value}");
+                }
+                else
+                {
+                    result.SkippedSettings.Add("SearchDelayHours (already set)");
+                }
+            }
+
+            // Import week start day
+            if (settings.WeekStartDay.HasValue && settings.WeekStartDay.Value >= 0 && settings.WeekStartDay.Value <= 6)
+            {
+                var dayOfWeek = (DayOfWeek)settings.WeekStartDay.Value;
+                if (currentSettings.WeekStartDay == DayOfWeek.Sunday || overwriteExisting)
+                {
+                    currentSettings.WeekStartDay = dayOfWeek;
+                    result.ImportedSettings.Add($"WeekStartDay: {dayOfWeek}");
+                }
+                else
+                {
+                    result.SkippedSettings.Add("WeekStartDay (already set)");
+                }
+            }
+
+            // Add unmapped settings from source
+            result.UnmappedSettings.AddRange(settings.UnmappedSettings);
+
+            // Save settings
+            await _settingsService.SetAsync("pulllist", currentSettings, cancellationToken);
+
+            _logger?.LogInformation(
+                "Imported Mylar3 pull list settings: {Imported} imported, {Skipped} skipped, {Unmapped} unmapped",
+                result.ImportedSettings.Count, result.SkippedSettings.Count, result.UnmappedSettings.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Failed to import pull list settings");
+            result.Success = false;
+            result.Error = ex.Message;
+        }
+
+        return result;
+    }
+
+    private static WeeklyExportFormat MapWeeklyPullFormat(string format)
+    {
+        return format.ToLowerInvariant() switch
+        {
+            "json" => WeeklyExportFormat.Json,
+            "text" or "txt" => WeeklyExportFormat.Text,
+            "csv" => WeeklyExportFormat.Csv,
+            _ => WeeklyExportFormat.Json
+        };
     }
 
     private static bool ParseBool(string? value, bool defaultValue)

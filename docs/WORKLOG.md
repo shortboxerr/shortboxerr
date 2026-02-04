@@ -1,5 +1,74 @@
 # Worklog
 
+## Iteration 048 (2026-02-04)
+**EPIC 11.6: Mylar3 Settings Import - COMPLETED**
+
+### Commits
+1. `feat: add Mylar3 pull list settings import (EPIC 11.6)`
+
+### Deliverables
+
+#### Pull List Settings Parsing
+- ✅ `Mylar3PullListSettings` model added to `IMylar3ConfigImporter`
+- ✅ Parse pull list settings from config.ini General section
+- ✅ Parse pull list settings from dedicated WeeklyPull/PullList sections
+- ✅ Support for multiple key variants (e.g., `weeklypull_folder`, `weekly_pull_folder`, `pull_folder`)
+- ✅ Track unmapped pull list settings
+
+#### Settings Mapped
+- Weekly export: folder, format, enabled
+- Default monitoring mode: all, future, manual, first, none
+- Auto-add settings: auto_add, include_annuals, include_specials
+- Variant handling: skip_variants
+- Search delay hours
+- Week start day
+
+#### Series Monitoring Mode Import
+- ✅ `Mylar3Series.Monitor` field for storing Mylar3 monitoring mode
+- ✅ `Mylar3Series.IsComplete` field for series status
+- ✅ `DeriveMonitoringMode()` helper to infer mode from status/ignored
+- ✅ `EnrichWithMonitoringInfoAsync()` to read Monitor column if exists
+- ✅ `MapMonitoringMode()` to convert to Shortboxerr's `SeriesMonitoringMode`
+- ✅ `ImportMonitoringModes` option in `Mylar3MigrationOptions`
+- ✅ Monitoring mode applied during series creation/update
+
+#### API Endpoints
+- ✅ `POST /api/v1/mylar3/pulllist/parse` - Parse pull list settings from config content
+- ✅ `POST /api/v1/mylar3/pulllist/parse-file` - Parse from file path
+- ✅ `POST /api/v1/mylar3/pulllist/import` - Import parsed settings
+- ✅ `POST /api/v1/mylar3/pulllist/import-from-file` - Quick import from file
+
+#### Import Features
+- ✅ Overwrite existing settings option
+- ✅ Track imported vs skipped vs unmapped settings
+- ✅ Warnings for unknown values
+- ✅ Detailed import result
+
+### Unit Tests (7 new tests)
+- ✅ ParseConfig_WithPullListSettings_ExtractsPullListSettings
+- ✅ ParseConfig_WithWeeklyPullSection_ExtractsPullListSettings
+- ✅ ParseConfig_WithAlternativeKeyNames_ExtractsPullListSettings
+- ✅ ParseConfig_WithWeekStartDay_ParsesCorrectly
+- ✅ ParseConfig_WithNoPullListSettings_ReturnsEmptyPullListSettings
+- ✅ ParseConfig_TracksUnmappedPullListSettings
+- ✅ (All existing Mylar3ConfigImporter tests still pass)
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Ddl/IMylar3ConfigImporter.cs` | Add `Mylar3PullListSettings`, `Mylar3PullListImportResult`, `ImportPullListSettingsAsync` |
+| `src/Shortboxerr.Core/Mylar3Migration/IMylar3MigrationService.cs` | Add `Monitor`, `IsComplete` to `Mylar3Series`, `ImportMonitoringModes` option |
+| `src/Shortboxerr.Infrastructure/Ddl/Mylar3ConfigImporter.cs` | Add settings parsing, `ImportPullListSettingsAsync` implementation |
+| `src/Shortboxerr.Infrastructure/Mylar3Migration/Mylar3MigrationService.cs` | Add monitoring mode reading and mapping |
+| `src/Shortboxerr.Api/Endpoints/Mylar3ImportEndpoints.cs` | Add pull list settings endpoints |
+| `tests/Shortboxerr.Tests/Mylar3ConfigImporterTests.cs` | Add 7 new tests, add mock ISettingsService |
+
+### Test Results
+- Total: 677 tests passing (7 new)
+- Build: 0 errors
+
+---
+
 ## Iteration 047 (2026-02-04)
 **EPIC 7: Mylar3 Migration - COMPLETED**
 

@@ -116,6 +116,16 @@ public class Mylar3Series
     /// ComicVine volume ID (parsed from ComicId if numeric).
     /// </summary>
     public int? ComicVineId { get; set; }
+
+    /// <summary>
+    /// Monitoring mode from Mylar3 (all, future, manual, none).
+    /// </summary>
+    public string? Monitor { get; set; }
+
+    /// <summary>
+    /// Whether the series is marked as complete/ended in Mylar3.
+    /// </summary>
+    public bool IsComplete { get; set; }
 }
 
 /// <summary>
@@ -205,6 +215,11 @@ public class Mylar3MigrationOptions
     /// Whether to import wanted status from Mylar3.
     /// </summary>
     public bool ImportWantedStatus { get; set; } = true;
+
+    /// <summary>
+    /// Whether to import series monitoring modes from Mylar3.
+    /// </summary>
+    public bool ImportMonitoringModes { get; set; } = true;
 
     /// <summary>
     /// Whether to run in dry-run mode (no changes).

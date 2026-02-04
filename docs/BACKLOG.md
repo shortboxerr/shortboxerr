@@ -1000,10 +1000,23 @@ In-app notification system implemented. External notification channels (email, w
   - AC: Override monitoring mode per series ✅
   - AC: Skip variants per series ✅
   - AC: Priority per series (for search ordering) ✅
-- [ ] **Mylar3 settings import** (deferred - depends on EPIC 7)
-  - AC: Parse config.ini for pull list settings
-  - AC: Import series monitoring modes
-  - AC: Import notification preferences
+- [x] **Mylar3 settings import** ✅
+  - AC: Parse config.ini for pull list settings ✅
+    - Weekly export folder, format, enabled
+    - Default monitoring mode
+    - Auto-add settings, annuals, specials, variants
+    - Search delay, week start day
+  - AC: Import series monitoring modes ✅
+    - Maps Mylar3 monitor modes (all, future, manual, none, first) to Shortboxerr
+    - Applied during database migration
+    - Option to import monitoring modes during migration
+  - AC: API endpoints ✅
+    - POST /api/v1/mylar3/pulllist/parse
+    - POST /api/v1/mylar3/pulllist/parse-file
+    - POST /api/v1/mylar3/pulllist/import
+    - POST /api/v1/mylar3/pulllist/import-from-file
+  - AC: Unit tests (7 tests) ✅
+  - Note: Notification preferences deferred - external notifications not yet implemented
 
 ### 11.10 Weekly Pull List Export (Mylar3 Parity) ✅ COMPLETED
 Mylar3 offers an option to save weekly release data to a file in a designated directory.

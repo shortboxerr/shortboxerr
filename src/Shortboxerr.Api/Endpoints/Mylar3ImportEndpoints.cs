@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Shortboxerr.Core.ComicVine;
+using Shortboxerr.Core.Ddl;
 using Shortboxerr.Core.Mylar3Migration;
 
 namespace Shortboxerr.Api.Endpoints;
@@ -204,6 +205,126 @@ public static class Mylar3ImportEndpoints
         .WithName("MigrateMylar3ComicVineIds");
 
         #endregion
+
+        #region Pull List Settings Import
+
+        // Parse pull list settings from config content
+        group.MapPost("/pulllist/parse", (
+            IMylar3ConfigImporter importer,
+            [FromBody] ParseConfigRequest request) =>
+        {
+            if (string.IsNullOrEmpty(request.ConfigContent))
+            {
+                return Results.BadRequest(new { message = "Config content is required" });
+            }
+
+            var result = importer.ParseConfig(request.ConfigContent);
+            return Results.Ok(new
+            {
+                success = result.Success,
+                pullListSettings = result.PullListSettings,
+                generalSettings = result.GeneralSettings,
+                warnings = result.Warnings,
+                unmappedSections = result.UnmappedSections
+            });
+        })
+        .WithName("ParseMylar3PullListSettings");
+
+        // Parse pull list settings from config file
+        group.MapPost("/pulllist/parse-file", async (
+            IMylar3ConfigImporter importer,
+            [FromBody] ParseFileRequest request,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrEmpty(request.FilePath))
+            {
+                return Results.BadRequest(new { message = "File path is required" });
+            }
+
+            var result = await importer.ParseConfigFileAsync(request.FilePath, cancellationToken);
+            return result.Success
+                ? Results.Ok(new
+                {
+                    success = result.Success,
+                    pullListSettings = result.PullListSettings,
+                    generalSettings = result.GeneralSettings,
+                    warnings = result.Warnings,
+                    unmappedSections = result.UnmappedSections,
+                    sourcePath = result.SourcePath
+                })
+                : Results.BadRequest(new { message = result.ErrorMessage, result });
+        })
+        .WithName("ParseMylar3PullListSettingsFile");
+
+        // Import pull list settings
+        group.MapPost("/pulllist/import", async (
+            IMylar3ConfigImporter importer,
+            [FromBody] ImportPullListSettingsRequest request,
+            CancellationToken cancellationToken) =>
+        {
+            if (request.Settings == null)
+            {
+                return Results.BadRequest(new { message = "Settings are required" });
+            }
+
+            var result = await importer.ImportPullListSettingsAsync(
+                request.Settings,
+                request.OverwriteExisting,
+                cancellationToken);
+
+            return result.Success
+                ? Results.Ok(result)
+                : Results.BadRequest(new { message = result.Error, result });
+        })
+        .WithName("ImportMylar3PullListSettings");
+
+        // Quick import: parse file and import in one step
+        group.MapPost("/pulllist/import-from-file", async (
+            IMylar3ConfigImporter importer,
+            [FromBody] ImportPullListFromFileRequest request,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrEmpty(request.FilePath))
+            {
+                return Results.BadRequest(new { message = "File path is required" });
+            }
+
+            // Parse the config file
+            var parseResult = await importer.ParseConfigFileAsync(request.FilePath, cancellationToken);
+            if (!parseResult.Success)
+            {
+                return Results.BadRequest(new { message = parseResult.ErrorMessage, parseResult });
+            }
+
+            if (parseResult.PullListSettings == null)
+            {
+                return Results.BadRequest(new 
+                { 
+                    message = "No pull list settings found in config file",
+                    warnings = parseResult.Warnings
+                });
+            }
+
+            // Import the settings
+            var importResult = await importer.ImportPullListSettingsAsync(
+                parseResult.PullListSettings,
+                request.OverwriteExisting,
+                cancellationToken);
+
+            return Results.Ok(new
+            {
+                parseResult = new
+                {
+                    success = parseResult.Success,
+                    warnings = parseResult.Warnings,
+                    sourcePath = parseResult.SourcePath
+                },
+                importResult
+            });
+        })
+        .WithName("ImportMylar3PullListSettingsFromFile");
+
+        #endregion
     }
 }
 
@@ -259,6 +380,19 @@ public record MigrateIdsRequest
 {
     public string? DatabasePath { get; init; }
     public ComicVineIdMigrationOptions? Options { get; init; }
+}
+
+// Pull List Settings Import DTOs
+public record ImportPullListSettingsRequest
+{
+    public Mylar3PullListSettings? Settings { get; init; }
+    public bool OverwriteExisting { get; init; }
+}
+
+public record ImportPullListFromFileRequest
+{
+    public string? FilePath { get; init; }
+    public bool OverwriteExisting { get; init; }
 }
 
 #endregion
