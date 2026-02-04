@@ -1,5 +1,40 @@
 # Worklog
 
+## Iteration 057 (2026-02-04)
+**EPIC 13.2: Download Client Logging - COMPLETED**
+
+### Commits
+1. `feat: add download client logging (EPIC 13.2)`
+
+### Deliverables
+
+#### Download Events
+- ✅ Download initiated with title and source
+- ✅ Download completed with size and duration
+- ✅ Download failed with reason and error message
+- ✅ Retry attempts with exponential backoff
+- ✅ Alternate link fallback logging
+
+#### Candidate Logging
+- ✅ Link count and selection
+- ✅ Link type and priority selection
+
+#### Import Pipeline Logging
+- ✅ Processing started
+- ✅ Auto-match candidate info
+- ✅ Normalized title for matching
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/Ddl/DdlDownloadService.cs` | Add download logging |
+| `src/Shortboxerr.Infrastructure/Ddl/DdlImportService.cs` | Add import pipeline logging |
+
+### Test Results
+- Backend: 712 tests passing
+
+---
+
 ## Iteration 056 (2026-02-04)
 **EPIC 13.2: ComicVine API Logging - COMPLETED**
 
