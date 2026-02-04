@@ -493,53 +493,62 @@ public class PullListService : IPullListService
     #endregion
 
     #region Statistics
+    
+    // Cache duration for dashboard stats (1 minute - frequently accessed, quickly stale)
+    private static readonly TimeSpan StatsCacheDuration = TimeSpan.FromMinutes(1);
 
     public async Task<PullListStats> GetStatsAsync(CancellationToken cancellationToken = default)
     {
-        var today = DateTime.Today;
-        var (thisWeekStart, thisWeekEnd) = GetWeekBoundaries(today);
-        var (nextWeekStart, nextWeekEnd) = GetWeekBoundaries(today.AddDays(7));
-
-        var stats = new PullListStats
+        var cacheKey = _cacheService.GenerateKey(CacheKeys.DashboardStats);
+        
+        return await _cacheService.GetOrCreateAsync(cacheKey, async () =>
         {
-            TotalMonitoredSeries = await _dbContext.Series
-                .CountAsync(s => s.Monitored, cancellationToken),
+            var today = DateTime.Today;
+            var (thisWeekStart, thisWeekEnd) = GetWeekBoundaries(today);
+            var (nextWeekStart, nextWeekEnd) = GetWeekBoundaries(today.AddDays(7));
 
-            TotalWantedIssues = await _dbContext.Issues
-                .CountAsync(i => i.Status == IssueStatus.Wanted, cancellationToken),
+            var stats = new PullListStats
+            {
+                TotalMonitoredSeries = await _dbContext.Series
+                    .CountAsync(s => s.Monitored, cancellationToken),
 
-            TotalOwnedIssues = await _dbContext.Issues
-                .CountAsync(i => i.Status == IssueStatus.Owned, cancellationToken),
+                TotalWantedIssues = await _dbContext.Issues
+                    .CountAsync(i => i.Status == IssueStatus.Wanted, cancellationToken),
 
-            TotalSkippedIssues = await _dbContext.Issues
-                .CountAsync(i => i.Status == IssueStatus.Skipped, cancellationToken),
+                TotalOwnedIssues = await _dbContext.Issues
+                    .CountAsync(i => i.Status == IssueStatus.Owned, cancellationToken),
 
-            ReleasingThisWeek = await _dbContext.Issues
-                .CountAsync(i => i.StoreDate >= thisWeekStart && 
-                    i.StoreDate < thisWeekEnd && 
-                    i.Series!.Monitored, cancellationToken),
+                TotalSkippedIssues = await _dbContext.Issues
+                    .CountAsync(i => i.Status == IssueStatus.Skipped, cancellationToken),
 
-            ReleasingNextWeek = await _dbContext.Issues
-                .CountAsync(i => i.StoreDate >= nextWeekStart && 
-                    i.StoreDate < nextWeekEnd && 
-                    i.Series!.Monitored, cancellationToken),
+                ReleasingThisWeek = await _dbContext.Issues
+                    .CountAsync(i => i.StoreDate >= thisWeekStart && 
+                        i.StoreDate < thisWeekEnd && 
+                        i.Series!.Monitored, cancellationToken),
 
-            MissedIssues = await _dbContext.Issues
-                .CountAsync(i => i.Status == IssueStatus.Wanted && 
-                    i.StoreDate < today && 
-                    i.Series!.Monitored, cancellationToken)
-        };
+                ReleasingNextWeek = await _dbContext.Issues
+                    .CountAsync(i => i.StoreDate >= nextWeekStart && 
+                        i.StoreDate < nextWeekEnd && 
+                        i.Series!.Monitored, cancellationToken),
 
-        // Wanted by publisher
-        var wantedByPublisher = await _dbContext.Issues
-            .Where(i => i.Status == IssueStatus.Wanted && i.Series!.Publisher != null)
-            .GroupBy(i => i.Series!.Publisher!)
-            .Select(g => new { Publisher = g.Key, Count = g.Count() })
-            .ToListAsync(cancellationToken);
+                MissedIssues = await _dbContext.Issues
+                    .CountAsync(i => i.Status == IssueStatus.Wanted && 
+                        i.StoreDate < today && 
+                        i.Series!.Monitored, cancellationToken)
+            };
 
-        stats.WantedByPublisher = wantedByPublisher.ToDictionary(x => x.Publisher, x => x.Count);
+            // Wanted by publisher
+            var wantedByPublisher = await _dbContext.Issues
+                .Where(i => i.Status == IssueStatus.Wanted && i.Series!.Publisher != null)
+                .GroupBy(i => i.Series!.Publisher!)
+                .Select(g => new { Publisher = g.Key, Count = g.Count() })
+                .ToListAsync(cancellationToken);
 
-        return stats;
+            stats.WantedByPublisher = wantedByPublisher.ToDictionary(x => x.Publisher, x => x.Count);
+
+            _logger.LogDebug("Pull list stats calculated and cached");
+            return stats;
+        }, StatsCacheDuration);
     }
 
     public async Task<PullListConfigStatus> GetConfigStatusAsync(CancellationToken cancellationToken = default)
