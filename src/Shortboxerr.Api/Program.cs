@@ -127,16 +127,6 @@ app.MapGet("/ping", () => Results.Ok("pong"))
     .WithName("Ping")
     .WithOpenApi();
 
-// API info endpoint
-app.MapGet("/api/v1/system/status", () => Results.Ok(new
-{
-    appName = "Shortboxerr",
-    version = "0.1.0",
-    startTime = DateTime.UtcNow
-}))
-    .WithName("SystemStatus")
-    .WithOpenApi();
-
 // Domain endpoints
 app.MapSeriesEndpoints();
 app.MapSeriesMetadataEndpoints();
@@ -156,6 +146,7 @@ app.MapNotificationEndpoints();
 app.MapCacheEndpoints();
 app.MapSettingsEndpoints();
 app.MapComicVineEndpoints();
+app.MapSystemEndpoints();
 
 // SPA fallback - serve index.html for client-side routes
 app.MapFallbackToFile("index.html");
