@@ -1,5 +1,46 @@
 # Worklog
 
+## Iteration 052 (2026-02-04)
+**EPIC 13.4: Diagnostic Tools - System Information Endpoint - COMPLETED**
+
+### Commits
+1. `feat: add system info diagnostic endpoint (EPIC 13.4)`
+2. `test: add SystemEndpointsTests (8 tests) for EPIC 13.4`
+
+### Deliverables
+
+#### API Endpoints
+- ✅ `GET /api/v1/system/info` - Comprehensive diagnostic information
+- ✅ `GET /api/v1/system/status` - Quick health status summary
+- ✅ `GET /api/v1/system/logs` - List of log files
+
+#### System Info Response
+- ✅ App name, version, branch
+- ✅ .NET runtime version and identifier
+- ✅ OS description and architecture
+- ✅ Database provider and path
+- ✅ Data and log directories
+- ✅ Memory usage (WorkingSet, PrivateMemory, GC total)
+- ✅ Uptime tracking (StartTime, Duration)
+- ✅ Disk space info (Total, Free, Used, Percent)
+
+#### Unit Tests
+- ✅ 8 tests for SystemEndpoints
+- ✅ Tests cover: info endpoint, status endpoint, logs endpoint
+- ✅ Tests verify: required fields, memory info, uptime validity
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Endpoints/SystemEndpoints.cs` | New endpoint file |
+| `src/Shortboxerr.Api/Program.cs` | Register SystemEndpoints |
+| `tests/Shortboxerr.Tests/SystemEndpointsTests.cs` | 8 new tests |
+
+### Test Results
+- Backend: 699 tests passing (8 new)
+
+---
+
 ## Iteration 051 (2026-02-04)
 **EPIC 13.1: File-Based Logging - Serilog Integration - PARTIAL**
 
