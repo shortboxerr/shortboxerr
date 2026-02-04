@@ -1,5 +1,57 @@
 # Worklog
 
+## Iteration 042 (2026-02-03)
+**EPIC 12.1: Data Caching Strategy (Partial) - COMPLETED**
+
+### Commits
+1. `feat: migrate PullListService to use ICacheService (EPIC 12.1)`
+2. `feat: add caching to PullListService stats (EPIC 12.1)`
+3. `test: add caching integration tests for PullListService (EPIC 12.1)`
+
+### Deliverables
+
+#### PullListService Migration to ICacheService
+- ✅ Replaced IMemoryCache with ICacheService
+- ✅ Discovery caching now uses GetOrCreateAsync
+- ✅ Uses CacheKeys.PullListDiscovery for consistent key generation
+- ✅ 30-minute TTL for discovery data
+
+#### Dashboard Stats Caching
+- ✅ GetStatsAsync cached with 1-minute TTL
+- ✅ Uses CacheKeys.DashboardStats key
+
+#### Cache Invalidation
+- ✅ InvalidatePullListCache() helper method
+- ✅ Called on UpdateIssueStatusAsync (single status change)
+- ✅ Called on BulkUpdateStatusAsync (bulk changes)
+- ✅ Invalidates: PullListWeek, PullListUpcoming, PullListPast, DashboardStats, DashboardThisWeek
+
+### Cache Strategy Summary
+| Data Type | TTL | Invalidation |
+|-----------|-----|--------------|
+| Discovery (ComicVine) | 30 min | None (external data) |
+| Dashboard stats | 1 min | Issue status change |
+| Pull list week | On-demand | Issue status change |
+
+### Unit Tests (4 new tests)
+- ✅ GetStatsAsync_SecondCallUsesCache
+- ✅ MarkAsOwnedAsync_InvalidatesStatsCache
+- ✅ BulkUpdateStatusAsync_InvalidatesStatsCache
+- ✅ GetWeeklyDiscoveryAsync_UsesCache
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` | Migrated to ICacheService |
+| `tests/Shortboxerr.Tests/PullListServiceTests.cs` | Updated + 4 new tests |
+| `tests/Shortboxerr.Tests/PullListConformanceTests.cs` | Updated for ICacheService |
+
+### Test Results
+- Total: 633 tests passing (4 new)
+- Build: 0 errors
+
+---
+
 ## Iteration 041 (2026-02-03)
 **EPIC 12.2: Cache Implementation Patterns - COMPLETED**
 

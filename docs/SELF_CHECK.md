@@ -1,6 +1,47 @@
-# Self Check - Iteration 041
+# Self Check - Iteration 042
 
-## EPIC 12.2: Cache Implementation Patterns
+## EPIC 12.1: Data Caching Strategy (Partial)
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Build succeeded with 0 errors |
+| Tests pass | ✅ | 633 total tests passing (4 new) |
+| Cache integration | ✅ | PullListService uses ICacheService |
+| Cache invalidation | ✅ | Status changes invalidate caches |
+| Git commits | ✅ | Conventional format |
+
+### Acceptance Criteria Status
+
+#### Pull List Query Caching
+| AC | Status |
+|----|--------|
+| Cache discovery with TTL | ✅ 30 min |
+| Invalidate on status change | ✅ |
+
+#### Dashboard Aggregates Caching
+| AC | Status |
+|----|--------|
+| Cache stats with TTL | ✅ 1 min |
+| Invalidate on status change | ✅ |
+
+### New Tests (4 tests)
+- ✅ GetStatsAsync_SecondCallUsesCache
+- ✅ MarkAsOwnedAsync_InvalidatesStatsCache
+- ✅ BulkUpdateStatusAsync_InvalidatesStatsCache
+- ✅ GetWeeklyDiscoveryAsync_UsesCache
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` | ✅ Modified |
+| `tests/Shortboxerr.Tests/PullListServiceTests.cs` | ✅ Modified + 4 tests |
+| `tests/Shortboxerr.Tests/PullListConformanceTests.cs` | ✅ Modified |
+
+---
+
+## Previous: EPIC 12.2: Cache Implementation Patterns
 
 ### Checklist
 
