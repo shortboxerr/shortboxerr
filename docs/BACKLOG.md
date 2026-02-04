@@ -1448,12 +1448,12 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
   - AC: **MANDATORY**: Mask Authorization headers (show type only, e.g., "Bearer ***") ✅
   - AC: **MANDATORY**: Mask sensitive query parameters (?apikey=***) ✅
 
-- [ ] **ComicVine API logging**
-  - AC: API calls with endpoint and parameters
-  - AC: Rate limiting events
-  - AC: Cache hits/misses
-  - AC: Response times and status codes
-  - AC: Error responses with retry info
+- [x] **ComicVine API logging** ✅
+  - AC: API calls with endpoint and parameters ✅
+  - AC: Rate limiting events ✅
+  - AC: Cache hits/misses ✅
+  - AC: Response times and status codes ✅
+  - AC: Error responses with retry info ✅
 
 - [ ] **Download client logging**
   - AC: Search requests and results count
