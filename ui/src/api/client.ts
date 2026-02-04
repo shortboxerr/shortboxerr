@@ -1391,6 +1391,12 @@ export const api = {
       method: 'POST',
     });
   },
+
+  refreshAllSeriesMetadata: async (force = false): Promise<{ success: boolean; error?: string; totalProcessed?: number; refreshed?: number; skipped?: number; errors?: number; newIssuesDiscovered?: number; duration?: string }> => {
+    return fetchApi(`/api/v1/metadata/series/refresh-all?force=${force}`, {
+      method: 'POST',
+    });
+  },
 };
 
 function buildDiscoveryParams(filter?: DiscoveryFilter): string {

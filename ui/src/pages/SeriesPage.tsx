@@ -25,6 +25,13 @@ export function SeriesPage() {
     },
   });
 
+  const refreshAllMutation = useMutation({
+    mutationFn: () => api.refreshAllSeriesMetadata(true),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['series'] });
+    },
+  });
+
   const series = seriesData?.items ?? [];
   const allSelected = series.length > 0 && selectedIds.size === series.length;
 
@@ -98,8 +105,13 @@ export function SeriesPage() {
             </div>
           )}
           
-          <button className="btn btn-icon" onClick={() => refetch()} title="Refresh">
-            <RefreshCw size={18} />
+          <button 
+            className="btn btn-icon" 
+            onClick={() => refreshAllMutation.mutate()} 
+            title="Refresh All Series Metadata from ComicVine"
+            disabled={refreshAllMutation.isPending}
+          >
+            <RefreshCw size={18} className={refreshAllMutation.isPending ? 'spinning' : ''} />
           </button>
         </div>
         

@@ -1,12 +1,41 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Serilog;
+using Serilog.Events;
 using Shortboxerr.Api.Endpoints;
 using Shortboxerr.Infrastructure;
+using Shortboxerr.Infrastructure.Logging;
 using Shortboxerr.Infrastructure.Persistence;
 using System.Text.Json;
 
+// Configure Serilog early (before WebApplication builder)
+var logDirectory = Environment.GetEnvironmentVariable("SHORTBOXERR_LOG_DIR")
+    ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "shortboxerr", "logs");
+
+var minimumLevel = Enum.TryParse<LogEventLevel>(
+    Environment.GetEnvironmentVariable("SHORTBOXERR_LOG_LEVEL") ?? "Information",
+    out var level) ? level : LogEventLevel.Information;
+
+// Check for debug mode
+var isDebug = Environment.GetEnvironmentVariable("SHORTBOXERR_DEBUG") == "true"
+    || args.Contains("--debug") || args.Contains("-d");
+
+if (isDebug)
+{
+    minimumLevel = LogEventLevel.Debug;
+}
+
+Log.Logger = SerilogConfiguration.CreateLoggerConfiguration(
+    logDirectory: logDirectory,
+    minimumLevel: minimumLevel,
+    consoleLevel: isDebug ? LogEventLevel.Debug : minimumLevel)
+    .CreateLogger();
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Use Serilog for logging
+builder.Host.UseSerilog();
 
 // Add CORS for development
 builder.Services.AddCors(options =>
@@ -46,6 +75,12 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ShortboxerrDbContext>();
     db.Database.Migrate();
+    
+    // Log startup
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    logger.LogInformation("Shortboxerr starting up - Version 0.1.0");
+    logger.LogInformation("Log directory: {LogDirectory}", logDirectory);
+    logger.LogInformation("Log level: {LogLevel}", minimumLevel);
 }
 
 // Configure the HTTP request pipeline
@@ -125,7 +160,14 @@ app.MapComicVineEndpoints();
 // SPA fallback - serve index.html for client-side routes
 app.MapFallbackToFile("index.html");
 
-app.Run();
+try
+{
+    app.Run();
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
 // Make Program class accessible for testing
 public partial class Program { }
