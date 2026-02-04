@@ -14,7 +14,8 @@
 | Bulk actions | ✅ | Selection + bulk status updates |
 | Status indicators | ✅ | Color-coded badges in both views |
 | View persistence | ✅ | Uses UI settings API |
-| Git commits | ✅ | 2 commits |
+| Refresh button | ✅ | Calls metadata refresh API with spinner |
+| Git commits | ✅ | 4 commits |
 
 ### Acceptance Criteria Status
 

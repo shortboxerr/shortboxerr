@@ -43,12 +43,14 @@
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Api/Dtos/IssueDto.cs` | Add Status property |
-| `ui/src/pages/SeriesDetailPage.tsx` | Add mutations and action handlers |
-| `ui/src/App.css` | Add action button styles |
+| `ui/src/pages/SeriesDetailPage.tsx` | Add mutations and action handlers, working refresh button |
+| `ui/src/api/client.ts` | Add refreshSeriesMetadata/refreshSeriesIssues methods |
+| `ui/src/App.css` | Add action button styles, spinning animation |
 
 ### Test Results
 - Backend: 677 tests passing
 - Frontend: Build successful
+- API tested via curl: Issues endpoint returns data correctly
 
 ---
 
