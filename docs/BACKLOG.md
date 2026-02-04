@@ -1517,12 +1517,12 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
   - AC: Download client connectivity
   - AC: Disk space warnings
 
-- [ ] **Debug mode**
-  - AC: Command-line flag: `--debug` or `-d`
-  - AC: Environment variable: `SHORTBOXERR_DEBUG=true`
-  - AC: Enables verbose logging without config change
-  - AC: Logs full stack traces
-  - AC: Logs SQL queries (EF Core)
+- [x] **Debug mode** ✅
+  - AC: Command-line flag: `--debug` or `-d` ✅
+  - AC: Environment variable: `SHORTBOXERR_DEBUG=true` ✅
+  - AC: Enables verbose logging without config change ✅
+  - AC: Logs full stack traces ✅
+  - AC: Logs SQL queries (EF Core) ✅
 
 ### 13.5 Log Settings UI
 **Status: READY**

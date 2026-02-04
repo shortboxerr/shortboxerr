@@ -1,5 +1,36 @@
 # Worklog
 
+## Iteration 053 (2026-02-04)
+**EPIC 13.4: Debug Mode - SQL Query Logging - COMPLETED**
+
+### Commits
+1. `feat: enable EF Core SQL query logging in debug mode (EPIC 13.4)`
+
+### Deliverables
+
+#### Debug Mode Features (Complete)
+- ✅ `--debug` or `-d` command-line flag
+- ✅ `SHORTBOXERR_DEBUG=true` environment variable
+- ✅ Log level set to Debug when active
+- ✅ EF Core SQL query logging via UseLoggerFactory
+- ✅ EnableSensitiveDataLogging for parameter values
+- ✅ EnableDetailedErrors for better error context
+
+#### Infrastructure Changes
+- ✅ `AddInfrastructure` now accepts `enableDebugMode` parameter
+- ✅ DbContext configured conditionally based on debug mode
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Add debug mode parameter and EF Core logging |
+| `src/Shortboxerr.Api/Program.cs` | Pass debug mode flag to infrastructure |
+
+### Test Results
+- Backend: 699 tests passing
+
+---
+
 ## Iteration 052 (2026-02-04)
 **EPIC 13.4: Diagnostic Tools - System Information Endpoint - COMPLETED**
 

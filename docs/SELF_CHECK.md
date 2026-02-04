@@ -1,3 +1,39 @@
+# Self Check - Iteration 053
+
+## EPIC 13.4: Debug Mode - SQL Query Logging
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Backend builds with 0 errors |
+| Tests pass | ✅ | 699 tests passing |
+| --debug flag | ✅ | Sets log level to Debug |
+| SHORTBOXERR_DEBUG env | ✅ | Sets log level to Debug |
+| SQL query logging | ✅ | EF Core UseLoggerFactory |
+| Sensitive data logging | ✅ | EnableSensitiveDataLogging |
+| Detailed errors | ✅ | EnableDetailedErrors |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+#### Debug Mode
+| AC | Status |
+|----|--------|
+| Command-line flag: --debug or -d | ✅ |
+| Environment variable: SHORTBOXERR_DEBUG=true | ✅ |
+| Enables verbose logging | ✅ |
+| Logs full stack traces | ✅ |
+| Logs SQL queries (EF Core) | ✅ |
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | ✅ Modified |
+| `src/Shortboxerr.Api/Program.cs` | ✅ Modified |
+
+---
+
 # Self Check - Iteration 052
 
 ## EPIC 13.4: Diagnostic Tools - System Information Endpoint
