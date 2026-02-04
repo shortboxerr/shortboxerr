@@ -258,12 +258,32 @@ Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests sec
   - AC: UI tab: Theme selection (dark/light/system), page size
   - AC: Security tab: Authentication method dropdown (None/Basic/Forms) - placeholder
 
-## EPIC 7: Mylar3 Migration (BEHAVIORAL PARITY SETUP)
-- [ ] Read Mylar3 SQLite DB (read-only)
-- [ ] Transform to intermediate JSON snapshot
-- [ ] Import into Shortboxerr DB
-- [ ] Post-migration scan job
-- [ ] Migration report
+## EPIC 7: Mylar3 Migration (BEHAVIORAL PARITY SETUP) ✅ COMPLETED
+- [x] Read Mylar3 SQLite DB (read-only) ✅
+- [x] Transform to intermediate JSON snapshot ✅
+- [x] Import into Shortboxerr DB ✅
+- [x] Post-migration scan job ✅ (via SyncMetadataAfterImport option)
+- [x] Migration report ✅
+
+### Implementation Details
+- **IMylar3MigrationService**: Interface for migration operations
+- **Mylar3MigrationService**: Implementation that reads Mylar3 SQLite database
+- **Mylar3Snapshot**: Intermediate JSON snapshot model for review
+- **Mylar3MigrationOptions**: Configurable options (dry-run, skip/update existing, etc.)
+
+### API Endpoints
+- `POST /api/v1/mylar3/migration/analyze` - Analyze Mylar3 database and return snapshot
+- `POST /api/v1/mylar3/migration/export` - Export snapshot to JSON file
+- `POST /api/v1/mylar3/migration/import` - Import from snapshot into Shortboxerr
+- `POST /api/v1/mylar3/migration/migrate` - Full migration (analyze + import)
+
+### Features
+- Reads comics table (series with ComicVine IDs, publisher, year)
+- Reads issues table (issue number, status, location)
+- Maps Mylar3 status (Wanted/Downloaded/Skipped) to Shortboxerr
+- Supports dry-run mode for previewing changes
+- Optional metadata sync from ComicVine after import
+- 10 unit tests covering all scenarios
 
 ## EPIC 8: DDL Site Adapters & Download Hosts (Mylar3 Parity)
 Implement real DDL site adapters and download host resolvers matching Mylar3's supported providers.
