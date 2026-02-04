@@ -836,7 +836,8 @@ export const api = {
     try {
       const response = await fetchApi<ApiPagedResult<Issue>>(`/api/v1/series/${seriesId}/issues?${query}`);
       return toPagedResult(response);
-    } catch {
+    } catch (error) {
+      console.error('Failed to fetch series issues:', error);
       return { items: [], page: 1, pageSize: 100, totalCount: 0, totalPages: 0 };
     }
   },
