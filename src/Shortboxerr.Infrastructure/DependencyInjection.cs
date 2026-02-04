@@ -95,6 +95,7 @@ public static class DependencyInjection
         services.AddSingleton<BackgroundServices.ReleaseDayBackgroundService>();
         services.AddHostedService(provider => 
             provider.GetRequiredService<BackgroundServices.ReleaseDayBackgroundService>());
+        services.AddHostedService<BackgroundServices.HealthCheckBackgroundService>();
 
         // Cover service
         services.AddHttpClient("CoverDownload");
