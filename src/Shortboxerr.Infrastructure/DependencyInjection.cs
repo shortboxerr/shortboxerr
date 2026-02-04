@@ -63,6 +63,9 @@ public static class DependencyInjection
         services.AddSingleton<BackgroundServices.ComicVineRefreshBackgroundService>();
         services.AddHostedService(provider => 
             provider.GetRequiredService<BackgroundServices.ComicVineRefreshBackgroundService>());
+        services.AddSingleton<BackgroundServices.ReleaseDayBackgroundService>();
+        services.AddHostedService(provider => 
+            provider.GetRequiredService<BackgroundServices.ReleaseDayBackgroundService>());
 
         // Cover service
         services.AddHttpClient("CoverDownload");

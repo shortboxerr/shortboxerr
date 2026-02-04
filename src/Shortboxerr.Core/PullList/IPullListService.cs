@@ -446,6 +446,13 @@ public class PullListSettings
     public bool SkipVariantCovers { get; set; } = true;
 
     /// <summary>
+    /// Specific hours of the day (0-23) when release day processing is allowed.
+    /// Empty list means all hours are allowed. 
+    /// Default: 6am, 12pm to allow time for ComicVine data to be updated.
+    /// </summary>
+    public List<int> ReleaseDayProcessingHours { get; set; } = new() { 6, 12 };
+
+    /// <summary>
     /// Number of weeks to show in upcoming view.
     /// </summary>
     public int UpcomingWeeksToShow { get; set; } = 4;
