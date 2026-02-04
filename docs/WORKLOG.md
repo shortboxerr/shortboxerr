@@ -1,5 +1,52 @@
 # Worklog
 
+## Iteration 045 (2026-02-04)
+**EPIC 11.3: Auto-Add to Wanted List - COMPLETED**
+
+### Commits
+1. `feat: add ReleaseDayBackgroundService for auto-add to wanted list (EPIC 11.3)`
+2. `feat: add API endpoints for release day processing (EPIC 11.3)`
+
+### Deliverables
+
+#### ReleaseDayBackgroundService
+- ✅ Background service that runs on release day (default: Wednesday)
+- ✅ Calls `ProcessReleaseDayAsync` to auto-add issues based on monitoring mode
+- ✅ Configurable processing hours (default: 6am, 12pm)
+- ✅ Tracks last processed date to avoid duplicate processing
+- ✅ Sends weekly summary notification on success
+
+#### PullListSettings Enhancements
+- ✅ `ReleaseDayProcessingHours` - list of hours when processing is allowed
+- ✅ Existing `AutoAddToWanted` setting controls enable/disable
+
+#### API Endpoints
+- ✅ POST /api/v1/pulllist/releaseday/process - trigger manual processing
+- ✅ GET /api/v1/pulllist/releaseday/status - check processing status
+
+### Unit Tests (6 new tests)
+- ✅ TriggerProcessingAsync_ProcessesReleaseDay
+- ✅ TriggerProcessingAsync_UsesTodayWhenDateNotProvided
+- ✅ TriggerProcessingAsync_LogsErrorOnFailure
+- ✅ PullListSettings_HasCorrectDefaults
+- ✅ TriggerProcessingAsync_SendsNotificationOnSuccess
+- ✅ TriggerProcessingAsync_WithCustomDate_ProcessesThatDate
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/BackgroundServices/ReleaseDayBackgroundService.cs` | New |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register service |
+| `src/Shortboxerr.Core/PullList/IPullListService.cs` | Add ReleaseDayProcessingHours |
+| `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` | Add releaseday endpoints |
+| `tests/Shortboxerr.Tests/ReleaseDayBackgroundServiceTests.cs` | New 6 tests |
+
+### Test Results
+- Total: 658 tests passing (6 new)
+- Build: 0 errors
+
+---
+
 ## Iteration 044 (2026-02-03)
 **EPIC 12.1: Series/Issue List Caching - COMPLETED**
 

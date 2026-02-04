@@ -1,6 +1,46 @@
-# Self Check - Iteration 044
+# Self Check - Iteration 045
 
-## EPIC 12.1: Series/Issue List Caching
+## EPIC 11.3: Auto-Add to Wanted List
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Build succeeded with 0 errors |
+| Tests pass | ✅ | 658 total tests passing (6 new) |
+| Background service | ✅ | ReleaseDayBackgroundService |
+| API endpoints | ✅ | process + status |
+| Settings | ✅ | ReleaseDayProcessingHours |
+| Git commits | ✅ | Conventional format |
+
+### Acceptance Criteria Status
+
+#### Auto-Add to Wanted List
+| AC | Status |
+|----|--------|
+| Auto-add on release day | ✅ |
+| Configurable schedule | ✅ |
+| Track last processed date | ✅ |
+| API endpoints | ✅ |
+
+### New Tests (6 tests)
+- ✅ TriggerProcessingAsync_ProcessesReleaseDay
+- ✅ TriggerProcessingAsync_UsesTodayWhenDateNotProvided
+- ✅ TriggerProcessingAsync_LogsErrorOnFailure
+- ✅ PullListSettings_HasCorrectDefaults
+- ✅ TriggerProcessingAsync_SendsNotificationOnSuccess
+- ✅ TriggerProcessingAsync_WithCustomDate_ProcessesThatDate
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/BackgroundServices/ReleaseDayBackgroundService.cs` | ✅ New |
+| `tests/Shortboxerr.Tests/ReleaseDayBackgroundServiceTests.cs` | ✅ New 6 tests |
+| `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` | ✅ Added endpoints |
+
+---
+
+## Previous: EPIC 12.1: Series/Issue List Caching
 
 ### Checklist
 

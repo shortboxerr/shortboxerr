@@ -815,15 +815,16 @@ Track upcoming comic releases and automate wanted list management. Must achieve 
   - AC: "Manual" - never auto-add, user selects individually ✅
   - AC: "First Issue" - only want #1 issues (for new series discovery) ✅
   - AC: "None" - don't monitor this series at all ✅
-- [ ] **Auto-add to wanted list** (deferred)
-  - AC: Automatically add new issues to wanted list on release day
-  - AC: Configurable: on release day, X days before, or manual only
-  - Note: `ProcessReleaseDayAsync` exists in PullListService, needs:
-    - `ReleaseDayBackgroundService` to call it on release days (default: Wednesday)
-    - Configurable schedule (check at midnight, noon, etc.)
-    - Track last processed date to avoid duplicate processing
-  - Note: For full Mylar3 parity, background service should also refresh ComicVine
-    discovery data every 4 hours (currently on-demand with 30-min cache)
+- [x] **Auto-add to wanted list** ✅
+  - AC: Automatically add new issues to wanted list on release day ✅
+  - AC: Configurable: on release day, X days before, or manual only ✅
+  - AC: `ReleaseDayBackgroundService` calls `ProcessReleaseDayAsync` on release days ✅
+  - AC: Configurable schedule via `ReleaseDayProcessingHours` (default: 6am, 12pm) ✅
+  - AC: Tracks last processed date to avoid duplicate processing ✅
+  - AC: API endpoints for manual trigger and status check ✅
+    - POST /api/v1/pulllist/releaseday/process
+    - GET /api/v1/pulllist/releaseday/status
+  - Note: ComicVine discovery refresh already implemented in `ComicVineRefreshBackgroundService` ✅
 - [ ] **Auto-search on release** (deferred)
   - AC: Trigger search when issue is added to wanted list
   - AC: Respect rate limits and search intervals
