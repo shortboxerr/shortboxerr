@@ -24,27 +24,40 @@ public class MetadataRefreshBackgroundService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Metadata refresh background service starting");
+        _logger.LogInformation("Metadata refresh background service starting. Check interval: {Interval}", _checkInterval);
 
         // Initial delay to allow application to fully start
+        _logger.LogDebug("Waiting 5 minutes before first metadata refresh check");
         await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+
+        var consecutiveErrors = 0;
 
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
+                _logger.LogDebug("Starting scheduled metadata refresh check");
                 await CheckAndRefreshAsync(stoppingToken);
+                consecutiveErrors = 0; // Reset on success
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
                 // Expected during shutdown
+                _logger.LogDebug("Metadata refresh cancelled due to shutdown");
                 break;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in metadata refresh background service");
+                consecutiveErrors++;
+                _logger.LogError(ex, "Error in metadata refresh background service (attempt {Attempt})", consecutiveErrors);
+                
+                if (consecutiveErrors >= 3)
+                {
+                    _logger.LogWarning("Multiple consecutive errors ({Count}). Will continue trying but may indicate a persistent issue.", consecutiveErrors);
+                }
             }
 
+            _logger.LogDebug("Next metadata refresh check in {Interval}", _checkInterval);
             await Task.Delay(_checkInterval, stoppingToken);
         }
 

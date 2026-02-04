@@ -31,27 +31,40 @@ public class ReleaseDayBackgroundService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Release day background service starting");
+        _logger.LogInformation("Release day background service starting. Check interval: {Interval}", _checkInterval);
 
         // Initial delay to allow application to fully start
+        _logger.LogDebug("Waiting 3 minutes before first release day check");
         await Task.Delay(TimeSpan.FromMinutes(3), stoppingToken);
+
+        var consecutiveErrors = 0;
 
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
+                _logger.LogDebug("Starting release day processing check");
                 await CheckAndProcessReleaseDayAsync(stoppingToken);
+                consecutiveErrors = 0; // Reset on success
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
                 // Expected during shutdown
+                _logger.LogDebug("Release day processing cancelled due to shutdown");
                 break;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in release day background service");
+                consecutiveErrors++;
+                _logger.LogError(ex, "Error in release day background service (attempt {Attempt})", consecutiveErrors);
+                
+                if (consecutiveErrors >= 3)
+                {
+                    _logger.LogWarning("Multiple consecutive errors ({Count}). Will continue trying but may indicate a persistent issue.", consecutiveErrors);
+                }
             }
 
+            _logger.LogDebug("Next release day check in {Interval}", _checkInterval);
             await Task.Delay(_checkInterval, stoppingToken);
         }
 
