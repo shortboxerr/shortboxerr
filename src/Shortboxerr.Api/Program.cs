@@ -120,6 +120,49 @@ lifetime.ApplicationStopped.Register(() =>
 
 // Configure the HTTP request pipeline
 app.UseCors(); // Enable CORS for development
+
+// Add Serilog request logging with sensitive data masking
+app.UseSerilogRequestLogging(options =>
+{
+    // Customize the message template
+    options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+    
+    // Emit debug level logs for successful requests, information for others
+    options.GetLevel = (httpContext, elapsed, ex) =>
+    {
+        // Don't log health checks at information level (too noisy)
+        if (httpContext.Request.Path.StartsWithSegments("/health") || 
+            httpContext.Request.Path.StartsWithSegments("/ping"))
+        {
+            return LogEventLevel.Debug;
+        }
+        
+        // Errors and slow requests at Warning or higher
+        if (ex != null || httpContext.Response.StatusCode >= 500)
+            return LogEventLevel.Error;
+        if (httpContext.Response.StatusCode >= 400 || elapsed > 3000)
+            return LogEventLevel.Warning;
+        
+        return LogEventLevel.Information;
+    };
+    
+    // Enrich log events with additional properties
+    options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+    {
+        diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value);
+        diagnosticContext.Set("UserAgent", httpContext.Request.Headers.UserAgent.ToString());
+        diagnosticContext.Set("RemoteIP", httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+        
+        // Mask sensitive query parameters
+        var query = httpContext.Request.QueryString.Value ?? "";
+        var maskedQuery = MaskSensitiveQueryParams(query);
+        if (!string.IsNullOrEmpty(maskedQuery))
+        {
+            diagnosticContext.Set("QueryString", maskedQuery);
+        }
+    };
+});
+
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -196,4 +239,29 @@ finally
 }
 
 // Make Program class accessible for testing
-public partial class Program { }
+public partial class Program 
+{
+    /// <summary>
+    /// Masks sensitive query parameters (apikey, token, password, secret, etc.)
+    /// </summary>
+    internal static string MaskSensitiveQueryParams(string queryString)
+    {
+        if (string.IsNullOrEmpty(queryString)) return queryString;
+        
+        var sensitiveParams = new[] { "apikey", "api_key", "token", "password", "secret", "key", "credential", "authorization" };
+        var result = queryString;
+        
+        foreach (var param in sensitiveParams)
+        {
+            // Match param=value patterns (case-insensitive)
+            var pattern = $@"({param})=([^&]+)";
+            result = System.Text.RegularExpressions.Regex.Replace(
+                result, 
+                pattern, 
+                "$1=***", 
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        }
+        
+        return result;
+    }
+}

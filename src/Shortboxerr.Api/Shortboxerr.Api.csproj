@@ -25,4 +25,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Shortboxerr.Tests" />
+  </ItemGroup>
+
 </Project>
