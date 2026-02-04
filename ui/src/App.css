@@ -1358,8 +1358,76 @@ body {
 }
 
 .col-actions {
-  width: 60px;
+  width: 120px;
   text-align: center;
+}
+
+/* Action buttons container */
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.action-buttons .btn-icon {
+  opacity: 0.6;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.action-buttons .btn-icon:hover {
+  opacity: 1;
+  background: var(--bg-hover);
+}
+
+/* Issue card hover actions */
+.issue-card-actions {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+}
+
+.issue-card-actions .btn-action {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  padding: 6px;
+}
+
+.issue-card-actions .btn-action:hover {
+  background: white;
+}
+
+.issue-card-actions .btn-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Bulk action buttons */
+.bulk-actions .btn-primary {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.bulk-actions .btn-success {
+  background: var(--accent-success);
+  color: white;
+}
+
+.bulk-actions .btn-muted {
+  background: var(--bg-active);
+  color: var(--text-muted);
+}
+
+.bulk-actions .btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 /* Small button variant */
