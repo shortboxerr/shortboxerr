@@ -1,3 +1,40 @@
+# Self Check - Iteration 050
+
+## EPIC 9.12: Series Status Accuracy
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Backend builds with 0 errors |
+| Tests pass | ✅ | 691 tests passing (14 new) |
+| StatusSource field | ✅ | Enum + migration added |
+| Status determiner | ✅ | SeriesStatusDeterminer class |
+| ComicVine sync | ✅ | Uses new status logic on add/refresh |
+| Manual override API | ✅ | PUT/DELETE endpoints |
+| Unit tests | ✅ | 14 comprehensive tests |
+| Git commits | ✅ | 4 commits |
+
+### Acceptance Criteria Status
+
+#### Status Determination
+| AC | Status |
+|----|--------|
+| Last issue > 2 years = Ended | ✅ |
+| Mini-series detection | ✅ |
+| End year detection | ✅ |
+| ComicVine staleness check | ✅ |
+| Manual override respected | ✅ |
+
+#### API Endpoints
+| AC | Status |
+|----|--------|
+| PUT /series/{id}/status | ✅ |
+| DELETE /series/{id}/status/override | ✅ |
+| StatusSource in SeriesDto | ✅ |
+
+---
+
 # Self Check - Iteration 049
 
 ## EPIC 9.11: Series Detail Page - Issues Display

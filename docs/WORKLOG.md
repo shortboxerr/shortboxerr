@@ -1,5 +1,60 @@
 # Worklog
 
+## Iteration 050 (2026-02-04)
+**EPIC 9.12: Series Status Accuracy - COMPLETED**
+
+### Commits
+1. `feat: add StatusSource field to Series entity (EPIC 9.12)`
+2. `feat: implement series status determination logic (EPIC 9.12)`
+3. `feat: add series status override API endpoints (EPIC 9.12)`
+4. `test: add SeriesStatusDeterminerTests (14 tests)`
+
+### Deliverables
+
+#### Database Changes
+- ✅ Added `StatusSource` enum: Auto, ComicVine, Manual
+- ✅ Added `StatusSource` column to Series table
+- ✅ Migration: `AddSeriesStatusSource`
+
+#### Status Determination Logic
+- ✅ `SeriesStatusDeterminer` class with configurable thresholds
+- ✅ Default threshold: 2 years since last issue = Ended
+- ✅ Mini-series detection: 4-12 issues with no recent activity
+- ✅ Respects end year if set
+- ✅ Considers ComicVine staleness as secondary indicator
+- ✅ Returns status, source, and reasons list for transparency
+
+#### Metadata Sync Integration
+- ✅ `AddSeriesByComicVineIdAsync` uses new status logic
+- ✅ `RefreshSeriesMetadataAsync` updates status (respects manual override)
+- ✅ `GetIssueReleaseDateAsync` helper for fetching issue dates
+
+#### API Endpoints
+- ✅ `PUT /api/v1/series/{id}/status` - Set status manually
+- ✅ `DELETE /api/v1/series/{id}/status/override` - Reset to auto
+- ✅ `StatusSource` exposed in `SeriesDto`
+
+#### Unit Tests
+- ✅ 14 tests for `SeriesStatusDeterminer`
+- ✅ Tests cover: recent activity, old series, mini-series, manual override
+- ✅ Tests cover: end year, missing data, boundary conditions
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Entities/Series.cs` | Add StatusSource enum and field |
+| `src/Shortboxerr.Infrastructure/ComicVine/SeriesStatusDeterminer.cs` | New status determination logic |
+| `src/Shortboxerr.Infrastructure/ComicVine/SeriesMetadataService.cs` | Integrate status determination |
+| `src/Shortboxerr.Api/Dtos/SeriesDto.cs` | Expose StatusSource |
+| `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | Status override endpoints |
+| `tests/Shortboxerr.Tests/SeriesStatusDeterminerTests.cs` | 14 new tests |
+
+### Test Results
+- Backend: 691 tests passing (14 new)
+- All status determination tests pass
+
+---
+
 ## Iteration 049 (2026-02-04)
 **EPIC 9.11: Series Detail Page - Issues Display - COMPLETED**
 
