@@ -1,3 +1,41 @@
+# Self Check - Iteration 055
+
+## EPIC 13.2: API Request Logging
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Backend builds with 0 errors |
+| Tests pass | ✅ | 712 tests passing |
+| Request logging | ✅ | UseSerilogRequestLogging |
+| Duration timing | ✅ | Elapsed ms in log message |
+| Error logging | ✅ | 4xx/5xx at Warning/Error level |
+| Sensitive masking | ✅ | Query params masked |
+| Unit tests | ✅ | 13 tests for masking |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+#### API Request Logging
+| AC | Status |
+|----|--------|
+| HTTP request/response logging (configurable verbosity) | ✅ |
+| Request duration timing | ✅ |
+| Error responses with details | ✅ |
+| Mask API keys, passwords, tokens | ✅ |
+| Mask Authorization headers | ✅ |
+| Mask sensitive query parameters | ✅ |
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `src/Shortboxerr.Api/Program.cs` | ✅ Modified |
+| `src/Shortboxerr.Api/Shortboxerr.Api.csproj` | ✅ Modified |
+| `tests/Shortboxerr.Tests/SensitiveDataMaskingTests.cs` | ✅ New |
+
+---
+
 # Self Check - Iteration 054
 
 ## EPIC 13.2: Application Lifecycle Logging

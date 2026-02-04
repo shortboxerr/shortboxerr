@@ -1,5 +1,44 @@
 # Worklog
 
+## Iteration 055 (2026-02-04)
+**EPIC 13.2: API Request Logging - COMPLETED**
+
+### Commits
+1. `feat: add HTTP request logging with sensitive data masking (EPIC 13.2)`
+
+### Deliverables
+
+#### HTTP Request Logging
+- ✅ UseSerilogRequestLogging middleware
+- ✅ Custom message template with method, path, status, duration
+- ✅ Configurable log levels per request type
+- ✅ Health/ping endpoints at Debug level (less noise)
+- ✅ Slow requests (>3s) and errors at Warning/Error level
+
+#### Sensitive Data Masking
+- ✅ MaskSensitiveQueryParams helper method
+- ✅ Masks: apikey, api_key, token, password, secret, key, credential, authorization
+- ✅ Case-insensitive matching
+- ✅ 13 unit tests for masking behavior
+
+#### Log Enrichment
+- ✅ Request host
+- ✅ User-agent
+- ✅ Remote IP address
+- ✅ Masked query string
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Program.cs` | Add UseSerilogRequestLogging with custom config |
+| `src/Shortboxerr.Api/Shortboxerr.Api.csproj` | Add InternalsVisibleTo for tests |
+| `tests/Shortboxerr.Tests/SensitiveDataMaskingTests.cs` | New test file |
+
+### Test Results
+- Backend: 712 tests passing (+13 new)
+
+---
+
 ## Iteration 054 (2026-02-04)
 **EPIC 13.2: Application Lifecycle Logging - COMPLETED**
 

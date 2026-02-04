@@ -1440,13 +1440,13 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
   - AC: Database migration events ✅
   - AC: Background service start/stop ✅
 
-- [ ] **API request logging**
-  - AC: HTTP request/response logging (configurable verbosity)
-  - AC: Request duration timing
-  - AC: Error responses with details
-  - AC: **MANDATORY**: Mask API keys, passwords, tokens in all request/response logs
-  - AC: **MANDATORY**: Mask Authorization headers (show type only, e.g., "Bearer ***")
-  - AC: **MANDATORY**: Mask sensitive query parameters (?apikey=***)
+- [x] **API request logging** ✅
+  - AC: HTTP request/response logging (configurable verbosity) ✅
+  - AC: Request duration timing ✅
+  - AC: Error responses with details ✅
+  - AC: **MANDATORY**: Mask API keys, passwords, tokens in all request/response logs ✅
+  - AC: **MANDATORY**: Mask Authorization headers (show type only, e.g., "Bearer ***") ✅
+  - AC: **MANDATORY**: Mask sensitive query parameters (?apikey=***) ✅
 
 - [ ] **ComicVine API logging**
   - AC: API calls with endpoint and parameters
