@@ -1195,11 +1195,46 @@ Implement comprehensive caching to minimize database queries and external API ca
   - AC: Implement backoff when approaching limits
   - AC: Queue requests during rate limit cooldown
 
-- [ ] **Wire cache to scheduler**
-  - AC: Ensure that releases for each week are fetched on a schedule of every X hours and cached for at least that many hours so that we don't have to repull the weeks releases when a user first views a week.
-  
+### 12.5 Intelligent Pull List Cache Lifecycle
+**Status: READY**
 
-### 12.5 Cache Technology Options
+Different caching behavior based on whether a week is "active" (before/on release day) vs "historical" (past release day).
+
+- [ ] **Active week caching (before/on release day)**
+  - AC: Background refresh pull list data on schedule while week is active
+  - AC: Refresh interval configurable (default: 4 hours, matching ComicVine sync)
+  - AC: Cache TTL >= refresh interval (ensures data is always cached between refreshes)
+  - AC: Continue refreshing until N days after release day (configurable, default: 2 days)
+  - AC: Rationale: Active weeks may have last-minute changes, delays, or additions
+
+- [ ] **Historical week caching (past release day + buffer)**
+  - AC: Stop scheduled refreshes after buffer period (release day + N days)
+  - AC: Cache data with long TTL (e.g., 7 days or longer)
+  - AC: Optional: Infrequent refresh for historical data (e.g., weekly scan of recent history)
+  - AC: Rationale: Past releases rarely change; conserve API calls
+
+- [ ] **Cache tier configuration**
+  - AC: New setting: `PullListCacheBufferDays` (default: 2)
+  - AC: New setting: `HistoricalCacheTtlDays` (default: 7)
+  - AC: New setting: `HistoricalRefreshEnabled` (default: false)
+  - AC: New setting: `HistoricalRefreshIntervalDays` (default: 7)
+
+- [ ] **Manual refresh always available**
+  - AC: "Refresh from ComicVine" button works regardless of cache tier
+  - AC: Manual refresh updates cache with new data
+  - AC: Manual refresh resets cache TTL
+
+- [ ] **Cache status visibility**
+  - AC: API returns cache metadata (last refreshed, next scheduled refresh, tier)
+  - AC: UI shows when data was last refreshed
+  - AC: UI indicates if viewing cached historical data
+
+**Implementation Notes:**
+- Integrate with existing `ComicVineRefreshBackgroundService`
+- Track "active" vs "historical" state per week in cache metadata
+- Consider storing historical data in database for persistence across restarts
+
+### 12.7 Cache Technology Options
 
 **Recommended: IMemoryCache (In-Process)**
 - ✅ Already in use for ComicVine responses
@@ -1220,9 +1255,10 @@ Implement comprehensive caching to minimize database queries and external API ca
 ### Cache TTL Reference Table
 | Data Type | Layer | Current TTL | Recommended TTL | Invalidation Trigger |
 |-----------|-------|-------------|-----------------|---------------------|
-| Pull list (this week) | Frontend | 30 min | 30 min | Issue status change, monitoring change, manual refresh |
-| Pull list (upcoming/past) | Frontend | 30 min | 30 min | Issue status change, manual refresh |
-| Discovery results | Backend | 30 min | 30 min | None (external data), manual refresh |
+| Pull list (active week) | Frontend | 30 min | 30 min | Issue status change, monitoring change, manual refresh |
+| Pull list (historical week) | Frontend | 30 min | 7 days* | Manual refresh only |
+| Discovery (active week) | Backend | 30 min | 30 min | Scheduled refresh, manual refresh |
+| Discovery (historical week) | Backend | 30 min | 7 days* | Manual refresh only |
 | Discovery results | Frontend | 30 min | 30 min | Manual refresh |
 | Series list | - | None | 2 minutes | Series CRUD |
 | Series detail | - | None | 5 minutes | Series/Issue CRUD |
@@ -1232,6 +1268,8 @@ Implement comprehensive caching to minimize database queries and external API ca
 | ComicVine issue | Backend | 24 hours | 24 hours | Manual refresh |
 | ComicVine publisher | Backend | 7 days | 7 days | Manual refresh |
 | Cover images | Disk | Permanent | Permanent | Manual clear |
+
+*Historical weeks (release day + 2 days past) use extended cache with optional infrequent background refresh.
 
 **Rationale for 30-minute cache on ComicVine discovery:**
 - Comic release schedules are set weeks/months in advance by publishers
