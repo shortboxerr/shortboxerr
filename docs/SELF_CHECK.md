@@ -1,6 +1,61 @@
-# Self Check - Iteration 042
+# Self Check - Iteration 043
 
-## EPIC 12.1: Data Caching Strategy (Partial)
+## EPIC 12.3: HTTP Response Caching
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Build succeeded with 0 errors |
+| Tests pass | ✅ | 648 total tests passing (15 new) |
+| Cache-Control headers | ✅ | Applied to GET endpoints |
+| ETag support | ✅ | Series detail + cover images |
+| 304 responses | ✅ | Working for unchanged resources |
+| Git commits | ✅ | Conventional format |
+
+### Acceptance Criteria Status
+
+#### API Response Caching
+| AC | Status |
+|----|--------|
+| Cache-Control headers for read-only endpoints | ✅ |
+| ETag support for series/issue endpoints | ✅ |
+| If-None-Match/If-Modified-Since support | ✅ |
+
+#### Static Asset Caching
+| AC | Status |
+|----|--------|
+| Long-lived cache for cover images | ✅ (1 day) |
+| Cache-busting for UI assets | ✅ (Vite) |
+
+### New Tests (15 tests)
+- ✅ GenerateETag_FromTimestamp_ReturnsConsistentValue
+- ✅ GenerateETag_DifferentTimestamps_ReturnsDifferentValues
+- ✅ GenerateETag_FromIdAndTimestamp_IncludesBothInHash
+- ✅ GenerateETag_DifferentIds_ReturnsDifferentValues
+- ✅ GenerateETag_FromString_ReturnsConsistentValue
+- ✅ IsNotModified_MatchingETag_ReturnsTrue
+- ✅ IsNotModified_NonMatchingETag_ReturnsFalse
+- ✅ IsNotModified_NoHeader_ReturnsFalse
+- ✅ IsNotModified_WildcardETag_ReturnsTrue
+- ✅ IsNotModified_MultipleETags_MatchesOneReturnsTrue
+- ✅ IsNotModifiedSince_OlderResource_ReturnsFalse
+- ✅ IsNotModifiedSince_NewerOrSameResource_ReturnsTrue
+- ✅ IsNotModifiedSince_NoHeader_ReturnsFalse
+- ✅ IsNotModifiedSince_InvalidDateFormat_ReturnsFalse
+- ✅ HttpCacheSettings_DefaultValues
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `src/Shortboxerr.Api/Caching/HttpCacheEndpointFilter.cs` | ✅ New file |
+| `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | ✅ Modified |
+| `src/Shortboxerr.Api/Endpoints/CoverEndpoints.cs` | ✅ Modified |
+| `tests/Shortboxerr.Tests/HttpCacheTests.cs` | ✅ 15 new tests |
+
+---
+
+## Previous: EPIC 12.1: Data Caching Strategy (Partial)
 
 ### Checklist
 

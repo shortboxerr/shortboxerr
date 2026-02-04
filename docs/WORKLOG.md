@@ -1,5 +1,53 @@
 # Worklog
 
+## Iteration 043 (2026-02-03)
+**EPIC 12.3: HTTP Response Caching - COMPLETED**
+
+### Commits
+1. `feat: implement HTTP response caching with ETag support (EPIC 12.3)`
+
+### Deliverables
+
+#### HTTP Caching Infrastructure
+- ✅ `HttpCacheEndpointFilter` - Endpoint filter for Cache-Control headers
+- ✅ `HttpCacheSettings` - Configuration class for cache settings
+- ✅ `ETagHelper` - Static helper for ETag generation and validation
+- ✅ Extension methods: `WithHttpCache`, `WithPrivateCache`, `WithNoCache`, `WithLongCache`, `WithImmutableCache`
+
+#### Cache-Control Headers Applied
+| Endpoint Type | Max-Age | Notes |
+|--------------|---------|-------|
+| Series list (GET /api/v1/series) | 2 min | Public cache |
+| Series detail (GET /api/v1/series/{id}) | 5 min | With ETag |
+| Series issues (GET /api/v1/series/{id}/issues) | 2 min | Public cache |
+| Cover images (GET /api/v1/covers/*) | 1 day | With ETag + Last-Modified |
+
+#### ETag Support
+- ✅ ETag generation from ID + UpdatedAt timestamp
+- ✅ If-None-Match header validation
+- ✅ If-Modified-Since header validation
+- ✅ 304 Not Modified responses for unchanged resources
+
+### Unit Tests (15 new tests)
+- ETag generation tests (5 tests)
+- ETag validation tests (5 tests)
+- If-Modified-Since tests (4 tests)
+- HttpCacheSettings defaults test (1 test)
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Caching/HttpCacheEndpointFilter.cs` | New file |
+| `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | Added caching |
+| `src/Shortboxerr.Api/Endpoints/CoverEndpoints.cs` | Added caching |
+| `tests/Shortboxerr.Tests/HttpCacheTests.cs` | 15 new tests |
+
+### Test Results
+- Total: 648 tests passing (15 new)
+- Build: 0 errors
+
+---
+
 ## Iteration 042 (2026-02-03)
 **EPIC 12.1: Data Caching Strategy (Partial) - COMPLETED**
 

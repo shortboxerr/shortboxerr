@@ -1134,16 +1134,16 @@ Implement comprehensive caching to minimize database queries and external API ca
   - AC: Ability to disable caching per category (for debugging) ✅ (Enabled flag)
   - AC: Cache statistics endpoint (hit/miss ratios) ✅ (GET /api/v1/cache/stats)
 
-### 12.3 HTTP Response Caching
-- [ ] **API response caching**
-  - AC: Add Cache-Control headers for read-only endpoints
-  - AC: Implement ETag support for series/issue endpoints
-  - AC: Support If-None-Match/If-Modified-Since headers
-  - AC: Vary header for authenticated vs. public responses (if applicable)
+### 12.3 HTTP Response Caching ✅ COMPLETED
+- [x] **API response caching** ✅
+  - AC: Add Cache-Control headers for read-only endpoints ✅
+  - AC: Implement ETag support for series/issue endpoints ✅
+  - AC: Support If-None-Match/If-Modified-Since headers ✅
+  - AC: Vary header for authenticated vs. public responses (N/A - no auth currently)
 
-- [ ] **Static asset caching**
-  - AC: Long-lived cache for cover images via HTTP headers
-  - AC: Cache-busting for UI assets (already handled by Vite build)
+- [x] **Static asset caching** ✅
+  - AC: Long-lived cache for cover images via HTTP headers ✅ (1-day cache)
+  - AC: Cache-busting for UI assets (already handled by Vite build) ✅
 
 ### 12.4 ComicVine API Optimization
 - [ ] **Request batching**
