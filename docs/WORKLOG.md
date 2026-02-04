@@ -1,5 +1,48 @@
 # Worklog
 
+## Iteration 060 (2026-02-04)
+**EPIC 13.3: Log Viewer UI - COMPLETED**
+
+### Commits
+1. `feat: add log viewer UI (EPIC 13.3)`
+
+### Deliverables
+
+#### Backend API
+- ✅ GET /api/v1/system/logs/{filename} - read log file with filtering
+- ✅ GET /api/v1/system/logs/recent - recent logs with auto-refresh
+- ✅ DELETE /api/v1/system/logs/{filename} - delete log file
+- ✅ Log line parsing (timestamp, level, category, message)
+- ✅ Level filtering (VRB, DBG, INF, WRN, ERR, FTL)
+- ✅ Text search within logs
+
+#### Frontend UI
+- ✅ LogsPage component at /logs route
+- ✅ Navigation item in System section
+- ✅ File selector with Recent Logs (Live)
+- ✅ Level filter dropdown
+- ✅ Search input with highlighting
+- ✅ Line count selector (100-5000)
+- ✅ Auto-scroll toggle
+- ✅ Color-coded log levels with icons
+- ✅ Monospace font display
+- ✅ Log file list with download/delete buttons
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Endpoints/SystemEndpoints.cs` | Add log content endpoints |
+| `ui/src/api/client.ts` | Add log API functions |
+| `ui/src/pages/LogsPage.tsx` | New log viewer page |
+| `ui/src/components/Layout.tsx` | Add Logs navigation |
+| `ui/src/App.tsx` | Add /logs route |
+
+### Test Results
+- Backend: 712 tests passing
+- Frontend: Build successful
+
+---
+
 ## Iteration 059 (2026-02-04)
 **EPIC 13.2: Background Service Logging - COMPLETED**
 

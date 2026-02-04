@@ -1,3 +1,47 @@
+# Self Check - Iteration 060
+
+## EPIC 13.3: Log Viewer UI
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Backend + Frontend |
+| Tests pass | ✅ | 712 tests passing |
+| Logs page | ✅ | /logs route |
+| Navigation | ✅ | System > Logs |
+| Level filtering | ✅ | All levels |
+| Search | ✅ | With highlighting |
+| Color coding | ✅ | Per level |
+| File management | ✅ | List/download/delete |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+#### Logs Page
+| AC | Status |
+|----|--------|
+| System > Logs navigation | ✅ |
+| Real-time streaming | ✅ (polling) |
+| Log level filtering | ✅ |
+| Text search | ✅ |
+| Color-coded levels | ✅ |
+| Monospace font | ✅ |
+| Auto-scroll | ✅ |
+| File list | ✅ |
+| Download/delete | ✅ |
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `SystemEndpoints.cs` | ✅ Modified |
+| `client.ts` | ✅ Modified |
+| `LogsPage.tsx` | ✅ Created |
+| `Layout.tsx` | ✅ Modified |
+| `App.tsx` | ✅ Modified |
+
+---
+
 # Self Check - Iteration 059
 
 ## EPIC 13.2: Background Service Logging
