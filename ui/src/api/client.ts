@@ -1377,6 +1377,19 @@ export const api = {
       }),
     });
   },
+
+  // Metadata refresh
+  refreshSeriesMetadata: async (seriesId: number, force = false): Promise<{ success: boolean; seriesRefreshed?: number; issuesRefreshed?: number; error?: string }> => {
+    return fetchApi(`/api/v1/metadata/series/${seriesId}/refresh?force=${force}`, {
+      method: 'POST',
+    });
+  },
+
+  refreshSeriesIssues: async (seriesId: number, force = false): Promise<{ success: boolean; issuesRefreshed?: number; error?: string }> => {
+    return fetchApi(`/api/v1/metadata/series/${seriesId}/issues/refresh?force=${force}`, {
+      method: 'POST',
+    });
+  },
 };
 
 function buildDiscoveryParams(filter?: DiscoveryFilter): string {

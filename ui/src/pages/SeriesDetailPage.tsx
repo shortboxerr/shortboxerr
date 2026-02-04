@@ -96,6 +96,22 @@ export function SeriesDetailPage() {
     }
   };
 
+  // Refresh metadata mutation
+  const refreshMetadata = useMutation({
+    mutationFn: async () => {
+      return api.refreshSeriesMetadata(seriesId, true);
+    },
+    onSuccess: () => {
+      // Invalidate series and issues queries to refetch updated data
+      queryClient.invalidateQueries({ queryKey: ['series', seriesId] });
+      queryClient.invalidateQueries({ queryKey: ['series', seriesId, 'issues'] });
+    },
+  });
+
+  const handleRefreshMetadata = () => {
+    refreshMetadata.mutate();
+  };
+
   const { data: series, isLoading: isLoadingSeries } = useQuery({
     queryKey: ['series', seriesId],
     queryFn: () => api.getSeriesById(seriesId),
@@ -190,8 +206,13 @@ export function SeriesDetailPage() {
         </Link>
         <h1 className="page-title">{series.title}</h1>
         <div className="toolbar-group">
-          <button className="btn btn-icon" title="Refresh Metadata">
-            <RefreshCw size={18} />
+          <button 
+            className="btn btn-icon" 
+            title="Refresh Metadata from ComicVine"
+            onClick={handleRefreshMetadata}
+            disabled={refreshMetadata.isPending}
+          >
+            <RefreshCw size={18} className={refreshMetadata.isPending ? 'spinning' : ''} />
           </button>
         </div>
       </header>

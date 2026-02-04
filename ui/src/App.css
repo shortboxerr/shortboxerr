@@ -699,12 +699,8 @@ body {
   gap: 8px;
 }
 
-.spin {
-  animation: spin 1s linear infinite;
-}
-
-/* Spin animation for loader icons */
-.spin {
+.spin,
+.spinning {
   animation: spin 1s linear infinite;
 }
 
