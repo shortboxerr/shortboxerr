@@ -148,8 +148,11 @@ public class ComicVineClient : IComicVineClient
 
         if (_cache.TryGetValue(cacheKey, out ComicVineSearchResult<ComicVineVolume>? cached) && cached != null)
         {
+            _logger.LogDebug("ComicVine cache HIT: {CacheKey}", cacheKey);
             return cached;
         }
+        
+        _logger.LogDebug("ComicVine cache MISS: {CacheKey}", cacheKey);
 
         var apiKey = await GetApiKeyAsync(cancellationToken);
         if (string.IsNullOrEmpty(apiKey))
@@ -206,8 +209,11 @@ public class ComicVineClient : IComicVineClient
 
         if (_cache.TryGetValue(cacheKey, out ComicVineSearchResult<ComicVineIssue>? cached) && cached != null)
         {
+            _logger.LogDebug("ComicVine cache HIT: {CacheKey}", cacheKey);
             return cached;
         }
+        
+        _logger.LogDebug("ComicVine cache MISS: {CacheKey}", cacheKey);
 
         var apiKey = await GetApiKeyAsync(cancellationToken);
         if (string.IsNullOrEmpty(apiKey))
@@ -261,8 +267,11 @@ public class ComicVineClient : IComicVineClient
 
         if (_cache.TryGetValue(cacheKey, out ComicVineResult<ComicVineVolume>? cached) && cached != null)
         {
+            _logger.LogDebug("ComicVine cache HIT: {CacheKey}", cacheKey);
             return cached;
         }
+        
+        _logger.LogDebug("ComicVine cache MISS: {CacheKey}", cacheKey);
 
         var apiKey = await GetApiKeyAsync(cancellationToken);
         if (string.IsNullOrEmpty(apiKey))
@@ -312,8 +321,11 @@ public class ComicVineClient : IComicVineClient
 
         if (_cache.TryGetValue(cacheKey, out ComicVineResult<ComicVineIssue>? cached) && cached != null)
         {
+            _logger.LogDebug("ComicVine cache HIT: {CacheKey}", cacheKey);
             return cached;
         }
+        
+        _logger.LogDebug("ComicVine cache MISS: {CacheKey}", cacheKey);
 
         var apiKey = await GetApiKeyAsync(cancellationToken);
         if (string.IsNullOrEmpty(apiKey))
@@ -366,8 +378,11 @@ public class ComicVineClient : IComicVineClient
 
         if (_cache.TryGetValue(cacheKey, out ComicVineSearchResult<ComicVineIssue>? cached) && cached != null)
         {
+            _logger.LogDebug("ComicVine cache HIT: {CacheKey}", cacheKey);
             return cached;
         }
+        
+        _logger.LogDebug("ComicVine cache MISS: {CacheKey}", cacheKey);
 
         var apiKey = await GetApiKeyAsync(cancellationToken);
         if (string.IsNullOrEmpty(apiKey))
@@ -421,8 +436,11 @@ public class ComicVineClient : IComicVineClient
 
         if (_cache.TryGetValue(cacheKey, out ComicVineResult<ComicVinePublisher>? cached) && cached != null)
         {
+            _logger.LogDebug("ComicVine cache HIT: {CacheKey}", cacheKey);
             return cached;
         }
+        
+        _logger.LogDebug("ComicVine cache MISS: {CacheKey}", cacheKey);
 
         var apiKey = await GetApiKeyAsync(cancellationToken);
         if (string.IsNullOrEmpty(apiKey))
@@ -475,8 +493,11 @@ public class ComicVineClient : IComicVineClient
 
         if (_cache.TryGetValue(cacheKey, out ComicVineSearchResult<ComicVineIssue>? cached) && cached != null)
         {
+            _logger.LogDebug("ComicVine cache HIT: {CacheKey}", cacheKey);
             return cached;
         }
+        
+        _logger.LogDebug("ComicVine cache MISS: {CacheKey}", cacheKey);
 
         var apiKey = await GetApiKeyAsync(cancellationToken);
         if (string.IsNullOrEmpty(apiKey))
@@ -569,12 +590,21 @@ public class ComicVineClient : IComicVineClient
     {
         await WaitForRateLimitAsync(cancellationToken);
 
+        // Extract endpoint for logging (remove API key for security)
+        var endpoint = MaskApiKeyInUrl(url);
+        var stopwatch = Stopwatch.StartNew();
+
         try
         {
+            _logger.LogDebug("ComicVine API request: {Endpoint}", endpoint);
+            
             var response = await _httpClient.GetAsync(url, cancellationToken);
+            stopwatch.Stop();
 
             if (response.StatusCode == HttpStatusCode.TooManyRequests)
             {
+                _logger.LogWarning("ComicVine rate limit exceeded (HTTP 429). Endpoint: {Endpoint}, Elapsed: {ElapsedMs}ms", 
+                    endpoint, stopwatch.ElapsedMilliseconds);
                 throw new ComicVineRateLimitException("ComicVine rate limit exceeded");
             }
 
@@ -586,8 +616,12 @@ public class ComicVineClient : IComicVineClient
                 if (content.Contains("Invalid API Key", StringComparison.OrdinalIgnoreCase) ||
                     response.StatusCode == HttpStatusCode.Unauthorized)
                 {
+                    _logger.LogError("ComicVine API key invalid. Endpoint: {Endpoint}, Status: {StatusCode}", 
+                        endpoint, (int)response.StatusCode);
                     throw new ComicVineApiKeyInvalidException("Invalid ComicVine API key");
                 }
+                _logger.LogError("ComicVine returned unexpected HTML response. Endpoint: {Endpoint}, Status: {StatusCode}", 
+                    endpoint, (int)response.StatusCode);
                 throw new InvalidOperationException("ComicVine returned an unexpected HTML response. Please verify your API key.");
             }
 
@@ -597,27 +631,62 @@ public class ComicVineClient : IComicVineClient
 
             if (result == null)
             {
+                _logger.LogError("Failed to deserialize ComicVine response. Endpoint: {Endpoint}", endpoint);
                 throw new InvalidOperationException("Failed to deserialize ComicVine response");
             }
 
+            _logger.LogDebug("ComicVine API response: {Endpoint}, Status: {StatusCode}, Elapsed: {ElapsedMs}ms", 
+                endpoint, (int)response.StatusCode, stopwatch.ElapsedMilliseconds);
+
             return result;
+        }
+        catch (HttpRequestException ex)
+        {
+            stopwatch.Stop();
+            _logger.LogError(ex, "ComicVine HTTP request failed. Endpoint: {Endpoint}, Elapsed: {ElapsedMs}ms", 
+                endpoint, stopwatch.ElapsedMilliseconds);
+            throw;
+        }
+        catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            stopwatch.Stop();
+            _logger.LogWarning("ComicVine request timed out. Endpoint: {Endpoint}, Elapsed: {ElapsedMs}ms", 
+                endpoint, stopwatch.ElapsedMilliseconds);
+            throw new TimeoutException($"ComicVine request timed out after {stopwatch.ElapsedMilliseconds}ms", ex);
         }
         finally
         {
             IncrementRequestCount();
         }
     }
+    
+    private static string MaskApiKeyInUrl(string url)
+    {
+        // Mask api_key parameter for safe logging
+        return System.Text.RegularExpressions.Regex.Replace(
+            url, 
+            @"api_key=[^&]+", 
+            "api_key=***");
+    }
 
     private async Task WaitForRateLimitAsync(CancellationToken cancellationToken)
     {
         TimeSpan delay;
+        int currentRequests;
 
         lock (_rateLimitLock)
         {
             ResetRateLimitWindowIfNeeded();
+            currentRequests = _requestsThisWindow;
 
             if (_requestsThisWindow < RateLimitPerHour)
             {
+                // Log when approaching rate limit (80% threshold)
+                if (_requestsThisWindow > RateLimitPerHour * 0.8)
+                {
+                    _logger.LogWarning("ComicVine rate limit approaching: {Used}/{Limit} requests used this hour", 
+                        _requestsThisWindow, RateLimitPerHour);
+                }
                 return;
             }
 
@@ -626,8 +695,10 @@ public class ComicVineClient : IComicVineClient
 
         if (delay > TimeSpan.Zero)
         {
-            _logger.LogWarning("Rate limit reached. Waiting {Delay} before next request", delay);
+            _logger.LogWarning("ComicVine rate limit reached ({Used}/{Limit}). Waiting {DelaySeconds:F1}s before next request", 
+                currentRequests, RateLimitPerHour, delay.TotalSeconds);
             await Task.Delay(delay, cancellationToken);
+            _logger.LogInformation("ComicVine rate limit wait completed. Resuming requests.");
         }
     }
 
