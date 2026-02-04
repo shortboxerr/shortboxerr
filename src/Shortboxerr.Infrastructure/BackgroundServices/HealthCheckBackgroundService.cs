@@ -222,9 +222,8 @@ public class HealthCheckBackgroundService : BackgroundService
     {
         try
         {
-            var dataDirectory = Environment.GetEnvironmentVariable("SHORTBOXERR_DATA")
-                ?? _configuration.GetValue<string>("DataDirectory")
-                ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "shortboxerr");
+            // Use centralized container-first path logic
+            var dataDirectory = Logging.SerilogConfiguration.GetDataDirectory();
 
             if (!Directory.Exists(dataDirectory))
             {

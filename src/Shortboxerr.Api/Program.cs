@@ -10,8 +10,10 @@ using Shortboxerr.Infrastructure.Persistence;
 using System.Text.Json;
 
 // Configure Serilog early (before WebApplication builder)
-var logDirectory = Environment.GetEnvironmentVariable("SHORTBOXERR_LOG_DIR")
-    ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "shortboxerr", "logs");
+// Container-first: uses /config/logs when SHORTBOXERR_CONFIG is set
+var configDirectory = SerilogConfiguration.GetConfigDirectory();
+var logDirectory = SerilogConfiguration.GetLogDirectory();
+var dataDirectory = SerilogConfiguration.GetDataDirectory();
 
 var minimumLevel = Enum.TryParse<LogEventLevel>(
     Environment.GetEnvironmentVariable("SHORTBOXERR_LOG_LEVEL") ?? "Information",
@@ -38,8 +40,10 @@ Log.Information("Version: 0.1.0");
 Log.Information("Runtime: {Runtime}", System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription);
 Log.Information("OS: {OS}", System.Runtime.InteropServices.RuntimeInformation.OSDescription);
 Log.Information("Architecture: {Arch}", System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture);
-Log.Information("Debug mode: {DebugMode}", isDebug);
+Log.Information("Config directory: {ConfigDirectory}", configDirectory);
+Log.Information("Data directory: {DataDirectory}", dataDirectory);
 Log.Information("Log directory: {LogDirectory}", logDirectory);
+Log.Information("Debug mode: {DebugMode}", isDebug);
 Log.Information("Log level: {LogLevel}", minimumLevel);
 
 var builder = WebApplication.CreateBuilder(args);
@@ -63,9 +67,11 @@ builder.Services.AddCors(options =>
 });
 
 // Add services to the container
+// Database path: container-first uses /config/shortboxerr.db
+var dbPath = Path.Combine(dataDirectory, "shortboxerr.db");
 var connectionString = Environment.GetEnvironmentVariable("SHORTBOXERR_DB")
     ?? builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Data Source=shortboxerr.db";
+    ?? $"Data Source={dbPath}";
 builder.Services.AddInfrastructure(connectionString, enableDebugMode: isDebug);
 
 builder.Services.AddEndpointsApiExplorer();

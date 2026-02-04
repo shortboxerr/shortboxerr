@@ -141,11 +141,7 @@ public static class SystemEndpoints
 
     private static string GetLogDirectory()
     {
-        return Environment.GetEnvironmentVariable("SHORTBOXERR_LOG_DIR")
-            ?? Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "shortboxerr",
-                "logs");
+        return Shortboxerr.Infrastructure.Logging.SerilogConfiguration.GetLogDirectory();
     }
 
     private static List<string> FilterLogLines(string[] lines, string? level, string? search)
@@ -233,14 +229,9 @@ public static class SystemEndpoints
         var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
         var version = assembly.GetName().Version?.ToString() ?? "0.1.0";
 
-        // Get data directory
-        var dataDirectory = configuration.GetValue<string>("DataDirectory")
-            ?? Environment.GetEnvironmentVariable("SHORTBOXERR_DATA")
-            ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "shortboxerr");
-
-        // Get log directory
-        var logDirectory = Environment.GetEnvironmentVariable("SHORTBOXERR_LOG_DIR")
-            ?? Path.Combine(dataDirectory, "logs");
+        // Get directories using centralized container-first logic
+        var dataDirectory = Shortboxerr.Infrastructure.Logging.SerilogConfiguration.GetDataDirectory();
+        var logDirectory = Shortboxerr.Infrastructure.Logging.SerilogConfiguration.GetLogDirectory();
 
         // Get database info
         var dbPath = dbContext.Database.GetDbConnection().ConnectionString;
@@ -326,11 +317,7 @@ public static class SystemEndpoints
 
     private static IResult GetLogFiles()
     {
-        var logDirectory = Environment.GetEnvironmentVariable("SHORTBOXERR_LOG_DIR")
-            ?? Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "shortboxerr",
-                "logs");
+        var logDirectory = GetLogDirectory();
 
         var files = new List<LogFileInfo>();
 

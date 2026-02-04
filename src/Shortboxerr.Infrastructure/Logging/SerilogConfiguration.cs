@@ -7,9 +7,66 @@ namespace Shortboxerr.Infrastructure.Logging;
 
 /// <summary>
 /// Configuration helper for Serilog logging setup.
+/// Container-first design: defaults to /config/logs when SHORTBOXERR_CONFIG is set.
+/// Falls back to LocalApplicationData for non-container development.
 /// </summary>
 public static class SerilogConfiguration
 {
+    /// <summary>
+    /// Gets the config directory following *arr stack conventions.
+    /// Container mode: /config (set via SHORTBOXERR_CONFIG env var)
+    /// Non-container: ~/.local/share/shortboxerr (Linux) or equivalent
+    /// </summary>
+    public static string GetConfigDirectory()
+    {
+        // Check for container-style config path first (like Sonarr/Radarr/Mylar3)
+        var configDir = Environment.GetEnvironmentVariable("SHORTBOXERR_CONFIG");
+        if (!string.IsNullOrEmpty(configDir))
+        {
+            return configDir;
+        }
+
+        // Fallback for non-container development
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "shortboxerr");
+    }
+
+    /// <summary>
+    /// Gets the logs directory.
+    /// Container mode: /config/logs
+    /// Non-container: ~/.local/share/shortboxerr/logs
+    /// Can be overridden with SHORTBOXERR_LOG_DIR
+    /// </summary>
+    public static string GetLogDirectory()
+    {
+        // Allow explicit override
+        var logDir = Environment.GetEnvironmentVariable("SHORTBOXERR_LOG_DIR");
+        if (!string.IsNullOrEmpty(logDir))
+        {
+            return logDir;
+        }
+
+        // Default: {config}/logs
+        return Path.Combine(GetConfigDirectory(), "logs");
+    }
+
+    /// <summary>
+    /// Gets the data directory (for database, cache, etc.).
+    /// Container mode: /config
+    /// Non-container: ~/.local/share/shortboxerr
+    /// </summary>
+    public static string GetDataDirectory()
+    {
+        var dataDir = Environment.GetEnvironmentVariable("SHORTBOXERR_DATA");
+        if (!string.IsNullOrEmpty(dataDir))
+        {
+            return dataDir;
+        }
+
+        return GetConfigDirectory();
+    }
+
     /// <summary>
     /// Configures Serilog with file and console sinks, including sensitive data protection.
     /// </summary>
@@ -20,11 +77,8 @@ public static class SerilogConfiguration
         long maxFileSizeBytes = 10 * 1024 * 1024, // 10MB default
         int retainedFileCount = 5)
     {
-        // Default log directory
-        logDirectory ??= Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "shortboxerr",
-            "logs");
+        // Use container-first default
+        logDirectory ??= GetLogDirectory();
 
         // Ensure log directory exists
         Directory.CreateDirectory(logDirectory);
