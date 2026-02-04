@@ -252,6 +252,89 @@ public static class SeriesEndpoints
             return Results.NoContent();
         })
         .WithName("DeleteSeries");
+
+        // PUT set series status manually
+        group.MapPut("/{id:int}/status", async (
+            ShortboxerrDbContext db,
+            ICacheService cacheService,
+            int id,
+            SetSeriesStatusRequest request) =>
+        {
+            var series = await db.Series.FindAsync(id);
+            if (series is null)
+                return Results.NotFound(new { message = $"Series {id} not found" });
+
+            var previousStatus = series.Status;
+            var previousSource = series.StatusSource;
+
+            series.Status = request.Status;
+            series.StatusSource = request.IsManualOverride ? StatusSource.Manual : StatusSource.Auto;
+            series.UpdatedAt = DateTime.UtcNow;
+
+            await db.SaveChangesAsync();
+
+            // Invalidate caches
+            cacheService.RemoveByPrefix(CacheKeys.SeriesList);
+            cacheService.Remove(cacheService.GenerateKey(CacheKeys.SeriesDetail, id));
+
+            return Results.Ok(new SetSeriesStatusResponse
+            {
+                SeriesId = id,
+                Title = series.Title,
+                PreviousStatus = previousStatus,
+                NewStatus = series.Status,
+                PreviousSource = previousSource,
+                NewSource = series.StatusSource
+            });
+        })
+        .WithName("SetSeriesStatus");
+
+        // DELETE reset series status to auto
+        group.MapDelete("/{id:int}/status/override", async (
+            ShortboxerrDbContext db,
+            ICacheService cacheService,
+            int id) =>
+        {
+            var series = await db.Series.FindAsync(id);
+            if (series is null)
+                return Results.NotFound(new { message = $"Series {id} not found" });
+
+            if (series.StatusSource != StatusSource.Manual)
+                return Results.Ok(new { message = "Status is not manually overridden", seriesId = id });
+
+            // Reset to auto - the next metadata refresh will recalculate
+            series.StatusSource = StatusSource.Auto;
+            series.UpdatedAt = DateTime.UtcNow;
+
+            await db.SaveChangesAsync();
+
+            // Invalidate caches
+            cacheService.RemoveByPrefix(CacheKeys.SeriesList);
+            cacheService.Remove(cacheService.GenerateKey(CacheKeys.SeriesDetail, id));
+
+            return Results.Ok(new { 
+                message = "Manual override removed. Status will be recalculated on next metadata refresh.", 
+                seriesId = id,
+                currentStatus = series.Status.ToString()
+            });
+        })
+        .WithName("ResetSeriesStatusOverride");
     }
+}
+
+public record SetSeriesStatusRequest
+{
+    public SeriesStatus Status { get; init; }
+    public bool IsManualOverride { get; init; } = true;
+}
+
+public record SetSeriesStatusResponse
+{
+    public int SeriesId { get; init; }
+    public string Title { get; init; } = "";
+    public SeriesStatus PreviousStatus { get; init; }
+    public SeriesStatus NewStatus { get; init; }
+    public StatusSource PreviousSource { get; init; }
+    public StatusSource NewSource { get; init; }
 }
 

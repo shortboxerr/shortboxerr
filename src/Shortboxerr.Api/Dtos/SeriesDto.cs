@@ -11,6 +11,7 @@ public record SeriesDto
     public int? StartYear { get; init; }
     public int? EndYear { get; init; }
     public SeriesStatus Status { get; init; }
+    public StatusSource StatusSource { get; init; }
     public string? Path { get; init; }
     public string? ExternalId { get; init; }
     public string? ExternalSource { get; init; }
@@ -38,6 +39,7 @@ public record SeriesDto
         StartYear = series.StartYear,
         EndYear = series.EndYear,
         Status = series.Status,
+        StatusSource = series.StatusSource,
         Path = series.Path,
         ExternalId = series.ExternalId,
         ExternalSource = series.ExternalSource,
