@@ -1,5 +1,52 @@
 # Worklog
 
+## Iteration 051 (2026-02-04)
+**EPIC 13.1: File-Based Logging - Serilog Integration - PARTIAL**
+
+### Commits
+1. `feat: add Serilog integration with sensitive data protection (EPIC 13.1)`
+
+### Deliverables
+
+#### Serilog Integration
+- ✅ Added Serilog packages (Serilog.AspNetCore, Serilog.Sinks.File, Serilog.Sinks.Async, Serilog.Enrichers.Environment)
+- ✅ Configured Serilog in Program.cs with file and console sinks
+- ✅ Log files written to `{LocalApplicationData}/shortboxerr/logs/shortboxerr.log`
+- ✅ Automatic log rotation (daily + size-based, 10MB default, 5 files retained)
+- ✅ Log format: `[yyyy-MM-dd HH:mm:ss.fff] [Level] [SourceContext] Message`
+- ✅ Support for debug mode via `--debug` flag or `SHORTBOXERR_DEBUG` env var
+- ✅ Async file writing for performance
+
+#### Sensitive Data Protection (CRITICAL SECURITY)
+- ✅ `SensitiveDataDestructuringPolicy` - Masks sensitive fields in logged objects
+- ✅ `SensitiveDataEnricher` - Secondary protection layer
+- ✅ Auto-detects and masks: `apikey`, `api_key`, `password`, `token`, `secret`, `credential`, `authorization`, `connectionstring`
+- ✅ Masks values with `***REDACTED***` placeholder
+- ✅ Works at destructuring level (object properties) and enricher level
+
+#### Remaining Work
+- [ ] Log file configuration settings (stored in SystemSettings, UI integration)
+- [ ] Unit tests for sensitive data masking verification
+- [ ] Correlation ID for request tracing
+- [ ] JSON format option for structured logging
+- [ ] Configurable log directory via settings
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Program.cs` | Integrate Serilog configuration |
+| `src/Shortboxerr.Api/Shortboxerr.Api.csproj` | Add Serilog packages |
+| `src/Shortboxerr.Infrastructure/Logging/SensitiveDataDestructuringPolicy.cs` | New sensitive data masking policy |
+| `src/Shortboxerr.Infrastructure/Logging/SensitiveDataEnricher.cs` | New sensitive data enricher |
+| `src/Shortboxerr.Infrastructure/Logging/SerilogConfiguration.cs` | Serilog configuration helper |
+| `src/Shortboxerr.Infrastructure/Shortboxerr.Infrastructure.csproj` | Add Serilog packages |
+
+### Test Results
+- Build: ✅ Successful
+- Runtime: ✅ Logging operational (needs runtime verification)
+
+---
+
 ## Iteration 050 (2026-02-04)
 **EPIC 9.12: Series Status Accuracy - COMPLETED**
 

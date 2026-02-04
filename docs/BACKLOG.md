@@ -1396,13 +1396,13 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
 - Apply masking at the logging sink level (not per-call)
 - Audit all log statements for potential credential leaks
 
-- [ ] **Sensitive data protection**
-  - AC: Implement Serilog destructuring policy to mask sensitive fields
-  - AC: Auto-detect and mask: `apiKey`, `api_key`, `password`, `token`, `secret`, `credential`
-  - AC: Mask query string parameters containing sensitive keys
-  - AC: Mask Authorization headers in HTTP logs
-  - AC: Mask connection strings (show server/database only, not credentials)
-  - AC: Unit tests to verify no credentials appear in log output
+- [x] **Sensitive data protection** ✅
+  - AC: Implement Serilog destructuring policy to mask sensitive fields ✅
+  - AC: Auto-detect and mask: `apiKey`, `api_key`, `password`, `token`, `secret`, `credential` ✅
+  - AC: Mask query string parameters containing sensitive keys ✅
+  - AC: Mask Authorization headers in HTTP logs ✅
+  - AC: Mask connection strings (show server/database only, not credentials) ✅
+  - AC: Unit tests to verify no credentials appear in log output (pending)
 
 - [ ] **Log file configuration**
   - AC: Configurable log directory (default: `{data}/logs/`)
@@ -1411,25 +1411,25 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
   - AC: Default log level: Info
   - AC: Separate log level for console vs file output
 
-- [ ] **Log rotation**
-  - AC: Configurable max log file size (default: 10MB, Sonarr default: 1MB)
-  - AC: Configurable number of rotated files to keep (default: 5)
-  - AC: Automatic rotation when size limit reached
-  - AC: Date-based rotation option (daily/weekly)
-  - AC: Compressed archive of rotated logs (optional)
+- [x] **Log rotation** ✅
+  - AC: Configurable max log file size (default: 10MB, Sonarr default: 1MB) ✅
+  - AC: Configurable number of rotated files to keep (default: 5) ✅
+  - AC: Automatic rotation when size limit reached ✅
+  - AC: Date-based rotation option (daily/weekly) ✅ (daily implemented)
+  - AC: Compressed archive of rotated logs (optional) (deferred)
 
-- [ ] **Log format**
-  - AC: Timestamp with milliseconds: `2026-02-04 20:30:45.123`
-  - AC: Log level indicator: `[Info]`, `[Warn]`, `[Error]`, etc.
-  - AC: Source/category: `[PullListService]`, `[ComicVineClient]`, etc.
-  - AC: Correlation ID for request tracing (optional)
-  - AC: Structured logging support (JSON format option)
+- [x] **Log format** ✅ (partial)
+  - AC: Timestamp with milliseconds: `2026-02-04 20:30:45.123` ✅
+  - AC: Log level indicator: `[Info]`, `[Warn]`, `[Error]`, etc. ✅
+  - AC: Source/category: `[PullListService]`, `[ComicVineClient]`, etc. ✅
+  - AC: Correlation ID for request tracing (optional) (pending)
+  - AC: Structured logging support (JSON format option) (pending)
 
-- [ ] **Serilog integration**
-  - AC: Use Serilog as logging provider (industry standard for .NET)
-  - AC: Configure sinks: Console, File, (optional: Seq, Elasticsearch)
-  - AC: Enrichers for context: Machine name, environment, version
-  - AC: Async file writing for performance
+- [x] **Serilog integration** ✅
+  - AC: Use Serilog as logging provider (industry standard for .NET) ✅
+  - AC: Configure sinks: Console, File, (optional: Seq, Elasticsearch) ✅
+  - AC: Enrichers for context: Machine name, environment, version ✅
+  - AC: Async file writing for performance ✅
 
 ### 13.2 Log Categories & Content
 **Status: READY**
