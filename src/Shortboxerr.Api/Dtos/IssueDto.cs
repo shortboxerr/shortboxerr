@@ -16,6 +16,12 @@ public record IssueDto
     public bool Monitored { get; init; }
     public bool HasFile { get; init; }
     public bool SatisfiedByEdition { get; init; }
+    
+    /// <summary>
+    /// Issue status in acquisition workflow (Wanted, Owned, Downloading, Skipped, Missing, Staged).
+    /// </summary>
+    public string Status { get; init; } = "Wanted";
+    
     public DateTime CreatedAt { get; init; }
     public DateTime? UpdatedAt { get; init; }
     
@@ -50,6 +56,7 @@ public record IssueDto
         Monitored = issue.Monitored,
         HasFile = issue.HasFile,
         SatisfiedByEdition = issue.SatisfiedByEdition,
+        Status = issue.Status.ToString(),
         CreatedAt = issue.CreatedAt,
         UpdatedAt = issue.UpdatedAt,
         // ComicVine fields
