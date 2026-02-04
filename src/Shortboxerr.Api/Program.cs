@@ -52,7 +52,7 @@ builder.Services.AddCors(options =>
 var connectionString = Environment.GetEnvironmentVariable("SHORTBOXERR_DB")
     ?? builder.Configuration.GetConnectionString("DefaultConnection")
     ?? "Data Source=shortboxerr.db";
-builder.Services.AddInfrastructure(connectionString);
+builder.Services.AddInfrastructure(connectionString, enableDebugMode: isDebug);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

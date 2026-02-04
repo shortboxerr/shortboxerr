@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Shortboxerr.Core.Caching;
 using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Infrastructure.Caching;
@@ -22,10 +23,33 @@ namespace Shortboxerr.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString)
+    /// <summary>
+    /// Adds infrastructure services to the DI container.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="connectionString">Database connection string.</param>
+    /// <param name="enableDebugMode">When true, enables verbose SQL query logging.</param>
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services, 
+        string connectionString,
+        bool enableDebugMode = false)
     {
-        services.AddDbContext<ShortboxerrDbContext>(options =>
-            options.UseSqlite(connectionString));
+        services.AddDbContext<ShortboxerrDbContext>((serviceProvider, options) =>
+        {
+            options.UseSqlite(connectionString);
+            
+            if (enableDebugMode)
+            {
+                // Enable detailed query logging in debug mode
+                var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
+                if (loggerFactory != null)
+                {
+                    options.UseLoggerFactory(loggerFactory);
+                }
+                options.EnableSensitiveDataLogging();
+                options.EnableDetailedErrors();
+            }
+        });
 
         // Services
         services.AddSingleton<IFilenameParser, FilenameParser>();
