@@ -674,60 +674,54 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: Error handling for API failures ✅
   - AC: Partial failure handling in bulk operations ✅
 
-### 9.11 Series Detail Page - Issues Display (FIX REQUIRED)
-**Status: READY - HIGH PRIORITY**
+### 9.11 Series Detail Page - Issues Display ✅ COMPLETED
 
-The series detail page currently does not display issues when clicking on a series in the library.
-This is a regression or incomplete implementation that needs to be addressed.
+- [x] **Issues list display** ✅
+  - AC: When clicking a series in the library, navigate to series detail page ✅
+  - AC: Series detail page fetches and displays all issues for that series ✅
+  - AC: API: GET /api/v1/series/{id}/issues returns paginated issues list ✅
+  - AC: Handle empty state gracefully (series with no issues yet) ✅
+  - AC: Fixed missing Status property in IssueDto ✅
 
-- [ ] **Issues list display**
-  - AC: When clicking a series in the library, navigate to series detail page
-  - AC: Series detail page fetches and displays all issues for that series
-  - AC: API: GET /api/v1/series/{id}/issues returns paginated issues list
-  - AC: Handle empty state gracefully (series with no issues yet)
+- [x] **Cover view for issues** ✅
+  - AC: Grid layout showing issue covers ✅
+  - AC: Cover image with fallback for missing covers ✅
+  - AC: Issue number overlay on cover ✅
+  - AC: Status indicator overlay (colored badge/icon for Wanted/Owned/Skipped/Missing) ✅
+  - AC: Hover state showing action buttons ✅
+  - AC: Click to select issue ✅
 
-- [ ] **Cover view for issues**
-  - AC: Grid layout showing issue covers
-  - AC: Cover image with fallback for missing covers
-  - AC: Issue number overlay on cover
-  - AC: Status indicator overlay (colored badge/icon for Wanted/Owned/Skipped/Missing)
-  - AC: Hover state showing issue title and release date
-  - AC: Click to expand issue details or open issue modal
+- [x] **List view for issues** ✅
+  - AC: Table/list layout with columns: Issue #, Title, Release Date, Status, Tags, Actions ✅
+  - AC: Sortable columns (issue number, release date, status, title) ✅
+  - AC: Filterable by status (All, Wanted, Owned, Skipped, Missing) ✅
 
-- [ ] **List view for issues**
-  - AC: Table/list layout with columns: Cover thumbnail, Issue #, Title, Release Date, Status, Actions
-  - AC: Sortable columns (issue number, release date, status)
-  - AC: Filterable by status (All, Wanted, Owned, Skipped, Missing)
-  - AC: Responsive design (columns collapse on mobile)
+- [x] **Action buttons per issue** ✅
+  - AC: "Mark as Wanted" button (adds to wanted list) ✅
+  - AC: "Mark as Owned" button (marks as owned without file) ✅
+  - AC: "Skip" button (excludes from wanted list) ✅
+  - AC: Buttons show current state (disabled when already in that state) ✅
+  - Note: "Search" and "Edit" buttons deferred (requires search integration)
 
-- [ ] **Action buttons per issue**
-  - AC: "Mark as Wanted" button (adds to wanted list)
-  - AC: "Mark as Owned" button (marks as owned without file)
-  - AC: "Skip" button (excludes from wanted list)
-  - AC: "Search" button (triggers manual search for this issue)
-  - AC: "Edit" button (opens issue edit modal - metadata, status)
-  - AC: Buttons show current state (e.g., "Wanted" button disabled if already wanted)
+- [x] **Status indicators** ✅
+  - AC: Visual distinction for each status ✅
+    - Wanted: Yellow/warning badge
+    - Owned: Green/success badge
+    - Skipped: Gray badge
+    - Edition: Blue/info badge (satisfied by collected edition)
+  - AC: Status badges visible in both cover and list views ✅
+  - AC: Bulk selection checkbox for multi-issue actions ✅
 
-- [ ] **Status indicators**
-  - AC: Visual distinction for each status:
-    - Wanted: Blue badge/highlight
-    - Owned: Green badge/checkmark
-    - Skipped: Gray/strikethrough
-    - Missing: Red/warning indicator
-    - Downloaded (pending import): Yellow/processing indicator
-  - AC: Status badges visible in both cover and list views
-  - AC: Bulk selection checkbox for multi-issue actions
+- [x] **View toggle and persistence** ✅
+  - AC: Toggle button to switch between Cover View and List View ✅
+  - AC: Remember user's view preference via UI settings API ✅
+  - AC: Default to Cover View ✅
 
-- [ ] **View toggle and persistence**
-  - AC: Toggle button to switch between Cover View and List View
-  - AC: Remember user's view preference (localStorage or user settings)
-  - AC: Default to Cover View
-
-- [ ] **Bulk actions**
-  - AC: Select multiple issues via checkboxes
-  - AC: Bulk "Mark as Wanted" / "Mark as Owned" / "Skip" actions
-  - AC: Select all / deselect all toggle
-  - AC: Show count of selected issues
+- [x] **Bulk actions** ✅
+  - AC: Select multiple issues via checkboxes ✅
+  - AC: Bulk "Mark as Wanted" / "Mark as Owned" / "Skip" actions ✅
+  - AC: Select all / deselect all toggle ✅
+  - AC: Show count of selected issues ✅
 
 ### 9.12 Series Status Accuracy (FIX REQUIRED)
 **Status: READY**

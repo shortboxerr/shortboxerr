@@ -1,3 +1,50 @@
+# Self Check - Iteration 049
+
+## EPIC 9.11: Series Detail Page - Issues Display
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Backend + Frontend build successful |
+| Tests pass | ✅ | 677 backend tests passing |
+| IssueDto Status fix | ✅ | Added missing Status property |
+| Cover view actions | ✅ | Hover overlay with Wanted/Owned/Skip |
+| List view actions | ✅ | Inline action buttons per row |
+| Bulk actions | ✅ | Selection + bulk status updates |
+| Status indicators | ✅ | Color-coded badges in both views |
+| View persistence | ✅ | Uses UI settings API |
+| Git commits | ✅ | 2 commits |
+
+### Acceptance Criteria Status
+
+#### Issues Display
+| AC | Status |
+|----|--------|
+| Fetch issues on series detail page | ✅ |
+| Cover view with grid layout | ✅ |
+| List view with table layout | ✅ |
+| Status filter dropdown | ✅ |
+| Sort by issue number/date/status | ✅ |
+
+#### Action Buttons
+| AC | Status |
+|----|--------|
+| Mark as Wanted | ✅ |
+| Mark as Owned | ✅ |
+| Skip issue | ✅ |
+| Status-aware visibility | ✅ |
+
+#### Bulk Actions
+| AC | Status |
+|----|--------|
+| Checkbox selection | ✅ |
+| Select all/clear | ✅ |
+| Bulk Wanted/Owned/Skip | ✅ |
+| Selection counter | ✅ |
+
+---
+
 # Self Check - Iteration 048
 
 ## EPIC 11.6: Mylar3 Settings Import
@@ -12,7 +59,7 @@
 | Monitoring mode import | ✅ | Series.Monitor field + mapping |
 | API endpoints | ✅ | 4 pull list settings endpoints |
 | Unit tests | ✅ | 7 tests for parsing scenarios |
-| Git commits | ⏳ | Ready to commit |
+| Git commits | ✅ | Completed |
 
 ### Acceptance Criteria Status
 

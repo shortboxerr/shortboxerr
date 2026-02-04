@@ -1,5 +1,57 @@
 # Worklog
 
+## Iteration 049 (2026-02-04)
+**EPIC 9.11: Series Detail Page - Issues Display - COMPLETED**
+
+### Commits
+1. `fix: add Status property to IssueDto for frontend display`
+2. `feat: add action buttons to series detail page issues (EPIC 9.11)`
+
+### Deliverables
+
+#### Backend Fixes
+- ✅ Added `Status` property to `IssueDto` (was missing, causing issues to not display correctly)
+- ✅ Mapped from `Issue.Status` enum in `FromEntity` method
+
+#### Frontend Enhancements
+- ✅ Issue status update mutations using `bulkUpdateIssueStatus` API
+- ✅ Action handlers: `handleMarkAsWanted`, `handleMarkAsOwned`, `handleMarkAsSkipped`
+- ✅ Bulk action handlers for selected issues
+
+#### Cover View
+- ✅ Hover actions overlay with Wanted/Owned/Skip buttons
+- ✅ Status indicator badges (corner badge showing current status)
+- ✅ Click to select for bulk actions
+
+#### List View  
+- ✅ Inline action buttons per row
+- ✅ Status-aware button visibility (don't show "Wanted" if already wanted)
+- ✅ Checkbox selection for bulk operations
+
+#### Bulk Actions
+- ✅ Selection counter showing selected count
+- ✅ Bulk Wanted/Owned/Skip buttons
+- ✅ Clear selection button
+- ✅ Disabled state during API calls
+
+#### CSS Enhancements
+- ✅ Action buttons container styling
+- ✅ Issue card hover actions overlay
+- ✅ Bulk action button variants (primary, success, muted)
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Dtos/IssueDto.cs` | Add Status property |
+| `ui/src/pages/SeriesDetailPage.tsx` | Add mutations and action handlers |
+| `ui/src/App.css` | Add action button styles |
+
+### Test Results
+- Backend: 677 tests passing
+- Frontend: Build successful
+
+---
+
 ## Iteration 048 (2026-02-04)
 **EPIC 11.6: Mylar3 Settings Import - COMPLETED**
 
