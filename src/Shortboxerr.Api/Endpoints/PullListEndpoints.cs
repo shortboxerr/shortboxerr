@@ -497,6 +497,53 @@ public static class PullListEndpoints
         .Produces<DiscoveryRefreshStatus>(200);
 
         #endregion
+
+        #region Release Day Processing
+
+        // POST /api/v1/pulllist/releaseday/process - trigger manual release day processing
+        group.MapPost("/releaseday/process", async (
+            [FromQuery] DateTime? date,
+            [FromServices] Infrastructure.BackgroundServices.ReleaseDayBackgroundService releaseDayService,
+            CancellationToken cancellationToken) =>
+        {
+            await releaseDayService.TriggerProcessingAsync(date, cancellationToken);
+            return Results.Ok(new { Success = true, Message = $"Release day processing triggered for {(date ?? DateTime.Today).ToShortDateString()}" });
+        })
+        .WithName("TriggerReleaseDayProcessing")
+        .WithDescription("Triggers manual release day processing to auto-add issues to wanted list")
+        .Produces<object>(200);
+
+        // GET /api/v1/pulllist/releaseday/status - get release day processing status
+        group.MapGet("/releaseday/status", async (
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var settings = await settingsService.GetAsync<PullListSettings>("pulllist", new(), cancellationToken);
+            var lastProcessed = await settingsService.GetAsync<DateTime?>("pulllist_release_day_last_processed", null, cancellationToken);
+            
+            return Results.Ok(new ReleaseDayStatus
+            {
+                Enabled = settings.AutoAddToWanted,
+                ReleaseDay = settings.ReleaseDay,
+                ProcessingHours = settings.ReleaseDayProcessingHours,
+                LastProcessed = lastProcessed,
+                NextProcessingDate = GetNextReleaseDay(settings.ReleaseDay)
+            });
+        })
+        .WithName("GetReleaseDayStatus")
+        .WithDescription("Gets the status of release day auto-processing")
+        .Produces<ReleaseDayStatus>(200);
+
+        #endregion
+    }
+
+    private static DateTime GetNextReleaseDay(DayOfWeek releaseDay)
+    {
+        var today = DateTime.Today;
+        var daysUntilReleaseDay = ((int)releaseDay - (int)today.DayOfWeek + 7) % 7;
+        if (daysUntilReleaseDay == 0 && DateTime.Now.Hour >= 23)
+            daysUntilReleaseDay = 7; // Already past release day today, get next week
+        return today.AddDays(daysUntilReleaseDay);
     }
 
     private static PullListFilter? BuildFilter(
@@ -562,6 +609,27 @@ public class DiscoveryRefreshStatus
     
     /// <summary>Estimated next refresh time (based on interval).</summary>
     public DateTime? NextRefreshEstimate { get; set; }
+}
+
+/// <summary>
+/// Status of the release day auto-processing background service.
+/// </summary>
+public class ReleaseDayStatus
+{
+    /// <summary>Whether automatic release day processing is enabled.</summary>
+    public bool Enabled { get; set; }
+    
+    /// <summary>Day of week for comic releases (default: Wednesday).</summary>
+    public DayOfWeek ReleaseDay { get; set; }
+    
+    /// <summary>Hours during which processing is allowed (empty = all hours).</summary>
+    public List<int> ProcessingHours { get; set; } = new();
+    
+    /// <summary>When the last processing occurred.</summary>
+    public DateTime? LastProcessed { get; set; }
+    
+    /// <summary>Next release day date.</summary>
+    public DateTime NextProcessingDate { get; set; }
 }
 
 #endregion
