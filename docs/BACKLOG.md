@@ -1461,12 +1461,12 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
   - AC: Provider connection status ✅
   - AC: Candidate ranking decisions (verbose mode) ✅
 
-- [ ] **Import pipeline logging**
-  - AC: File detection events
-  - AC: Parsing results (series, issue, format)
-  - AC: Match decisions with confidence scores
-  - AC: Import success/failure with paths
-  - AC: Duplicate detection events
+- [x] **Import pipeline logging** ✅
+  - AC: File detection events ✅
+  - AC: Parsing results (series, issue, format) ✅
+  - AC: Match decisions with confidence scores ✅
+  - AC: Import success/failure with paths ✅
+  - AC: Duplicate detection events ✅
 
 - [ ] **Background service logging**
   - AC: Scheduled task execution start/complete

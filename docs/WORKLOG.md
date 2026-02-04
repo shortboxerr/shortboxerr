@@ -1,5 +1,48 @@
 # Worklog
 
+## Iteration 058 (2026-02-04)
+**EPIC 13.2: Import Pipeline Logging - COMPLETED**
+
+### Commits
+1. `feat: add import pipeline logging (EPIC 13.2)`
+
+### Deliverables
+
+#### File Detection
+- ✅ Staging folder scan with file count
+- ✅ Per-file detection with name and size
+- ✅ Format validation logging
+
+#### Parsing Results
+- ✅ Series, issue, year parsed from filename
+- ✅ Confidence percentage
+- ✅ Collection vs single detection
+
+#### Match Decisions
+- ✅ Series match attempts (exact vs partial)
+- ✅ Match found with series ID and title
+- ✅ Confidence adjustments logged
+
+#### Import Events
+- ✅ Import initiated with target IDs
+- ✅ Import blocked with reason
+- ✅ Import success with size and format
+- ✅ Import failed with error details
+
+#### Duplicate Detection
+- ✅ Existing file at destination logged
+- ✅ Rejection reasons logged
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/Services/StagingService.cs` | Add comprehensive pipeline logging |
+
+### Test Results
+- Backend: 712 tests passing
+
+---
+
 ## Iteration 057 (2026-02-04)
 **EPIC 13.2: Download Client Logging - COMPLETED**
 
