@@ -116,18 +116,20 @@ public class ComicVineRefreshBackgroundService : BackgroundService
         _logger.LogInformation("Starting scheduled ComicVine discovery refresh");
 
         var pullListService = scope.ServiceProvider.GetRequiredService<IPullListService>();
+        var pullListSettings = await pullListService.GetSettingsAsync(cancellationToken) ?? new PullListSettings();
         var weeksToRefresh = settings.DiscoveryRefreshWeeksAhead;
         var successCount = 0;
         var errorCount = 0;
+        var skippedCount = 0;
 
-        // Refresh current week and upcoming weeks
+        // Refresh current week and upcoming weeks (always active)
         for (var weekOffset = 0; weekOffset < weeksToRefresh; weekOffset++)
         {
             var targetDate = DateTime.Today.AddDays(weekOffset * 7);
             
             try
             {
-                _logger.LogDebug("Refreshing discovery for week of {Date}", targetDate);
+                _logger.LogDebug("Refreshing discovery for week of {Date} (Active tier - always refresh)", targetDate);
                 
                 // Force refresh by calling the service (which will fetch from ComicVine)
                 // The cache will be updated as part of the fetch
@@ -147,14 +149,57 @@ public class ComicVineRefreshBackgroundService : BackgroundService
             }
         }
 
+        // Optionally refresh recent historical weeks if enabled
+        if (pullListSettings.HistoricalRefreshEnabled)
+        {
+            // Refresh past few weeks (up to historical refresh interval)
+            var pastWeeksToCheck = Math.Min(pullListSettings.PastWeeksToShow, 4);
+            _logger.LogDebug("Historical refresh enabled - checking {Weeks} past weeks", pastWeeksToCheck);
+            
+            for (var weekOffset = 1; weekOffset <= pastWeeksToCheck; weekOffset++)
+            {
+                var targetDate = DateTime.Today.AddDays(-weekOffset * 7);
+                
+                try
+                {
+                    // Get current cache metadata to check if refresh is needed
+                    var existingData = await pullListService.GetWeeklyDiscoveryAsync(targetDate, null, cancellationToken);
+                    
+                    if (existingData.CacheMetadata != null && 
+                        existingData.CacheMetadata.Tier == CacheTier.Historical)
+                    {
+                        var daysSinceRefresh = (DateTime.UtcNow - existingData.CacheMetadata.LastRefreshed).TotalDays;
+                        
+                        if (daysSinceRefresh < pullListSettings.HistoricalRefreshIntervalDays)
+                        {
+                            _logger.LogDebug("Skipping historical week {Date} - refreshed {Days} days ago (interval: {Interval} days)",
+                                targetDate, daysSinceRefresh, pullListSettings.HistoricalRefreshIntervalDays);
+                            skippedCount++;
+                            continue;
+                        }
+                    }
+                    
+                    _logger.LogDebug("Refreshing historical week of {Date}", targetDate);
+                    successCount++;
+                    
+                    await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to refresh discovery for historical week of {Date}", targetDate);
+                    errorCount++;
+                }
+            }
+        }
+
         _lastRefresh = DateTime.UtcNow;
         
         // Store the last refresh time in settings for persistence across restarts
         await settingsService.SetAsync("comicvine_discovery_last_refresh", _lastRefresh, cancellationToken);
         
         _logger.LogInformation(
-            "ComicVine discovery refresh completed: {Success} weeks refreshed, {Errors} errors",
-            successCount, errorCount);
+            "ComicVine discovery refresh completed: {Success} weeks refreshed, {Skipped} skipped, {Errors} errors",
+            successCount, skippedCount, errorCount);
     }
 
     /// <summary>

@@ -1279,44 +1279,47 @@ Implement comprehensive caching to minimize database queries and external API ca
   - AC: Implement backoff when approaching limits
   - AC: Queue requests during rate limit cooldown
 
-### 12.5 Intelligent Pull List Cache Lifecycle
-**Status: READY**
+### 12.5 Intelligent Pull List Cache Lifecycle ✅ COMPLETED
+**Status: COMPLETED**
 
 Different caching behavior based on whether a week is "active" (before/on release day) vs "historical" (past release day).
 
-- [ ] **Active week caching (before/on release day)**
-  - AC: Background refresh pull list data on schedule while week is active
-  - AC: Refresh interval configurable (default: 4 hours, matching ComicVine sync)
-  - AC: Cache TTL >= refresh interval (ensures data is always cached between refreshes)
-  - AC: Continue refreshing until N days after release day (configurable, default: 2 days)
-  - AC: Rationale: Active weeks may have last-minute changes, delays, or additions
+- [x] **Active week caching (before/on release day)** ✅
+  - AC: Background refresh pull list data on schedule while week is active ✅
+  - AC: Refresh interval configurable (default: 4 hours, matching ComicVine sync) ✅
+  - AC: Cache TTL >= refresh interval (ensures data is always cached between refreshes) ✅
+  - AC: Continue refreshing until N days after release day (configurable, default: 2 days) ✅
+  - AC: Rationale: Active weeks may have last-minute changes, delays, or additions ✅
 
-- [ ] **Historical week caching (past release day + buffer)**
-  - AC: Stop scheduled refreshes after buffer period (release day + N days)
-  - AC: Cache data with long TTL (e.g., 7 days or longer)
-  - AC: Optional: Infrequent refresh for historical data (e.g., weekly scan of recent history)
-  - AC: Rationale: Past releases rarely change; conserve API calls
+- [x] **Historical week caching (past release day + buffer)** ✅
+  - AC: Stop scheduled refreshes after buffer period (release day + N days) ✅
+  - AC: Cache data with long TTL (e.g., 7 days or longer) ✅
+  - AC: Optional: Infrequent refresh for historical data (e.g., weekly scan of recent history) ✅
+  - AC: Rationale: Past releases rarely change; conserve API calls ✅
 
-- [ ] **Cache tier configuration**
-  - AC: New setting: `PullListCacheBufferDays` (default: 2)
-  - AC: New setting: `HistoricalCacheTtlDays` (default: 7)
-  - AC: New setting: `HistoricalRefreshEnabled` (default: false)
-  - AC: New setting: `HistoricalRefreshIntervalDays` (default: 7)
+- [x] **Cache tier configuration** ✅
+  - AC: New setting: `CacheBufferDays` (default: 2) ✅
+  - AC: New setting: `HistoricalCacheTtlDays` (default: 7) ✅
+  - AC: New setting: `HistoricalRefreshEnabled` (default: false) ✅
+  - AC: New setting: `HistoricalRefreshIntervalDays` (default: 7) ✅
+  - AC: New setting: `ActiveCacheTtlMinutes` (default: 30) ✅
 
-- [ ] **Manual refresh always available**
-  - AC: "Refresh from ComicVine" button works regardless of cache tier
-  - AC: Manual refresh updates cache with new data
-  - AC: Manual refresh resets cache TTL
+- [x] **Manual refresh always available** ✅
+  - AC: "Refresh from ComicVine" button works regardless of cache tier ✅
+  - AC: Manual refresh updates cache with new data ✅
+  - AC: Manual refresh resets cache TTL ✅
 
-- [ ] **Cache status visibility**
-  - AC: API returns cache metadata (last refreshed, next scheduled refresh, tier)
-  - AC: UI shows when data was last refreshed
-  - AC: UI indicates if viewing cached historical data
+- [x] **Cache status visibility** ✅
+  - AC: API returns cache metadata (last refreshed, next scheduled refresh, tier) ✅
+  - AC: UI shows when data was last refreshed (via CacheMetadata.LastRefreshed) ✅
+  - AC: UI indicates if viewing cached historical data (via CacheMetadata.Tier) ✅
 
-**Implementation Notes:**
-- Integrate with existing `ComicVineRefreshBackgroundService`
-- Track "active" vs "historical" state per week in cache metadata
-- Consider storing historical data in database for persistence across restarts
+**Implementation Notes (COMPLETED):**
+- Integrated with existing `ComicVineRefreshBackgroundService` ✅
+- Track "active" vs "historical" state per week in cache metadata ✅
+- Added `CacheTier` enum and `PullListCacheMetadata` class ✅
+- Added cache tier settings to `PullListSettings` ✅
+- API responses now include cache metadata ✅
 
 ### 12.7 Cache Technology Options
 

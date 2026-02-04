@@ -1,5 +1,51 @@
 # Worklog
 
+## Iteration 063 (2026-02-04)
+**EPIC 12.5: Intelligent Pull List Cache Lifecycle - COMPLETED**
+
+### Commits
+1. `feat: implement intelligent cache tier for pull list (EPIC 12.5)`
+
+### Deliverables
+
+#### Cache Tier System
+- ✅ `CacheTier` enum (Active, Historical)
+- ✅ `PullListCacheMetadata` class with tier tracking
+- ✅ Automatic tier detection based on release day + buffer period
+- ✅ Tier-appropriate TTLs (Active: 30 min, Historical: 7 days)
+
+#### New Settings in PullListSettings
+- ✅ `CacheBufferDays` (default: 2) - days after release day to stay "active"
+- ✅ `HistoricalCacheTtlDays` (default: 7) - TTL for historical weeks
+- ✅ `HistoricalRefreshEnabled` (default: false) - optional historical refresh
+- ✅ `HistoricalRefreshIntervalDays` (default: 7) - interval for historical refresh
+- ✅ `ActiveCacheTtlMinutes` (default: 30) - TTL for active weeks
+
+#### API Response Enhancements
+- ✅ `WeeklyPullList.CacheMetadata` property
+- ✅ `WeeklyDiscoveryList.CacheMetadata` property
+- ✅ Cache metadata includes: LastRefreshed, ExpiresAt, NextScheduledRefresh, Tier, ReleaseDay, TransitionDate, FromCache
+
+#### Background Service Updates
+- ✅ `ComicVineRefreshBackgroundService` uses intelligent cache tiers
+- ✅ Active weeks always refresh on schedule
+- ✅ Historical weeks optionally refresh based on settings
+- ✅ Skip historical refresh if recent enough
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/PullList/IPullListService.cs` | Add CacheTier, PullListCacheMetadata, cache tier settings |
+| `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` | Add cache tier logic, metadata generation |
+| `src/Shortboxerr.Infrastructure/BackgroundServices/ComicVineRefreshBackgroundService.cs` | Intelligent cache tier refresh |
+| `tests/Shortboxerr.Tests/PullListCacheTierTests.cs` | New test file for cache tier functionality |
+
+### Test Results
+- All 5 new cache tier tests passing
+- All existing tests passing
+
+---
+
 ## Iteration 062 (2026-02-04)
 **EPIC 13.5: Log Settings UI - COMPLETED**
 

@@ -241,6 +241,11 @@ public class WeeklyPullList
     public int WantedCount => Issues.Count(i => i.Status == Entities.IssueStatus.Wanted);
     public int OwnedCount => Issues.Count(i => i.Status == Entities.IssueStatus.Owned);
     public int SkippedCount => Issues.Count(i => i.Status == Entities.IssueStatus.Skipped);
+    
+    /// <summary>
+    /// Metadata about the cache state for this week's data.
+    /// </summary>
+    public PullListCacheMetadata? CacheMetadata { get; set; }
 }
 
 /// <summary>
@@ -499,6 +504,46 @@ public class PullListSettings
     public List<string>? ExportFields { get; set; }
 
     #endregion
+
+    #region Cache Tier Settings (Intelligent Cache Lifecycle)
+
+    /// <summary>
+    /// Number of days after release day to continue active cache refresh.
+    /// During this buffer period, cache refreshes more frequently.
+    /// After buffer expires, week becomes "historical" with longer cache TTL.
+    /// Default: 2 days (e.g., Wednesday release + 2 = Friday cutoff)
+    /// </summary>
+    public int CacheBufferDays { get; set; } = 2;
+
+    /// <summary>
+    /// Cache TTL (in days) for historical weeks (past release day + buffer).
+    /// Historical data rarely changes, so longer TTL conserves API calls.
+    /// Default: 7 days
+    /// </summary>
+    public int HistoricalCacheTtlDays { get; set; } = 7;
+
+    /// <summary>
+    /// Whether to enable periodic refresh of historical cache data.
+    /// If false, historical data only refreshes on manual request.
+    /// Default: false (conserves API calls)
+    /// </summary>
+    public bool HistoricalRefreshEnabled { get; set; } = false;
+
+    /// <summary>
+    /// Interval (in days) between historical cache refreshes.
+    /// Only applies when HistoricalRefreshEnabled is true.
+    /// Default: 7 days
+    /// </summary>
+    public int HistoricalRefreshIntervalDays { get; set; } = 7;
+
+    /// <summary>
+    /// Cache TTL (in minutes) for active weeks (before/on release day + buffer).
+    /// Shorter TTL allows capturing last-minute changes.
+    /// Default: 30 minutes
+    /// </summary>
+    public int ActiveCacheTtlMinutes { get; set; } = 30;
+
+    #endregion
 }
 
 /// <summary>
@@ -512,6 +557,65 @@ public enum WeeklyExportFormat
     Text = 1,
     /// <summary>CSV format - spreadsheet compatible.</summary>
     Csv = 2
+}
+
+/// <summary>
+/// Cache tier indicating the refresh behavior for a week's pull list data.
+/// </summary>
+public enum CacheTier
+{
+    /// <summary>
+    /// Week is before or on release day + buffer period.
+    /// Cache refreshes frequently to capture last-minute changes.
+    /// </summary>
+    Active,
+    
+    /// <summary>
+    /// Week is past release day + buffer period.
+    /// Cache has longer TTL; data rarely changes.
+    /// </summary>
+    Historical
+}
+
+/// <summary>
+/// Metadata about cached pull list data.
+/// </summary>
+public class PullListCacheMetadata
+{
+    /// <summary>
+    /// When the data was last fetched from ComicVine.
+    /// </summary>
+    public DateTime LastRefreshed { get; set; }
+    
+    /// <summary>
+    /// When the cache entry will expire.
+    /// </summary>
+    public DateTime ExpiresAt { get; set; }
+    
+    /// <summary>
+    /// Next scheduled background refresh (null if manual refresh only).
+    /// </summary>
+    public DateTime? NextScheduledRefresh { get; set; }
+    
+    /// <summary>
+    /// Current cache tier for this week.
+    /// </summary>
+    public CacheTier Tier { get; set; }
+    
+    /// <summary>
+    /// The release day for this week.
+    /// </summary>
+    public DateTime ReleaseDay { get; set; }
+    
+    /// <summary>
+    /// When this week transitions from Active to Historical tier.
+    /// </summary>
+    public DateTime TransitionDate { get; set; }
+    
+    /// <summary>
+    /// Whether data is currently from cache (vs fresh fetch).
+    /// </summary>
+    public bool FromCache { get; set; }
 }
 
 /// <summary>
@@ -547,6 +651,11 @@ public class WeeklyDiscoveryList
     public int TotalCount => Issues.Count;
     public int InLibraryCount => Issues.Count(i => i.IsInLibrary);
     public int NewCount => Issues.Count(i => !i.IsInLibrary);
+    
+    /// <summary>
+    /// Metadata about the cache state for this week's data.
+    /// </summary>
+    public PullListCacheMetadata? CacheMetadata { get; set; }
 }
 
 /// <summary>

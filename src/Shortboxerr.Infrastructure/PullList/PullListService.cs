@@ -58,6 +58,9 @@ public class PullListService : IPullListService
     {
         var (weekStart, weekEnd) = GetWeekBoundaries(weekOf);
         var releaseDay = GetReleaseDay(weekStart);
+        
+        // Get settings for cache tier calculation
+        var settings = await GetSettingsAsync(cancellationToken);
 
         var query = BuildIssueQuery(filter)
             .Where(i => i.StoreDate >= weekStart && i.StoreDate < weekEnd);
@@ -79,7 +82,8 @@ public class PullListService : IPullListService
             WeekStart = weekStart,
             WeekEnd = weekEnd,
             ReleaseDay = releaseDay,
-            Issues = issues.Select(MapToPullListIssue).ToList()
+            Issues = issues.Select(MapToPullListIssue).ToList(),
+            CacheMetadata = CreateCacheMetadata(releaseDay, settings, fromCache: false)
         };
     }
 
@@ -772,11 +776,22 @@ public class PullListService : IPullListService
         var (weekStart, weekEnd) = GetWeekBoundaries(weekOf);
         var releaseDay = GetReleaseDay(weekStart);
         var cacheKey = _cacheService.GenerateKey(CacheKeys.PullListDiscovery, weekStart.ToString("yyyy-MM-dd"));
+        
+        // Get settings for intelligent cache tier
+        var settings = await GetSettingsAsync(cancellationToken);
+        var cacheTier = DetermineCacheTier(releaseDay, settings);
+        var cacheTtl = GetCacheTtl(cacheTier, settings);
+        
+        // Check if data is already cached (to track fromCache status)
+        var fromCache = _cacheService.Exists(cacheKey);
+        var refreshedAt = DateTime.UtcNow;
 
-        // Try cache first or fetch from ComicVine
+        // Try cache first or fetch from ComicVine with tier-appropriate TTL
         var allIssues = await _cacheService.GetOrCreateAsync(cacheKey, async () =>
         {
-            _logger.LogInformation("Fetching ComicVine releases for week of {WeekStart}", weekStart);
+            refreshedAt = DateTime.UtcNow;
+            _logger.LogInformation("Fetching ComicVine releases for week of {WeekStart} (CacheTier: {CacheTier}, TTL: {CacheTtl})", 
+                weekStart, cacheTier, cacheTtl);
             
             var issues = new List<ComicVineIssue>();
             var offset = 0;
@@ -815,9 +830,14 @@ public class PullListService : IPullListService
                 issues.Count, weekStart);
 
             return issues;
-        }, DiscoveryCacheDuration);
+        }, cacheTtl);
 
-        return await BuildDiscoveryListAsync(allIssues, weekStart, weekEnd, releaseDay, filter, cancellationToken);
+        var discoveryList = await BuildDiscoveryListAsync(allIssues, weekStart, weekEnd, releaseDay, filter, cancellationToken);
+        
+        // Add cache metadata
+        discoveryList.CacheMetadata = CreateCacheMetadata(releaseDay, settings, fromCache, refreshedAt);
+        
+        return discoveryList;
     }
 
     public async Task<AddOneOffResult> AddIssueOneOffAsync(
@@ -1569,6 +1589,75 @@ public class PullListService : IPullListService
     {
         // Release day is Wednesday
         return weekStart.AddDays((int)DefaultReleaseDay);
+    }
+
+    /// <summary>
+    /// Determines the cache tier for a week based on its release day and current settings.
+    /// </summary>
+    private CacheTier DetermineCacheTier(DateTime releaseDay, PullListSettings settings)
+    {
+        var now = DateTime.UtcNow;
+        var transitionDate = releaseDay.AddDays(settings.CacheBufferDays);
+        
+        // If we're before or on the transition date, the week is "active"
+        if (now.Date <= transitionDate.Date)
+        {
+            return CacheTier.Active;
+        }
+        
+        return CacheTier.Historical;
+    }
+
+    /// <summary>
+    /// Gets the cache TTL for a week based on its tier.
+    /// </summary>
+    private TimeSpan GetCacheTtl(CacheTier tier, PullListSettings settings)
+    {
+        return tier switch
+        {
+            CacheTier.Active => TimeSpan.FromMinutes(settings.ActiveCacheTtlMinutes),
+            CacheTier.Historical => TimeSpan.FromDays(settings.HistoricalCacheTtlDays),
+            _ => TimeSpan.FromMinutes(30) // Default fallback
+        };
+    }
+
+    /// <summary>
+    /// Creates cache metadata for a pull list week.
+    /// </summary>
+    private PullListCacheMetadata CreateCacheMetadata(
+        DateTime releaseDay, 
+        PullListSettings settings, 
+        bool fromCache,
+        DateTime? lastRefreshed = null)
+    {
+        var now = DateTime.UtcNow;
+        var tier = DetermineCacheTier(releaseDay, settings);
+        var ttl = GetCacheTtl(tier, settings);
+        var refreshedAt = lastRefreshed ?? now;
+        var transitionDate = releaseDay.AddDays(settings.CacheBufferDays);
+        
+        DateTime? nextScheduledRefresh = null;
+        if (tier == CacheTier.Active)
+        {
+            // Active weeks have scheduled refreshes (part of background service)
+            nextScheduledRefresh = refreshedAt.Add(ttl);
+        }
+        else if (settings.HistoricalRefreshEnabled)
+        {
+            // Historical weeks only refresh if enabled
+            nextScheduledRefresh = refreshedAt.AddDays(settings.HistoricalRefreshIntervalDays);
+        }
+        
+        return new PullListCacheMetadata
+        {
+            LastRefreshed = refreshedAt,
+            ExpiresAt = refreshedAt.Add(ttl),
+            NextScheduledRefresh = nextScheduledRefresh,
+            Tier = tier,
+            ReleaseDay = releaseDay,
+            TransitionDate = transitionDate,
+            FromCache = fromCache
+        };
     }
 
     #endregion

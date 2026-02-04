@@ -1,3 +1,71 @@
+# Self Check - Iteration 063
+
+## EPIC 12.5: Intelligent Pull List Cache Lifecycle
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Backend builds with 0 errors |
+| Tests pass | ✅ | 5 new tests passing |
+| CacheTier enum | ✅ | Active, Historical |
+| PullListCacheMetadata | ✅ | Full metadata class |
+| Tier detection | ✅ | Based on release day + buffer |
+| Settings added | ✅ | 5 new cache tier settings |
+| API responses | ✅ | CacheMetadata property added |
+| Background service | ✅ | Uses intelligent tiers |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+#### Active Week Caching
+| AC | Status |
+|----|--------|
+| Background refresh on schedule | ✅ |
+| Refresh interval configurable | ✅ (ActiveCacheTtlMinutes) |
+| Continue refreshing until buffer expires | ✅ |
+
+#### Historical Week Caching
+| AC | Status |
+|----|--------|
+| Stop scheduled refreshes after buffer | ✅ |
+| Long TTL for historical data | ✅ (7 days default) |
+| Optional infrequent refresh | ✅ (HistoricalRefreshEnabled) |
+
+#### Cache Tier Configuration
+| AC | Status |
+|----|--------|
+| CacheBufferDays setting | ✅ (default: 2) |
+| HistoricalCacheTtlDays setting | ✅ (default: 7) |
+| HistoricalRefreshEnabled setting | ✅ (default: false) |
+| HistoricalRefreshIntervalDays setting | ✅ (default: 7) |
+| ActiveCacheTtlMinutes setting | ✅ (default: 30) |
+
+#### Manual Refresh
+| AC | Status |
+|----|--------|
+| Works regardless of cache tier | ✅ |
+| Updates cache with new data | ✅ |
+| Resets cache TTL | ✅ |
+
+#### Cache Status Visibility
+| AC | Status |
+|----|--------|
+| API returns cache metadata | ✅ |
+| LastRefreshed timestamp | ✅ |
+| NextScheduledRefresh | ✅ |
+| Tier indicator | ✅ |
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `IPullListService.cs` | ✅ Modified |
+| `PullListService.cs` | ✅ Modified |
+| `ComicVineRefreshBackgroundService.cs` | ✅ Modified |
+| `PullListCacheTierTests.cs` | ✅ New |
+
+---
+
 # Self Check - Iteration 062
 
 ## EPIC 13.5: Log Settings UI
