@@ -1,11 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
+using Shortboxerr.Core.Caching;
 using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Core.Entities;
 using Shortboxerr.Core.PullList;
 using Shortboxerr.Core.Services;
+using Shortboxerr.Infrastructure.Caching;
 using Shortboxerr.Infrastructure.Persistence;
 using Shortboxerr.Infrastructure.PullList;
 using Xunit;
@@ -19,7 +22,7 @@ public class PullListServiceTests : IDisposable
     private readonly Mock<ISettingsService> _mockSettingsService;
     private readonly Mock<IComicVineClient> _mockComicVineClient;
     private readonly Mock<ISeriesMetadataService> _mockSeriesMetadataService;
-    private readonly IMemoryCache _memoryCache;
+    private readonly ICacheService _cacheService;
     private readonly Mock<ILogger<PullListService>> _mockLogger;
 
     public PullListServiceTests()
@@ -32,14 +35,17 @@ public class PullListServiceTests : IDisposable
         _mockSettingsService = new Mock<ISettingsService>();
         _mockComicVineClient = new Mock<IComicVineClient>();
         _mockSeriesMetadataService = new Mock<ISeriesMetadataService>();
-        _memoryCache = new MemoryCache(new MemoryCacheOptions());
+        _cacheService = new CacheService(
+            new MemoryCache(new MemoryCacheOptions()),
+            new Mock<ILogger<CacheService>>().Object,
+            Options.Create(new CacheSettings()));
         _mockLogger = new Mock<ILogger<PullListService>>();
         _service = new PullListService(
             _dbContext, 
             _mockSettingsService.Object, 
             _mockComicVineClient.Object, 
             _mockSeriesMetadataService.Object, 
-            _memoryCache, 
+            _cacheService, 
             _mockLogger.Object);
     }
 

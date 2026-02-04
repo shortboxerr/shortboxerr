@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Shortboxerr.Core.Caching;
 using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Core.Entities;
 using Shortboxerr.Core.PullList;
@@ -19,33 +19,33 @@ public class PullListService : IPullListService
     private readonly ISettingsService _settingsService;
     private readonly IComicVineClient _comicVineClient;
     private readonly ISeriesMetadataService _seriesMetadataService;
-    private readonly IMemoryCache _cache;
+    private readonly ICacheService _cacheService;
     private readonly ILogger<PullListService> _logger;
 
     // Settings key
     private const string PullListSettingsKey = "pulllist";
     private const string SeriesSettingsKey = "pulllist_series";
-    private const string DiscoveryCacheKey = "pulllist_discovery_{0}";
     
     // Comics typically release on Wednesday in the US
     private const DayOfWeek DefaultReleaseDay = DayOfWeek.Wednesday;
     
-    // Cache discovery results for 30 minutes to minimize API calls
+    // Cache durations
     private static readonly TimeSpan DiscoveryCacheDuration = TimeSpan.FromMinutes(30);
+    private static readonly TimeSpan WeeklyPullListCacheDuration = TimeSpan.FromMinutes(5);
 
     public PullListService(
         ShortboxerrDbContext dbContext,
         ISettingsService settingsService,
         IComicVineClient comicVineClient,
         ISeriesMetadataService seriesMetadataService,
-        IMemoryCache cache,
+        ICacheService cacheService,
         ILogger<PullListService> logger)
     {
         _dbContext = dbContext;
         _settingsService = settingsService;
         _comicVineClient = comicVineClient;
         _seriesMetadataService = seriesMetadataService;
-        _cache = cache;
+        _cacheService = cacheService;
         _logger = logger;
     }
 
@@ -233,6 +233,9 @@ public class PullListService : IPullListService
 
             result.TotalProcessed = ids.Count;
             await _dbContext.SaveChangesAsync(cancellationToken);
+            
+            // Invalidate pull list cache since status affects query results
+            InvalidatePullListCache();
 
             _logger.LogInformation(
                 "Bulk updated {Success}/{Total} issues to status {Status}",
@@ -246,6 +249,19 @@ public class PullListService : IPullListService
         }
 
         return result;
+    }
+    
+    /// <summary>
+    /// Invalidates all pull list related caches when data changes.
+    /// </summary>
+    private void InvalidatePullListCache()
+    {
+        _cacheService.RemoveByPrefix(CacheKeys.PullListWeek);
+        _cacheService.RemoveByPrefix(CacheKeys.PullListUpcoming);
+        _cacheService.RemoveByPrefix(CacheKeys.PullListPast);
+        _cacheService.RemoveByPrefix(CacheKeys.DashboardStats);
+        _cacheService.RemoveByPrefix(CacheKeys.DashboardThisWeek);
+        _logger.LogDebug("Pull list cache invalidated due to status change");
     }
 
     private async Task<PullListActionResult> UpdateIssueStatusAsync(
@@ -271,6 +287,9 @@ public class PullListService : IPullListService
             issue.UpdatedAt = DateTime.UtcNow;
 
             await _dbContext.SaveChangesAsync(cancellationToken);
+            
+            // Invalidate pull list cache since status affects query results
+            InvalidatePullListCache();
 
             _logger.LogInformation("Updated issue {IssueId} to status {Status}", issueId, newStatus);
 
@@ -676,56 +695,51 @@ public class PullListService : IPullListService
     {
         var (weekStart, weekEnd) = GetWeekBoundaries(weekOf);
         var releaseDay = GetReleaseDay(weekStart);
-        var cacheKey = string.Format(DiscoveryCacheKey, weekStart.ToString("yyyy-MM-dd"));
+        var cacheKey = _cacheService.GenerateKey(CacheKeys.PullListDiscovery, weekStart.ToString("yyyy-MM-dd"));
 
-        // Try cache first
-        if (_cache.TryGetValue<List<ComicVineIssue>>(cacheKey, out var cachedIssues) && cachedIssues != null)
+        // Try cache first or fetch from ComicVine
+        var allIssues = await _cacheService.GetOrCreateAsync(cacheKey, async () =>
         {
-            _logger.LogDebug("Using cached discovery results for week of {WeekStart}", weekStart);
-            return await BuildDiscoveryListAsync(cachedIssues, weekStart, weekEnd, releaseDay, filter, cancellationToken);
-        }
-
-        // Fetch from ComicVine API
-        _logger.LogInformation("Fetching ComicVine releases for week of {WeekStart}", weekStart);
-        
-        var allIssues = new List<ComicVineIssue>();
-        var offset = 0;
-        const int limit = 100;
-        
-        // Query ComicVine for issues with store_date in this week
-        // ComicVine date filter format: YYYY-MM-DD|YYYY-MM-DD
-        var dateFilter = $"{weekStart:yyyy-MM-dd}|{weekEnd.AddDays(-1):yyyy-MM-dd}";
-        
-        while (true)
-        {
-            var result = await _comicVineClient.GetIssuesByStoreDateAsync(
-                dateFilter, 
-                offset, 
-                limit, 
-                cancellationToken);
-
-            if (!result.Success || result.Results == null)
+            _logger.LogInformation("Fetching ComicVine releases for week of {WeekStart}", weekStart);
+            
+            var issues = new List<ComicVineIssue>();
+            var offset = 0;
+            const int limit = 100;
+            
+            // Query ComicVine for issues with store_date in this week
+            // ComicVine date filter format: YYYY-MM-DD|YYYY-MM-DD
+            var dateFilter = $"{weekStart:yyyy-MM-dd}|{weekEnd.AddDays(-1):yyyy-MM-dd}";
+            
+            while (true)
             {
-                _logger.LogWarning("Failed to fetch ComicVine releases: {Error}", result.Error);
-                break;
+                var result = await _comicVineClient.GetIssuesByStoreDateAsync(
+                    dateFilter, 
+                    offset, 
+                    limit, 
+                    cancellationToken);
+
+                if (!result.Success || result.Results == null)
+                {
+                    _logger.LogWarning("Failed to fetch ComicVine releases: {Error}", result.Error);
+                    break;
+                }
+
+                issues.AddRange(result.Results);
+                
+                if (result.Results.Count < limit || issues.Count >= result.TotalResults)
+                    break;
+                    
+                offset += limit;
+                
+                // Rate limit protection
+                await Task.Delay(200, cancellationToken);
             }
 
-            allIssues.AddRange(result.Results);
-            
-            if (result.Results.Count < limit || allIssues.Count >= result.TotalResults)
-                break;
-                
-            offset += limit;
-            
-            // Rate limit protection
-            await Task.Delay(200, cancellationToken);
-        }
+            _logger.LogInformation("Retrieved {Count} issues from ComicVine for week of {WeekStart}", 
+                issues.Count, weekStart);
 
-        _logger.LogInformation("Retrieved {Count} issues from ComicVine for week of {WeekStart}", 
-            allIssues.Count, weekStart);
-
-        // Cache the results
-        _cache.Set(cacheKey, allIssues, DiscoveryCacheDuration);
+            return issues;
+        }, DiscoveryCacheDuration);
 
         return await BuildDiscoveryListAsync(allIssues, weekStart, weekEnd, releaseDay, filter, cancellationToken);
     }
