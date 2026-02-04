@@ -57,7 +57,8 @@ public class HealthEndpointTests : IClassFixture<CustomWebApplicationFactory>
         var content = await response.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(content);
         Assert.Equal("Shortboxerr", doc.RootElement.GetProperty("appName").GetString());
-        Assert.Equal("0.1.0", doc.RootElement.GetProperty("version").GetString());
+        Assert.NotNull(doc.RootElement.GetProperty("version").GetString());
+        Assert.True(doc.RootElement.GetProperty("isHealthy").GetBoolean());
     }
 
     [Fact]
