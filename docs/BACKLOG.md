@@ -1160,6 +1160,10 @@ Implement comprehensive caching to minimize database queries and external API ca
   - AC: Implement backoff when approaching limits
   - AC: Queue requests during rate limit cooldown
 
+- [ ] **Wire cache to scheduler**
+  - AC: Ensure that releases for each week are fetched on a schedule of every X hours and cached for at least that many hours so that we don't have to repull the weeks releases when a user first views a week.
+  
+
 ### 12.5 Cache Technology Options
 
 **Recommended: IMemoryCache (In-Process)**

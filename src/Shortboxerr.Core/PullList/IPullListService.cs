@@ -56,6 +56,15 @@ public interface IPullListService
         DiscoveryFilter? filter = null,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Prefetches adjacent weeks' data into the cache for faster subsequent access.
+    /// This runs in the background and does not block.
+    /// </summary>
+    /// <param name="currentWeekOf">The current week being viewed.</param>
+    /// <param name="prefetchDiscovery">Whether to prefetch discovery data (ComicVine).</param>
+    /// <param name="prefetchPullList">Whether to prefetch pull list data (local database).</param>
+    void PrefetchAdjacentWeeksAsync(DateTime currentWeekOf, bool prefetchDiscovery = true, bool prefetchPullList = true);
+
     #endregion
 
     #region Discovery & One-Off Additions
