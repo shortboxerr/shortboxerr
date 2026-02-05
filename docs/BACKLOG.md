@@ -1408,12 +1408,12 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
   - AC: Mask connection strings (show server/database only, not credentials) ✅
   - AC: Unit tests to verify no credentials appear in log output (pending)
 
-- [ ] **Log file configuration**
-  - AC: Configurable log directory (default: `{data}/logs/`)
-  - AC: Log file naming: `shortboxerr.log`, `shortboxerr.txt`, or configurable
-  - AC: Configurable log level: Trace, Debug, Info, Warn, Error, Fatal
-  - AC: Default log level: Info
-  - AC: Separate log level for console vs file output
+- [x] **Log file configuration** ✅
+  - AC: Configurable log directory (default: `{data}/logs/`) ✅ (via SHORTBOXERR_LOG_DIR env var)
+  - AC: Log file naming: `shortboxerr.log`, `shortboxerr.txt`, or configurable ✅ (uses shortboxerr.log)
+  - AC: Configurable log level: Trace, Debug, Info, Warn, Error, Fatal ✅ (via SHORTBOXERR_LOG_LEVEL env var and UI)
+  - AC: Default log level: Info ✅
+  - AC: Separate log level for console vs file output ✅ (consoleLevel parameter in SerilogConfiguration)
 
 - [x] **Log rotation** ✅
   - AC: Configurable max log file size (default: 10MB, Sonarr default: 1MB) ✅
