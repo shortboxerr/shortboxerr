@@ -1,5 +1,47 @@
 # Worklog
 
+## Iteration 065 (2026-02-05)
+**EPIC 8.1.1: GetComics.org Adapter - Started**
+
+### Commits
+1. `chore: mark EPIC 13.1 Log file configuration as complete`
+2. `feat: implement GetComicsAdapter for DDL site scraping (EPIC 8.1.1)`
+
+### Deliverables
+
+#### GetComicsAdapter Implementation
+- ✅ HTML parsing for search results (post-title and entry-title formats)
+- ✅ Download link extraction from release pages
+- ✅ Support for multiple file hosts: Mega, MediaFire, Pixeldrain, Google Drive, Dropbox, 1fichier
+- ✅ Host priority sorting (main server > mega > mediafire > others)
+- ✅ Navigation/category link filtering
+- ✅ Release metadata parsing (series, issue, year, publisher)
+
+#### Infrastructure
+- ✅ Registered GetComicsAdapter in DdlSiteAdapterFactory
+- ✅ Added InternalsVisibleTo for test access
+- ✅ Conservative rate limiting (10 requests/minute)
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/Ddl/GetComicsAdapter.cs` | New adapter implementation |
+| `src/Shortboxerr.Infrastructure/Ddl/DdlSiteAdapterFactory.cs` | Register GetComics adapter |
+| `src/Shortboxerr.Infrastructure/Shortboxerr.Infrastructure.csproj` | Add InternalsVisibleTo |
+| `tests/Shortboxerr.Tests/GetComicsAdapterTests.cs` | 25 unit tests |
+| `docs/BACKLOG.md` | Mark EPIC 13.1 Log file configuration complete |
+
+### Test Results
+- All 25 new GetComicsAdapter tests passing
+- Build: ✅ No errors
+
+### Remaining Work for EPIC 8.1.1
+- [ ] Pagination handling for search results
+- [ ] RSS feed polling integration
+- [ ] Category browsing
+
+---
+
 ## Iteration 064 (2026-02-05)
 **Chore: Remove Adjacent Week Prefetching**
 

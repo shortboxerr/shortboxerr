@@ -1,3 +1,55 @@
+# Self Check - Iteration 065
+
+## EPIC 8.1.1: GetComics.org Adapter (Partial)
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Backend builds with 0 errors |
+| Tests pass | ✅ | 25 new tests passing |
+| HTML parsing | ✅ | post-title and entry-title formats |
+| Link extraction | ✅ | 6+ file hosts supported |
+| Host priority | ✅ | Sorted by reliability |
+| Factory registration | ✅ | GetComics adapter enabled |
+| Git commits | ✅ | 2 commits |
+
+### Acceptance Criteria Status
+
+#### HTML Scraping
+| AC | Status |
+|----|--------|
+| Parse search results page for release links | ✅ |
+| Extract all download host links from release pages | ✅ |
+| Handle pagination for search results | ⏳ (basic) |
+| Parse release details (title, size, date posted, tags) | ✅ |
+
+#### Link Resolution
+| AC | Status |
+|----|--------|
+| Follow redirects to actual download URLs | ✅ |
+| Handle multiple mirror options with priority | ✅ |
+| Detect dead/expired links and skip | ✅ |
+
+### Supported File Hosts
+- ✅ Mega.nz
+- ✅ MediaFire
+- ✅ Pixeldrain
+- ✅ Google Drive
+- ✅ Dropbox
+- ✅ 1fichier
+- ✅ Main server (direct)
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `GetComicsAdapter.cs` | ✅ New |
+| `DdlSiteAdapterFactory.cs` | ✅ Modified |
+| `Shortboxerr.Infrastructure.csproj` | ✅ Modified |
+| `GetComicsAdapterTests.cs` | ✅ New (25 tests) |
+
+---
+
 # Self Check - Iteration 063
 
 ## EPIC 12.5: Intelligent Pull List Cache Lifecycle

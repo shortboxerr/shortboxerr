@@ -290,21 +290,21 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
 
 ### 8.1 DDL Site Indexers (Comic Discovery)
 
-#### 8.1.1 GetComics.org Adapter (Primary)
-- [ ] **HTML scraping for GetComics**
-  - AC: Parse search results page for release links
-  - AC: Extract all download host links from release pages
-  - AC: Handle pagination for search results
-  - AC: Parse release details (title, size, date posted, tags)
+#### 8.1.1 GetComics.org Adapter (Primary) - PARTIAL ✅
+- [x] **HTML scraping for GetComics** ✅
+  - AC: Parse search results page for release links ✅
+  - AC: Extract all download host links from release pages ✅
+  - AC: Handle pagination for search results (basic - offset support)
+  - AC: Parse release details (title, size, date posted, tags) ✅
 - [ ] **GetComics search integration**
-  - AC: Search by series name, issue number
-  - AC: Search by keyword/tag/category
+  - AC: Search by series name, issue number ✅ (via BuildSearchUrl)
+  - AC: Search by keyword/tag/category ✅ (via RawQuery)
   - AC: RSS feed polling for new releases (/feed/)
   - AC: Category browsing (DC, Marvel, Image, etc.)
-- [ ] **GetComics link resolution**
-  - AC: Follow redirects to actual download URLs
-  - AC: Handle multiple mirror options with priority
-  - AC: Detect dead/expired links and skip
+- [x] **GetComics link resolution** ✅
+  - AC: Follow redirects to actual download URLs ✅ (handled by HttpClient)
+  - AC: Handle multiple mirror options with priority ✅ (host priority sorting)
+  - AC: Detect dead/expired links and skip ✅ (via VerifyLinkAsync)
 
 #### 8.1.2 ReadComicOnline Adapter (Secondary)
 - [ ] **Determine homepage address**
