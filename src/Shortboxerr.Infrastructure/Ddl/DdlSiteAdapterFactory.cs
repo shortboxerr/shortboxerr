@@ -129,8 +129,12 @@ public class DdlSiteAdapterFactory : IDdlSiteAdapterFactory
         RegisterAdapter("MockDdl", () => new MockDdlSiteAdapter());
         RegisterAdapter("GettyComics", () => new GettyComicsSiteAdapter());
         
-        // Enable mock by default for development
+        // Register real DDL site adapters
+        RegisterAdapter("GetComics", () => new GetComicsAdapter());
+        
+        // Enable mock by default for development; GetComics enabled for production use
         EnableSite("MockDdl");
+        EnableSite("GetComics");
     }
 }
 
