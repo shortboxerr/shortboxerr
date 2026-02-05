@@ -25,22 +25,14 @@ public static class PullListEndpoints
             [FromQuery] string? publishers,
             [FromQuery] string? statuses,
             [FromQuery] bool? monitoredOnly,
-            [FromQuery] bool? prefetch,
             CancellationToken cancellationToken) =>
         {
             var filter = BuildFilter(publishers, statuses, monitoredOnly);
             var result = await pullListService.GetThisWeekAsync(filter, cancellationToken);
-            
-            // Trigger background prefetch for adjacent weeks (default: enabled)
-            if (prefetch != false)
-            {
-                pullListService.PrefetchAdjacentWeeksAsync(DateTime.Today, prefetchDiscovery: false, prefetchPullList: true);
-            }
-            
             return Results.Ok(result);
         })
         .WithName("GetThisWeekPullList")
-        .WithDescription("Gets this week's comic releases. Set prefetch=false to disable adjacent week prefetching.")
+        .WithDescription("Gets this week's comic releases.")
         .Produces<WeeklyPullList>(200);
 
         // GET /api/v1/pulllist/week/{date} - releases for a specific week
@@ -50,22 +42,14 @@ public static class PullListEndpoints
             [FromQuery] string? publishers,
             [FromQuery] string? statuses,
             [FromQuery] bool? monitoredOnly,
-            [FromQuery] bool? prefetch,
             CancellationToken cancellationToken) =>
         {
             var filter = BuildFilter(publishers, statuses, monitoredOnly);
             var result = await pullListService.GetWeeklyReleasesAsync(date, filter, cancellationToken);
-            
-            // Trigger background prefetch for adjacent weeks (default: enabled)
-            if (prefetch != false)
-            {
-                pullListService.PrefetchAdjacentWeeksAsync(date, prefetchDiscovery: false, prefetchPullList: true);
-            }
-            
             return Results.Ok(result);
         })
         .WithName("GetWeekPullList")
-        .WithDescription("Gets releases for a specific week. Set prefetch=false to disable adjacent week prefetching.")
+        .WithDescription("Gets releases for a specific week.")
         .Produces<WeeklyPullList>(200);
 
         // GET /api/v1/pulllist/upcoming - upcoming releases
@@ -136,7 +120,6 @@ public static class PullListEndpoints
             [FromQuery] bool? newOnly,
             [FromQuery] bool? includeAnnuals,
             [FromQuery] bool? includeSpecials,
-            [FromQuery] bool? prefetch,
             CancellationToken cancellationToken) =>
         {
             var filter = new DiscoveryFilter
@@ -148,17 +131,10 @@ public static class PullListEndpoints
                 IncludeSpecials = includeSpecials ?? true
             };
             var result = await pullListService.GetWeeklyDiscoveryAsync(DateTime.Today, filter, cancellationToken);
-            
-            // Trigger background prefetch for adjacent weeks (default: enabled)
-            if (prefetch != false)
-            {
-                pullListService.PrefetchAdjacentWeeksAsync(DateTime.Today, prefetchDiscovery: true, prefetchPullList: false);
-            }
-            
             return Results.Ok(result);
         })
         .WithName("GetWeeklyDiscovery")
-        .WithDescription("Gets all ComicVine releases this week (discovery mode). Set prefetch=false to disable adjacent week prefetching.")
+        .WithDescription("Gets all ComicVine releases this week (discovery mode).")
         .Produces<WeeklyDiscoveryList>(200);
 
         // GET /api/v1/pulllist/discover/week/{date} - discover releases for a specific week
@@ -170,7 +146,6 @@ public static class PullListEndpoints
             [FromQuery] bool? newOnly,
             [FromQuery] bool? includeAnnuals,
             [FromQuery] bool? includeSpecials,
-            [FromQuery] bool? prefetch,
             CancellationToken cancellationToken) =>
         {
             var filter = new DiscoveryFilter
@@ -182,17 +157,10 @@ public static class PullListEndpoints
                 IncludeSpecials = includeSpecials ?? true
             };
             var result = await pullListService.GetWeeklyDiscoveryAsync(date, filter, cancellationToken);
-            
-            // Trigger background prefetch for adjacent weeks (default: enabled)
-            if (prefetch != false)
-            {
-                pullListService.PrefetchAdjacentWeeksAsync(date, prefetchDiscovery: true, prefetchPullList: false);
-            }
-            
             return Results.Ok(result);
         })
         .WithName("GetWeeklyDiscoveryByDate")
-        .WithDescription("Gets all ComicVine releases for a specific week (discovery mode). Set prefetch=false to disable adjacent week prefetching.")
+        .WithDescription("Gets all ComicVine releases for a specific week (discovery mode).")
         .Produces<WeeklyDiscoveryList>(200);
 
         // POST /api/v1/pulllist/discover/add-issue - add one-off issue

@@ -1268,11 +1268,12 @@ Implement comprehensive caching to minimize database queries and external API ca
   - AC: Batch multiple issue lookups into single request where API supports
   - AC: Queue and deduplicate concurrent identical requests
   
-- [x] **Prefetching** ✅
-  - AC: Prefetch next week's releases when viewing current week ✅
+- [x] **Prefetching** ✅ (REMOVED - Iteration 064)
+  - ~~AC: Prefetch next week's releases when viewing current week~~ → Replaced by startup cache population
   - AC: Background refresh of stale cache entries (proactive refresh) ✅
-  - AC: `PrefetchAdjacentWeeksAsync` method in PullListService ✅
-  - AC: `prefetch` query parameter on /week and /discover/week endpoints ✅
+  - ~~AC: `PrefetchAdjacentWeeksAsync` method in PullListService~~ → Removed (caused DbContext disposal errors)
+  - ~~AC: `prefetch` query parameter on /week and /discover/week endpoints~~ → Removed
+  - Note: Functionality now provided by `ComicVineRefreshBackgroundService` which pre-populates cache on startup and refreshes on schedule
 
 - [ ] **Rate limit awareness** (deferred)
   - AC: Expose rate limit status in cache service

@@ -1,5 +1,33 @@
 # Worklog
 
+## Iteration 064 (2026-02-05)
+**Chore: Remove Adjacent Week Prefetching**
+
+### Commits
+1. `chore: remove adjacent week prefetching (replaced by startup cache population)`
+
+### Rationale
+The `PrefetchAdjacentWeeksAsync` feature was causing `ObjectDisposedException` errors in logs due to fire-and-forget background tasks outliving the scoped DbContext. With the implementation of:
+- Database-backed cache persistence (`CachedDiscoveryWeeks` table)
+- Background service that pre-populates cache on startup
+- Intelligent cache tiering with appropriate TTLs
+
+The adjacent week prefetching is now redundant and was removed to eliminate errors.
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/PullList/IPullListService.cs` | Remove `PrefetchAdjacentWeeksAsync` interface method |
+| `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` | Remove `PrefetchAdjacentWeeksAsync` implementation |
+| `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` | Remove prefetch calls and `prefetch` query parameter |
+| `tests/Shortboxerr.Tests/PullListServiceTests.cs` | Remove 3 prefetch-related tests |
+
+### Test Results
+- Build: ✅ No errors
+- All remaining tests passing
+
+---
+
 ## Iteration 063 (2026-02-04)
 **EPIC 12.5: Intelligent Pull List Cache Lifecycle - COMPLETED**
 
