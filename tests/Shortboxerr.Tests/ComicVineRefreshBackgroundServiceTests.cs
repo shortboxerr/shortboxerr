@@ -25,6 +25,11 @@ public class ComicVineRefreshBackgroundServiceTests
         _mockPullListService = new Mock<IPullListService>();
         _mockLogger = new Mock<ILogger<ComicVineRefreshBackgroundService>>();
 
+        // Default setup for GetSettingsAsync to return valid settings
+        _mockPullListService
+            .Setup(p => p.GetSettingsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PullListSettings());
+
         var services = new ServiceCollection();
         services.AddSingleton(_mockSettingsService.Object);
         services.AddSingleton(_mockComicVineClient.Object);
