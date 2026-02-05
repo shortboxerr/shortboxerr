@@ -775,62 +775,70 @@ public class PullListService : IPullListService
     {
         var (weekStart, weekEnd) = GetWeekBoundaries(weekOf);
         var releaseDay = GetReleaseDay(weekStart);
-        var cacheKey = _cacheService.GenerateKey(CacheKeys.PullListDiscovery, weekStart.ToString("yyyy-MM-dd"));
+        var memoryCacheKey = _cacheService.GenerateKey(CacheKeys.PullListDiscovery, weekStart.ToString("yyyy-MM-dd"));
         
         // Get settings for intelligent cache tier
         var settings = await GetSettingsAsync(cancellationToken);
         var cacheTier = DetermineCacheTier(releaseDay, settings);
         var cacheTtl = GetCacheTtl(cacheTier, settings);
         
-        // Check if data is already cached (to track fromCache status)
-        var fromCache = _cacheService.Exists(cacheKey);
+        var fromCache = false;
         var refreshedAt = DateTime.UtcNow;
+        List<ComicVineIssue> allIssues;
 
-        // Try cache first or fetch from ComicVine with tier-appropriate TTL
-        var allIssues = await _cacheService.GetOrCreateAsync(cacheKey, async () =>
+        // Step 1: Check in-memory cache first (fastest)
+        var memoryCachedIssues = _cacheService.Get<List<ComicVineIssue>>(memoryCacheKey);
+        if (memoryCachedIssues != null)
         {
-            refreshedAt = DateTime.UtcNow;
-            _logger.LogInformation("Fetching ComicVine releases for week of {WeekStart} (CacheTier: {CacheTier}, TTL: {CacheTtl})", 
-                weekStart, cacheTier, cacheTtl);
+            _logger.LogDebug("Discovery cache HIT (memory) for week of {WeekStart}", weekStart);
+            allIssues = memoryCachedIssues;
+            fromCache = true;
             
-            var issues = new List<ComicVineIssue>();
-            var offset = 0;
-            const int limit = 100;
-            
-            // Query ComicVine for issues with store_date in this week
-            // ComicVine date filter format: YYYY-MM-DD|YYYY-MM-DD
-            var dateFilter = $"{weekStart:yyyy-MM-dd}|{weekEnd.AddDays(-1):yyyy-MM-dd}";
-            
-            while (true)
+            // Get refresh time from database for metadata
+            var dbCacheEntry = await _dbContext.CachedDiscoveryWeeks
+                .FirstOrDefaultAsync(c => c.WeekStart == weekStart.Date, cancellationToken);
+            if (dbCacheEntry != null)
             {
-                var result = await _comicVineClient.GetIssuesByStoreDateAsync(
-                    dateFilter, 
-                    offset, 
-                    limit, 
-                    cancellationToken);
-
-                if (!result.Success || result.Results == null)
-                {
-                    _logger.LogWarning("Failed to fetch ComicVine releases: {Error}", result.Error);
-                    break;
-                }
-
-                issues.AddRange(result.Results);
-                
-                if (result.Results.Count < limit || issues.Count >= result.TotalResults)
-                    break;
-                    
-                offset += limit;
-                
-                // Rate limit protection
-                await Task.Delay(200, cancellationToken);
+                refreshedAt = dbCacheEntry.LastRefreshed;
             }
-
-            _logger.LogInformation("Retrieved {Count} issues from ComicVine for week of {WeekStart}", 
-                issues.Count, weekStart);
-
-            return issues;
-        }, cacheTtl);
+        }
+        else
+        {
+            // Step 2: Check database cache (persists across restarts)
+            var dbCacheEntry = await _dbContext.CachedDiscoveryWeeks
+                .FirstOrDefaultAsync(c => c.WeekStart == weekStart.Date, cancellationToken);
+            
+            if (dbCacheEntry != null && dbCacheEntry.ExpiresAt > DateTime.UtcNow)
+            {
+                _logger.LogDebug("Discovery cache HIT (database) for week of {WeekStart}", weekStart);
+                
+                // Deserialize from database
+                allIssues = JsonSerializer.Deserialize<List<ComicVineIssue>>(dbCacheEntry.IssuesJson) ?? new List<ComicVineIssue>();
+                fromCache = true;
+                refreshedAt = dbCacheEntry.LastRefreshed;
+                
+                // Warm the memory cache for faster subsequent access
+                _cacheService.Set(memoryCacheKey, allIssues, cacheTtl);
+            }
+            else
+            {
+                // Step 3: Fetch from ComicVine (cache miss)
+                _logger.LogInformation("Fetching ComicVine releases for week of {WeekStart} (CacheTier: {CacheTier}, TTL: {CacheTtl})", 
+                    weekStart, cacheTier, cacheTtl);
+                
+                allIssues = await FetchComicVineIssuesForWeekAsync(weekStart, weekEnd, cancellationToken);
+                refreshedAt = DateTime.UtcNow;
+                
+                // Persist to database
+                await PersistDiscoveryCacheAsync(weekStart, allIssues, cacheTtl, cacheTier, cancellationToken);
+                
+                // Also store in memory cache
+                _cacheService.Set(memoryCacheKey, allIssues, cacheTtl);
+                
+                _logger.LogInformation("Retrieved and cached {Count} issues from ComicVine for week of {WeekStart}", 
+                    allIssues.Count, weekStart);
+            }
+        }
 
         var discoveryList = await BuildDiscoveryListAsync(allIssues, weekStart, weekEnd, releaseDay, filter, cancellationToken);
         
@@ -838,6 +846,91 @@ public class PullListService : IPullListService
         discoveryList.CacheMetadata = CreateCacheMetadata(releaseDay, settings, fromCache, refreshedAt);
         
         return discoveryList;
+    }
+
+    /// <summary>
+    /// Fetches issues from ComicVine for a specific week.
+    /// </summary>
+    private async Task<List<ComicVineIssue>> FetchComicVineIssuesForWeekAsync(
+        DateTime weekStart,
+        DateTime weekEnd,
+        CancellationToken cancellationToken)
+    {
+        var issues = new List<ComicVineIssue>();
+        var offset = 0;
+        const int limit = 100;
+        
+        // Query ComicVine for issues with store_date in this week
+        // ComicVine date filter format: YYYY-MM-DD|YYYY-MM-DD
+        var dateFilter = $"{weekStart:yyyy-MM-dd}|{weekEnd.AddDays(-1):yyyy-MM-dd}";
+        
+        while (true)
+        {
+            var result = await _comicVineClient.GetIssuesByStoreDateAsync(
+                dateFilter, 
+                offset, 
+                limit, 
+                cancellationToken);
+
+            if (!result.Success || result.Results == null)
+            {
+                _logger.LogWarning("Failed to fetch ComicVine releases: {Error}", result.Error);
+                break;
+            }
+
+            issues.AddRange(result.Results);
+            
+            if (result.Results.Count < limit || issues.Count >= result.TotalResults)
+                break;
+                
+            offset += limit;
+            
+            // Rate limit protection
+            await Task.Delay(200, cancellationToken);
+        }
+
+        return issues;
+    }
+
+    /// <summary>
+    /// Persists discovery cache to the database.
+    /// </summary>
+    private async Task PersistDiscoveryCacheAsync(
+        DateTime weekStart,
+        List<ComicVineIssue> issues,
+        TimeSpan ttl,
+        CacheTier tier,
+        CancellationToken cancellationToken)
+    {
+        var now = DateTime.UtcNow;
+        var issuesJson = JsonSerializer.Serialize(issues);
+        
+        // Upsert: update if exists, insert if not
+        var existing = await _dbContext.CachedDiscoveryWeeks
+            .FirstOrDefaultAsync(c => c.WeekStart == weekStart.Date, cancellationToken);
+        
+        if (existing != null)
+        {
+            existing.IssuesJson = issuesJson;
+            existing.LastRefreshed = now;
+            existing.ExpiresAt = now.Add(ttl);
+            existing.IssueCount = issues.Count;
+            existing.CacheTier = (int)tier;
+        }
+        else
+        {
+            _dbContext.CachedDiscoveryWeeks.Add(new CachedDiscoveryWeek
+            {
+                WeekStart = weekStart.Date,
+                IssuesJson = issuesJson,
+                LastRefreshed = now,
+                ExpiresAt = now.Add(ttl),
+                IssueCount = issues.Count,
+                CacheTier = (int)tier
+            });
+        }
+        
+        await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<AddOneOffResult> AddIssueOneOffAsync(

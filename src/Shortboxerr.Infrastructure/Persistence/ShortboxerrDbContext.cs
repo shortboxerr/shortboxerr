@@ -22,6 +22,7 @@ public class ShortboxerrDbContext : DbContext
     public DbSet<PendingMatch> PendingMatches => Set<PendingMatch>();
     public DbSet<MetadataRefreshEvent> MetadataRefreshEvents => Set<MetadataRefreshEvent>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<CachedDiscoveryWeek> CachedDiscoveryWeeks => Set<CachedDiscoveryWeek>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -224,6 +225,16 @@ public class ShortboxerrDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.IssueId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // CachedDiscoveryWeek
+        modelBuilder.Entity<CachedDiscoveryWeek>(entity =>
+        {
+            entity.ToTable("CachedDiscoveryWeeks");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.IssuesJson).IsRequired();
+            entity.HasIndex(e => e.WeekStart).IsUnique();
+            entity.HasIndex(e => e.ExpiresAt);
         });
     }
 }
