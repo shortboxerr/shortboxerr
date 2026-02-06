@@ -1,5 +1,57 @@
 # Worklog
 
+## Iteration 066 (2026-02-06)
+**EPIC 8.2: Download Host Resolvers - Completed**
+
+### Commits
+1. `feat: implement download host resolvers for DDL sites (EPIC 8.2)`
+
+### Deliverables
+
+#### Infrastructure (Core)
+- ✅ `IDownloadHostResolver` interface for host-specific URL resolution
+- ✅ `IDownloadHostResolverFactory` factory interface
+- ✅ `HostResolverResult` and `HostVerifyResult` record types with metadata
+- ✅ `HostResolverFailureReason` enum for error classification
+
+#### Resolvers Implemented (Infrastructure)
+- ✅ `BaseHostResolver` - Common functionality for all resolvers
+- ✅ `DirectDownloadResolver` - Handles direct HTTP download links (.cbz, .cbr, .zip, .rar, .pdf)
+- ✅ `PixeldrainResolver` - API-based resolution for pixeldrain.com
+- ✅ `MediaFireResolver` - HTML parsing for mediafire.com share pages
+
+#### Factory
+- ✅ `DownloadHostResolverFactory` - Registers and manages resolvers
+- ✅ Priority-based resolver selection (Direct=0, MediaFire=2, Pixeldrain=3)
+- ✅ Extensible via `RegisterResolver()` method
+- ✅ Registered in DI container
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Ddl/IDownloadHostResolver.cs` | New interface + result types |
+| `src/Shortboxerr.Core/Ddl/IDownloadHostResolverFactory.cs` | New factory interface |
+| `src/Shortboxerr.Infrastructure/Ddl/Resolvers/BaseHostResolver.cs` | New base class |
+| `src/Shortboxerr.Infrastructure/Ddl/Resolvers/DirectDownloadResolver.cs` | New resolver |
+| `src/Shortboxerr.Infrastructure/Ddl/Resolvers/PixeldrainResolver.cs` | New resolver |
+| `src/Shortboxerr.Infrastructure/Ddl/Resolvers/MediaFireResolver.cs` | New resolver |
+| `src/Shortboxerr.Infrastructure/Ddl/Resolvers/DownloadHostResolverFactory.cs` | New factory |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register factory |
+| `tests/Shortboxerr.Tests/DownloadHostResolverTests.cs` | 35 unit tests |
+| `docs/BACKLOG.md` | Mark EPIC 8.2.1, 8.2.2, 8.2.4 complete |
+
+### Test Results
+- All 774 tests passing (739 existing + 35 new)
+- Build: ✅ No errors
+
+### Remaining Work for EPIC 8.2
+- [ ] Mega.nz Resolver (requires encryption handling)
+- [ ] Google Drive Resolver
+- [ ] Dropbox Resolver
+- [ ] 1fichier Resolver
+
+---
+
 ## Iteration 065 (2026-02-05)
 **EPIC 8.1.1: GetComics.org Adapter - Started**
 

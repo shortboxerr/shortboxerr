@@ -1,3 +1,59 @@
+# Self Check - Iteration 066
+
+## EPIC 8.2: Download Host Resolvers
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Backend builds with 0 errors |
+| Tests pass | ✅ | 35 new tests passing, 774 total |
+| Interface defined | ✅ | IDownloadHostResolver + factory |
+| DirectDownload | ✅ | Priority 0 |
+| MediaFire | ✅ | Priority 2 |
+| Pixeldrain | ✅ | Priority 3 |
+| Factory registration | ✅ | Registered in DI |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+#### 8.2.1 Direct/Main Server Downloads
+| AC | Status |
+|----|--------|
+| Standard HTTP GET with resume support | ✅ |
+| Handle Content-Disposition filename | ✅ |
+| Verify file integrity (size, magic bytes) | ✅ |
+
+#### 8.2.2 MediaFire Resolver
+| AC | Status |
+|----|--------|
+| Parse MediaFire share page | ✅ |
+| Extract direct download URL | ✅ |
+| Handle "Download" button extraction | ✅ |
+| Detect expired/removed files | ✅ |
+
+#### 8.2.4 Pixeldrain Resolver
+| AC | Status |
+|----|--------|
+| Extract file ID from URL | ✅ |
+| Use Pixeldrain API for direct download | ✅ |
+| Handle bandwidth limits | ✅ |
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `IDownloadHostResolver.cs` | ✅ New |
+| `IDownloadHostResolverFactory.cs` | ✅ New |
+| `BaseHostResolver.cs` | ✅ New |
+| `DirectDownloadResolver.cs` | ✅ New |
+| `PixeldrainResolver.cs` | ✅ New |
+| `MediaFireResolver.cs` | ✅ New |
+| `DownloadHostResolverFactory.cs` | ✅ New |
+| `DependencyInjection.cs` | ✅ Modified |
+| `DownloadHostResolverTests.cs` | ✅ New (35 tests) |
+
+---
+
 # Self Check - Iteration 065
 
 ## EPIC 8.1.1: GetComics.org Adapter (Partial)

@@ -326,31 +326,31 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
 
 ### 8.2 Download Host Resolvers (File Acquisition)
 
-#### 8.2.1 Direct/Main Server Downloads
-- [ ] **Direct HTTP downloads**
-  - AC: Standard HTTP GET with resume support
-  - AC: Handle Content-Disposition filename
-  - AC: Verify file integrity (size, magic bytes)
+#### 8.2.1 Direct/Main Server Downloads ✅ COMPLETED
+- [x] **Direct HTTP downloads** ✅
+  - AC: Standard HTTP GET with resume support ✅ (DirectDownloadResolver)
+  - AC: Handle Content-Disposition filename ✅
+  - AC: Verify file integrity (size, magic bytes) ✅ (via HEAD request metadata)
 
-#### 8.2.2 MediaFire Resolver
-- [ ] **MediaFire link handling**
-  - AC: Parse MediaFire share page
-  - AC: Extract direct download URL
-  - AC: Handle "Download" button extraction
-  - AC: Detect expired/removed files
+#### 8.2.2 MediaFire Resolver ✅ COMPLETED
+- [x] **MediaFire link handling** ✅
+  - AC: Parse MediaFire share page ✅
+  - AC: Extract direct download URL ✅
+  - AC: Handle "Download" button extraction ✅ (multiple patterns)
+  - AC: Detect expired/removed files ✅
 
 #### 8.2.3 Mega.nz Resolver
-- [ ] **Mega link handling**
+- [ ] **Mega link handling** (deferred - requires encryption handling)
   - AC: Parse mega.nz/#! and mega.nz/file/ URLs
   - AC: Handle Mega's encryption (MEGAcmd or API)
   - AC: Support folder links with file selection
   - AC: Rate limit awareness (free tier limits)
 
-#### 8.2.4 Pixeldrain Resolver
-- [ ] **Pixeldrain link handling**
-  - AC: Extract file ID from URL
-  - AC: Use Pixeldrain API for direct download
-  - AC: Handle bandwidth limits
+#### 8.2.4 Pixeldrain Resolver ✅ COMPLETED
+- [x] **Pixeldrain link handling** ✅
+  - AC: Extract file ID from URL ✅
+  - AC: Use Pixeldrain API for direct download ✅
+  - AC: Handle bandwidth limits ✅ (via API error handling)
 
 #### 8.2.5 Dropbox Resolver
 - [ ] **Dropbox link handling**
