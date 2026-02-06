@@ -8,11 +8,12 @@ namespace Shortboxerr.Infrastructure.Ddl;
 
 /// <summary>
 /// Service for downloading files from DDL sources.
-/// Implements retry logic, progress tracking, and failure handling.
+/// Implements retry logic, progress tracking, failure handling, and host resolution.
 /// </summary>
 public class DdlDownloadService : IDdlDownloadService
 {
     private readonly ILogger<DdlDownloadService>? _logger;
+    private readonly IDownloadHostResolverFactory? _resolverFactory;
     private readonly ConcurrentDictionary<string, DdlDownloadStatus> _activeDownloads = new();
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _cancellationTokens = new();
     private readonly List<DdlDownloadHistoryEntry> _downloadHistory = new();
@@ -30,8 +31,9 @@ public class DdlDownloadService : IDdlDownloadService
     private static readonly byte[] PdfMagic = { 0x25, 0x50, 0x44, 0x46 }; // %PDF
     private static readonly byte[] SevenZipMagic = { 0x37, 0x7A, 0xBC, 0xAF }; // 7z
     
-    public DdlDownloadService(ILogger<DdlDownloadService>? logger = null)
+    public DdlDownloadService(IDownloadHostResolverFactory? resolverFactory = null, ILogger<DdlDownloadService>? logger = null)
     {
+        _resolverFactory = resolverFactory;
         _logger = logger;
     }
 
@@ -42,20 +44,7 @@ public class DdlDownloadService : IDdlDownloadService
         _logger?.LogInformation("Download initiated: {Title} from {Source}", candidate.ReleaseTitle, candidate.SourceSite);
         _logger?.LogDebug("Candidate has {LinkCount} download links", candidate.DownloadLinks.Count);
         
-        // Find a valid download link
-        var downloadLink = candidate.DownloadLinks
-            .Where(l => l.LinkType == DdlLinkType.Direct)
-            .OrderBy(l => l.Priority)
-            .FirstOrDefault();
-        
-        if (downloadLink == null)
-        {
-            downloadLink = candidate.DownloadLinks
-                .OrderBy(l => l.Priority)
-                .FirstOrDefault();
-        }
-        
-        if (downloadLink == null)
+        if (candidate.DownloadLinks.Count == 0)
         {
             _logger?.LogWarning("Download failed: No valid links for {Title}", candidate.ReleaseTitle);
             return DdlDownloadResult.Failed(
@@ -65,51 +54,147 @@ public class DdlDownloadService : IDdlDownloadService
             );
         }
         
-        _logger?.LogDebug("Selected link: {LinkType} priority {Priority}", downloadLink.LinkType, downloadLink.Priority);
+        // Sort links by priority (Direct links first, then by configured priority)
+        var sortedLinks = candidate.DownloadLinks
+            .OrderBy(l => l.LinkType == DdlLinkType.Direct ? 0 : 1)
+            .ThenBy(l => l.Priority)
+            .ToList();
         
-        // Determine filename
-        var filename = options.CustomFilename ?? DeriveFilename(candidate, downloadLink.Url);
+        // Determine filename from first link (may be updated by resolver)
+        var baseFilename = options.CustomFilename ?? DeriveFilename(candidate, sortedLinks[0].Url);
         var destinationFolder = options.DestinationFolder ?? Path.GetTempPath();
-        var destinationPath = Path.Combine(destinationFolder, filename);
+        var destinationPath = Path.Combine(destinationFolder, baseFilename);
         
-        // Try primary link, then fallback to mirrors
-        var result = await DownloadWithRetriesAsync(downloadLink.Url, destinationPath, options, cancellationToken);
+        DdlDownloadResult? lastResult = null;
         
-        // Try alternate links if primary failed
-        if (!result.Success && candidate.DownloadLinks.Count > 1)
+        // Try each link in priority order with automatic fallback
+        for (var linkIndex = 0; linkIndex < sortedLinks.Count; linkIndex++)
         {
-            var alternateCount = 0;
-            foreach (var alternateLink in candidate.DownloadLinks.Where(l => l.Url != downloadLink.Url))
+            var currentLink = sortedLinks[linkIndex];
+            
+            if (linkIndex > 0)
             {
-                alternateCount++;
-                _logger?.LogInformation("Trying alternate link {Num}/{Total}: {LinkType}", 
-                    alternateCount, candidate.DownloadLinks.Count - 1, alternateLink.LinkType);
-                
-                result = await DownloadWithRetriesAsync(alternateLink.Url, destinationPath, options, cancellationToken);
-                
-                if (result.Success)
-                {
-                    break;
-                }
+                _logger?.LogInformation("Trying alternate link {Num}/{Total}: {LinkType} ({Host})", 
+                    linkIndex + 1, sortedLinks.Count, currentLink.LinkType, currentLink.HostName ?? "unknown");
             }
+            else
+            {
+                _logger?.LogDebug("Selected link: {LinkType} priority {Priority} ({Host})", 
+                    currentLink.LinkType, currentLink.Priority, currentLink.HostName ?? "unknown");
+            }
+            
+            // Resolve hoster links to direct download URLs
+            var downloadUrl = currentLink.Url;
+            var resolvedFilename = baseFilename;
+            
+            if (currentLink.LinkType == DdlLinkType.Hoster && _resolverFactory != null)
+            {
+                var resolveResult = await ResolveHostedLinkAsync(currentLink, options, cancellationToken);
+                if (!resolveResult.Success)
+                {
+                    _logger?.LogWarning("Failed to resolve {Host} link: {Error}", 
+                        currentLink.HostName, resolveResult.ErrorMessage);
+                    lastResult = DdlDownloadResult.Failed(
+                        Guid.NewGuid().ToString(),
+                        DdlDownloadFailureReason.LinkResolutionFailed,
+                        resolveResult.ErrorMessage ?? "Failed to resolve hosted link",
+                        sourceUrl: currentLink.Url
+                    );
+                    continue; // Try next link
+                }
+                
+                downloadUrl = resolveResult.DirectUrl!;
+                
+                // Use filename from resolver if available and not custom
+                if (options.CustomFilename == null && !string.IsNullOrEmpty(resolveResult.Filename))
+                {
+                    resolvedFilename = SanitizeFilename(resolveResult.Filename);
+                    destinationPath = Path.Combine(destinationFolder, resolvedFilename);
+                }
+                
+                _logger?.LogDebug("Resolved {Host} to direct URL, filename: {Filename}", 
+                    currentLink.HostName, resolvedFilename);
+            }
+            
+            // Attempt download
+            lastResult = await DownloadWithRetriesAsync(downloadUrl, destinationPath, options, cancellationToken);
+            
+            if (lastResult.Success)
+            {
+                break; // Success - no need to try more links
+            }
+            
+            _logger?.LogWarning("Download attempt failed for {Host}: {Reason}", 
+                currentLink.HostName ?? "direct", lastResult.FailureReason);
         }
         
         // Record history
-        RecordHistory(candidate, result);
-        
-        // Log final result
-        if (result.Success)
+        if (lastResult != null)
         {
-            _logger?.LogInformation("Download completed: {Title}, Size: {Size:N0} bytes, Duration: {Duration}", 
-                candidate.ReleaseTitle, result.FileSize, result.Duration);
-        }
-        else
-        {
-            _logger?.LogWarning("Download failed: {Title}, Reason: {Reason}, Error: {Error}", 
-                candidate.ReleaseTitle, result.FailureReason, result.ErrorMessage);
+            RecordHistory(candidate, lastResult);
+            
+            // Log final result
+            if (lastResult.Success)
+            {
+                _logger?.LogInformation("Download completed: {Title}, Size: {Size:N0} bytes, Duration: {Duration}", 
+                    candidate.ReleaseTitle, lastResult.FileSize, lastResult.Duration);
+            }
+            else
+            {
+                _logger?.LogWarning("Download failed: {Title}, Reason: {Reason}, Error: {Error}", 
+                    candidate.ReleaseTitle, lastResult.FailureReason, lastResult.ErrorMessage);
+            }
+            
+            return lastResult;
         }
         
-        return result;
+        return DdlDownloadResult.Failed(
+            Guid.NewGuid().ToString(),
+            DdlDownloadFailureReason.NoValidLinks,
+            "All download attempts failed"
+        );
+    }
+    
+    /// <summary>
+    /// Resolves a hosted link to a direct download URL using the appropriate resolver.
+    /// </summary>
+    private async Task<HostResolverResult> ResolveHostedLinkAsync(DdlDownloadLink link, DdlDownloadOptions options, CancellationToken cancellationToken)
+    {
+        if (_resolverFactory == null)
+        {
+            return HostResolverResult.Failed(HostResolverFailureReason.NotSupported, "No resolver factory available");
+        }
+        
+        var resolver = _resolverFactory.GetResolver(link.Url);
+        if (resolver == null)
+        {
+            _logger?.LogDebug("No resolver found for URL: {Url}", link.Url);
+            // If no resolver but URL looks like a direct link, treat it as resolvable
+            return HostResolverResult.Succeeded(link.Url);
+        }
+        
+        _logger?.LogDebug("Using {Resolver} to resolve {Url}", resolver.DisplayName, link.Url);
+        
+        var resolverOptions = new HostResolverOptions
+        {
+            TimeoutSeconds = Math.Min(options.TimeoutSeconds, 60),
+            UserAgent = options.UserAgent
+        };
+        
+        return await resolver.ResolveAsync(link.Url, resolverOptions, cancellationToken);
+    }
+    
+    /// <summary>
+    /// Sanitizes a filename for safe filesystem use.
+    /// </summary>
+    private static string SanitizeFilename(string filename)
+    {
+        var sanitized = filename;
+        foreach (var c in Path.GetInvalidFileNameChars())
+        {
+            sanitized = sanitized.Replace(c, '_');
+        }
+        return sanitized;
     }
 
     public async Task<DdlDownloadResult> DownloadUrlAsync(string url, string destinationPath, DdlDownloadOptions? options = null, CancellationToken cancellationToken = default)

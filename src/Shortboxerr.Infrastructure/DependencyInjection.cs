@@ -63,8 +63,13 @@ public static class DependencyInjection
         services.AddSingleton<IDdlFilter, DdlFilter>();
         services.AddSingleton<IDdlSiteAdapterFactory, DdlSiteAdapterFactory>();
         services.AddSingleton<IDdlSearchService, DdlSearchService>();
-        services.AddSingleton<IDdlDownloadService, DdlDownloadService>();
         services.AddSingleton<IDownloadHostResolverFactory, DownloadHostResolverFactory>();
+        services.AddSingleton<IDdlDownloadService>(sp =>
+        {
+            var resolverFactory = sp.GetRequiredService<IDownloadHostResolverFactory>();
+            var logger = sp.GetService<ILogger<DdlDownloadService>>();
+            return new DdlDownloadService(resolverFactory, logger);
+        });
         services.AddScoped<IDdlImportService, DdlImportService>();
         services.AddScoped<IMylar3ConfigImporter, Mylar3ConfigImporter>();
 

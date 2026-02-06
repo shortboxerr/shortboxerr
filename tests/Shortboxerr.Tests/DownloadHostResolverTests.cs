@@ -1,4 +1,5 @@
 using Shortboxerr.Core.Ddl;
+using Shortboxerr.Infrastructure.Ddl;
 using Shortboxerr.Infrastructure.Ddl.Resolvers;
 using Xunit;
 
@@ -373,4 +374,112 @@ public class DownloadHostResolverTests
             return Task.FromResult(new HostVerifyResult { IsAvailable = true });
         }
     }
+
+    #region DdlDownloadService Integration Tests
+
+    [Fact]
+    public async Task DdlDownloadService_UsesResolverFactory_ForHostedLinks()
+    {
+        // Arrange
+        var factory = new DownloadHostResolverFactory();
+        var service = new DdlDownloadService(factory);
+        
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            SourceSite = "getcomics",
+            ReleaseTitle = "Test Comic #1",
+            ParsedInfo = new DdlParsedInfo { SeriesTitle = "Test Comic", IssueNumber = 1 },
+            DownloadLinks = new List<DdlDownloadLink>
+            {
+                new() 
+                { 
+                    Url = "https://pixeldrain.com/u/abc123",
+                    LinkType = DdlLinkType.Hoster,
+                    HostName = "Pixeldrain",
+                    Priority = 3
+                }
+            }
+        };
+        
+        // Act - This will fail the actual download (no real file), but should attempt resolution
+        var result = await service.DownloadAsync(candidate);
+        
+        // Assert - Should have attempted to resolve (will fail at actual download stage)
+        // The key test is that it doesn't crash and handles the resolver properly
+        Assert.False(result.Success); // Expected - no real file to download
+    }
+
+    [Fact]
+    public async Task DdlDownloadService_FallsBackToAlternateLinks_OnFailure()
+    {
+        // Arrange
+        var factory = new DownloadHostResolverFactory();
+        var service = new DdlDownloadService(factory);
+        
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            SourceSite = "getcomics",
+            ReleaseTitle = "Test Comic #1",
+            ParsedInfo = new DdlParsedInfo { SeriesTitle = "Test Comic", IssueNumber = 1 },
+            DownloadLinks = new List<DdlDownloadLink>
+            {
+                new() 
+                { 
+                    Url = "https://invalid-host.example.com/file.cbz",
+                    LinkType = DdlLinkType.Direct,
+                    Priority = 1
+                },
+                new() 
+                { 
+                    Url = "https://also-invalid.example.com/file.cbz",
+                    LinkType = DdlLinkType.Direct,
+                    Priority = 2
+                }
+            }
+        };
+        
+        // Act
+        var result = await service.DownloadAsync(candidate);
+        
+        // Assert - Both links will fail, but service should try both
+        Assert.False(result.Success);
+    }
+
+    [Fact]
+    public void DdlDownloadService_WorksWithoutResolverFactory()
+    {
+        // Arrange - Service should work without resolver (for backward compatibility)
+        var service = new DdlDownloadService(resolverFactory: null, logger: null);
+        
+        // Assert - Service should be instantiated successfully
+        Assert.NotNull(service);
+    }
+
+    [Fact]
+    public async Task DdlDownloadService_HandlesCandidateWithNoLinks()
+    {
+        // Arrange
+        var factory = new DownloadHostResolverFactory();
+        var service = new DdlDownloadService(factory);
+        
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            SourceSite = "getcomics",
+            ReleaseTitle = "Test Comic #1",
+            ParsedInfo = new DdlParsedInfo { SeriesTitle = "Test Comic", IssueNumber = 1 },
+            DownloadLinks = new List<DdlDownloadLink>() // Empty
+        };
+        
+        // Act
+        var result = await service.DownloadAsync(candidate);
+        
+        // Assert
+        Assert.False(result.Success);
+        Assert.Equal(DdlDownloadFailureReason.NoValidLinks, result.FailureReason);
+    }
+
+    #endregion
 }

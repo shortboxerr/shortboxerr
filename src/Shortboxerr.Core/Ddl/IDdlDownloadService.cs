@@ -320,6 +320,11 @@ public enum DdlDownloadFailureReason
     MaxRetriesExceeded = 60,
     
     /// <summary>
+    /// Failed to resolve hosted link to direct download URL.
+    /// </summary>
+    LinkResolutionFailed = 65,
+    
+    /// <summary>
     /// No valid download links available.
     /// </summary>
     NoValidLinks = 70,
