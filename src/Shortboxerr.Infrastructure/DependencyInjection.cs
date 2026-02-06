@@ -13,6 +13,7 @@ using Shortboxerr.Core.PullList;
 using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.ComicVine;
 using Shortboxerr.Infrastructure.Ddl;
+using Shortboxerr.Infrastructure.Ddl.Resolvers;
 using Shortboxerr.Infrastructure.Mylar3Migration;
 using Shortboxerr.Infrastructure.Persistence;
 using Shortboxerr.Infrastructure.Providers;
@@ -63,6 +64,7 @@ public static class DependencyInjection
         services.AddSingleton<IDdlSiteAdapterFactory, DdlSiteAdapterFactory>();
         services.AddSingleton<IDdlSearchService, DdlSearchService>();
         services.AddSingleton<IDdlDownloadService, DdlDownloadService>();
+        services.AddSingleton<IDownloadHostResolverFactory, DownloadHostResolverFactory>();
         services.AddScoped<IDdlImportService, DdlImportService>();
         services.AddScoped<IMylar3ConfigImporter, Mylar3ConfigImporter>();
 
