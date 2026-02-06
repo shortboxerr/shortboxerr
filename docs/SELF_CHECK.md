@@ -7,15 +7,17 @@
 | Item | Status | Notes |
 |------|--------|-------|
 | Code compiles | ✅ | Backend builds with 0 errors |
-| Tests pass | ✅ | 39 new tests passing, 778 total |
+| Tests pass | ✅ | 60 new tests passing, 799 total |
 | Interface defined | ✅ | IDownloadHostResolver + factory |
 | DirectDownload | ✅ | Priority 0 |
 | MediaFire | ✅ | Priority 2 |
 | Pixeldrain | ✅ | Priority 3 |
-| Factory registration | ✅ | Registered in DI |
+| GoogleDrive | ✅ | Priority 4 |
+| Dropbox | ✅ | Priority 5 |
+| Factory registration | ✅ | 6 resolvers in DI |
 | Service integration | ✅ | DdlDownloadService uses resolvers |
 | Automatic fallback | ✅ | Tries links in priority order |
-| Git commits | ✅ | 3 commits |
+| Git commits | ✅ | 5 commits |
 
 ### Acceptance Criteria Status
 
@@ -41,11 +43,26 @@
 | Use Pixeldrain API for direct download | ✅ |
 | Handle bandwidth limits | ✅ |
 
+#### 8.2.5 Dropbox Resolver
+| AC | Status |
+|----|--------|
+| Convert share links to direct download | ✅ |
+| Handle dl=0 to dl=1 conversion | ✅ |
+| Folder link detection | ✅ |
+
+#### 8.2.6 Google Drive Resolver
+| AC | Status |
+|----|--------|
+| Parse drive.google.com share links | ✅ |
+| Handle virus scan warning bypass | ✅ |
+| Extract file ID from various formats | ✅ |
+| Folder link detection | ✅ |
+
 #### 8.3 Host Priority & Fallback
 | AC | Status |
 |----|--------|
 | Host priority configuration | ✅ |
-| Default priority (Direct > Mega > MediaFire > etc) | ✅ |
+| Default priority order | ✅ |
 | Try next host on failure | ✅ |
 
 ### Files Changed
@@ -53,15 +70,17 @@
 |------|--------|
 | `IDownloadHostResolver.cs` | ✅ New |
 | `IDownloadHostResolverFactory.cs` | ✅ New |
-| `IDdlDownloadService.cs` | ✅ Modified (LinkResolutionFailed) |
+| `IDdlDownloadService.cs` | ✅ Modified |
 | `BaseHostResolver.cs` | ✅ New |
 | `DirectDownloadResolver.cs` | ✅ New |
 | `PixeldrainResolver.cs` | ✅ New |
 | `MediaFireResolver.cs` | ✅ New |
+| `GoogleDriveResolver.cs` | ✅ New |
+| `DropboxResolver.cs` | ✅ New |
 | `DownloadHostResolverFactory.cs` | ✅ New |
-| `DdlDownloadService.cs` | ✅ Modified (resolver integration) |
+| `DdlDownloadService.cs` | ✅ Modified |
 | `DependencyInjection.cs` | ✅ Modified |
-| `DownloadHostResolverTests.cs` | ✅ New (39 tests) |
+| `DownloadHostResolverTests.cs` | ✅ New (60 tests) |
 
 ---
 

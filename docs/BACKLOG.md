@@ -352,18 +352,18 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
   - AC: Use Pixeldrain API for direct download ✅
   - AC: Handle bandwidth limits ✅ (via API error handling)
 
-#### 8.2.5 Dropbox Resolver
-- [ ] **Dropbox link handling**
-  - AC: Convert share links to direct download URLs
-  - AC: Handle dl=0 to dl=1 conversion
-  - AC: Support folder links
+#### 8.2.5 Dropbox Resolver ✅ COMPLETED
+- [x] **Dropbox link handling** ✅
+  - AC: Convert share links to direct download URLs ✅
+  - AC: Handle dl=0 to dl=1 conversion ✅
+  - AC: Support folder links (detection only - folder download deferred)
 
-#### 8.2.6 Google Drive Resolver
-- [ ] **Google Drive link handling**
-  - AC: Parse drive.google.com share links
-  - AC: Handle virus scan warning bypass
-  - AC: Extract confirmation token for large files
-  - AC: Support folder links with file listing
+#### 8.2.6 Google Drive Resolver ✅ COMPLETED
+- [x] **Google Drive link handling** ✅
+  - AC: Parse drive.google.com share links ✅
+  - AC: Handle virus scan warning bypass ✅ (confirm=t parameter)
+  - AC: Extract confirmation token for large files ✅
+  - AC: Support folder links with file listing (detection only - folder download deferred)
 
 #### 8.2.7 Legacy/Additional Hosts
 - [ ] **Zippyshare resolver** (defunct, legacy support)

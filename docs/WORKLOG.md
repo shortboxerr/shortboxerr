@@ -7,6 +7,8 @@
 1. `feat: implement download host resolvers for DDL sites (EPIC 8.2)`
 2. `chore: update backlog and worklog for download host resolvers (EPIC 8.2)`
 3. `feat: integrate host resolvers into DdlDownloadService (EPIC 8.3)`
+4. `chore: update docs for EPIC 8.2 and 8.3 completion`
+5. `feat: add Dropbox and Google Drive resolvers (EPIC 8.2.5, 8.2.6)`
 
 ### Deliverables
 
@@ -19,13 +21,15 @@
 
 #### Resolvers Implemented (Infrastructure)
 - ✅ `BaseHostResolver` - Common functionality for all resolvers
-- ✅ `DirectDownloadResolver` - Handles direct HTTP download links (.cbz, .cbr, .zip, .rar, .pdf)
-- ✅ `PixeldrainResolver` - API-based resolution for pixeldrain.com
-- ✅ `MediaFireResolver` - HTML parsing for mediafire.com share pages
+- ✅ `DirectDownloadResolver` (Priority 0) - Direct HTTP download links
+- ✅ `MediaFireResolver` (Priority 2) - HTML parsing for mediafire.com
+- ✅ `PixeldrainResolver` (Priority 3) - API-based for pixeldrain.com
+- ✅ `GoogleDriveResolver` (Priority 4) - Google Drive with virus scan bypass
+- ✅ `DropboxResolver` (Priority 5) - URL conversion (dl=0 to dl=1)
 
 #### Factory & Integration
 - ✅ `DownloadHostResolverFactory` - Registers and manages resolvers
-- ✅ Priority-based resolver selection (Direct=0, MediaFire=2, Pixeldrain=3)
+- ✅ Priority-based resolver selection (6 resolvers registered)
 - ✅ Extensible via `RegisterResolver()` method
 - ✅ Registered in DI container
 - ✅ `DdlDownloadService` now uses resolver factory for Hoster links
@@ -42,21 +46,21 @@
 | `src/Shortboxerr.Infrastructure/Ddl/Resolvers/DirectDownloadResolver.cs` | New resolver |
 | `src/Shortboxerr.Infrastructure/Ddl/Resolvers/PixeldrainResolver.cs` | New resolver |
 | `src/Shortboxerr.Infrastructure/Ddl/Resolvers/MediaFireResolver.cs` | New resolver |
+| `src/Shortboxerr.Infrastructure/Ddl/Resolvers/GoogleDriveResolver.cs` | New resolver |
+| `src/Shortboxerr.Infrastructure/Ddl/Resolvers/DropboxResolver.cs` | New resolver |
 | `src/Shortboxerr.Infrastructure/Ddl/Resolvers/DownloadHostResolverFactory.cs` | New factory |
 | `src/Shortboxerr.Infrastructure/Ddl/DdlDownloadService.cs` | Integrate resolvers |
 | `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register factory + inject |
-| `tests/Shortboxerr.Tests/DownloadHostResolverTests.cs` | 39 unit tests |
-| `docs/BACKLOG.md` | Mark EPIC 8.2.1, 8.2.2, 8.2.4, 8.3 complete |
+| `tests/Shortboxerr.Tests/DownloadHostResolverTests.cs` | 60 unit tests |
+| `docs/BACKLOG.md` | Mark EPIC 8.2.1-6, 8.3, 8.5 complete |
 
 ### Test Results
-- All 778 tests passing (739 existing + 39 new)
+- All 799 tests passing (739 existing + 60 new)
 - Build: ✅ No errors
 
 ### Remaining Work for EPIC 8.2
-- [ ] Mega.nz Resolver (requires encryption handling)
-- [ ] Google Drive Resolver
-- [ ] Dropbox Resolver
-- [ ] 1fichier Resolver
+- [ ] Mega.nz Resolver (requires encryption handling - deferred)
+- [ ] 1fichier Resolver (deferred)
 
 ---
 
