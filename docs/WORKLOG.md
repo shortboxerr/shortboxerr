@@ -1,10 +1,12 @@
 # Worklog
 
 ## Iteration 066 (2026-02-06)
-**EPIC 8.2: Download Host Resolvers - Completed**
+**EPIC 8.2 & 8.3: Download Host Resolvers & Integration - Completed**
 
 ### Commits
 1. `feat: implement download host resolvers for DDL sites (EPIC 8.2)`
+2. `chore: update backlog and worklog for download host resolvers (EPIC 8.2)`
+3. `feat: integrate host resolvers into DdlDownloadService (EPIC 8.3)`
 
 ### Deliverables
 
@@ -13,6 +15,7 @@
 - ✅ `IDownloadHostResolverFactory` factory interface
 - ✅ `HostResolverResult` and `HostVerifyResult` record types with metadata
 - ✅ `HostResolverFailureReason` enum for error classification
+- ✅ `LinkResolutionFailed` failure reason added to `DdlDownloadFailureReason`
 
 #### Resolvers Implemented (Infrastructure)
 - ✅ `BaseHostResolver` - Common functionality for all resolvers
@@ -20,28 +23,33 @@
 - ✅ `PixeldrainResolver` - API-based resolution for pixeldrain.com
 - ✅ `MediaFireResolver` - HTML parsing for mediafire.com share pages
 
-#### Factory
+#### Factory & Integration
 - ✅ `DownloadHostResolverFactory` - Registers and manages resolvers
 - ✅ Priority-based resolver selection (Direct=0, MediaFire=2, Pixeldrain=3)
 - ✅ Extensible via `RegisterResolver()` method
 - ✅ Registered in DI container
+- ✅ `DdlDownloadService` now uses resolver factory for Hoster links
+- ✅ Automatic fallback: tries links in priority order until success
+- ✅ Filename extraction from resolver response
 
 ### Files Changed
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Ddl/IDownloadHostResolver.cs` | New interface + result types |
 | `src/Shortboxerr.Core/Ddl/IDownloadHostResolverFactory.cs` | New factory interface |
+| `src/Shortboxerr.Core/Ddl/IDdlDownloadService.cs` | Add LinkResolutionFailed reason |
 | `src/Shortboxerr.Infrastructure/Ddl/Resolvers/BaseHostResolver.cs` | New base class |
 | `src/Shortboxerr.Infrastructure/Ddl/Resolvers/DirectDownloadResolver.cs` | New resolver |
 | `src/Shortboxerr.Infrastructure/Ddl/Resolvers/PixeldrainResolver.cs` | New resolver |
 | `src/Shortboxerr.Infrastructure/Ddl/Resolvers/MediaFireResolver.cs` | New resolver |
 | `src/Shortboxerr.Infrastructure/Ddl/Resolvers/DownloadHostResolverFactory.cs` | New factory |
-| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register factory |
-| `tests/Shortboxerr.Tests/DownloadHostResolverTests.cs` | 35 unit tests |
-| `docs/BACKLOG.md` | Mark EPIC 8.2.1, 8.2.2, 8.2.4 complete |
+| `src/Shortboxerr.Infrastructure/Ddl/DdlDownloadService.cs` | Integrate resolvers |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register factory + inject |
+| `tests/Shortboxerr.Tests/DownloadHostResolverTests.cs` | 39 unit tests |
+| `docs/BACKLOG.md` | Mark EPIC 8.2.1, 8.2.2, 8.2.4, 8.3 complete |
 
 ### Test Results
-- All 774 tests passing (739 existing + 35 new)
+- All 778 tests passing (739 existing + 39 new)
 - Build: ✅ No errors
 
 ### Remaining Work for EPIC 8.2

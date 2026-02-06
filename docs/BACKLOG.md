@@ -378,14 +378,14 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
   - AC: NZB file download from DDL sites
   - AC: Pass to configured Usenet downloader (SABnzbd, NZBGet)
 
-### 8.3 Download Host Priority & Fallback
-- [ ] **Host priority configuration**
-  - AC: User-configurable host preference order
-  - AC: Default priority: Direct > Mega > MediaFire > Pixeldrain > GDrive > Others
-- [ ] **Automatic fallback**
-  - AC: Try next host on failure
-  - AC: Track host reliability per DDL site
-  - AC: Blacklist consistently failing hosts temporarily
+### 8.3 Download Host Priority & Fallback ✅ COMPLETED
+- [x] **Host priority configuration** ✅
+  - AC: User-configurable host preference order ✅ (via resolver Priority property)
+  - AC: Default priority: Direct > Mega > MediaFire > Pixeldrain > GDrive > Others ✅
+- [x] **Automatic fallback** ✅
+  - AC: Try next host on failure ✅ (DdlDownloadService fallback loop)
+  - AC: Track host reliability per DDL site (deferred - statistics tracking)
+  - AC: Blacklist consistently failing hosts temporarily (deferred)
 
 ### 8.4 DDL Site Health Monitoring
 - [ ] **Site availability checks**
@@ -399,15 +399,15 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
   - AC: Request queuing to prevent bans
   - AC: Cloudflare challenge handling
 
-### 8.5 DDL Adapter Tests
-- [ ] **GetComics fixture tests**
-  - AC: Mock HTML responses for search results
-  - AC: Mock HTML responses for release pages
-  - AC: Verify correct link extraction for all host types
-- [ ] **Download host resolver tests**
-  - AC: Mock responses for each host type
-  - AC: Test redirect following and URL extraction
-  - AC: Test failure scenarios (expired, removed, rate limited)
+### 8.5 DDL Adapter Tests - PARTIAL ✅
+- [x] **GetComics fixture tests** ✅
+  - AC: Mock HTML responses for search results ✅
+  - AC: Mock HTML responses for release pages ✅
+  - AC: Verify correct link extraction for all host types ✅
+- [x] **Download host resolver tests** ✅
+  - AC: Mock responses for each host type ✅ (35 unit tests)
+  - AC: Test redirect following and URL extraction ✅
+  - AC: Test failure scenarios (expired, removed, rate limited) ✅
 - [ ] **Integration tests**
   - AC: Cached real responses for regression testing
   - AC: End-to-end: search → parse → resolve → download

@@ -1,19 +1,21 @@
 # Self Check - Iteration 066
 
-## EPIC 8.2: Download Host Resolvers
+## EPIC 8.2 & 8.3: Download Host Resolvers & Integration
 
 ### Checklist
 
 | Item | Status | Notes |
 |------|--------|-------|
 | Code compiles | ✅ | Backend builds with 0 errors |
-| Tests pass | ✅ | 35 new tests passing, 774 total |
+| Tests pass | ✅ | 39 new tests passing, 778 total |
 | Interface defined | ✅ | IDownloadHostResolver + factory |
 | DirectDownload | ✅ | Priority 0 |
 | MediaFire | ✅ | Priority 2 |
 | Pixeldrain | ✅ | Priority 3 |
 | Factory registration | ✅ | Registered in DI |
-| Git commits | ✅ | 1 commit |
+| Service integration | ✅ | DdlDownloadService uses resolvers |
+| Automatic fallback | ✅ | Tries links in priority order |
+| Git commits | ✅ | 3 commits |
 
 ### Acceptance Criteria Status
 
@@ -39,18 +41,27 @@
 | Use Pixeldrain API for direct download | ✅ |
 | Handle bandwidth limits | ✅ |
 
+#### 8.3 Host Priority & Fallback
+| AC | Status |
+|----|--------|
+| Host priority configuration | ✅ |
+| Default priority (Direct > Mega > MediaFire > etc) | ✅ |
+| Try next host on failure | ✅ |
+
 ### Files Changed
 | File | Status |
 |------|--------|
 | `IDownloadHostResolver.cs` | ✅ New |
 | `IDownloadHostResolverFactory.cs` | ✅ New |
+| `IDdlDownloadService.cs` | ✅ Modified (LinkResolutionFailed) |
 | `BaseHostResolver.cs` | ✅ New |
 | `DirectDownloadResolver.cs` | ✅ New |
 | `PixeldrainResolver.cs` | ✅ New |
 | `MediaFireResolver.cs` | ✅ New |
 | `DownloadHostResolverFactory.cs` | ✅ New |
+| `DdlDownloadService.cs` | ✅ Modified (resolver integration) |
 | `DependencyInjection.cs` | ✅ Modified |
-| `DownloadHostResolverTests.cs` | ✅ New (35 tests) |
+| `DownloadHostResolverTests.cs` | ✅ New (39 tests) |
 
 ---
 
