@@ -104,9 +104,15 @@ public class DownloadHostResolverFactory : IDownloadHostResolverFactory
         RegisterResolver(new PixeldrainResolver(
             _loggerFactory?.CreateLogger<PixeldrainResolver>()));
 
+        // Google Drive - Priority 4 (common, handles virus scan warning)
+        RegisterResolver(new GoogleDriveResolver(
+            _loggerFactory?.CreateLogger<GoogleDriveResolver>()));
+
+        // Dropbox - Priority 5 (simple URL conversion)
+        RegisterResolver(new DropboxResolver(
+            _loggerFactory?.CreateLogger<DropboxResolver>()));
+
         // Future resolvers (not yet implemented):
-        // - Google Drive (Priority 4)
-        // - Dropbox (Priority 5)
         // - 1fichier (Priority 6)
         // - Zippyshare (defunct, detect and skip)
     }
