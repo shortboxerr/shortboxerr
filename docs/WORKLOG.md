@@ -1,5 +1,48 @@
 # Worklog
 
+## Iteration 072 (2026-02-09)
+**EPIC 10.6: Unified Download Client Modal**
+
+### Commits
+1. `feat: add SABnzbd as unified download client provider`
+2. `feat(ui): unified download client modal with SABnzbd support`
+3. `test: add SabnzbdDownloadProvider unit tests`
+
+### Deliverables
+
+#### Backend - SabnzbdDownloadProvider
+- ✅ Created `SabnzbdDownloadProvider` implementing `IDownloadProvider`
+- ✅ Registered SABnzbd in `ProviderFactory` with settings schema
+- ✅ Provider wraps existing `ISabnzbdClient` for operations
+- ✅ Supports TestAsync, DownloadAsync, GetStatusAsync, CancelAsync, GetActiveDownloadsAsync
+
+#### Frontend - Unified Modal
+- ✅ Updated `ProviderModal` to detect SABnzbd implementation
+- ✅ Added SABnzbd-specific fields: Category, Use SSL
+- ✅ Dynamic form field switching based on implementation type
+- ✅ Removed separate `NzbDownloadClientSection` component
+- ✅ SABnzbd now managed through "Add Download Client" button
+
+#### Tests
+- ✅ 21 unit tests for `SabnzbdDownloadProvider`
+- ✅ Tests cover properties, connection, health, download, status, cancel
+- ✅ Tests cover settings parsing with valid/empty/invalid JSON
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/Providers/SabnzbdDownloadProvider.cs` | New - Provider implementation |
+| `src/Shortboxerr.Infrastructure/Providers/ProviderFactory.cs` | Register SABnzbd implementation |
+| `ui/src/pages/SettingsPage.tsx` | Unified modal, removed NzbDownloadClientSection |
+| `tests/Shortboxerr.Tests/SabnzbdDownloadProviderTests.cs` | New - 21 tests |
+
+### Test Results
+- All 914 tests passing (893 + 21 new)
+- Frontend build: ✅
+- Backend build: ✅
+
+---
+
 ## Iteration 071 (2026-02-09)
 **EPIC 10.6: NZB Settings UI**
 

@@ -853,13 +853,14 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: SABnzbd configuration panel ✅
   - AC: NZBGet configuration panel (deferred)
   - AC: Connection test results ✅
-- [ ] **Unified download client modal** [READY]
-  - AC: "Add Download Client" button opens a modal with implementation type selector
-  - AC: Implementation dropdown includes: SABnzbd, NZBGet (deferred), qBittorrent (deferred), Transmission (deferred), Deluge (deferred)
-  - AC: Modal form fields change dynamically based on selected implementation type
-  - AC: SABnzbd fields: Host, API Key, Category, Use SSL
-  - AC: All download clients (including SABnzbd) managed in single unified list
-  - AC: Remove separate SABnzbd section once unified modal is implemented
+- [x] **Unified download client modal** ✅
+  - AC: "Add Download Client" button opens a modal with implementation type selector ✅
+  - AC: Implementation dropdown includes: SABnzbd ✅, NZBGet (deferred), qBittorrent (deferred), Transmission (deferred), Deluge (deferred)
+  - AC: Modal form fields change dynamically based on selected implementation type ✅
+  - AC: SABnzbd fields: Host, API Key, Category, Use SSL ✅
+  - AC: All download clients (including SABnzbd) managed in single unified list ✅
+  - AC: Removed separate SABnzbd section, merged into unified modal ✅
+  - Note: SabnzbdDownloadProvider with 21 unit tests
 - [ ] **Activity integration** (deferred)
   - AC: Show NZB downloads in activity feed
   - AC: Download progress from SABnzbd/NZBGet
