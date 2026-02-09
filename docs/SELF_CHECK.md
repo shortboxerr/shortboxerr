@@ -1,3 +1,49 @@
+# Self Check - Iteration 068
+
+## EPIC 10.1: NZB Indexer Integration - Newznab API Client
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Backend builds with 0 errors |
+| Tests pass | ✅ | 35 new tests passing, 855 total |
+| Interface defined | ✅ | INewznabClient, INzbIndexerProvider |
+| Implementation | ✅ | NewznabClient, NzbIndexerProvider |
+| DI registration | ✅ | HttpClient factory + scoped provider |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+#### Newznab API Client
+| AC | Status |
+|----|--------|
+| Standard Newznab API implementation | ✅ |
+| API key authentication | ✅ |
+| Search by series name, issue number, year | ✅ |
+| Category filtering (comics category IDs) | ✅ |
+| Parse NZB search results into candidates | ✅ |
+
+#### Built-in Indexer Presets
+| AC | Status |
+|----|--------|
+| Pre-configured settings for popular indexers | ✅ |
+| NZBgeek, DrunkenSlug, NZBFinder, etc. | ✅ |
+| Easy setup with just API key | ✅ |
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `INewznabClient.cs` | ✅ New |
+| `INzbIndexerProvider.cs` | ✅ New |
+| `NewznabClient.cs` | ✅ New |
+| `NzbIndexerProvider.cs` | ✅ New |
+| `DependencyInjection.cs` | ✅ Modified |
+| `NewznabClientTests.cs` | ✅ New (17 tests) |
+| `NzbIndexerProviderTests.cs` | ✅ New (18 tests) |
+
+---
+
 # Self Check - Iteration 067
 
 ## EPIC 8.4: DDL Site Rate Limiting

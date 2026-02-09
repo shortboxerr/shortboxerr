@@ -763,22 +763,22 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
 ## EPIC 10: NZB/Usenet Support (Mylar3/Sonarr/Radarr Parity)
 Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with Mylar3, Sonarr, and Radarr's Usenet integration.
 
-### 10.1 NZB Indexer Integration
-- [ ] **Newznab API client**
-  - AC: Standard Newznab API implementation (used by most NZB indexers)
-  - AC: API key authentication
-  - AC: Search by series name, issue number, year
-  - AC: Category filtering (comics category IDs)
-  - AC: Parse NZB search results into candidates
-- [ ] **NZBHydra2 support**
+### 10.1 NZB Indexer Integration - PARTIAL ✅
+- [x] **Newznab API client** ✅
+  - AC: Standard Newznab API implementation (used by most NZB indexers) ✅
+  - AC: API key authentication ✅
+  - AC: Search by series name, issue number, year ✅
+  - AC: Category filtering (comics category IDs) ✅
+  - AC: Parse NZB search results into candidates ✅
+- [ ] **NZBHydra2 support** (deferred)
   - AC: Aggregate searches across multiple indexers
   - AC: Single API endpoint for multiple backends
   - AC: Respect indexer priorities from NZBHydra
-- [ ] **Built-in indexer presets**
-  - AC: Pre-configured settings for popular NZB indexers
-  - AC: NZBgeek, DrunkenSlug, NZBFinder, etc.
-  - AC: Easy setup with just API key
-- [ ] **Indexer health monitoring**
+- [x] **Built-in indexer presets** ✅
+  - AC: Pre-configured settings for popular NZB indexers ✅
+  - AC: NZBgeek, DrunkenSlug, NZBFinder, etc. ✅
+  - AC: Easy setup with just API key ✅
+- [ ] **Indexer health monitoring** (deferred)
   - AC: Track indexer response times
   - AC: Detect and handle rate limiting
   - AC: Automatic failover to backup indexers

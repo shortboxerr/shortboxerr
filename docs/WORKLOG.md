@@ -1,5 +1,51 @@
 # Worklog
 
+## Iteration 068 (2026-02-09)
+**EPIC 10.1: NZB Indexer Integration - Newznab API Client**
+
+### Commits
+1. `feat: implement Newznab API client for NZB indexers (EPIC 10.1)`
+
+### Deliverables
+
+#### Newznab API Client
+- ✅ `INewznabClient` interface for NZB indexer communication
+- ✅ `NewznabClient` implementation with full API support
+- ✅ Search, capabilities, connection test, NZB download
+- ✅ XML response parsing (RSS 2.0 with Newznab extensions)
+- ✅ API error detection and handling
+- ✅ API key masking in logs
+
+#### NZB Indexer Provider
+- ✅ `INzbIndexerProvider` interface for indexer management
+- ✅ `NzbIndexerProvider` implementation
+- ✅ CRUD operations for indexer configuration
+- ✅ Aggregated search across multiple indexers
+- ✅ Result deduplication (same release from multiple sources)
+- ✅ Parallel indexer querying
+
+#### Indexer Presets
+- ✅ `NzbIndexerPresets` with pre-configured popular indexers
+- ✅ NZBgeek, DrunkenSlug, NZBFinder, NZBPlanet, ABnzb, altHUB
+- ✅ Comic category IDs (7030, 7000)
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Nzb/INewznabClient.cs` | New interface + models |
+| `src/Shortboxerr.Core/Nzb/INzbIndexerProvider.cs` | New interface + presets |
+| `src/Shortboxerr.Infrastructure/Nzb/NewznabClient.cs` | New implementation |
+| `src/Shortboxerr.Infrastructure/Nzb/NzbIndexerProvider.cs` | New implementation |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register services |
+| `tests/Shortboxerr.Tests/NewznabClientTests.cs` | 17 unit tests |
+| `tests/Shortboxerr.Tests/NzbIndexerProviderTests.cs` | 18 unit tests |
+
+### Test Results
+- All 855 tests passing (+35 new)
+- Build: ✅ No errors
+
+---
+
 ## Iteration 067 (2026-02-09)
 **EPIC 8.4: DDL Site Rate Limiting**
 
