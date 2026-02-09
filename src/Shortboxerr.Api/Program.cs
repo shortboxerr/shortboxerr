@@ -4,6 +4,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
 using Serilog.Events;
 using Shortboxerr.Api.Endpoints;
+using Shortboxerr.Api.Middleware;
 using Shortboxerr.Infrastructure;
 using Shortboxerr.Infrastructure.Logging;
 using Shortboxerr.Infrastructure.Persistence;
@@ -74,6 +75,9 @@ var connectionString = Environment.GetEnvironmentVariable("SHORTBOXERR_DB")
     ?? $"Data Source={dbPath}";
 builder.Services.AddInfrastructure(connectionString, enableDebugMode: isDebug);
 
+// Add HttpContextAccessor for correlation ID enrichment
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -126,6 +130,9 @@ lifetime.ApplicationStopped.Register(() =>
 
 // Configure the HTTP request pipeline
 app.UseCors(); // Enable CORS for development
+
+// Add correlation ID middleware (must be before request logging)
+app.UseCorrelationId();
 
 // Add Serilog request logging with sensitive data masking
 app.UseSerilogRequestLogging(options =>

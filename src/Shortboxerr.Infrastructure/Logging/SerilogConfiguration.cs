@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.Async;
@@ -19,6 +20,13 @@ public static class SerilogConfiguration
         "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}] [{Level:u3}] [{ShortSourceContext}] {Message:lj}{NewLine}{Exception}";
 
     /// <summary>
+    /// Default output template with correlation ID for request tracing.
+    /// Includes correlation ID after timestamp for request-scoped tracing.
+    /// </summary>
+    public const string CorrelationOutputTemplate =
+        "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}] [{Level:u3}] [{CorrelationId}] [{ShortSourceContext}] {Message:lj}{NewLine}{Exception}";
+
+    /// <summary>
     /// Compact output template for space-constrained environments.
     /// </summary>
     public const string CompactOutputTemplate =
@@ -26,15 +34,17 @@ public static class SerilogConfiguration
 
     /// <summary>
     /// Verbose output template for debugging with full context.
+    /// Includes correlation ID, machine name, and all properties.
     /// </summary>
     public const string VerboseOutputTemplate =
-        "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{ShortSourceContext}] [{MachineName}] {Message:lj}{NewLine}{Properties:j}{NewLine}{Exception}";
+        "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{CorrelationId}] [{ShortSourceContext}] [{MachineName}] {Message:lj}{NewLine}{Properties:j}{NewLine}{Exception}";
 
     /// <summary>
     /// JSON output template for structured logging/log aggregation.
+    /// Includes correlation ID for distributed tracing.
     /// </summary>
     public const string JsonOutputTemplate =
-        "{{ \"timestamp\": \"{Timestamp:o}\", \"level\": \"{Level}\", \"source\": \"{SourceContext}\", \"message\": {Message:lj}, \"properties\": {Properties:j} }}{NewLine}";
+        "{{ \"timestamp\": \"{Timestamp:o}\", \"level\": \"{Level}\", \"correlationId\": \"{CorrelationId}\", \"source\": \"{SourceContext}\", \"message\": {Message:lj}, \"properties\": {Properties:j} }}{NewLine}";
     /// <summary>
     /// Gets the config directory following *arr stack conventions.
     /// Container mode: /config (set via SHORTBOXERR_CONFIG env var)
@@ -94,9 +104,10 @@ public static class SerilogConfiguration
     /// Gets the output template from environment variable or returns the default.
     /// Set SHORTBOXERR_LOG_TEMPLATE to customize, or use preset names:
     /// - "default" or empty: DefaultOutputTemplate
+    /// - "correlation": CorrelationOutputTemplate (includes correlation ID)
     /// - "compact": CompactOutputTemplate
-    /// - "verbose": VerboseOutputTemplate
-    /// - "json": JsonOutputTemplate
+    /// - "verbose": VerboseOutputTemplate (includes correlation ID)
+    /// - "json": JsonOutputTemplate (includes correlation ID)
     /// - Any other value: treated as a custom template string
     /// </summary>
     public static string GetOutputTemplate()
@@ -109,6 +120,7 @@ public static class SerilogConfiguration
         return template.ToLowerInvariant() switch
         {
             "default" => DefaultOutputTemplate,
+            "correlation" => CorrelationOutputTemplate,
             "compact" => CompactOutputTemplate,
             "verbose" => VerboseOutputTemplate,
             "json" => JsonOutputTemplate,
@@ -125,13 +137,15 @@ public static class SerilogConfiguration
     /// <param name="maxFileSizeBytes">Max file size before rotation (default: 10MB)</param>
     /// <param name="retainedFileCount">Number of rotated files to keep (default: 5)</param>
     /// <param name="outputTemplate">Output template (defaults to environment variable or DefaultOutputTemplate)</param>
+    /// <param name="httpContextAccessor">HTTP context accessor for correlation ID enrichment (optional)</param>
     public static LoggerConfiguration CreateLoggerConfiguration(
         string? logDirectory = null,
         LogEventLevel minimumLevel = LogEventLevel.Information,
         LogEventLevel? consoleLevel = null,
         long maxFileSizeBytes = 10 * 1024 * 1024, // 10MB default
         int retainedFileCount = 5,
-        string? outputTemplate = null)
+        string? outputTemplate = null,
+        IHttpContextAccessor? httpContextAccessor = null)
     {
         // Use container-first default
         logDirectory ??= GetLogDirectory();
@@ -151,6 +165,7 @@ public static class SerilogConfiguration
             .Enrich.WithMachineName()
             .Enrich.WithEnvironmentName()
             .Enrich.With(new ShortSourceContextEnricher())
+            .Enrich.With(new CorrelationIdEnricher(httpContextAccessor))
             .Enrich.With(new SensitiveDataEnricher())
             .Destructure.With(new SensitiveDataDestructuringPolicy());
 
