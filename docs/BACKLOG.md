@@ -895,6 +895,8 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: If test is successful, automatically save the download client configuration
   - AC: Show success message: "Connection successful. Settings saved."
   - AC: If test fails, do NOT save; show error message with failure reason
+  - AC: On successful test, set Status to "Healthy" and clear any previous error message
+  - AC: On failed test, set Status to "Unhealthy" and store the error message for display
 - [ ] **Activity integration** (deferred)
   - AC: Show NZB downloads in activity feed
   - AC: Download progress from SABnzbd/NZBGet
