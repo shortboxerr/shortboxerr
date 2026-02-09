@@ -826,18 +826,18 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: Create HistoryEvent linking NZB → import
   - AC: Handle failed downloads (incomplete, password-protected)
 
-### 10.5 NZB Configuration & Settings
-- [ ] **Indexer configuration**
-  - AC: Add/edit/delete NZB indexers
-  - AC: Test indexer connectivity
-  - AC: Priority ordering for multiple indexers
-  - AC: Enable/disable per indexer
-- [ ] **Download client configuration**
-  - AC: SABnzbd: URL, API key, category, priority
-  - AC: NZBGet: URL, username, password, category
-  - AC: Test connection button
-  - AC: Default download client selection
-- [ ] **Mylar3 NZB settings import**
+### 10.5 NZB Configuration & Settings - PARTIAL ✅
+- [x] **Indexer configuration** ✅
+  - AC: Add/edit/delete NZB indexers ✅
+  - AC: Test indexer connectivity ✅
+  - AC: Priority ordering for multiple indexers ✅
+  - AC: Enable/disable per indexer ✅
+- [x] **Download client configuration** ✅
+  - AC: SABnzbd: URL, API key, category, priority ✅
+  - AC: NZBGet: URL, username, password, category (deferred)
+  - AC: Test connection button ✅
+  - AC: Default download client selection ✅
+- [ ] **Mylar3 NZB settings import** (deferred)
   - AC: Parse Mylar3 config.ini for NZB settings
   - AC: Import indexer configurations
   - AC: Import SABnzbd/NZBGet settings

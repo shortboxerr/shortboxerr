@@ -1,3 +1,52 @@
+# Self Check - Iteration 070
+
+## EPIC 10.5: NZB Configuration & Settings API
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Backend builds with 0 errors |
+| Tests pass | ✅ | 17 new tests passing, 893 total |
+| Endpoints defined | ✅ | NzbEndpoints.cs |
+| Registered in Program.cs | ✅ | MapNzbEndpoints() |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+#### Indexer Configuration
+| AC | Status |
+|----|--------|
+| Add/edit/delete NZB indexers | ✅ |
+| Test indexer connectivity | ✅ |
+| Priority ordering for multiple indexers | ✅ |
+| Enable/disable per indexer | ✅ |
+
+#### Download Client Configuration
+| AC | Status |
+|----|--------|
+| SABnzbd: URL, API key, category, priority | ✅ |
+| Test connection button | ✅ |
+| Default download client selection | ✅ |
+
+### API Endpoints
+| Method | Endpoint | Status |
+|--------|----------|--------|
+| GET | /api/v1/nzb/indexers | ✅ |
+| GET | /api/v1/nzb/indexers/{id} | ✅ |
+| POST | /api/v1/nzb/indexers | ✅ |
+| PUT | /api/v1/nzb/indexers/{id} | ✅ |
+| DELETE | /api/v1/nzb/indexers/{id} | ✅ |
+| POST | /api/v1/nzb/indexers/{id}/test | ✅ |
+| POST | /api/v1/nzb/indexers/test | ✅ |
+| GET | /api/v1/nzb/indexers/presets | ✅ |
+| GET | /api/v1/nzb/download-client | ✅ |
+| PUT | /api/v1/nzb/download-client | ✅ |
+| POST | /api/v1/nzb/download-client/test | ✅ |
+| GET | /api/v1/nzb/search | ✅ |
+
+---
+
 # Self Check - Iteration 069
 
 ## EPIC 10.2: NZB Download Client Integration - SABnzbd

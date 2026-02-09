@@ -1,5 +1,44 @@
 # Worklog
 
+## Iteration 070 (2026-02-09)
+**EPIC 10.5: NZB Configuration & Settings API**
+
+### Commits
+1. `feat: implement NZB settings API endpoints (EPIC 10.5)`
+
+### Deliverables
+
+#### NZB Indexer Endpoints
+- ✅ `GET /api/v1/nzb/indexers` - List all indexers
+- ✅ `GET /api/v1/nzb/indexers/{id}` - Get indexer by ID
+- ✅ `POST /api/v1/nzb/indexers` - Add new indexer
+- ✅ `PUT /api/v1/nzb/indexers/{id}` - Update indexer
+- ✅ `DELETE /api/v1/nzb/indexers/{id}` - Delete indexer
+- ✅ `POST /api/v1/nzb/indexers/{id}/test` - Test saved indexer
+- ✅ `POST /api/v1/nzb/indexers/test` - Test indexer config
+- ✅ `GET /api/v1/nzb/indexers/presets` - Get preset indexers
+
+#### Download Client Endpoints
+- ✅ `GET /api/v1/nzb/download-client` - Get settings
+- ✅ `PUT /api/v1/nzb/download-client` - Update settings
+- ✅ `POST /api/v1/nzb/download-client/test` - Test connection
+
+#### Search Endpoint
+- ✅ `GET /api/v1/nzb/search` - Aggregated search
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Endpoints/NzbEndpoints.cs` | New endpoints |
+| `src/Shortboxerr.Api/Program.cs` | Register endpoints |
+| `tests/Shortboxerr.Tests/NzbEndpointsTests.cs` | 17 unit tests |
+
+### Test Results
+- All 893 tests passing (+17 new)
+- Build: ✅ No errors
+
+---
+
 ## Iteration 069 (2026-02-09)
 **EPIC 10.2: NZB Download Client Integration - SABnzbd**
 
