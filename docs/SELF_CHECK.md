@@ -1,3 +1,38 @@
+# Self Check - Iteration 080
+
+## Download Settings Scoping by Client Type
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Frontend compiles | ✅ | npm run build |
+| Backend compiles | ✅ | dotnet build |
+| Tests pass | ✅ | 1185 tests (no changes) |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+| AC | Status |
+|----|--------|
+| Max concurrent applies to DDL only | ✅ |
+| SABnzbd/NZBGet manage own queues | ✅ (documented) |
+| Torrent clients manage own queues | ✅ (documented) |
+| UI clarifies DDL scope | ✅ |
+| Retry behavior documented per type | ✅ |
+| Tooltips/descriptions updated | ✅ |
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `SettingsPage.tsx` | ✅ Modified |
+| `IHttpDownloadClient.cs` | ✅ Modified |
+| `BACKLOG.md` | ✅ Updated |
+| `WORKLOG.md` | ✅ Updated |
+| `SELF_CHECK.md` | ✅ Updated |
+
+---
+
 # Self Check - Iteration 079
 
 ## ReadComicOnline DDL Adapter

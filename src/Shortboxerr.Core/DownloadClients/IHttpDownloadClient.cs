@@ -60,17 +60,24 @@ public class HttpDownloadClientSettings
     public required string DownloadDirectory { get; init; }
     
     /// <summary>
-    /// Maximum concurrent downloads.
+    /// Maximum concurrent DDL (Direct Download) operations.
+    /// This setting ONLY affects HTTP direct downloads from DDL sites (GetComics, ReadComicOnline, etc.).
+    /// It does NOT affect Usenet clients (SABnzbd, NZBGet) or torrent clients, which manage their own queues.
     /// </summary>
     public int MaxConcurrentDownloads { get; init; } = 3;
     
     /// <summary>
-    /// Request timeout in seconds.
+    /// Request timeout in seconds for DDL downloads.
+    /// This setting ONLY affects HTTP direct downloads.
+    /// Usenet and torrent clients have their own timeout configurations.
     /// </summary>
     public int TimeoutSeconds { get; init; } = 300;
     
     /// <summary>
-    /// Maximum retry attempts on failure.
+    /// Maximum retry attempts on DDL download failure.
+    /// This setting ONLY affects HTTP direct downloads and retries on network failures.
+    /// Note: Usenet download failures may require re-searching for a new release rather than retrying.
+    /// Torrent clients handle retries through their own mechanisms (DHT, peer reconnection, etc.).
     /// </summary>
     public int MaxRetries { get; init; } = 3;
     

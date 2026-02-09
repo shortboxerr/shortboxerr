@@ -2209,10 +2209,22 @@ function DownloadClientsSettings() {
         )}
       </SettingsSection>
 
-      <SettingsSection title="Download Settings">
+      <SettingsSection title="DDL Download Settings">
+        <div style={{ 
+          padding: '12px 16px', 
+          background: 'var(--bg-tertiary)', 
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '16px',
+          fontSize: '13px',
+          color: 'var(--text-muted)'
+        }}>
+          <strong>Note:</strong> These settings only apply to Direct Download (DDL) sources like GetComics and ReadComicOnline. 
+          SABnzbd, NZBGet, and torrent clients manage their own download queues and settings through their respective configuration panels.
+        </div>
+        
         <SettingsField 
-          label="Maximum Concurrent Downloads" 
-          description="Number of downloads that can run at the same time"
+          label="Maximum Concurrent DDL Downloads" 
+          description="Number of direct HTTP downloads that can run simultaneously. Does not affect Usenet or torrent clients."
         >
           <input 
             className="input" 
@@ -2225,8 +2237,8 @@ function DownloadClientsSettings() {
         </SettingsField>
         
         <SettingsField 
-          label="Download Timeout (seconds)" 
-          description="Maximum time to wait for a download before failing"
+          label="DDL Download Timeout (seconds)" 
+          description="Maximum time to wait for a direct HTTP download before failing. Does not affect Usenet or torrent clients."
         >
           <input 
             className="input" 
@@ -2237,10 +2249,13 @@ function DownloadClientsSettings() {
           />
         </SettingsField>
         
-        <SettingsField label="Retry Failed Downloads">
+        <SettingsField 
+          label="Retry Failed DDL Downloads"
+          description="For DDL: Retries the HTTP download on network failures. Note: Usenet failures may require re-searching for a new release."
+        >
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <input type="checkbox" defaultChecked />
-            <span style={{ fontSize: '13px' }}>Automatically retry failed downloads</span>
+            <span style={{ fontSize: '13px' }}>Automatically retry failed DDL downloads</span>
           </label>
         </SettingsField>
       </SettingsSection>

@@ -1,5 +1,53 @@
 # Worklog
 
+## Iteration 080 (2026-02-09)
+**Download Settings Scoping by Client Type**
+
+### Commits
+1. `feat: scope download settings to DDL clients only with UI clarification`
+
+### Deliverables
+
+#### UI Changes (`SettingsPage.tsx`)
+- ✅ Renamed "Download Settings" section to "DDL Download Settings"
+- ✅ Added explanatory note box clarifying scope:
+  - Settings only apply to DDL sources (GetComics, ReadComicOnline)
+  - SABnzbd/NZBGet/torrent clients manage their own queues
+- ✅ Updated field labels:
+  - "Maximum Concurrent DDL Downloads" (was "Maximum Concurrent Downloads")
+  - "DDL Download Timeout" (was "Download Timeout")
+  - "Retry Failed DDL Downloads" (was "Retry Failed Downloads")
+- ✅ Updated field descriptions with scope clarification
+- ✅ Added note about Usenet retry behavior (may need re-search)
+
+#### Backend Documentation (`IHttpDownloadClient.cs`)
+- ✅ Updated `HttpDownloadClientSettings` XML documentation:
+  - `MaxConcurrentDownloads`: Clarified DDL-only scope
+  - `TimeoutSeconds`: Clarified DDL-only scope
+  - `MaxRetries`: Clarified DDL-only scope, noted Usenet difference
+
+#### Scope Clarification
+| Setting | DDL | Usenet | Torrent |
+|---------|-----|--------|---------|
+| Max Concurrent | ✅ Applies | ❌ Client manages | ❌ Client manages |
+| Timeout | ✅ Applies | ❌ Client manages | ❌ Client manages |
+| Auto Retry | ✅ Network retry | ⚠️ May need re-search | ❌ Client manages |
+
+### Test Count
+- No new tests required (documentation/UI only change)
+- Total: 1185 tests (unchanged)
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `ui/src/pages/SettingsPage.tsx` | Modified - UI clarification |
+| `src/Shortboxerr.Core/DownloadClients/IHttpDownloadClient.cs` | Modified - documentation |
+| `docs/BACKLOG.md` | Updated - mark complete |
+| `docs/WORKLOG.md` | Updated - add iteration 080 |
+| `docs/SELF_CHECK.md` | Updated - add iteration 080 |
+
+---
+
 ## Iteration 079 (2026-02-09)
 **ReadComicOnline DDL Adapter**
 
