@@ -171,10 +171,25 @@ public class ProviderManager : IProviderManager
             return ProviderTestResult.Fail($"Provider with ID {id} not found");
         }
         
-        return await TestAsync(definition, cancellationToken);
+        var result = await TestInternalAsync(definition, cancellationToken);
+        
+        // Update health status based on test result
+        await UpdateHealthAsync(
+            id, 
+            result.Success ? HealthStatus.Healthy : HealthStatus.Unhealthy,
+            result.Success ? null : result.Message,
+            cancellationToken);
+        
+        return result;
     }
 
     public async Task<ProviderTestResult> TestAsync(ProviderDefinition definition, CancellationToken cancellationToken = default)
+    {
+        // For unsaved providers, just run the test without updating health
+        return await TestInternalAsync(definition, cancellationToken);
+    }
+
+    private async Task<ProviderTestResult> TestInternalAsync(ProviderDefinition definition, CancellationToken cancellationToken = default)
     {
         try
         {
