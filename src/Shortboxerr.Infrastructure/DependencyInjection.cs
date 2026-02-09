@@ -61,6 +61,7 @@ public static class DependencyInjection
         // DDL services
         services.AddSingleton<IDdlReleaseParser, DdlReleaseParser>();
         services.AddSingleton<IDdlFilter, DdlFilter>();
+        services.AddSingleton<IDdlRateLimiter, DdlRateLimiter>();
         services.AddSingleton<IDdlSiteAdapterFactory, DdlSiteAdapterFactory>();
         services.AddSingleton<IDdlSearchService, DdlSearchService>();
         services.AddSingleton<IDownloadHostResolverFactory, DownloadHostResolverFactory>();
