@@ -9,8 +9,8 @@ import {
 import { api } from '../api/client';
 import type { 
   Provider, CreateProviderRequest, ProviderTestResult, ComicVineTestResult,
-  NzbIndexer, NzbIndexerRequest, NzbTestResult, NzbClientTestResult, NzbIndexerPreset,
-  SabnzbdSettings, WebhookProviderSettings, WebhookProviderRequest, NotificationEventType
+  NzbIndexer, NzbIndexerRequest, NzbTestResult, NzbIndexerPreset,
+  WebhookProviderSettings, WebhookProviderRequest, NotificationEventType
 } from '../api/client';
 import { useTheme } from '../App';
 
@@ -2122,207 +2122,6 @@ function NzbIndexerModal({
   );
 }
 
-function NzbDownloadClientSection({
-  settings,
-  isLoading,
-}: {
-  settings: { clientType: string; sabnzbd?: SabnzbdSettings; isConfigured: boolean } | undefined;
-  isLoading: boolean;
-}) {
-  const [localSettings, setLocalSettings] = useState<{
-    host: string;
-    apiKey: string;
-    category: string;
-    useSsl: boolean;
-  }>({
-    host: '',
-    apiKey: '',
-    category: 'comics',
-    useSsl: false,
-  });
-  const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<NzbClientTestResult | null>(null);
-  const [saving, setSaving] = useState(false);
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (settings?.sabnzbd) {
-      setLocalSettings({
-        host: settings.sabnzbd.host ?? '',
-        apiKey: settings.sabnzbd.apiKey ?? '',
-        category: settings.sabnzbd.category ?? 'comics',
-        useSsl: settings.sabnzbd.useSsl ?? false,
-      });
-    }
-  }, [settings]);
-
-  const handleTest = async () => {
-    setTesting(true);
-    setTestResult(null);
-    try {
-      const result = await api.testNzbDownloadClient({
-        clientType: 'SABnzbd',
-        sabnzbd: {
-          host: localSettings.host,
-          apiKey: localSettings.apiKey,
-          category: localSettings.category,
-          useSsl: localSettings.useSsl,
-        },
-      });
-      setTestResult(result);
-    } catch (e) {
-      setTestResult({ success: false, message: 'Test failed: ' + String(e) });
-    } finally {
-      setTesting(false);
-    }
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      await api.updateNzbDownloadClient({
-        clientType: 'SABnzbd',
-        sabnzbd: {
-          host: localSettings.host,
-          apiKey: localSettings.apiKey,
-          category: localSettings.category,
-          useSsl: localSettings.useSsl,
-        },
-      });
-      queryClient.invalidateQueries({ queryKey: ['nzbDownloadClient'] });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <SettingsSection title="Download Client (SABnzbd)">
-        <div className="loading"><div className="spinner" /></div>
-      </SettingsSection>
-    );
-  }
-
-  return (
-    <SettingsSection title="Download Client (SABnzbd)">
-      <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px' }}>
-        Configure SABnzbd to download NZB files found by your indexers.
-      </p>
-
-      <SettingsField label="Host" description="SABnzbd host URL (e.g., localhost:8080)">
-        <input
-          className="input"
-          style={{ width: '100%', maxWidth: '400px' }}
-          value={localSettings.host}
-          onChange={(e) => setLocalSettings({ ...localSettings, host: e.target.value })}
-          placeholder="localhost:8080"
-        />
-      </SettingsField>
-
-      <SettingsField label="API Key">
-        <input
-          className="input"
-          style={{ width: '100%', maxWidth: '400px' }}
-          type="password"
-          value={localSettings.apiKey}
-          onChange={(e) => setLocalSettings({ ...localSettings, apiKey: e.target.value })}
-          placeholder="SABnzbd API key"
-        />
-      </SettingsField>
-
-      <SettingsField label="Category" description="Category for comics downloads">
-        <input
-          className="input"
-          style={{ width: '200px' }}
-          value={localSettings.category}
-          onChange={(e) => setLocalSettings({ ...localSettings, category: e.target.value })}
-          placeholder="comics"
-        />
-      </SettingsField>
-
-      <SettingsField label="Use SSL">
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <input
-            type="checkbox"
-            checked={localSettings.useSsl}
-            onChange={(e) => setLocalSettings({ ...localSettings, useSsl: e.target.checked })}
-          />
-          <span style={{ fontSize: '13px' }}>Connect using HTTPS</span>
-        </label>
-      </SettingsField>
-
-      {testResult && (
-        <div style={{
-          padding: '12px',
-          borderRadius: 'var(--radius-md)',
-          background: testResult.success ? 'rgba(92, 184, 92, 0.1)' : 'rgba(217, 83, 79, 0.1)',
-          border: `1px solid ${testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)'}`,
-          marginBottom: '16px',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {testResult.success ? (
-              <CheckCircle size={16} style={{ color: 'var(--accent-success)' }} />
-            ) : (
-              <AlertCircle size={16} style={{ color: 'var(--accent-danger)' }} />
-            )}
-            <span style={{ fontWeight: 500, color: testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)' }}>
-              {testResult.success ? 'Connection successful' : 'Connection failed'}
-            </span>
-            {testResult.version && (
-              <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                (v{testResult.version})
-              </span>
-            )}
-          </div>
-          {testResult.message && (
-            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              {testResult.message}
-            </div>
-          )}
-        </div>
-      )}
-
-      <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-        <button
-          className="btn btn-secondary"
-          onClick={handleTest}
-          disabled={testing || !localSettings.host || !localSettings.apiKey}
-        >
-          {testing ? (
-            <><div className="spinner" style={{ width: '14px', height: '14px' }} /> Testing...</>
-          ) : (
-            <><Play size={14} /> Test Connection</>
-          )}
-        </button>
-        <button
-          className="btn btn-primary"
-          onClick={handleSave}
-          disabled={saving || !localSettings.host || !localSettings.apiKey}
-        >
-          {saving ? 'Saving...' : 'Save'}
-        </button>
-      </div>
-
-      {settings?.isConfigured && (
-        <div style={{
-          marginTop: '16px',
-          padding: '8px 12px',
-          background: 'rgba(92, 184, 92, 0.1)',
-          borderRadius: 'var(--radius-sm)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          fontSize: '13px',
-          color: 'var(--accent-success)',
-        }}>
-          <CheckCircle size={14} />
-          SABnzbd is configured
-        </div>
-      )}
-    </SettingsSection>
-  );
-}
-
 // ============== DOWNLOAD CLIENTS SETTINGS ==============
 
 function DownloadClientsSettings() {
@@ -2333,12 +2132,6 @@ function DownloadClientsSettings() {
   const { data: clients, isLoading, refetch } = useQuery({
     queryKey: ['downloadclients'],
     queryFn: api.getDownloadClients,
-  });
-
-  // SABnzbd / Usenet download client
-  const { data: nzbDownloadClient, isLoading: nzbClientLoading } = useQuery({
-    queryKey: ['nzbDownloadClient'],
-    queryFn: api.getNzbDownloadClient,
   });
 
   const toggleMutation = useMutation({
@@ -2380,12 +2173,10 @@ function DownloadClientsSettings() {
 
   return (
     <>
-      <NzbDownloadClientSection settings={nzbDownloadClient} isLoading={nzbClientLoading} />
-
       <SettingsSection title="Download Clients">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
-            Configure download clients for torrent or DDL downloads.
+            Configure download clients for Usenet (SABnzbd), torrent, or DDL downloads.
           </p>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button className="btn btn-icon" onClick={() => refetch()} title="Refresh">
@@ -2405,7 +2196,7 @@ function DownloadClientsSettings() {
             <Download size={48} />
             <div className="empty-state-title">No download clients configured</div>
             <div className="empty-state-text">
-              Add torrent or DDL download clients.
+              Add SABnzbd for Usenet downloads, or configure torrent/DDL clients.
             </div>
           </div>
         ) : (
@@ -2621,6 +2412,11 @@ function ProviderModal({
   onClose: () => void;
   onSave: () => void;
 }) {
+  // Parse existing settings if editing
+  const existingSettings = provider?.settings ? (() => {
+    try { return JSON.parse(provider.settings); } catch { return {}; }
+  })() : {};
+
   const [formData, setFormData] = useState<CreateProviderRequest>({
     name: provider?.name ?? '',
     implementation: provider?.implementation ?? '',
@@ -2631,6 +2427,11 @@ function ProviderModal({
     password: '',
     settings: provider?.settings ?? '',
   });
+  
+  // SABnzbd-specific settings
+  const [sabnzbdCategory, setSabnzbdCategory] = useState(existingSettings.category ?? 'comics');
+  const [sabnzbdUseSsl, setSabnzbdUseSsl] = useState(existingSettings.useSsl ?? false);
+  
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<ProviderTestResult | null>(null);
   const [saving, setSaving] = useState(false);
@@ -2646,14 +2447,29 @@ function ProviderModal({
   ) ?? [];
 
   const selectedImpl = filteredImplementations.find(i => i.name === formData.implementation);
+  const isSabnzbd = formData.implementation === 'SABnzbd';
+  
+  // Build settings JSON for SABnzbd
+  const getSettingsJson = () => {
+    if (isSabnzbd) {
+      return JSON.stringify({
+        host: formData.baseUrl,
+        apiKey: formData.apiKey,
+        category: sabnzbdCategory,
+        useSsl: sabnzbdUseSsl
+      });
+    }
+    return formData.settings;
+  };
 
   const handleTest = async () => {
     setTesting(true);
     setTestResult(null);
     try {
+      const requestData = { ...formData, settings: getSettingsJson() };
       const result = provider
         ? await api.testProvider(provider.id)
-        : await api.testNewProvider(formData);
+        : await api.testNewProvider(requestData);
       setTestResult(result);
     } catch (e) {
       setTestResult({ success: false, message: 'Test failed', errors: [String(e)], latencyMs: 0 });
@@ -2666,12 +2482,13 @@ function ProviderModal({
     setSaving(true);
     setError(null);
     try {
+      const requestData = { ...formData, settings: getSettingsJson() };
       if (provider) {
-        await api.updateProvider(provider.id, formData);
+        await api.updateProvider(provider.id, requestData);
       } else if (category === 'Indexer') {
-        await api.createIndexer(formData);
+        await api.createIndexer(requestData);
       } else {
-        await api.createDownloadClient(formData);
+        await api.createDownloadClient(requestData);
       }
       onSave();
     } catch (e) {
@@ -2722,7 +2539,7 @@ function ProviderModal({
               style={{ width: '100%' }}
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="My DDL Provider"
+              placeholder={category === 'DownloadClient' ? 'My SABnzbd' : 'My RSS Feed'}
             />
           </SettingsField>
 
@@ -2749,13 +2566,13 @@ function ProviderModal({
           </SettingsField>
 
           {selectedImpl?.requiresBaseUrl && (
-            <SettingsField label="Base URL">
+            <SettingsField label={isSabnzbd ? 'Host' : 'Base URL'} description={isSabnzbd ? 'SABnzbd host (e.g., localhost:8080)' : undefined}>
               <input
                 className="input"
                 style={{ width: '100%' }}
                 value={formData.baseUrl}
                 onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
-                placeholder="https://example.com"
+                placeholder={isSabnzbd ? 'localhost:8080' : 'https://example.com'}
               />
             </SettingsField>
           )}
@@ -2765,11 +2582,38 @@ function ProviderModal({
               <input
                 className="input"
                 style={{ width: '100%' }}
+                type="password"
                 value={formData.apiKey}
                 onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
                 placeholder="Your API key"
               />
             </SettingsField>
+          )}
+
+          {/* SABnzbd-specific settings */}
+          {isSabnzbd && (
+            <>
+              <SettingsField label="Category" description="Category for comics downloads">
+                <input
+                  className="input"
+                  style={{ width: '200px' }}
+                  value={sabnzbdCategory}
+                  onChange={(e) => setSabnzbdCategory(e.target.value)}
+                  placeholder="comics"
+                />
+              </SettingsField>
+
+              <SettingsField label="Use SSL">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="checkbox"
+                    checked={sabnzbdUseSsl}
+                    onChange={(e) => setSabnzbdUseSsl(e.target.checked)}
+                  />
+                  <span style={{ fontSize: '13px' }}>Connect using HTTPS</span>
+                </label>
+              </SettingsField>
+            </>
           )}
 
           {selectedImpl?.requiresCredentials && (
