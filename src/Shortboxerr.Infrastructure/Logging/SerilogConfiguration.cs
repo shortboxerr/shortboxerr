@@ -1,7 +1,6 @@
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.Async;
-using Shortboxerr.Infrastructure.Logging;
 
 namespace Shortboxerr.Infrastructure.Logging;
 
@@ -12,6 +11,30 @@ namespace Shortboxerr.Infrastructure.Logging;
 /// </summary>
 public static class SerilogConfiguration
 {
+    /// <summary>
+    /// Default output template optimized for human readability.
+    /// Uses shortened source context and fixed-width level indicators.
+    /// </summary>
+    public const string DefaultOutputTemplate =
+        "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}] [{Level:u3}] [{ShortSourceContext}] {Message:lj}{NewLine}{Exception}";
+
+    /// <summary>
+    /// Compact output template for space-constrained environments.
+    /// </summary>
+    public const string CompactOutputTemplate =
+        "[{Timestamp:HH:mm:ss}] [{Level:u3}] {Message:lj}{NewLine}";
+
+    /// <summary>
+    /// Verbose output template for debugging with full context.
+    /// </summary>
+    public const string VerboseOutputTemplate =
+        "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{ShortSourceContext}] [{MachineName}] {Message:lj}{NewLine}{Properties:j}{NewLine}{Exception}";
+
+    /// <summary>
+    /// JSON output template for structured logging/log aggregation.
+    /// </summary>
+    public const string JsonOutputTemplate =
+        "{{ \"timestamp\": \"{Timestamp:o}\", \"level\": \"{Level}\", \"source\": \"{SourceContext}\", \"message\": {Message:lj}, \"properties\": {Properties:j} }}{NewLine}";
     /// <summary>
     /// Gets the config directory following *arr stack conventions.
     /// Container mode: /config (set via SHORTBOXERR_CONFIG env var)
@@ -68,17 +91,51 @@ public static class SerilogConfiguration
     }
 
     /// <summary>
+    /// Gets the output template from environment variable or returns the default.
+    /// Set SHORTBOXERR_LOG_TEMPLATE to customize, or use preset names:
+    /// - "default" or empty: DefaultOutputTemplate
+    /// - "compact": CompactOutputTemplate
+    /// - "verbose": VerboseOutputTemplate
+    /// - "json": JsonOutputTemplate
+    /// - Any other value: treated as a custom template string
+    /// </summary>
+    public static string GetOutputTemplate()
+    {
+        var template = Environment.GetEnvironmentVariable("SHORTBOXERR_LOG_TEMPLATE");
+
+        if (string.IsNullOrEmpty(template))
+            return DefaultOutputTemplate;
+
+        return template.ToLowerInvariant() switch
+        {
+            "default" => DefaultOutputTemplate,
+            "compact" => CompactOutputTemplate,
+            "verbose" => VerboseOutputTemplate,
+            "json" => JsonOutputTemplate,
+            _ => template // Custom template string
+        };
+    }
+
+    /// <summary>
     /// Configures Serilog with file and console sinks, including sensitive data protection.
     /// </summary>
+    /// <param name="logDirectory">Log directory path (defaults to container-first path)</param>
+    /// <param name="minimumLevel">Minimum log level (default: Information)</param>
+    /// <param name="consoleLevel">Console-specific log level (defaults to minimumLevel)</param>
+    /// <param name="maxFileSizeBytes">Max file size before rotation (default: 10MB)</param>
+    /// <param name="retainedFileCount">Number of rotated files to keep (default: 5)</param>
+    /// <param name="outputTemplate">Output template (defaults to environment variable or DefaultOutputTemplate)</param>
     public static LoggerConfiguration CreateLoggerConfiguration(
         string? logDirectory = null,
         LogEventLevel minimumLevel = LogEventLevel.Information,
         LogEventLevel? consoleLevel = null,
         long maxFileSizeBytes = 10 * 1024 * 1024, // 10MB default
-        int retainedFileCount = 5)
+        int retainedFileCount = 5,
+        string? outputTemplate = null)
     {
         // Use container-first default
         logDirectory ??= GetLogDirectory();
+        outputTemplate ??= GetOutputTemplate();
 
         // Ensure log directory exists
         Directory.CreateDirectory(logDirectory);
@@ -93,6 +150,7 @@ public static class SerilogConfiguration
             .Enrich.FromLogContext()
             .Enrich.WithMachineName()
             .Enrich.WithEnvironmentName()
+            .Enrich.With(new ShortSourceContextEnricher())
             .Enrich.With(new SensitiveDataEnricher())
             .Destructure.With(new SensitiveDataDestructuringPolicy());
 
@@ -100,7 +158,8 @@ public static class SerilogConfiguration
         var consoleLevelToUse = consoleLevel ?? minimumLevel;
         config.WriteTo.Console(
             restrictedToMinimumLevel: consoleLevelToUse,
-            outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
+            outputTemplate: outputTemplate,
+            theme: Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme.Code);
 
         // File sink with rotation (async for performance)
         config.WriteTo.Async(a => a.File(
@@ -110,7 +169,7 @@ public static class SerilogConfiguration
             retainedFileCountLimit: retainedFileCount,
             fileSizeLimitBytes: maxFileSizeBytes,
             rollOnFileSizeLimit: true,
-            outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}",
+            outputTemplate: outputTemplate,
             shared: false));
 
         return config;
