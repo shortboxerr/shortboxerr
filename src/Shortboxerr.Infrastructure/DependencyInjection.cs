@@ -117,6 +117,7 @@ public static class DependencyInjection
         // NZB/Usenet services
         services.AddHttpClient<INewznabClient, NewznabClient>();
         services.AddScoped<INzbIndexerProvider, NzbIndexerProvider>();
+        services.AddHttpClient<ISabnzbdClient, SabnzbdClient>();
 
         // Notification service
         services.AddScoped<INotificationService, Notifications.NotificationService>();
