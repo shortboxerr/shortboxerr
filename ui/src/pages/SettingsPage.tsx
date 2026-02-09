@@ -14,14 +14,13 @@ import type {
 } from '../api/client';
 import { useTheme } from '../App';
 
-type SettingsTab = 'general' | 'indexers' | 'download' | 'nzb' | 'notifications' | 'import' | 'ui' | 'security' | 'comicvine' | 'pulllist';
+type SettingsTab = 'general' | 'indexers' | 'download' | 'notifications' | 'import' | 'ui' | 'security' | 'comicvine' | 'pulllist';
 
 const tabs: { id: SettingsTab; icon: React.ElementType; label: string }[] = [
   { id: 'general', icon: Settings, label: 'General' },
   { id: 'comicvine', icon: Database, label: 'ComicVine' },
   { id: 'pulllist', icon: Calendar, label: 'Pull List' },
   { id: 'indexers', icon: Plug, label: 'Indexers' },
-  { id: 'nzb', icon: HardDrive, label: 'NZB / Usenet' },
   { id: 'download', icon: Download, label: 'Download Clients' },
   { id: 'notifications', icon: Bell, label: 'Notifications' },
   { id: 'import', icon: FolderOpen, label: 'Import' },
@@ -77,7 +76,6 @@ export function SettingsPage() {
             {activeTab === 'comicvine' && <ComicVineSettingsTab />}
             {activeTab === 'pulllist' && <PullListSettingsTab />}
             {activeTab === 'indexers' && <IndexersSettings />}
-            {activeTab === 'nzb' && <NzbSettings />}
             {activeTab === 'download' && <DownloadClientsSettings />}
             {activeTab === 'notifications' && <NotificationsSettings />}
             {activeTab === 'import' && <ImportSettings />}
@@ -1541,12 +1539,25 @@ function ManualExportSection() {
 function IndexersSettings() {
   const [showModal, setShowModal] = useState(false);
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
+  const [showNzbIndexerModal, setShowNzbIndexerModal] = useState(false);
+  const [editingNzbIndexer, setEditingNzbIndexer] = useState<NzbIndexer | null>(null);
   const queryClient = useQueryClient();
 
   // Only fetch RSS indexers (DDL indexers are built-in)
   const { data: indexers, isLoading, refetch } = useQuery({
     queryKey: ['indexers'],
     queryFn: api.getIndexers,
+  });
+
+  // NZB Indexers
+  const { data: nzbIndexersResponse, isLoading: nzbIndexersLoading, refetch: refetchNzbIndexers } = useQuery({
+    queryKey: ['nzbIndexers'],
+    queryFn: api.getNzbIndexers,
+  });
+
+  const { data: nzbPresets } = useQuery({
+    queryKey: ['nzbIndexerPresets'],
+    queryFn: api.getNzbIndexerPresets,
   });
 
   const toggleMutation = useMutation({
@@ -1558,6 +1569,11 @@ function IndexersSettings() {
   const deleteMutation = useMutation({
     mutationFn: api.deleteProvider,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['indexers'] }),
+  });
+
+  const deleteNzbIndexerMutation = useMutation({
+    mutationFn: api.deleteNzbIndexer,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['nzbIndexers'] }),
   });
 
   const handleAdd = () => {
@@ -1586,6 +1602,33 @@ function IndexersSettings() {
     handleModalClose();
   };
 
+  // NZB Indexer handlers
+  const handleAddNzbIndexer = () => {
+    setEditingNzbIndexer(null);
+    setShowNzbIndexerModal(true);
+  };
+
+  const handleEditNzbIndexer = (indexer: NzbIndexer) => {
+    setEditingNzbIndexer(indexer);
+    setShowNzbIndexerModal(true);
+  };
+
+  const handleDeleteNzbIndexer = (indexer: NzbIndexer) => {
+    if (confirm(`Delete indexer "${indexer.name}"? This cannot be undone.`)) {
+      deleteNzbIndexerMutation.mutate(indexer.id);
+    }
+  };
+
+  const handleNzbModalClose = () => {
+    setShowNzbIndexerModal(false);
+    setEditingNzbIndexer(null);
+  };
+
+  const handleNzbModalSave = () => {
+    queryClient.invalidateQueries({ queryKey: ['nzbIndexers'] });
+    handleNzbModalClose();
+  };
+
   return (
     <>
       <SettingsSection title="DDL Sites (Built-in)">
@@ -1608,6 +1651,47 @@ function IndexersSettings() {
             enabled={false}
           />
         </div>
+      </SettingsSection>
+
+      <SettingsSection title="Usenet / NZB Indexers">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
+            Configure Newznab-compatible NZB indexers for Usenet search.
+          </p>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button className="btn btn-icon" onClick={() => refetchNzbIndexers()} title="Refresh">
+              <RefreshCw size={16} />
+            </button>
+            <button className="btn btn-primary" onClick={handleAddNzbIndexer}>
+              <Plus size={16} />
+              Add NZB Indexer
+            </button>
+          </div>
+        </div>
+
+        {nzbIndexersLoading ? (
+          <div className="loading"><div className="spinner" /></div>
+        ) : !nzbIndexersResponse?.indexers?.length ? (
+          <div className="empty-state" style={{ padding: '40px 20px' }}>
+            <HardDrive size={48} />
+            <div className="empty-state-title">No NZB indexers configured</div>
+            <div className="empty-state-text">
+              Add Newznab indexers like NZBgeek, DrunkenSlug, or others.
+            </div>
+          </div>
+        ) : (
+          <NzbIndexerTable
+            indexers={nzbIndexersResponse.indexers}
+            onEdit={handleEditNzbIndexer}
+            onDelete={handleDeleteNzbIndexer}
+          />
+        )}
+
+        {nzbIndexersResponse && nzbIndexersResponse.indexers?.length > 0 && (
+          <div style={{ marginTop: '12px', fontSize: '12px', color: 'var(--text-muted)' }}>
+            {nzbIndexersResponse.enabledCount} of {nzbIndexersResponse.totalCount} indexers enabled
+          </div>
+        )}
       </SettingsSection>
 
       <SettingsSection title="RSS Feeds">
@@ -1654,6 +1738,15 @@ function IndexersSettings() {
           onSave={handleModalSave}
         />
       )}
+
+      {showNzbIndexerModal && (
+        <NzbIndexerModal
+          indexer={editingNzbIndexer}
+          presets={nzbPresets?.presets ?? []}
+          onClose={handleNzbModalClose}
+          onSave={handleNzbModalSave}
+        />
+      )}
     </>
   );
 }
@@ -1683,115 +1776,7 @@ function DdlSiteCard({ name, description, enabled }: { name: string; description
   );
 }
 
-// ============== NZB / USENET SETTINGS ==============
-
-function NzbSettings() {
-  const [showIndexerModal, setShowIndexerModal] = useState(false);
-  const [editingIndexer, setEditingIndexer] = useState<NzbIndexer | null>(null);
-  const queryClient = useQueryClient();
-
-  const { data: indexersResponse, isLoading: indexersLoading, refetch: refetchIndexers } = useQuery({
-    queryKey: ['nzbIndexers'],
-    queryFn: api.getNzbIndexers,
-  });
-
-  const { data: downloadClient, isLoading: clientLoading } = useQuery({
-    queryKey: ['nzbDownloadClient'],
-    queryFn: api.getNzbDownloadClient,
-  });
-
-  const { data: presets } = useQuery({
-    queryKey: ['nzbIndexerPresets'],
-    queryFn: api.getNzbIndexerPresets,
-  });
-
-  const deleteIndexerMutation = useMutation({
-    mutationFn: api.deleteNzbIndexer,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['nzbIndexers'] }),
-  });
-
-  const handleAddIndexer = () => {
-    setEditingIndexer(null);
-    setShowIndexerModal(true);
-  };
-
-  const handleEditIndexer = (indexer: NzbIndexer) => {
-    setEditingIndexer(indexer);
-    setShowIndexerModal(true);
-  };
-
-  const handleDeleteIndexer = (indexer: NzbIndexer) => {
-    if (confirm(`Delete indexer "${indexer.name}"? This cannot be undone.`)) {
-      deleteIndexerMutation.mutate(indexer.id);
-    }
-  };
-
-  const handleModalClose = () => {
-    setShowIndexerModal(false);
-    setEditingIndexer(null);
-  };
-
-  const handleModalSave = () => {
-    queryClient.invalidateQueries({ queryKey: ['nzbIndexers'] });
-    handleModalClose();
-  };
-
-  return (
-    <>
-      <SettingsSection title="NZB Indexers">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
-            Configure Newznab-compatible NZB indexers for Usenet search.
-          </p>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button className="btn btn-icon" onClick={() => refetchIndexers()} title="Refresh">
-              <RefreshCw size={16} />
-            </button>
-            <button className="btn btn-primary" onClick={handleAddIndexer}>
-              <Plus size={16} />
-              Add Indexer
-            </button>
-          </div>
-        </div>
-
-        {indexersLoading ? (
-          <div className="loading"><div className="spinner" /></div>
-        ) : !indexersResponse?.indexers?.length ? (
-          <div className="empty-state" style={{ padding: '40px 20px' }}>
-            <HardDrive size={48} />
-            <div className="empty-state-title">No NZB indexers configured</div>
-            <div className="empty-state-text">
-              Add Newznab indexers like NZBgeek, DrunkenSlug, or others.
-            </div>
-          </div>
-        ) : (
-          <NzbIndexerTable
-            indexers={indexersResponse.indexers}
-            onEdit={handleEditIndexer}
-            onDelete={handleDeleteIndexer}
-          />
-        )}
-
-        {indexersResponse && indexersResponse.indexers?.length > 0 && (
-          <div style={{ marginTop: '12px', fontSize: '12px', color: 'var(--text-muted)' }}>
-            {indexersResponse.enabledCount} of {indexersResponse.totalCount} indexers enabled
-          </div>
-        )}
-      </SettingsSection>
-
-      <NzbDownloadClientSection settings={downloadClient} isLoading={clientLoading} />
-
-      {showIndexerModal && (
-        <NzbIndexerModal
-          indexer={editingIndexer}
-          presets={presets?.presets ?? []}
-          onClose={handleModalClose}
-          onSave={handleModalSave}
-        />
-      )}
-    </>
-  );
-}
+// ============== NZB / USENET HELPER COMPONENTS ==============
 
 function NzbIndexerTable({
   indexers,
@@ -2350,6 +2335,12 @@ function DownloadClientsSettings() {
     queryFn: api.getDownloadClients,
   });
 
+  // SABnzbd / Usenet download client
+  const { data: nzbDownloadClient, isLoading: nzbClientLoading } = useQuery({
+    queryKey: ['nzbDownloadClient'],
+    queryFn: api.getNzbDownloadClient,
+  });
+
   const toggleMutation = useMutation({
     mutationFn: ({ id, enabled }: { id: number; enabled: boolean }) => 
       api.setProviderEnabled(id, enabled),
@@ -2389,10 +2380,12 @@ function DownloadClientsSettings() {
 
   return (
     <>
+      <NzbDownloadClientSection settings={nzbDownloadClient} isLoading={nzbClientLoading} />
+
       <SettingsSection title="Download Clients">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
-            Configure download clients for torrent or usenet downloads.
+            Configure download clients for torrent or DDL downloads.
           </p>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button className="btn btn-icon" onClick={() => refetch()} title="Refresh">
@@ -2412,7 +2405,7 @@ function DownloadClientsSettings() {
             <Download size={48} />
             <div className="empty-state-title">No download clients configured</div>
             <div className="empty-state-text">
-              Add torrent or usenet download clients.
+              Add torrent or DDL download clients.
             </div>
           </div>
         ) : (

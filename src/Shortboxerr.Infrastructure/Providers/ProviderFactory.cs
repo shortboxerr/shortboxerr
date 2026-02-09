@@ -46,6 +46,35 @@ public class ProviderFactory : IProviderFactory
             requiresCredentials: false,
             factory: def => new NullIndexerProvider(def)
         );
+
+        // Register SABnzbd Download Client
+        RegisterProvider(
+            name: "SABnzbd",
+            displayName: "SABnzbd",
+            description: "Usenet download client for NZB files",
+            category: ProviderCategory.DownloadClient,
+            type: ProviderType.Usenet,
+            requiresBaseUrl: true,
+            requiresCredentials: false,
+            requiresApiKey: true,
+            factory: def =>
+            {
+                var sabnzbdFactory = new SabnzbdDownloadProviderFactory(_services);
+                return sabnzbdFactory.Create(def);
+            },
+            settingsSchema: """
+            {
+                "type": "object",
+                "properties": {
+                    "host": { "type": "string", "title": "Host", "description": "SABnzbd host (e.g., localhost:8080)" },
+                    "apiKey": { "type": "string", "title": "API Key", "format": "password" },
+                    "category": { "type": "string", "title": "Category", "default": "comics" },
+                    "useSsl": { "type": "boolean", "title": "Use SSL", "default": false }
+                },
+                "required": ["host", "apiKey"]
+            }
+            """
+        );
     }
 
     private void RegisterProvider(
