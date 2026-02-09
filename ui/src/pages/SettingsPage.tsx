@@ -4,19 +4,24 @@ import {
   Settings, Server, Download, Shield, 
   FolderOpen, Plug, Save, Plus, Edit, Trash2, 
   CheckCircle, XCircle, AlertCircle, Play, GripVertical,
-  Copy, RefreshCw, X, Database, ExternalLink, Eye, EyeOff, Calendar, FileText
+  Copy, RefreshCw, X, Database, ExternalLink, Eye, EyeOff, Calendar, FileText, HardDrive
 } from 'lucide-react';
 import { api } from '../api/client';
-import type { Provider, CreateProviderRequest, ProviderTestResult, ComicVineTestResult } from '../api/client';
+import type { 
+  Provider, CreateProviderRequest, ProviderTestResult, ComicVineTestResult,
+  NzbIndexer, NzbIndexerRequest, NzbTestResult, NzbClientTestResult, NzbIndexerPreset,
+  SabnzbdSettings
+} from '../api/client';
 import { useTheme } from '../App';
 
-type SettingsTab = 'general' | 'indexers' | 'download' | 'import' | 'ui' | 'security' | 'comicvine' | 'pulllist';
+type SettingsTab = 'general' | 'indexers' | 'download' | 'nzb' | 'import' | 'ui' | 'security' | 'comicvine' | 'pulllist';
 
 const tabs: { id: SettingsTab; icon: React.ElementType; label: string }[] = [
   { id: 'general', icon: Settings, label: 'General' },
   { id: 'comicvine', icon: Database, label: 'ComicVine' },
   { id: 'pulllist', icon: Calendar, label: 'Pull List' },
   { id: 'indexers', icon: Plug, label: 'Indexers' },
+  { id: 'nzb', icon: HardDrive, label: 'NZB / Usenet' },
   { id: 'download', icon: Download, label: 'Download Clients' },
   { id: 'import', icon: FolderOpen, label: 'Import' },
   { id: 'ui', icon: Server, label: 'UI' },
@@ -71,6 +76,7 @@ export function SettingsPage() {
             {activeTab === 'comicvine' && <ComicVineSettingsTab />}
             {activeTab === 'pulllist' && <PullListSettingsTab />}
             {activeTab === 'indexers' && <IndexersSettings />}
+            {activeTab === 'nzb' && <NzbSettings />}
             {activeTab === 'download' && <DownloadClientsSettings />}
             {activeTab === 'import' && <ImportSettings />}
             {activeTab === 'ui' && <UISettings />}
@@ -1672,6 +1678,661 @@ function DdlSiteCard({ name, description, enabled }: { name: string; description
       </div>
       <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{description}</div>
     </div>
+  );
+}
+
+// ============== NZB / USENET SETTINGS ==============
+
+function NzbSettings() {
+  const [showIndexerModal, setShowIndexerModal] = useState(false);
+  const [editingIndexer, setEditingIndexer] = useState<NzbIndexer | null>(null);
+  const queryClient = useQueryClient();
+
+  const { data: indexersResponse, isLoading: indexersLoading, refetch: refetchIndexers } = useQuery({
+    queryKey: ['nzbIndexers'],
+    queryFn: api.getNzbIndexers,
+  });
+
+  const { data: downloadClient, isLoading: clientLoading } = useQuery({
+    queryKey: ['nzbDownloadClient'],
+    queryFn: api.getNzbDownloadClient,
+  });
+
+  const { data: presets } = useQuery({
+    queryKey: ['nzbIndexerPresets'],
+    queryFn: api.getNzbIndexerPresets,
+  });
+
+  const deleteIndexerMutation = useMutation({
+    mutationFn: api.deleteNzbIndexer,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['nzbIndexers'] }),
+  });
+
+  const handleAddIndexer = () => {
+    setEditingIndexer(null);
+    setShowIndexerModal(true);
+  };
+
+  const handleEditIndexer = (indexer: NzbIndexer) => {
+    setEditingIndexer(indexer);
+    setShowIndexerModal(true);
+  };
+
+  const handleDeleteIndexer = (indexer: NzbIndexer) => {
+    if (confirm(`Delete indexer "${indexer.name}"? This cannot be undone.`)) {
+      deleteIndexerMutation.mutate(indexer.id);
+    }
+  };
+
+  const handleModalClose = () => {
+    setShowIndexerModal(false);
+    setEditingIndexer(null);
+  };
+
+  const handleModalSave = () => {
+    queryClient.invalidateQueries({ queryKey: ['nzbIndexers'] });
+    handleModalClose();
+  };
+
+  return (
+    <>
+      <SettingsSection title="NZB Indexers">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
+            Configure Newznab-compatible NZB indexers for Usenet search.
+          </p>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button className="btn btn-icon" onClick={() => refetchIndexers()} title="Refresh">
+              <RefreshCw size={16} />
+            </button>
+            <button className="btn btn-primary" onClick={handleAddIndexer}>
+              <Plus size={16} />
+              Add Indexer
+            </button>
+          </div>
+        </div>
+
+        {indexersLoading ? (
+          <div className="loading"><div className="spinner" /></div>
+        ) : !indexersResponse?.indexers?.length ? (
+          <div className="empty-state" style={{ padding: '40px 20px' }}>
+            <HardDrive size={48} />
+            <div className="empty-state-title">No NZB indexers configured</div>
+            <div className="empty-state-text">
+              Add Newznab indexers like NZBgeek, DrunkenSlug, or others.
+            </div>
+          </div>
+        ) : (
+          <NzbIndexerTable
+            indexers={indexersResponse.indexers}
+            onEdit={handleEditIndexer}
+            onDelete={handleDeleteIndexer}
+          />
+        )}
+
+        {indexersResponse && indexersResponse.indexers?.length > 0 && (
+          <div style={{ marginTop: '12px', fontSize: '12px', color: 'var(--text-muted)' }}>
+            {indexersResponse.enabledCount} of {indexersResponse.totalCount} indexers enabled
+          </div>
+        )}
+      </SettingsSection>
+
+      <NzbDownloadClientSection settings={downloadClient} isLoading={clientLoading} />
+
+      {showIndexerModal && (
+        <NzbIndexerModal
+          indexer={editingIndexer}
+          presets={presets?.presets ?? []}
+          onClose={handleModalClose}
+          onSave={handleModalSave}
+        />
+      )}
+    </>
+  );
+}
+
+function NzbIndexerTable({
+  indexers,
+  onEdit,
+  onDelete,
+}: {
+  indexers: NzbIndexer[];
+  onEdit: (indexer: NzbIndexer) => void;
+  onDelete: (indexer: NzbIndexer) => void;
+}) {
+  const [testingId, setTestingId] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<{ id: string; result: NzbTestResult } | null>(null);
+
+  const handleTest = async (indexer: NzbIndexer) => {
+    setTestingId(indexer.id);
+    setTestResult(null);
+    try {
+      const result = await api.testNzbIndexer(indexer.id);
+      setTestResult({ id: indexer.id, result });
+    } catch (e) {
+      setTestResult({
+        id: indexer.id,
+        result: { success: false, message: 'Test failed: ' + String(e) }
+      });
+    } finally {
+      setTestingId(null);
+    }
+  };
+
+  return (
+    <div className="table-container">
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>URL</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th className="table-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {indexers.map((indexer) => (
+            <tr key={indexer.id}>
+              <td>
+                <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{indexer.name}</div>
+              </td>
+              <td>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  {indexer.baseUrl}
+                </div>
+              </td>
+              <td>{indexer.priority}</td>
+              <td>
+                <span className={`badge badge-${indexer.enabled ? 'success' : 'muted'}`}>
+                  {indexer.enabled ? 'Enabled' : 'Disabled'}
+                </span>
+                {testResult?.id === indexer.id && (
+                  <div style={{ marginTop: '4px' }}>
+                    <span className={`badge badge-${testResult.result.success ? 'success' : 'danger'}`}>
+                      {testResult.result.success ? 'Connected' : 'Failed'}
+                    </span>
+                  </div>
+                )}
+              </td>
+              <td className="table-actions">
+                <button
+                  className="btn btn-icon"
+                  onClick={() => handleTest(indexer)}
+                  disabled={testingId === indexer.id}
+                  title="Test"
+                >
+                  {testingId === indexer.id ? (
+                    <div className="spinner" style={{ width: '16px', height: '16px' }} />
+                  ) : (
+                    <Play size={16} />
+                  )}
+                </button>
+                <button className="btn btn-icon" onClick={() => onEdit(indexer)} title="Edit">
+                  <Edit size={16} />
+                </button>
+                <button className="btn btn-icon" onClick={() => onDelete(indexer)} title="Delete">
+                  <Trash2 size={16} />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function NzbIndexerModal({
+  indexer,
+  presets,
+  onClose,
+  onSave,
+}: {
+  indexer: NzbIndexer | null;
+  presets: NzbIndexerPreset[];
+  onClose: () => void;
+  onSave: () => void;
+}) {
+  const [formData, setFormData] = useState<NzbIndexerRequest>({
+    name: indexer?.name ?? '',
+    baseUrl: indexer?.baseUrl ?? '',
+    apiKey: indexer?.apiKey ?? '',
+    enabled: indexer?.enabled ?? true,
+    priority: indexer?.priority ?? 50,
+    categories: indexer?.categories ?? [7030, 7000],
+  });
+  const [selectedPreset, setSelectedPreset] = useState<string>('');
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<NzbTestResult | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handlePresetSelect = (presetId: string) => {
+    setSelectedPreset(presetId);
+    const preset = presets.find(p => p.id === presetId);
+    if (preset) {
+      setFormData({
+        ...formData,
+        name: preset.name,
+        baseUrl: preset.baseUrl,
+        categories: preset.defaultCategories,
+      });
+    }
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const result = await api.testNzbIndexerConfig({
+        baseUrl: formData.baseUrl ?? '',
+        apiKey: formData.apiKey ?? '',
+      });
+      setTestResult(result);
+    } catch (e) {
+      setTestResult({ success: false, message: 'Test failed: ' + String(e) });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      if (indexer) {
+        await api.updateNzbIndexer(indexer.id, formData);
+      } else {
+        await api.addNzbIndexer(formData);
+      }
+      onSave();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0, 0, 0, 0.7)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+    }}>
+      <div style={{
+        background: 'var(--bg-secondary)',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border-color)',
+        width: '100%',
+        maxWidth: '500px',
+        maxHeight: '90vh',
+        overflow: 'auto',
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-color)',
+        }}>
+          <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
+            {indexer ? 'Edit NZB Indexer' : 'Add NZB Indexer'}
+          </h2>
+          <button className="btn btn-icon" onClick={onClose}>
+            <X size={18} />
+          </button>
+        </div>
+
+        <div style={{ padding: '20px' }}>
+          {!indexer && presets.length > 0 && (
+            <SettingsField label="Preset" description="Start with a pre-configured indexer">
+              <select
+                className="input"
+                style={{ width: '100%' }}
+                value={selectedPreset}
+                onChange={(e) => handlePresetSelect(e.target.value)}
+              >
+                <option value="">Custom / Manual</option>
+                {presets.map((preset) => (
+                  <option key={preset.id} value={preset.id}>{preset.name}</option>
+                ))}
+              </select>
+            </SettingsField>
+          )}
+
+          <SettingsField label="Name">
+            <input
+              className="input"
+              style={{ width: '100%' }}
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="My Indexer"
+            />
+          </SettingsField>
+
+          <SettingsField label="URL" description="Newznab API base URL">
+            <input
+              className="input"
+              style={{ width: '100%' }}
+              value={formData.baseUrl}
+              onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
+              placeholder="https://api.indexer.com"
+            />
+          </SettingsField>
+
+          <SettingsField label="API Key">
+            <input
+              className="input"
+              style={{ width: '100%' }}
+              value={formData.apiKey}
+              onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
+              placeholder="Your API key"
+              type="password"
+            />
+          </SettingsField>
+
+          <SettingsField label="Priority" description="Lower number = higher priority (1-100)">
+            <input
+              className="input"
+              style={{ width: '100px' }}
+              type="number"
+              min={1}
+              max={100}
+              value={formData.priority}
+              onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) || 50 })}
+            />
+          </SettingsField>
+
+          <SettingsField label="Enabled">
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="checkbox"
+                checked={formData.enabled}
+                onChange={(e) => setFormData({ ...formData, enabled: e.target.checked })}
+              />
+              <span style={{ fontSize: '13px' }}>Enable this indexer</span>
+            </label>
+          </SettingsField>
+
+          {testResult && (
+            <div style={{
+              padding: '12px',
+              borderRadius: 'var(--radius-md)',
+              background: testResult.success ? 'rgba(92, 184, 92, 0.1)' : 'rgba(217, 83, 79, 0.1)',
+              border: `1px solid ${testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)'}`,
+              marginBottom: '16px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {testResult.success ? (
+                  <CheckCircle size={16} style={{ color: 'var(--accent-success)' }} />
+                ) : (
+                  <AlertCircle size={16} style={{ color: 'var(--accent-danger)' }} />
+                )}
+                <span style={{ fontWeight: 500, color: testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)' }}>
+                  {testResult.success ? 'Connection successful' : 'Connection failed'}
+                </span>
+              </div>
+              {testResult.message && (
+                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  {testResult.message}
+                </div>
+              )}
+            </div>
+          )}
+
+          {error && (
+            <div style={{
+              padding: '12px',
+              borderRadius: 'var(--radius-md)',
+              background: 'rgba(217, 83, 79, 0.1)',
+              border: '1px solid var(--accent-danger)',
+              color: 'var(--accent-danger)',
+              fontSize: '13px',
+              marginBottom: '16px',
+            }}>
+              {error}
+            </div>
+          )}
+        </div>
+
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          borderTop: '1px solid var(--border-color)',
+        }}>
+          <button
+            className="btn btn-secondary"
+            onClick={handleTest}
+            disabled={testing || !formData.baseUrl || !formData.apiKey}
+          >
+            {testing ? (
+              <><div className="spinner" style={{ width: '14px', height: '14px' }} /> Testing...</>
+            ) : (
+              <><Play size={14} /> Test</>
+            )}
+          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button className="btn btn-secondary" onClick={onClose}>
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleSave}
+              disabled={saving || !formData.name || !formData.baseUrl || !formData.apiKey}
+            >
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NzbDownloadClientSection({
+  settings,
+  isLoading,
+}: {
+  settings: { clientType: string; sabnzbd?: SabnzbdSettings; isConfigured: boolean } | undefined;
+  isLoading: boolean;
+}) {
+  const [localSettings, setLocalSettings] = useState<{
+    host: string;
+    apiKey: string;
+    category: string;
+    useSsl: boolean;
+  }>({
+    host: '',
+    apiKey: '',
+    category: 'comics',
+    useSsl: false,
+  });
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<NzbClientTestResult | null>(null);
+  const [saving, setSaving] = useState(false);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (settings?.sabnzbd) {
+      setLocalSettings({
+        host: settings.sabnzbd.host ?? '',
+        apiKey: settings.sabnzbd.apiKey ?? '',
+        category: settings.sabnzbd.category ?? 'comics',
+        useSsl: settings.sabnzbd.useSsl ?? false,
+      });
+    }
+  }, [settings]);
+
+  const handleTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const result = await api.testNzbDownloadClient({
+        clientType: 'SABnzbd',
+        sabnzbd: {
+          host: localSettings.host,
+          apiKey: localSettings.apiKey,
+          category: localSettings.category,
+          useSsl: localSettings.useSsl,
+        },
+      });
+      setTestResult(result);
+    } catch (e) {
+      setTestResult({ success: false, message: 'Test failed: ' + String(e) });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await api.updateNzbDownloadClient({
+        clientType: 'SABnzbd',
+        sabnzbd: {
+          host: localSettings.host,
+          apiKey: localSettings.apiKey,
+          category: localSettings.category,
+          useSsl: localSettings.useSsl,
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: ['nzbDownloadClient'] });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <SettingsSection title="Download Client (SABnzbd)">
+        <div className="loading"><div className="spinner" /></div>
+      </SettingsSection>
+    );
+  }
+
+  return (
+    <SettingsSection title="Download Client (SABnzbd)">
+      <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px' }}>
+        Configure SABnzbd to download NZB files found by your indexers.
+      </p>
+
+      <SettingsField label="Host" description="SABnzbd host URL (e.g., localhost:8080)">
+        <input
+          className="input"
+          style={{ width: '100%', maxWidth: '400px' }}
+          value={localSettings.host}
+          onChange={(e) => setLocalSettings({ ...localSettings, host: e.target.value })}
+          placeholder="localhost:8080"
+        />
+      </SettingsField>
+
+      <SettingsField label="API Key">
+        <input
+          className="input"
+          style={{ width: '100%', maxWidth: '400px' }}
+          type="password"
+          value={localSettings.apiKey}
+          onChange={(e) => setLocalSettings({ ...localSettings, apiKey: e.target.value })}
+          placeholder="SABnzbd API key"
+        />
+      </SettingsField>
+
+      <SettingsField label="Category" description="Category for comics downloads">
+        <input
+          className="input"
+          style={{ width: '200px' }}
+          value={localSettings.category}
+          onChange={(e) => setLocalSettings({ ...localSettings, category: e.target.value })}
+          placeholder="comics"
+        />
+      </SettingsField>
+
+      <SettingsField label="Use SSL">
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <input
+            type="checkbox"
+            checked={localSettings.useSsl}
+            onChange={(e) => setLocalSettings({ ...localSettings, useSsl: e.target.checked })}
+          />
+          <span style={{ fontSize: '13px' }}>Connect using HTTPS</span>
+        </label>
+      </SettingsField>
+
+      {testResult && (
+        <div style={{
+          padding: '12px',
+          borderRadius: 'var(--radius-md)',
+          background: testResult.success ? 'rgba(92, 184, 92, 0.1)' : 'rgba(217, 83, 79, 0.1)',
+          border: `1px solid ${testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)'}`,
+          marginBottom: '16px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {testResult.success ? (
+              <CheckCircle size={16} style={{ color: 'var(--accent-success)' }} />
+            ) : (
+              <AlertCircle size={16} style={{ color: 'var(--accent-danger)' }} />
+            )}
+            <span style={{ fontWeight: 500, color: testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)' }}>
+              {testResult.success ? 'Connection successful' : 'Connection failed'}
+            </span>
+            {testResult.version && (
+              <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                (v{testResult.version})
+              </span>
+            )}
+          </div>
+          {testResult.message && (
+            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+              {testResult.message}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+        <button
+          className="btn btn-secondary"
+          onClick={handleTest}
+          disabled={testing || !localSettings.host || !localSettings.apiKey}
+        >
+          {testing ? (
+            <><div className="spinner" style={{ width: '14px', height: '14px' }} /> Testing...</>
+          ) : (
+            <><Play size={14} /> Test Connection</>
+          )}
+        </button>
+        <button
+          className="btn btn-primary"
+          onClick={handleSave}
+          disabled={saving || !localSettings.host || !localSettings.apiKey}
+        >
+          {saving ? 'Saving...' : 'Save'}
+        </button>
+      </div>
+
+      {settings?.isConfigured && (
+        <div style={{
+          marginTop: '16px',
+          padding: '8px 12px',
+          background: 'rgba(92, 184, 92, 0.1)',
+          borderRadius: 'var(--radius-sm)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          fontSize: '13px',
+          color: 'var(--accent-success)',
+        }}>
+          <CheckCircle size={14} />
+          SABnzbd is configured
+        </div>
+      )}
+    </SettingsSection>
   );
 }
 

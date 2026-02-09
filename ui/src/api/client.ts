@@ -546,6 +546,107 @@ export interface Provider {
   failureCount: number;
 }
 
+// === NZB Types ===
+
+export interface NzbIndexer {
+  id: string;
+  name: string;
+  baseUrl: string;
+  apiKey: string;
+  enabled: boolean;
+  priority: number;
+  categories: number[];
+}
+
+export interface NzbIndexerRequest {
+  name?: string;
+  baseUrl?: string;
+  apiKey?: string;
+  enabled?: boolean;
+  priority?: number;
+  categories?: number[];
+}
+
+export interface NzbIndexersResponse {
+  indexers: NzbIndexer[];
+  totalCount: number;
+  enabledCount: number;
+}
+
+export interface NzbTestResult {
+  success: boolean;
+  message?: string;
+  capabilities?: {
+    supportsSearch: boolean;
+    supportsBookSearch: boolean;
+  };
+}
+
+export interface NzbClientTestResult {
+  success: boolean;
+  message?: string;
+  version?: string;
+}
+
+export interface NzbIndexerPreset {
+  id: string;
+  name: string;
+  baseUrl: string;
+  defaultCategories: number[];
+}
+
+export interface NzbIndexerPresetsResponse {
+  presets: NzbIndexerPreset[];
+}
+
+export interface NzbDownloadClientResponse {
+  clientType: 'SABnzbd' | 'NZBGet';
+  sabnzbd?: SabnzbdSettings;
+  isConfigured: boolean;
+}
+
+export interface SabnzbdSettings {
+  host: string;
+  apiKey: string;
+  category?: string;
+  priority?: number;
+  useSsl?: boolean;
+}
+
+export interface NzbDownloadClientRequest {
+  clientType?: 'SABnzbd' | 'NZBGet';
+  sabnzbd?: SabnzbdSettings;
+}
+
+export interface NzbRelease {
+  guid: string;
+  title: string;
+  nzbUrl: string;
+  size: number;
+  publishedDate: string;
+  categoryId: number;
+  group?: string;
+  poster?: string;
+  comments: number;
+  quality?: string;
+  detailsUrl?: string;
+}
+
+export interface NzbSearchResponse {
+  releases: NzbRelease[];
+  totalResults: number;
+  indexersSearched: number;
+  indexersSuccessful: number;
+  durationMs: number;
+  indexerResults: Array<{
+    indexerId: string;
+    indexerName: string;
+    success: boolean;
+    releaseCount: number;
+    durationMs: number;
+  }>;
+}
+
 export interface ProviderImplementation {
   name: string;
   displayName: string;
@@ -1508,6 +1609,77 @@ export const api = {
     return fetchApi(`/api/v1/metadata/series/refresh-all?force=${force}`, {
       method: 'POST',
     });
+  },
+
+  // === NZB Indexers ===
+  getNzbIndexers: async (): Promise<NzbIndexersResponse> => {
+    return fetchApi<NzbIndexersResponse>('/api/v1/nzb/indexers');
+  },
+
+  getNzbIndexer: async (id: string): Promise<NzbIndexer> => {
+    return fetchApi<NzbIndexer>(`/api/v1/nzb/indexers/${id}`);
+  },
+
+  addNzbIndexer: async (indexer: NzbIndexerRequest): Promise<NzbIndexer> => {
+    return fetchApi<NzbIndexer>('/api/v1/nzb/indexers', {
+      method: 'POST',
+      body: JSON.stringify(indexer),
+    });
+  },
+
+  updateNzbIndexer: async (id: string, indexer: NzbIndexerRequest): Promise<NzbIndexer> => {
+    return fetchApi<NzbIndexer>(`/api/v1/nzb/indexers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(indexer),
+    });
+  },
+
+  deleteNzbIndexer: async (id: string): Promise<void> => {
+    await fetchApi(`/api/v1/nzb/indexers/${id}`, { method: 'DELETE' });
+  },
+
+  testNzbIndexer: async (id: string): Promise<NzbTestResult> => {
+    return fetchApi<NzbTestResult>(`/api/v1/nzb/indexers/${id}/test`, { method: 'POST' });
+  },
+
+  testNzbIndexerConfig: async (config: { baseUrl: string; apiKey: string }): Promise<NzbTestResult> => {
+    return fetchApi<NzbTestResult>('/api/v1/nzb/indexers/test', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    });
+  },
+
+  getNzbIndexerPresets: async (): Promise<NzbIndexerPresetsResponse> => {
+    return fetchApi<NzbIndexerPresetsResponse>('/api/v1/nzb/indexers/presets');
+  },
+
+  // === NZB Download Client ===
+  getNzbDownloadClient: async (): Promise<NzbDownloadClientResponse> => {
+    return fetchApi<NzbDownloadClientResponse>('/api/v1/nzb/download-client');
+  },
+
+  updateNzbDownloadClient: async (settings: NzbDownloadClientRequest): Promise<NzbDownloadClientResponse> => {
+    return fetchApi<NzbDownloadClientResponse>('/api/v1/nzb/download-client', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+  },
+
+  testNzbDownloadClient: async (settings: NzbDownloadClientRequest): Promise<NzbClientTestResult> => {
+    return fetchApi<NzbClientTestResult>('/api/v1/nzb/download-client/test', {
+      method: 'POST',
+      body: JSON.stringify(settings),
+    });
+  },
+
+  // === NZB Search ===
+  searchNzb: async (query?: string, title?: string, limit?: number): Promise<NzbSearchResponse> => {
+    const params = new URLSearchParams();
+    if (query) params.set('query', query);
+    if (title) params.set('title', title);
+    if (limit) params.set('limit', String(limit));
+    const queryStr = params.toString();
+    return fetchApi<NzbSearchResponse>(`/api/v1/nzb/search${queryStr ? '?' + queryStr : ''}`);
   },
 };
 
