@@ -881,6 +881,16 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: All download clients (including SABnzbd) managed in single unified list ✅
   - AC: Removed separate SABnzbd section, merged into unified modal ✅
   - Note: SabnzbdDownloadProvider with 21 unit tests
+- [ ] **Separate host and port fields in download client UI**
+  - AC: Split single "Host" field into separate "Host" and "Port" fields
+  - AC: If no port provided, default to port 80
+  - AC: If no port provided AND "Use SSL/HTTPS" is enabled, default to port 443
+  - AC: If port is provided, use the provided port regardless of SSL setting
+  - AC: If port is provided AND "Use SSL/HTTPS" is enabled, use provided port with HTTPS
+  - AC: Port field should show placeholder with default value (80 or 443 based on SSL toggle)
+  - AC: Validation: port must be 1-65535
+  - AC: Apply to all download client types (SABnzbd, future NZBGet, qBittorrent, etc.)
+  - AC: Backend constructs full URL from host + port + SSL setting
 - [ ] **Activity integration** (deferred)
   - AC: Show NZB downloads in activity feed
   - AC: Download progress from SABnzbd/NZBGet
