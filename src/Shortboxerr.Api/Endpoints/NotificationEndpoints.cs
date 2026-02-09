@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Shortboxerr.Core.Entities;
 using Shortboxerr.Core.Notifications;
+using Shortboxerr.Core.Services;
 
 namespace Shortboxerr.Api.Endpoints;
 
@@ -177,6 +178,214 @@ public static class NotificationEndpoints
 
         #endregion
 
+        #region Webhook Providers
+
+        // GET /api/v1/notifications/providers - get all webhook providers
+        group.MapGet("/providers", async (
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var providers = await settingsService.GetAsync<List<WebhookProviderSettings>>(
+                "notification_providers", 
+                new List<WebhookProviderSettings>(), 
+                cancellationToken) ?? [];
+            return Results.Ok(providers);
+        })
+        .WithName("GetWebhookProviders")
+        .WithDescription("Gets all configured webhook notification providers")
+        .Produces<List<WebhookProviderSettings>>(200);
+
+        // GET /api/v1/notifications/providers/{id} - get a specific webhook provider
+        group.MapGet("/providers/{id}", async (
+            string id,
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var providers = await settingsService.GetAsync<List<WebhookProviderSettings>>(
+                "notification_providers",
+                new List<WebhookProviderSettings>(),
+                cancellationToken) ?? [];
+            var provider = providers.FirstOrDefault(p => p.Id == id);
+            return provider != null 
+                ? Results.Ok(provider) 
+                : Results.NotFound(new { Error = "Webhook provider not found" });
+        })
+        .WithName("GetWebhookProvider")
+        .WithDescription("Gets a specific webhook provider by ID")
+        .Produces<WebhookProviderSettings>(200)
+        .Produces(404);
+
+        // POST /api/v1/notifications/providers - add a new webhook provider
+        group.MapPost("/providers", async (
+            [FromBody] WebhookProviderSettings provider,
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(provider.Name))
+            {
+                return Results.BadRequest(new { Error = "Name is required" });
+            }
+            if (string.IsNullOrWhiteSpace(provider.WebhookUrl))
+            {
+                return Results.BadRequest(new { Error = "Webhook URL is required" });
+            }
+
+            // Ensure ID is set
+            if (string.IsNullOrEmpty(provider.Id))
+            {
+                provider.Id = Guid.NewGuid().ToString();
+            }
+
+            var providers = await settingsService.GetAsync<List<WebhookProviderSettings>>(
+                "notification_providers",
+                new List<WebhookProviderSettings>(),
+                cancellationToken) ?? [];
+
+            // Check for duplicate name
+            if (providers.Any(p => p.Name.Equals(provider.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                return Results.Conflict(new { Error = $"A provider with name '{provider.Name}' already exists" });
+            }
+
+            providers.Add(provider);
+            await settingsService.SetAsync("notification_providers", providers, cancellationToken);
+
+            return Results.Created($"/api/v1/notifications/providers/{provider.Id}", provider);
+        })
+        .WithName("AddWebhookProvider")
+        .WithDescription("Adds a new webhook notification provider")
+        .Produces<WebhookProviderSettings>(201)
+        .Produces(400)
+        .Produces(409);
+
+        // PUT /api/v1/notifications/providers/{id} - update a webhook provider
+        group.MapPut("/providers/{id}", async (
+            string id,
+            [FromBody] WebhookProviderSettings provider,
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(provider.Name))
+            {
+                return Results.BadRequest(new { Error = "Name is required" });
+            }
+            if (string.IsNullOrWhiteSpace(provider.WebhookUrl))
+            {
+                return Results.BadRequest(new { Error = "Webhook URL is required" });
+            }
+
+            var providers = await settingsService.GetAsync<List<WebhookProviderSettings>>(
+                "notification_providers",
+                new List<WebhookProviderSettings>(),
+                cancellationToken) ?? [];
+
+            var existingIndex = providers.FindIndex(p => p.Id == id);
+            if (existingIndex == -1)
+            {
+                return Results.NotFound(new { Error = "Webhook provider not found" });
+            }
+
+            // Check for duplicate name (excluding self)
+            if (providers.Any(p => p.Id != id && p.Name.Equals(provider.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                return Results.Conflict(new { Error = $"A provider with name '{provider.Name}' already exists" });
+            }
+
+            provider.Id = id; // Ensure ID matches URL
+            providers[existingIndex] = provider;
+            await settingsService.SetAsync("notification_providers", providers, cancellationToken);
+
+            return Results.Ok(provider);
+        })
+        .WithName("UpdateWebhookProvider")
+        .WithDescription("Updates an existing webhook notification provider")
+        .Produces<WebhookProviderSettings>(200)
+        .Produces(400)
+        .Produces(404)
+        .Produces(409);
+
+        // DELETE /api/v1/notifications/providers/{id} - delete a webhook provider
+        group.MapDelete("/providers/{id}", async (
+            string id,
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var providers = await settingsService.GetAsync<List<WebhookProviderSettings>>(
+                "notification_providers",
+                new List<WebhookProviderSettings>(),
+                cancellationToken) ?? [];
+
+            var removed = providers.RemoveAll(p => p.Id == id);
+            if (removed == 0)
+            {
+                return Results.NotFound(new { Error = "Webhook provider not found" });
+            }
+
+            await settingsService.SetAsync("notification_providers", providers, cancellationToken);
+            return Results.Ok(new { Success = true });
+        })
+        .WithName("DeleteWebhookProvider")
+        .WithDescription("Deletes a webhook notification provider")
+        .Produces<object>(200)
+        .Produces(404);
+
+        // POST /api/v1/notifications/providers/{id}/test - test a webhook provider
+        group.MapPost("/providers/{id}/test", async (
+            string id,
+            [FromServices] ISettingsService settingsService,
+            [FromServices] INotificationProvider webhookProvider,
+            CancellationToken cancellationToken) =>
+        {
+            var providers = await settingsService.GetAsync<List<WebhookProviderSettings>>(
+                "notification_providers",
+                new List<WebhookProviderSettings>(),
+                cancellationToken) ?? [];
+
+            var provider = providers.FirstOrDefault(p => p.Id == id);
+            if (provider == null)
+            {
+                return Results.NotFound(new { Error = "Webhook provider not found" });
+            }
+
+            var result = await webhookProvider.TestAsync(provider, cancellationToken);
+            return Results.Ok(new WebhookTestResponse
+            {
+                Success = result.Success,
+                Message = result.Message,
+                Latency = result.Latency
+            });
+        })
+        .WithName("TestWebhookProvider")
+        .WithDescription("Tests a webhook notification provider")
+        .Produces<WebhookTestResponse>(200)
+        .Produces(404);
+
+        // POST /api/v1/notifications/providers/test - test a webhook provider with settings
+        group.MapPost("/providers/test", async (
+            [FromBody] WebhookProviderSettings provider,
+            [FromServices] INotificationProvider webhookProvider,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(provider.WebhookUrl))
+            {
+                return Results.BadRequest(new { Error = "Webhook URL is required" });
+            }
+
+            var result = await webhookProvider.TestAsync(provider, cancellationToken);
+            return Results.Ok(new WebhookTestResponse
+            {
+                Success = result.Success,
+                Message = result.Message,
+                Latency = result.Latency
+            });
+        })
+        .WithName("TestWebhookProviderSettings")
+        .WithDescription("Tests webhook notification settings without saving")
+        .Produces<WebhookTestResponse>(200)
+        .Produces(400);
+
+        #endregion
+
         #region Test Endpoints (for development/testing)
 
         // POST /api/v1/notifications/test - create a test notification
@@ -206,6 +415,16 @@ public class NotificationListResponse
     public List<Notification> Notifications { get; set; } = new();
     public int UnreadCount { get; set; }
     public int TotalReturned { get; set; }
+}
+
+/// <summary>
+/// Response from testing a webhook provider.
+/// </summary>
+public class WebhookTestResponse
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public TimeSpan? Latency { get; set; }
 }
 
 #endregion

@@ -4,17 +4,17 @@ import {
   Settings, Server, Download, Shield, 
   FolderOpen, Plug, Save, Plus, Edit, Trash2, 
   CheckCircle, XCircle, AlertCircle, Play, GripVertical,
-  Copy, RefreshCw, X, Database, ExternalLink, Eye, EyeOff, Calendar, FileText, HardDrive
+  Copy, RefreshCw, X, Database, ExternalLink, Eye, EyeOff, Calendar, FileText, HardDrive, Bell
 } from 'lucide-react';
 import { api } from '../api/client';
 import type { 
   Provider, CreateProviderRequest, ProviderTestResult, ComicVineTestResult,
   NzbIndexer, NzbIndexerRequest, NzbTestResult, NzbClientTestResult, NzbIndexerPreset,
-  SabnzbdSettings
+  SabnzbdSettings, WebhookProviderSettings, WebhookProviderRequest, NotificationEventType
 } from '../api/client';
 import { useTheme } from '../App';
 
-type SettingsTab = 'general' | 'indexers' | 'download' | 'nzb' | 'import' | 'ui' | 'security' | 'comicvine' | 'pulllist';
+type SettingsTab = 'general' | 'indexers' | 'download' | 'nzb' | 'notifications' | 'import' | 'ui' | 'security' | 'comicvine' | 'pulllist';
 
 const tabs: { id: SettingsTab; icon: React.ElementType; label: string }[] = [
   { id: 'general', icon: Settings, label: 'General' },
@@ -23,6 +23,7 @@ const tabs: { id: SettingsTab; icon: React.ElementType; label: string }[] = [
   { id: 'indexers', icon: Plug, label: 'Indexers' },
   { id: 'nzb', icon: HardDrive, label: 'NZB / Usenet' },
   { id: 'download', icon: Download, label: 'Download Clients' },
+  { id: 'notifications', icon: Bell, label: 'Notifications' },
   { id: 'import', icon: FolderOpen, label: 'Import' },
   { id: 'ui', icon: Server, label: 'UI' },
   { id: 'security', icon: Shield, label: 'Security' },
@@ -78,6 +79,7 @@ export function SettingsPage() {
             {activeTab === 'indexers' && <IndexersSettings />}
             {activeTab === 'nzb' && <NzbSettings />}
             {activeTab === 'download' && <DownloadClientsSettings />}
+            {activeTab === 'notifications' && <NotificationsSettings />}
             {activeTab === 'import' && <ImportSettings />}
             {activeTab === 'ui' && <UISettings />}
             {activeTab === 'security' && <SecuritySettings />}
@@ -2949,6 +2951,562 @@ function ImportSettings() {
         </SettingsField>
       </SettingsSection>
     </>
+  );
+}
+
+// === Notification Event Type Labels ===
+const notificationEventLabels: Record<NotificationEventType, string> = {
+  Test: 'Test Notification',
+  NewRelease: 'New Release',
+  Grabbed: 'Issue Grabbed',
+  Imported: 'Issue Imported',
+  WeeklySummary: 'Weekly Summary',
+  DownloadFailed: 'Download Failed',
+  SeriesAdded: 'Series Added',
+  Health: 'Health Alert',
+  Update: 'Application Update',
+};
+
+const allNotificationEvents: NotificationEventType[] = [
+  'NewRelease',
+  'Grabbed',
+  'Imported',
+  'WeeklySummary',
+  'DownloadFailed',
+  'SeriesAdded',
+  'Health',
+  'Update',
+];
+
+function NotificationsSettings() {
+  const queryClient = useQueryClient();
+  const [editingProvider, setEditingProvider] = useState<WebhookProviderSettings | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [testingId, setTestingId] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Fetch webhook providers
+  const { data: providers = [], isLoading } = useQuery({
+    queryKey: ['webhookProviders'],
+    queryFn: api.getWebhookProviders,
+  });
+
+  // Add provider mutation
+  const addMutation = useMutation({
+    mutationFn: api.addWebhookProvider,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['webhookProviders'] });
+      setShowAddModal(false);
+    },
+  });
+
+  // Update provider mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, provider }: { id: string; provider: WebhookProviderRequest }) =>
+      api.updateWebhookProvider(id, provider),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['webhookProviders'] });
+      setEditingProvider(null);
+    },
+  });
+
+  // Delete provider mutation
+  const deleteMutation = useMutation({
+    mutationFn: api.deleteWebhookProvider,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['webhookProviders'] });
+    },
+  });
+
+  // Test provider
+  const handleTest = async (id: string) => {
+    setTestingId(id);
+    setTestResult(null);
+    try {
+      const result = await api.testWebhookProvider(id);
+      setTestResult({ success: result.success, message: result.message });
+    } catch (err) {
+      setTestResult({ success: false, message: 'Failed to test webhook' });
+    } finally {
+      setTestingId(null);
+    }
+  };
+
+  // Detect webhook type from URL
+  const detectWebhookType = (url: string): string => {
+    if (url.includes('discord.com/api/webhooks') || url.includes('discordapp.com/api/webhooks')) {
+      return 'Discord';
+    }
+    if (url.includes('hooks.slack.com')) {
+      return 'Slack';
+    }
+    return 'Generic';
+  };
+
+  return (
+    <>
+      <SettingsSection title="Webhook Providers">
+        <div style={{ marginBottom: '16px' }}>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+            Configure webhook providers to receive notifications from Shortboxerr. Supports Discord, Slack, and generic webhooks.
+          </p>
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowAddModal(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Plus size={16} />
+            Add Webhook
+          </button>
+        </div>
+
+        {isLoading ? (
+          <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            Loading...
+          </div>
+        ) : providers.length === 0 ? (
+          <div style={{ 
+            padding: '32px', 
+            textAlign: 'center', 
+            color: 'var(--text-muted)',
+            background: 'var(--bg-tertiary)',
+            borderRadius: 'var(--radius-md)',
+            border: '1px dashed var(--border-color)'
+          }}>
+            <Bell size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
+            <p>No webhook providers configured</p>
+            <p style={{ fontSize: '12px' }}>Add a webhook to start receiving notifications</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {providers.map((provider) => (
+              <div
+                key={provider.id}
+                style={{
+                  padding: '16px',
+                  background: 'var(--bg-tertiary)',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border-color)',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                      <span style={{ fontWeight: 600, fontSize: '14px' }}>{provider.name}</span>
+                      <span style={{
+                        fontSize: '11px',
+                        padding: '2px 8px',
+                        borderRadius: '10px',
+                        background: provider.enabled ? 'rgba(34, 197, 94, 0.15)' : 'rgba(107, 114, 128, 0.15)',
+                        color: provider.enabled ? 'rgb(34, 197, 94)' : 'var(--text-muted)',
+                      }}>
+                        {provider.enabled ? 'Enabled' : 'Disabled'}
+                      </span>
+                      <span style={{
+                        fontSize: '11px',
+                        padding: '2px 8px',
+                        borderRadius: '10px',
+                        background: 'rgba(59, 130, 246, 0.15)',
+                        color: 'rgb(59, 130, 246)',
+                      }}>
+                        {detectWebhookType(provider.webhookUrl)}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                      {provider.webhookUrl.substring(0, 60)}{provider.webhookUrl.length > 60 ? '...' : ''}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      Events: {provider.onEvents?.map(e => notificationEventLabels[e]).join(', ') || 'None'}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      className="btn btn-sm"
+                      onClick={() => handleTest(provider.id)}
+                      disabled={testingId === provider.id}
+                      title="Test webhook"
+                      style={{ padding: '6px 10px' }}
+                    >
+                      {testingId === provider.id ? (
+                        <RefreshCw size={14} className="spinning" />
+                      ) : (
+                        <Play size={14} />
+                      )}
+                    </button>
+                    <button
+                      className="btn btn-sm"
+                      onClick={() => setEditingProvider(provider)}
+                      title="Edit"
+                      style={{ padding: '6px 10px' }}
+                    >
+                      <Edit size={14} />
+                    </button>
+                    <button
+                      className="btn btn-sm btn-danger"
+                      onClick={() => {
+                        if (confirm(`Delete webhook "${provider.name}"?`)) {
+                          deleteMutation.mutate(provider.id);
+                        }
+                      }}
+                      title="Delete"
+                      style={{ padding: '6px 10px' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+                {testResult && testingId === null && (
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: testResult.success ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                    color: testResult.success ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)',
+                    fontSize: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}>
+                    {testResult.success ? <CheckCircle size={14} /> : <XCircle size={14} />}
+                    {testResult.message}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </SettingsSection>
+
+      {/* Add/Edit Modal */}
+      {(showAddModal || editingProvider) && (
+        <WebhookProviderModal
+          provider={editingProvider}
+          onSave={(provider) => {
+            if (editingProvider) {
+              updateMutation.mutate({ id: editingProvider.id, provider });
+            } else {
+              addMutation.mutate(provider);
+            }
+          }}
+          onClose={() => {
+            setShowAddModal(false);
+            setEditingProvider(null);
+          }}
+          isLoading={addMutation.isPending || updateMutation.isPending}
+        />
+      )}
+    </>
+  );
+}
+
+function WebhookProviderModal({
+  provider,
+  onSave,
+  onClose,
+  isLoading,
+}: {
+  provider: WebhookProviderSettings | null;
+  onSave: (provider: WebhookProviderRequest) => void;
+  onClose: () => void;
+  isLoading: boolean;
+}) {
+  const [name, setName] = useState(provider?.name || '');
+  const [webhookUrl, setWebhookUrl] = useState(provider?.webhookUrl || '');
+  const [enabled, setEnabled] = useState(provider?.enabled ?? true);
+  const [onEvents, setOnEvents] = useState<NotificationEventType[]>(
+    provider?.onEvents || ['Grabbed', 'NewRelease']
+  );
+  const [includeSeries, setIncludeSeries] = useState(provider?.includeSeries ?? true);
+  const [includeImages, setIncludeImages] = useState(provider?.includeImages ?? true);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [username, setUsername] = useState(provider?.username || '');
+  const [password, setPassword] = useState(provider?.password || '');
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [testing, setTesting] = useState(false);
+
+  const isValid = name.trim() && webhookUrl.trim();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isValid) return;
+    onSave({
+      name: name.trim(),
+      webhookUrl: webhookUrl.trim(),
+      enabled,
+      onEvents,
+      includeSeries,
+      includeImages,
+      username: username || undefined,
+      password: password || undefined,
+    });
+  };
+
+  const handleTest = async () => {
+    if (!webhookUrl.trim()) return;
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const result = await api.testWebhookProviderSettings({
+        name: name || 'Test',
+        webhookUrl: webhookUrl.trim(),
+        enabled: true,
+        onEvents,
+        includeSeries,
+        includeImages,
+        username: username || undefined,
+        password: password || undefined,
+      });
+      setTestResult({ success: result.success, message: result.message });
+    } catch (err) {
+      setTestResult({ success: false, message: 'Failed to test webhook' });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const toggleEvent = (event: NotificationEventType) => {
+    setOnEvents(prev =>
+      prev.includes(event) ? prev.filter(e => e !== event) : [...prev, event]
+    );
+  };
+
+  // Detect webhook type
+  const webhookType = webhookUrl ? (
+    webhookUrl.includes('discord.com/api/webhooks') || webhookUrl.includes('discordapp.com/api/webhooks')
+      ? 'Discord'
+      : webhookUrl.includes('hooks.slack.com')
+        ? 'Slack'
+        : 'Generic'
+  ) : '';
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+    }}>
+      <div style={{
+        background: 'var(--bg-secondary)',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border-color)',
+        maxWidth: '600px',
+        width: '90%',
+        maxHeight: '90vh',
+        overflow: 'auto',
+      }}>
+        <div style={{
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-color)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
+            {provider ? 'Edit Webhook' : 'Add Webhook'}
+          </h3>
+          <button
+            className="btn btn-sm"
+            onClick={onClose}
+            style={{ padding: '4px 8px', background: 'transparent' }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ padding: '20px' }}>
+          <SettingsField label="Name" description="A friendly name to identify this webhook">
+            <input
+              className="input"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="My Discord Webhook"
+              style={{ width: '100%' }}
+            />
+          </SettingsField>
+
+          <SettingsField label="Webhook URL" description="Discord, Slack, or any HTTP webhook URL">
+            <input
+              className="input"
+              type="url"
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              placeholder="https://discord.com/api/webhooks/..."
+              style={{ width: '100%' }}
+            />
+            {webhookType && (
+              <div style={{ marginTop: '8px' }}>
+                <span style={{
+                  fontSize: '11px',
+                  padding: '2px 8px',
+                  borderRadius: '10px',
+                  background: 'rgba(59, 130, 246, 0.15)',
+                  color: 'rgb(59, 130, 246)',
+                }}>
+                  Detected: {webhookType}
+                </span>
+              </div>
+            )}
+          </SettingsField>
+
+          <SettingsField label="Enabled">
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="checkbox"
+                checked={enabled}
+                onChange={(e) => setEnabled(e.target.checked)}
+              />
+              <span style={{ fontSize: '13px' }}>Enable this webhook</span>
+            </label>
+          </SettingsField>
+
+          <SettingsField label="Notification Events" description="Select which events should trigger this webhook">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {allNotificationEvents.map((event) => (
+                <label
+                  key={event}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: onEvents.includes(event) ? 'rgba(59, 130, 246, 0.15)' : 'var(--bg-tertiary)',
+                    border: `1px solid ${onEvents.includes(event) ? 'rgb(59, 130, 246)' : 'var(--border-color)'}`,
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={onEvents.includes(event)}
+                    onChange={() => toggleEvent(event)}
+                    style={{ display: 'none' }}
+                  />
+                  {notificationEventLabels[event]}
+                </label>
+              ))}
+            </div>
+          </SettingsField>
+
+          <SettingsField label="Payload Options">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="checkbox"
+                  checked={includeSeries}
+                  onChange={(e) => setIncludeSeries(e.target.checked)}
+                />
+                <span style={{ fontSize: '13px' }}>Include series information</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="checkbox"
+                  checked={includeImages}
+                  onChange={(e) => setIncludeImages(e.target.checked)}
+                />
+                <span style={{ fontSize: '13px' }}>Include cover images (Discord/Slack)</span>
+              </label>
+            </div>
+          </SettingsField>
+
+          <div style={{ marginBottom: '16px' }}>
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              style={{ fontSize: '12px', padding: '4px 10px' }}
+            >
+              {showAdvanced ? 'Hide' : 'Show'} Advanced Options
+            </button>
+          </div>
+
+          {showAdvanced && (
+            <>
+              <SettingsField label="Basic Auth Username (optional)">
+                <input
+                  className="input"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="username"
+                  style={{ width: '100%' }}
+                />
+              </SettingsField>
+              <SettingsField label="Basic Auth Password (optional)">
+                <input
+                  className="input"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="password"
+                  style={{ width: '100%' }}
+                />
+              </SettingsField>
+            </>
+          )}
+
+          {testResult && (
+            <div style={{
+              marginBottom: '16px',
+              padding: '12px',
+              borderRadius: 'var(--radius-sm)',
+              background: testResult.success ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+              color: testResult.success ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}>
+              {testResult.success ? <CheckCircle size={16} /> : <XCircle size={16} />}
+              {testResult.message}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              className="btn"
+              onClick={handleTest}
+              disabled={!webhookUrl.trim() || testing}
+            >
+              {testing ? (
+                <>
+                  <RefreshCw size={14} className="spinning" />
+                  Testing...
+                </>
+              ) : (
+                <>
+                  <Play size={14} />
+                  Test
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              className="btn"
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={!isValid || isLoading}
+            >
+              {isLoading ? 'Saving...' : (provider ? 'Save Changes' : 'Add Webhook')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
 

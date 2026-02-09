@@ -19,6 +19,7 @@ using Shortboxerr.Infrastructure.Mylar3Migration;
 using Shortboxerr.Infrastructure.Nzb;
 using Shortboxerr.Infrastructure.Persistence;
 using Shortboxerr.Infrastructure.Providers;
+using Shortboxerr.Infrastructure.Notifications;
 using Shortboxerr.Infrastructure.PullList;
 using Shortboxerr.Infrastructure.Services;
 
@@ -119,8 +120,15 @@ public static class DependencyInjection
         services.AddScoped<INzbIndexerProvider, NzbIndexerProvider>();
         services.AddHttpClient<ISabnzbdClient, SabnzbdClient>();
 
-        // Notification service
-        services.AddScoped<INotificationService, Notifications.NotificationService>();
+        // Notification services
+        services.AddScoped<INotificationService, NotificationService>();
+        services.AddHttpClient<INotificationProvider, WebhookNotificationProvider>();
+        services.AddSingleton<INotificationProvider, WebhookNotificationProvider>(sp =>
+        {
+            var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+            var logger = sp.GetService<ILogger<WebhookNotificationProvider>>();
+            return new WebhookNotificationProvider(httpClientFactory.CreateClient("Webhook"), logger);
+        });
 
         // Settings (can be overridden via configuration)
         services.Configure<DecisionEngineSettings>(options =>

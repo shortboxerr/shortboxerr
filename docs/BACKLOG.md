@@ -982,11 +982,31 @@ In-app notification system implemented. External notification channels (email, w
 
 - [x] **Unit tests** ✅ (20 tests)
 
-- [ ] **External notification channels** (deferred)
+- [x] **Webhook notification provider** ✅ COMPLETED
+  - AC: `INotificationProvider` interface for external notification services ✅
+  - AC: `WebhookNotificationProvider` implementation ✅
+    - Supports Discord webhooks (with embeds, colors, fields) ✅
+    - Supports Slack webhooks (with blocks, sections, images) ✅
+    - Supports generic HTTP webhooks (JSON payload) ✅
+  - AC: Auto-detects webhook type from URL ✅
+  - AC: Configurable notification events (NewRelease, Grabbed, Imported, etc.) ✅
+  - AC: Configurable payload options (include series info, images) ✅
+  - AC: Basic authentication support ✅
+  - AC: Custom headers support ✅
+  - AC: API endpoints for webhook CRUD ✅
+    - GET /api/v1/notifications/providers ✅
+    - GET /api/v1/notifications/providers/{id} ✅
+    - POST /api/v1/notifications/providers ✅
+    - PUT /api/v1/notifications/providers/{id} ✅
+    - DELETE /api/v1/notifications/providers/{id} ✅
+    - POST /api/v1/notifications/providers/{id}/test ✅
+    - POST /api/v1/notifications/providers/test ✅
+  - AC: Settings UI for managing webhooks ✅
+  - AC: 25 unit tests covering all webhook functionality ✅
+
+- [ ] **Additional notification channels** (future)
   - AC: Email notifications (SMTP configuration)
-  - AC: Webhook notifications (for Discord, Slack, etc.)
   - AC: Pushover/Pushbullet support
-  - Note: Follows Sonarr/Radarr notification provider pattern
 
 ### 11.9 Pull List UX Improvements ✅ COMPLETED
 - [x] **Empty state improvements** ✅

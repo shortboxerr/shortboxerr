@@ -647,6 +647,54 @@ export interface NzbSearchResponse {
   }>;
 }
 
+// Webhook Notification Provider Types
+export type NotificationEventType = 
+  | 'Test' 
+  | 'NewRelease' 
+  | 'Grabbed' 
+  | 'Imported' 
+  | 'WeeklySummary' 
+  | 'DownloadFailed' 
+  | 'SeriesAdded' 
+  | 'Health' 
+  | 'Update';
+
+export interface WebhookProviderSettings {
+  id: string;
+  name: string;
+  providerType: 'Webhook';
+  enabled: boolean;
+  onEvents: NotificationEventType[];
+  includeSeries: boolean;
+  includeImages: boolean;
+  webhookUrl: string;
+  method: string;
+  contentType: string;
+  username?: string;
+  password?: string;
+  headers?: Record<string, string>;
+}
+
+export interface WebhookProviderRequest {
+  name: string;
+  enabled?: boolean;
+  onEvents?: NotificationEventType[];
+  includeSeries?: boolean;
+  includeImages?: boolean;
+  webhookUrl: string;
+  method?: string;
+  contentType?: string;
+  username?: string;
+  password?: string;
+  headers?: Record<string, string>;
+}
+
+export interface WebhookTestResult {
+  success: boolean;
+  message: string;
+  latency?: string;
+}
+
 export interface ProviderImplementation {
   name: string;
   displayName: string;
@@ -1680,6 +1728,54 @@ export const api = {
     if (limit) params.set('limit', String(limit));
     const queryStr = params.toString();
     return fetchApi<NzbSearchResponse>(`/api/v1/nzb/search${queryStr ? '?' + queryStr : ''}`);
+  },
+
+  // === Webhook Notification Providers ===
+  getWebhookProviders: async (): Promise<WebhookProviderSettings[]> => {
+    return fetchApi<WebhookProviderSettings[]>('/api/v1/notifications/providers');
+  },
+
+  getWebhookProvider: async (id: string): Promise<WebhookProviderSettings> => {
+    return fetchApi<WebhookProviderSettings>(`/api/v1/notifications/providers/${id}`);
+  },
+
+  addWebhookProvider: async (provider: WebhookProviderRequest): Promise<WebhookProviderSettings> => {
+    return fetchApi<WebhookProviderSettings>('/api/v1/notifications/providers', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...provider,
+        providerType: 'Webhook',
+      }),
+    });
+  },
+
+  updateWebhookProvider: async (id: string, provider: WebhookProviderRequest): Promise<WebhookProviderSettings> => {
+    return fetchApi<WebhookProviderSettings>(`/api/v1/notifications/providers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        ...provider,
+        id,
+        providerType: 'Webhook',
+      }),
+    });
+  },
+
+  deleteWebhookProvider: async (id: string): Promise<void> => {
+    await fetchApi(`/api/v1/notifications/providers/${id}`, { method: 'DELETE' });
+  },
+
+  testWebhookProvider: async (id: string): Promise<WebhookTestResult> => {
+    return fetchApi<WebhookTestResult>(`/api/v1/notifications/providers/${id}/test`, { method: 'POST' });
+  },
+
+  testWebhookProviderSettings: async (settings: WebhookProviderRequest): Promise<WebhookTestResult> => {
+    return fetchApi<WebhookTestResult>('/api/v1/notifications/providers/test', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...settings,
+        providerType: 'Webhook',
+      }),
+    });
   },
 };
 
