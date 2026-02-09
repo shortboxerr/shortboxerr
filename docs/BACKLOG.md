@@ -891,6 +891,10 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: Validation: port must be 1-65535
   - AC: Apply to all download client types (SABnzbd, future NZBGet, qBittorrent, etc.)
   - AC: Backend constructs full URL from host + port + SSL setting
+  - AC: "Test" button tests connection using currently entered form data (not saved data)
+  - AC: If test is successful, automatically save the download client configuration
+  - AC: Show success message: "Connection successful. Settings saved."
+  - AC: If test fails, do NOT save; show error message with failure reason
 - [ ] **Activity integration** (deferred)
   - AC: Show NZB downloads in activity feed
   - AC: Download progress from SABnzbd/NZBGet
