@@ -1,5 +1,38 @@
 # Worklog
 
+## Iteration 067 (2026-02-09)
+**EPIC 8.4: DDL Site Rate Limiting**
+
+### Commits
+1. `feat: implement DDL rate limiter service (EPIC 8.4)`
+
+### Deliverables
+
+#### Rate Limiter Service
+- ✅ `IDdlRateLimiter` interface for per-site rate limiting
+- ✅ `DdlRateLimiter` token-bucket implementation
+- ✅ Blocking acquisition (`AcquireAsync`) with automatic wait
+- ✅ Non-blocking acquisition (`TryAcquire`) for immediate check
+- ✅ Per-site configuration (requests per minute, minimum delay)
+- ✅ Exponential backoff on rate limit responses
+- ✅ Retry-After header support
+- ✅ Statistics tracking (total requests, violations)
+- ✅ Per-site isolation (limits don't affect other sites)
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Ddl/IDdlRateLimiter.cs` | New interface |
+| `src/Shortboxerr.Infrastructure/Ddl/DdlRateLimiter.cs` | New implementation |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register service |
+| `tests/Shortboxerr.Tests/DdlRateLimiterTests.cs` | 21 unit tests |
+
+### Test Results
+- All 820 tests passing (799 existing + 21 new)
+- Build: ✅ No errors
+
+---
+
 ## Iteration 066 (2026-02-06)
 **EPIC 8.2 & 8.3: Download Host Resolvers & Integration - Completed**
 

@@ -1,3 +1,38 @@
+# Self Check - Iteration 067
+
+## EPIC 8.4: DDL Site Rate Limiting
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Code compiles | ✅ | Backend builds with 0 errors |
+| Tests pass | ✅ | 21 new tests passing, 820 total |
+| Interface defined | ✅ | IDdlRateLimiter |
+| Implementation | ✅ | DdlRateLimiter |
+| DI registration | ✅ | Singleton in DI container |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+#### Rate Limiting per Site
+| AC | Status |
+|----|--------|
+| Respect site-specific rate limits | ✅ |
+| Configurable delays between requests | ✅ |
+| Request queuing to prevent bans | ✅ |
+| Cloudflare challenge handling | ⏸️ (deferred) |
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `IDdlRateLimiter.cs` | ✅ New |
+| `DdlRateLimiter.cs` | ✅ New |
+| `DependencyInjection.cs` | ✅ Modified |
+| `DdlRateLimiterTests.cs` | ✅ New (21 tests) |
+
+---
+
 # Self Check - Iteration 066
 
 ## EPIC 8.2 & 8.3: Download Host Resolvers & Integration

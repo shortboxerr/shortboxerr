@@ -387,17 +387,17 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
   - AC: Track host reliability per DDL site (deferred - statistics tracking)
   - AC: Blacklist consistently failing hosts temporarily (deferred)
 
-### 8.4 DDL Site Health Monitoring
-- [ ] **Site availability checks**
+### 8.4 DDL Site Health Monitoring - PARTIAL ✅
+- [ ] **Site availability checks** (deferred)
   - AC: Periodic health checks for each configured site
   - AC: Detect site changes that break scraping (CSS/HTML changes)
   - AC: Alert/disable adapter on repeated failures
   - AC: Version detection for known site layouts
-- [ ] **Rate limiting per site**
-  - AC: Respect site-specific rate limits
-  - AC: Configurable delays between requests
-  - AC: Request queuing to prevent bans
-  - AC: Cloudflare challenge handling
+- [x] **Rate limiting per site** ✅
+  - AC: Respect site-specific rate limits ✅ (IDdlRateLimiter)
+  - AC: Configurable delays between requests ✅ (minDelayMs)
+  - AC: Request queuing to prevent bans ✅ (AcquireAsync blocks until available)
+  - AC: Cloudflare challenge handling (deferred)
 
 ### 8.5 DDL Adapter Tests - PARTIAL ✅
 - [x] **GetComics fixture tests** ✅
