@@ -622,7 +622,7 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: API endpoints for manual refresh ✅
   - AC: "Refresh All" API endpoint ✅
   - AC: Force refresh option (ignore cache) ✅
-  - Note: UI buttons deferred to future iteration
+  - AC: UI refresh button on Series Detail page ✅
 - [x] **Refresh history** ✅
   - AC: Log metadata refresh events ✅
   - AC: Track last refresh time per series ✅
@@ -669,7 +669,7 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: Issue cards/rows show story arc tags (if any) ✅
   - AC: Sorting options (issue number, release date, status, title) ✅
   - AC: Filtering by status (owned, wanted, missing, all, skipped) ✅
-  - AC: Bulk selection support (mark as owned, mark as wanted, skip - UI present, handlers deferred) ✅
+  - AC: Bulk selection support (mark as owned, mark as wanted, skip) ✅
   - AC: Persist view preference (cover/list) in user settings ✅
 - [x] **Collection/Edition detail page** ✅
   - AC: Collection detail page showing metadata (title, type, ISBN, publisher) ✅
