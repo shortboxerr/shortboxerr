@@ -170,12 +170,21 @@ public class SabnzbdDownloadProvider : IDownloadProvider
                 var parsed = JsonSerializer.Deserialize<SabnzbdSettingsJson>(definition.Settings);
                 if (parsed != null)
                 {
+                    // Handle legacy format where Host might contain full URL or host:port
+                    var host = parsed.Host ?? definition.BaseUrl ?? "";
+                    int? port = parsed.Port;
+                    var useSsl = parsed.UseSsl ?? false;
+                    
+                    // Parse host if it contains protocol or port (legacy format)
+                    (host, port, useSsl) = ParseHostString(host, port, useSsl);
+                    
                     return new SabnzbdSettings
                     {
-                        Host = parsed.Host ?? definition.BaseUrl ?? "",
+                        Host = host,
+                        Port = port,
                         ApiKey = parsed.ApiKey ?? definition.ApiKey ?? "",
                         Category = parsed.Category ?? "comics",
-                        UseSsl = parsed.UseSsl ?? false
+                        UseSsl = useSsl
                     };
                 }
             }
@@ -186,13 +195,59 @@ public class SabnzbdDownloadProvider : IDownloadProvider
         }
 
         // Fall back to ProviderDefinition fields
+        var (fallbackHost, fallbackPort, fallbackSsl) = ParseHostString(definition.BaseUrl ?? "", null, false);
         return new SabnzbdSettings
         {
-            Host = definition.BaseUrl ?? "",
+            Host = fallbackHost,
+            Port = fallbackPort,
             ApiKey = definition.ApiKey ?? "",
             Category = "comics",
-            UseSsl = false
+            UseSsl = fallbackSsl
         };
+    }
+
+    /// <summary>
+    /// Parses a host string that might contain protocol and/or port (legacy format).
+    /// </summary>
+    private static (string Host, int? Port, bool UseSsl) ParseHostString(string hostString, int? existingPort, bool existingSsl)
+    {
+        if (string.IsNullOrEmpty(hostString))
+        {
+            return ("", existingPort, existingSsl);
+        }
+
+        var host = hostString;
+        var port = existingPort;
+        var useSsl = existingSsl;
+
+        // Check for protocol prefix
+        if (host.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            useSsl = true;
+            host = host[8..];
+        }
+        else if (host.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        {
+            useSsl = false;
+            host = host[7..];
+        }
+
+        // Remove trailing slashes
+        host = host.TrimEnd('/');
+
+        // Check for port in host:port format
+        var colonIndex = host.LastIndexOf(':');
+        if (colonIndex > 0 && colonIndex < host.Length - 1)
+        {
+            var portStr = host[(colonIndex + 1)..];
+            if (int.TryParse(portStr, out var parsedPort) && parsedPort > 0 && parsedPort <= 65535)
+            {
+                port ??= parsedPort;
+                host = host[..colonIndex];
+            }
+        }
+
+        return (host, port, useSsl);
     }
 
     private static DownloadStatus MapNzbStatus(NzbDownloadStatus nzbStatus)
@@ -238,6 +293,7 @@ public class SabnzbdDownloadProvider : IDownloadProvider
     private class SabnzbdSettingsJson
     {
         public string? Host { get; set; }
+        public int? Port { get; set; }
         public string? ApiKey { get; set; }
         public string? Category { get; set; }
         public bool? UseSsl { get; set; }

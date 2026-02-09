@@ -1,3 +1,60 @@
+# Self Check - Iteration 078
+
+## Download Client Host/Port Split & Test-Save Integration
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Frontend compiles | ✅ | npm run build |
+| Backend compiles | ✅ | dotnet build |
+| Tests pass | ✅ | 1160 tests (20 new) |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+| AC | Status |
+|----|--------|
+| Split "Host" into separate "Host" and "Port" fields | ✅ |
+| Default port 80 when no port provided | ✅ |
+| Default port 443 when SSL enabled and no port | ✅ |
+| Use provided port regardless of SSL | ✅ |
+| Port placeholder shows default (80/443) | ✅ |
+| Port validation 1-65535 | ✅ |
+| Backend constructs URL from host+port+SSL | ✅ |
+| Test button uses form data (not saved) | ✅ |
+| Auto-save on successful test | ✅ |
+| Show success message on save | ✅ |
+| Don't save on test failure | ✅ |
+| Set Healthy status on success | ✅ |
+| Set Unhealthy status on failure | ✅ |
+
+### Tests Added (20 tests)
+
+| Category | Tests |
+|----------|-------|
+| SabnzbdSettings.EffectivePort | 4 |
+| SabnzbdSettings.BaseUrl | 6 |
+| Provider settings with Port | 4 |
+| Legacy format parsing | 3 |
+| SabnzbdClient initialization | 1 |
+| Settings JSON parsing | 2 |
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `ISabnzbdClient.cs` | ✅ Modified (SabnzbdSettings) |
+| `SabnzbdClient.cs` | ✅ Modified (BuildApiUrl) |
+| `SabnzbdDownloadProvider.cs` | ✅ Modified (ParseSettings) |
+| `SettingsPage.tsx` | ✅ Modified (Host/Port fields) |
+| `SabnzbdClientTests.cs` | ✅ Modified (+10 tests) |
+| `SabnzbdDownloadProviderTests.cs` | ✅ Modified (+11 tests) |
+| `BACKLOG.md` | ✅ Updated |
+| `WORKLOG.md` | ✅ Updated |
+| `SELF_CHECK.md` | ✅ Updated |
+
+---
+
 # Self Check - Iteration 077
 
 ## 1fichier & Zippyshare Resolvers

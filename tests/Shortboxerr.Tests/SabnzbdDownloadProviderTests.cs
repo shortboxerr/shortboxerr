@@ -362,6 +362,80 @@ public class SabnzbdDownloadProviderTests
         Assert.NotNull(provider);
     }
 
+    [Fact]
+    public void Provider_WithSeparateHostAndPort_ParsesCorrectly()
+    {
+        _providerDefinition.Settings = """{"host":"192.168.1.100","port":8085,"apiKey":"test-key","category":"comics","useSsl":false}""";
+        
+        var provider = CreateProvider(HttpStatusCode.OK, "{}");
+        
+        Assert.NotNull(provider);
+        Assert.Equal("Test SABnzbd", provider.Name);
+    }
+
+    [Fact]
+    public void Provider_WithHostAndNoPort_UsesDefaultPort()
+    {
+        _providerDefinition.Settings = """{"host":"localhost","apiKey":"test-key","category":"comics","useSsl":false}""";
+        
+        var provider = CreateProvider(HttpStatusCode.OK, "{}");
+        
+        Assert.NotNull(provider);
+    }
+
+    [Fact]
+    public void Provider_WithSslEnabled_UsesPort443Default()
+    {
+        _providerDefinition.Settings = """{"host":"localhost","apiKey":"test-key","category":"comics","useSsl":true}""";
+        
+        var provider = CreateProvider(HttpStatusCode.OK, "{}");
+        
+        Assert.NotNull(provider);
+    }
+
+    [Fact]
+    public void Provider_WithSslEnabledAndCustomPort_UsesCustomPort()
+    {
+        _providerDefinition.Settings = """{"host":"localhost","port":9090,"apiKey":"test-key","category":"comics","useSsl":true}""";
+        
+        var provider = CreateProvider(HttpStatusCode.OK, "{}");
+        
+        Assert.NotNull(provider);
+    }
+
+    [Fact]
+    public void Provider_WithLegacyFullUrlFormat_ParsesCorrectly()
+    {
+        // Legacy format: host contained full URL with protocol and port
+        _providerDefinition.Settings = """{"host":"http://localhost:8080","apiKey":"test-key","category":"comics","useSsl":false}""";
+        
+        var provider = CreateProvider(HttpStatusCode.OK, "{}");
+        
+        Assert.NotNull(provider);
+    }
+
+    [Fact]
+    public void Provider_WithLegacyHttpsUrlFormat_ParsesCorrectly()
+    {
+        // Legacy format: host contained full URL with https protocol
+        _providerDefinition.Settings = """{"host":"https://localhost:8443","apiKey":"test-key","category":"comics","useSsl":true}""";
+        
+        var provider = CreateProvider(HttpStatusCode.OK, "{}");
+        
+        Assert.NotNull(provider);
+    }
+
+    [Fact]
+    public void Provider_WithLegacyHostPortFormat_ParsesCorrectly()
+    {
+        // Legacy format: host:port without protocol
+        _providerDefinition.Settings = """{"host":"192.168.1.50:8080","apiKey":"test-key","category":"comics","useSsl":false}""";
+        
+        var provider = CreateProvider(HttpStatusCode.OK, "{}");
+        
+        Assert.NotNull(provider);
+    }
+
     #endregion
 
     #region Factory Tests

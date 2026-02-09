@@ -1,5 +1,78 @@
 # Worklog
 
+## Iteration 078 (2026-02-09)
+**Download Client Host/Port Split & Test-Save Integration**
+
+### Commits
+1. `feat: split host/port fields in download client UI with auto-save on test`
+
+### Deliverables
+
+#### Backend Changes
+- ✅ `SabnzbdSettings` class updated:
+  - New `Port` property (nullable int)
+  - `EffectivePort` computed property (returns Port ?? (UseSsl ? 443 : 80))
+  - `BaseUrl` computed property (constructs full URL from host + port + ssl)
+  - Default port logic: 80 for HTTP, 443 for HTTPS when no port specified
+- ✅ `SabnzbdClient.BuildApiUrl()` now uses `SabnzbdSettings.BaseUrl`
+- ✅ `SabnzbdDownloadProvider.ParseSettings()` updated:
+  - New `ParseHostString()` helper for legacy format migration
+  - Handles legacy formats: full URL (http://host:port), host:port, plain host
+  - Extracts protocol → UseSsl, port from URL, returns clean host
+- ✅ `SabnzbdSettingsJson` class updated with optional `Port` property
+
+#### Frontend Changes
+- ✅ Separate Host and Port input fields for SABnzbd
+- ✅ Port field shows placeholder based on SSL toggle (80 or 443)
+- ✅ HTML5 validation for port range (1-65535)
+- ✅ `handleTest()` updated:
+  - Always tests with current form data (not saved data)
+  - On successful test, auto-saves the configuration
+  - Shows success message with save confirmation
+  - Auto-closes modal after 1 second delay on success
+  - On failure, does NOT save, shows error message
+- ✅ `getSettingsJson()` constructs settings with host/port/useSsl/category
+
+#### Unit Tests (21 new tests)
+- ✅ `SabnzbdSettingsTests` class (10 tests):
+  - EffectivePort with no port → 80
+  - EffectivePort with no port + SSL → 443
+  - EffectivePort with custom port → custom
+  - BaseUrl without port → http://host
+  - BaseUrl with port 80 → http://host (no port in URL)
+  - BaseUrl with custom port → http://host:port
+  - BaseUrl with SSL + no port → https://host
+  - BaseUrl with SSL + port 443 → https://host (no port in URL)
+  - BaseUrl with SSL + custom port → https://host:port
+  - BaseUrl with IP address and domain names
+- ✅ `SabnzbdDownloadProviderTests` new tests (11 tests):
+  - Separate host and port parsing
+  - Host only (uses default port)
+  - SSL enabled (uses port 443 default)
+  - SSL + custom port
+  - Legacy full URL format (http://host:port)
+  - Legacy HTTPS URL format
+  - Legacy host:port format without protocol
+
+### Test Count
+- Previous: 1140 tests
+- Added: 20 tests
+- Total: 1160 tests
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Nzb/ISabnzbdClient.cs` | Modified - SabnzbdSettings with Port, EffectivePort, BaseUrl |
+| `src/Shortboxerr.Infrastructure/Nzb/SabnzbdClient.cs` | Modified - BuildApiUrl uses BaseUrl |
+| `src/Shortboxerr.Infrastructure/Providers/SabnzbdDownloadProvider.cs` | Modified - ParseSettings with legacy support |
+| `ui/src/pages/SettingsPage.tsx` | Modified - Host/Port fields, auto-save on test |
+| `tests/Shortboxerr.Tests/SabnzbdClientTests.cs` | Modified - Updated test settings, added SabnzbdSettingsTests |
+| `tests/Shortboxerr.Tests/SabnzbdDownloadProviderTests.cs` | Modified - Added host/port parsing tests |
+| `docs/BACKLOG.md` | Updated - mark feature complete |
+| `docs/WORKLOG.md` | Updated - add iteration 078 |
+
+---
+
 ## Iteration 077 (2026-02-09)
 **1fichier & Zippyshare Resolvers**
 

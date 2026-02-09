@@ -20,9 +20,11 @@ public class SabnzbdClientTests
         _loggerMock = new Mock<ILogger<SabnzbdClient>>();
         _settings = new SabnzbdSettings
         {
-            Host = "http://localhost:8080",
+            Host = "localhost",
+            Port = 8080,
             ApiKey = "test-api-key",
-            Category = "comics"
+            Category = "comics",
+            UseSsl = false
         };
     }
 
@@ -501,6 +503,111 @@ public class SabnzbdClientTests
 
         // Act & Assert
         Assert.Equal(NzbDownloadClientType.SABnzbd, client.ClientType);
+    }
+
+    #endregion
+}
+
+/// <summary>
+/// Tests for SabnzbdSettings BaseUrl computation and port handling.
+/// </summary>
+public class SabnzbdSettingsTests
+{
+    #region EffectivePort Tests
+
+    [Fact]
+    public void EffectivePort_WithNoPort_ReturnsPort80()
+    {
+        var settings = new SabnzbdSettings { Host = "localhost", ApiKey = "key" };
+        Assert.Equal(80, settings.EffectivePort);
+    }
+
+    [Fact]
+    public void EffectivePort_WithNoPortAndSsl_ReturnsPort443()
+    {
+        var settings = new SabnzbdSettings { Host = "localhost", ApiKey = "key", UseSsl = true };
+        Assert.Equal(443, settings.EffectivePort);
+    }
+
+    [Fact]
+    public void EffectivePort_WithCustomPort_ReturnsCustomPort()
+    {
+        var settings = new SabnzbdSettings { Host = "localhost", Port = 8085, ApiKey = "key" };
+        Assert.Equal(8085, settings.EffectivePort);
+    }
+
+    [Fact]
+    public void EffectivePort_WithCustomPortAndSsl_ReturnsCustomPort()
+    {
+        var settings = new SabnzbdSettings { Host = "localhost", Port = 9090, ApiKey = "key", UseSsl = true };
+        Assert.Equal(9090, settings.EffectivePort);
+    }
+
+    #endregion
+
+    #region BaseUrl Tests
+
+    [Fact]
+    public void BaseUrl_WithHostOnly_ReturnsHttpWithoutPort()
+    {
+        var settings = new SabnzbdSettings { Host = "localhost", ApiKey = "key" };
+        Assert.Equal("http://localhost", settings.BaseUrl);
+    }
+
+    [Fact]
+    public void BaseUrl_WithHostAndPort80_ReturnsHttpWithoutPort()
+    {
+        var settings = new SabnzbdSettings { Host = "localhost", Port = 80, ApiKey = "key" };
+        Assert.Equal("http://localhost", settings.BaseUrl);
+    }
+
+    [Fact]
+    public void BaseUrl_WithHostAndCustomPort_ReturnsHttpWithPort()
+    {
+        var settings = new SabnzbdSettings { Host = "localhost", Port = 8080, ApiKey = "key" };
+        Assert.Equal("http://localhost:8080", settings.BaseUrl);
+    }
+
+    [Fact]
+    public void BaseUrl_WithSslAndNoPort_ReturnsHttpsWithoutPort()
+    {
+        var settings = new SabnzbdSettings { Host = "localhost", ApiKey = "key", UseSsl = true };
+        Assert.Equal("https://localhost", settings.BaseUrl);
+    }
+
+    [Fact]
+    public void BaseUrl_WithSslAndPort443_ReturnsHttpsWithoutPort()
+    {
+        var settings = new SabnzbdSettings { Host = "localhost", Port = 443, ApiKey = "key", UseSsl = true };
+        Assert.Equal("https://localhost", settings.BaseUrl);
+    }
+
+    [Fact]
+    public void BaseUrl_WithSslAndCustomPort_ReturnsHttpsWithPort()
+    {
+        var settings = new SabnzbdSettings { Host = "localhost", Port = 8443, ApiKey = "key", UseSsl = true };
+        Assert.Equal("https://localhost:8443", settings.BaseUrl);
+    }
+
+    [Fact]
+    public void BaseUrl_WithIpAddress_WorksCorrectly()
+    {
+        var settings = new SabnzbdSettings { Host = "192.168.1.100", Port = 8080, ApiKey = "key" };
+        Assert.Equal("http://192.168.1.100:8080", settings.BaseUrl);
+    }
+
+    [Fact]
+    public void BaseUrl_WithDomain_WorksCorrectly()
+    {
+        var settings = new SabnzbdSettings { Host = "sabnzbd.example.com", Port = 443, ApiKey = "key", UseSsl = true };
+        Assert.Equal("https://sabnzbd.example.com", settings.BaseUrl);
+    }
+
+    [Fact]
+    public void BaseUrl_WithNonStandardHttpsPort_IncludesPort()
+    {
+        var settings = new SabnzbdSettings { Host = "sabnzbd.local", Port = 9091, ApiKey = "key", UseSsl = true };
+        Assert.Equal("https://sabnzbd.local:9091", settings.BaseUrl);
     }
 
     #endregion

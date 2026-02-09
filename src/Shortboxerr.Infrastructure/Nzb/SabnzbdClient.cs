@@ -499,8 +499,7 @@ public class SabnzbdClient : ISabnzbdClient
 
     private string BuildApiUrl()
     {
-        var host = _settings.Host.TrimEnd('/');
-        return $"{host}/api";
+        return $"{_settings.BaseUrl}/api";
     }
 
     private async Task<T?> CallApiAsync<T>(string mode, Dictionary<string, string>? parameters = null, CancellationToken cancellationToken = default) where T : class

@@ -2429,6 +2429,8 @@ function ProviderModal({
   });
   
   // SABnzbd-specific settings
+  const [sabnzbdHost, setSabnzbdHost] = useState(existingSettings.host ?? '');
+  const [sabnzbdPort, setSabnzbdPort] = useState<string>(existingSettings.port?.toString() ?? '');
   const [sabnzbdCategory, setSabnzbdCategory] = useState(existingSettings.category ?? 'comics');
   const [sabnzbdUseSsl, setSabnzbdUseSsl] = useState(existingSettings.useSsl ?? false);
   
@@ -2436,6 +2438,9 @@ function ProviderModal({
   const [testResult, setTestResult] = useState<ProviderTestResult | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Default port based on SSL setting
+  const defaultPort = sabnzbdUseSsl ? 443 : 80;
 
   const { data: implementations } = useQuery({
     queryKey: ['provider-implementations'],
@@ -2452,8 +2457,10 @@ function ProviderModal({
   // Build settings JSON for SABnzbd
   const getSettingsJson = () => {
     if (isSabnzbd) {
+      const port = sabnzbdPort ? parseInt(sabnzbdPort, 10) : undefined;
       return JSON.stringify({
-        host: formData.baseUrl,
+        host: sabnzbdHost,
+        port: port && port > 0 && port <= 65535 ? port : undefined,
         apiKey: formData.apiKey,
         category: sabnzbdCategory,
         useSsl: sabnzbdUseSsl
@@ -2465,12 +2472,37 @@ function ProviderModal({
   const handleTest = async () => {
     setTesting(true);
     setTestResult(null);
+    setError(null);
     try {
+      // Always test with current form data (not saved data)
       const requestData = { ...formData, settings: getSettingsJson() };
-      const result = provider
-        ? await api.testProvider(provider.id)
-        : await api.testNewProvider(requestData);
+      const result = await api.testNewProvider(requestData);
       setTestResult(result);
+      
+      // If test is successful, automatically save
+      if (result.success) {
+        setSaving(true);
+        try {
+          if (provider) {
+            await api.updateProvider(provider.id, requestData);
+          } else if (category === 'Indexer') {
+            await api.createIndexer(requestData);
+          } else {
+            await api.createDownloadClient(requestData);
+          }
+          // Update test result to show save success
+          setTestResult({
+            ...result,
+            message: `${result.message}. Settings saved.`
+          });
+          // Close modal after short delay to show success message
+          setTimeout(() => onSave(), 1000);
+        } catch (saveError) {
+          setError(`Test succeeded but save failed: ${String(saveError)}`);
+        } finally {
+          setSaving(false);
+        }
+      }
     } catch (e) {
       setTestResult({ success: false, message: 'Test failed', errors: [String(e)], latencyMs: 0 });
     } finally {
@@ -2565,14 +2597,54 @@ function ProviderModal({
             )}
           </SettingsField>
 
-          {selectedImpl?.requiresBaseUrl && (
-            <SettingsField label={isSabnzbd ? 'Host' : 'Base URL'} description={isSabnzbd ? 'SABnzbd host (e.g., localhost:8080)' : undefined}>
+          {/* SABnzbd-specific Host/Port fields */}
+          {isSabnzbd && (
+            <>
+              <SettingsField label="Host" description="SABnzbd hostname or IP address">
+                <input
+                  className="input"
+                  style={{ width: '100%' }}
+                  value={sabnzbdHost}
+                  onChange={(e) => setSabnzbdHost(e.target.value)}
+                  placeholder="localhost"
+                />
+              </SettingsField>
+
+              <SettingsField label="Port" description={`Default: ${defaultPort} (${sabnzbdUseSsl ? 'HTTPS' : 'HTTP'})`}>
+                <input
+                  className="input"
+                  style={{ width: '120px' }}
+                  type="number"
+                  min="1"
+                  max="65535"
+                  value={sabnzbdPort}
+                  onChange={(e) => setSabnzbdPort(e.target.value)}
+                  placeholder={String(defaultPort)}
+                />
+              </SettingsField>
+
+              <SettingsField label="Use SSL">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="checkbox"
+                    checked={sabnzbdUseSsl}
+                    onChange={(e) => setSabnzbdUseSsl(e.target.checked)}
+                  />
+                  <span style={{ fontSize: '13px' }}>Connect using HTTPS</span>
+                </label>
+              </SettingsField>
+            </>
+          )}
+
+          {/* Base URL for non-SABnzbd providers */}
+          {selectedImpl?.requiresBaseUrl && !isSabnzbd && (
+            <SettingsField label="Base URL">
               <input
                 className="input"
                 style={{ width: '100%' }}
                 value={formData.baseUrl}
                 onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
-                placeholder={isSabnzbd ? 'localhost:8080' : 'https://example.com'}
+                placeholder="https://example.com"
               />
             </SettingsField>
           )}
@@ -2590,30 +2662,17 @@ function ProviderModal({
             </SettingsField>
           )}
 
-          {/* SABnzbd-specific settings */}
+          {/* SABnzbd-specific category setting */}
           {isSabnzbd && (
-            <>
-              <SettingsField label="Category" description="Category for comics downloads">
-                <input
-                  className="input"
-                  style={{ width: '200px' }}
-                  value={sabnzbdCategory}
-                  onChange={(e) => setSabnzbdCategory(e.target.value)}
-                  placeholder="comics"
-                />
-              </SettingsField>
-
-              <SettingsField label="Use SSL">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <input
-                    type="checkbox"
-                    checked={sabnzbdUseSsl}
-                    onChange={(e) => setSabnzbdUseSsl(e.target.checked)}
-                  />
-                  <span style={{ fontSize: '13px' }}>Connect using HTTPS</span>
-                </label>
-              </SettingsField>
-            </>
+            <SettingsField label="Category" description="Category for comics downloads">
+              <input
+                className="input"
+                style={{ width: '200px' }}
+                value={sabnzbdCategory}
+                onChange={(e) => setSabnzbdCategory(e.target.value)}
+                placeholder="comics"
+              />
+            </SettingsField>
           )}
 
           {selectedImpl?.requiresCredentials && (

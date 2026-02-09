@@ -48,9 +48,16 @@ public interface ISabnzbdClient : INzbDownloadClient
 public class SabnzbdSettings
 {
     /// <summary>
-    /// SABnzbd host URL (e.g., http://localhost:8080).
+    /// SABnzbd hostname (e.g., localhost, 192.168.1.100, sabnzbd.local).
+    /// Do not include protocol (http://) or port.
     /// </summary>
     public required string Host { get; set; }
+
+    /// <summary>
+    /// SABnzbd port number.
+    /// Default: 80 for HTTP, 443 for HTTPS if UseSsl is true.
+    /// </summary>
+    public int? Port { get; set; }
 
     /// <summary>
     /// API key for authentication.
@@ -68,7 +75,7 @@ public class SabnzbdSettings
     public NzbPriority DefaultPriority { get; set; } = NzbPriority.Normal;
 
     /// <summary>
-    /// Whether to use SSL/TLS.
+    /// Whether to use SSL/TLS (HTTPS).
     /// </summary>
     public bool UseSsl { get; set; } = false;
 
@@ -81,6 +88,32 @@ public class SabnzbdSettings
     /// Post-processing script to run after download.
     /// </summary>
     public string? PostProcessingScript { get; set; }
+
+    /// <summary>
+    /// Gets the effective port number based on Port setting and UseSsl.
+    /// </summary>
+    public int EffectivePort => Port ?? (UseSsl ? 443 : 80);
+
+    /// <summary>
+    /// Gets the full base URL for SABnzbd API requests.
+    /// </summary>
+    public string BaseUrl
+    {
+        get
+        {
+            var protocol = UseSsl ? "https" : "http";
+            var port = EffectivePort;
+            
+            // Only include port if non-standard
+            var includePort = (UseSsl && port != 443) || (!UseSsl && port != 80);
+            
+            if (includePort)
+            {
+                return $"{protocol}://{Host}:{port}";
+            }
+            return $"{protocol}://{Host}";
+        }
+    }
 }
 
 /// <summary>
