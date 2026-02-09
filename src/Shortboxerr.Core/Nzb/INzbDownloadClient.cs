@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Shortboxerr.Core.Nzb;
 
 /// <summary>
@@ -81,6 +83,7 @@ public interface INzbDownloadClient
 /// <summary>
 /// Types of NZB download clients.
 /// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum NzbDownloadClientType
 {
     SABnzbd,
@@ -90,6 +93,7 @@ public enum NzbDownloadClientType
 /// <summary>
 /// Download priority levels.
 /// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum NzbPriority
 {
     Low = -1,
