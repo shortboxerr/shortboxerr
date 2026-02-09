@@ -1,3 +1,40 @@
+# Self Check - Iteration 071
+
+## EPIC 10.6: NZB Settings UI
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Frontend compiles | ✅ | npm run build |
+| Backend compiles | ✅ | dotnet build |
+| Tests pass | ✅ | 893 tests |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+#### Indexers Settings Page
+| AC | Status |
+|----|--------|
+| NZB Indexers section (separate from DDL) | ✅ |
+| Add indexer modal with Newznab fields | ✅ |
+| Preset selection for popular indexers | ✅ |
+| Test and status indicators | ✅ |
+
+#### Download Clients Settings Page
+| AC | Status |
+|----|--------|
+| SABnzbd configuration panel | ✅ |
+| Connection test results | ✅ |
+
+### UI Components Added
+- `NzbSettings` - Main NZB settings container
+- `NzbIndexerTable` - List view for indexers
+- `NzbIndexerModal` - Add/edit indexer dialog
+- `NzbDownloadClientSection` - SABnzbd configuration
+
+---
+
 # Self Check - Iteration 070
 
 ## EPIC 10.5: NZB Configuration & Settings API

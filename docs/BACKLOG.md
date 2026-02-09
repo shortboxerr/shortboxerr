@@ -843,17 +843,17 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: Import SABnzbd/NZBGet settings
   - AC: Validation report
 
-### 10.6 NZB UI
-- [ ] **Indexers settings page**
-  - AC: NZB Indexers section (separate from DDL)
-  - AC: Add indexer modal with Newznab fields
-  - AC: Preset selection for popular indexers
-  - AC: Test and status indicators
-- [ ] **Download clients settings page**
-  - AC: SABnzbd configuration panel
-  - AC: NZBGet configuration panel
-  - AC: Connection test results
-- [ ] **Activity integration**
+### 10.6 NZB UI - PARTIAL ✅
+- [x] **Indexers settings page** ✅
+  - AC: NZB Indexers section (separate from DDL) ✅
+  - AC: Add indexer modal with Newznab fields ✅
+  - AC: Preset selection for popular indexers ✅
+  - AC: Test and status indicators ✅
+- [x] **Download clients settings page** ✅
+  - AC: SABnzbd configuration panel ✅
+  - AC: NZBGet configuration panel (deferred)
+  - AC: Connection test results ✅
+- [ ] **Activity integration** (deferred)
   - AC: Show NZB downloads in activity feed
   - AC: Download progress from SABnzbd/NZBGet
   - AC: Queue management (pause, remove, priority)

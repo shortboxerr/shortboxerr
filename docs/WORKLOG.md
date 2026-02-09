@@ -1,5 +1,40 @@
 # Worklog
 
+## Iteration 071 (2026-02-09)
+**EPIC 10.6: NZB Settings UI**
+
+### Commits
+1. `feat: implement NZB settings UI (EPIC 10.6)`
+
+### Deliverables
+
+#### NZB Indexers UI
+- ✅ NZB Indexers section in Settings
+- ✅ Indexer list with status, URL, priority
+- ✅ Add indexer modal with preset selection
+- ✅ Newznab fields: URL, API key, priority, categories
+- ✅ Test connection button
+- ✅ Edit and delete functionality
+
+#### Download Client UI
+- ✅ SABnzbd configuration panel
+- ✅ Host, API key, category, SSL settings
+- ✅ Connection test with version display
+- ✅ Configuration status indicator
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `ui/src/pages/SettingsPage.tsx` | Added NzbSettings component |
+| `ui/src/api/client.ts` | Added NZB types and API methods |
+
+### Test Results
+- All 893 tests passing
+- Frontend build: ✅
+- Backend build: ✅
+
+---
+
 ## Iteration 070 (2026-02-09)
 **EPIC 10.5: NZB Configuration & Settings API**
 
