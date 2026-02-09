@@ -208,12 +208,13 @@ Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests sec
   - AC: Collections list page ✅
   - AC: Activity page (thin but functional) ✅
   - AC: Manual Import page ✅
-    - Shows staging folder stats (total files, auto-matched, need review)
-    - Table with filename, parsed info, match status, confidence scores
-    - Select all/individual file selection
-    - Import selected matched files
-    - Refresh button
-    - Edit match and reject buttons (UI placeholders)
+    - Shows staging folder stats (total files, auto-matched, need review) ✅
+    - Table with filename, parsed info, match status, confidence scores ✅
+    - Select all/individual file selection ✅
+    - Import selected matched files ✅
+    - Refresh button ✅
+    - Edit match button with series search modal ✅
+    - Reject button with confirmation and reason input ✅
 - [x] **Build integration** ✅
   - AC: Vite builds to API wwwroot folder
   - AC: API serves static files from wwwroot

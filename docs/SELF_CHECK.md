@@ -1,3 +1,60 @@
+# Self Check - Iteration 084
+
+## Manual Import Edit Match & Reject (EPIC 5)
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Frontend compiles | ✅ | `npm run build` |
+| Backend compiles | ✅ | `dotnet build` |
+| Tests pass | ✅ | 1270 tests (+8 new) |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+| AC | Status |
+|----|--------|
+| Edit match button opens modal | ✅ |
+| Modal shows series search | ✅ |
+| Search queries local series | ✅ |
+| Select series updates match | ✅ |
+| Reject button opens confirmation | ✅ |
+| Optional reason input | ✅ |
+| File moved to failed folder | ✅ |
+| Bulk import endpoint | ✅ |
+| /staged and /import aliases | ✅ |
+
+### Test Categories (8 tests)
+
+| Category | Tests |
+|----------|-------|
+| Bulk import | 2 |
+| Reject file | 2 |
+| Update match | 2 |
+| Staged alias | 1 |
+| Move to failed | 1 |
+
+### Files Changed
+
+| File | Status |
+|------|--------|
+| `ManualImportEndpoints.cs` | ✅ Modified |
+| `IStagingService.cs` | ✅ Modified |
+| `StagingService.cs` | ✅ Modified |
+| `ManualImportPage.tsx` | ✅ Modified |
+| `client.ts` | ✅ Modified |
+| `ManualImportEndpointTests.cs` | ✅ Modified (+8 tests) |
+| `BACKLOG.md` | ✅ Updated |
+| `WORKLOG.md` | ✅ Updated |
+| `SELF_CHECK.md` | ✅ Updated |
+
+### EPIC Status
+
+**EPIC 5 Manual Import: COMPLETE** ✅
+
+---
+
 # Self Check - Iteration 083
 
 ## Correlation ID for Request Tracing (EPIC 13.1)

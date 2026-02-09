@@ -1194,6 +1194,20 @@ export const api = {
     });
   },
 
+  rejectStagedFile: async (path: string, reason?: string): Promise<void> => {
+    await fetchApi('/api/v1/manualimport/reject', {
+      method: 'POST',
+      body: JSON.stringify({ sourcePath: path, reason }),
+    });
+  },
+
+  updateStagedMatch: async (path: string, seriesId: number | null, issueId: number | null, editionId: number | null): Promise<void> => {
+    await fetchApi('/api/v1/manualimport/update-match', {
+      method: 'POST',
+      body: JSON.stringify({ sourcePath: path, seriesId, issueId, editionId }),
+    });
+  },
+
   // Providers
   getIndexers: async (): Promise<Provider[]> => {
     try {

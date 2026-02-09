@@ -26,6 +26,11 @@ public interface IStagingService
     /// Move a file to the failed folder.
     /// </summary>
     Task<bool> MoveToFailedAsync(string sourcePath, string reason, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Update the match for a staged file.
+    /// </summary>
+    Task<bool> UpdateMatchAsync(string sourcePath, int? seriesId, int? issueId, int? editionId, CancellationToken cancellationToken = default);
 }
 
 

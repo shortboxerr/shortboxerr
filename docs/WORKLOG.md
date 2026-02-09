@@ -1,5 +1,78 @@
 # Worklog
 
+## Iteration 084 (2026-02-09)
+**Manual Import Edit Match & Reject Functionality (EPIC 5)**
+
+### Commits
+1. `feat: implement Manual Import edit match and reject functionality (EPIC 5)`
+
+### Deliverables
+
+#### Backend API Enhancements (`ManualImportEndpoints.cs`)
+- ✅ `GET /api/v1/manualimport/staged` - Alias endpoint for UI compatibility
+- ✅ `POST /api/v1/manualimport/import` - Bulk import multiple files
+- ✅ `POST /api/v1/manualimport/reject` - Reject file with optional reason
+- ✅ `POST /api/v1/manualimport/update-match` - Update series/issue/edition match
+
+#### Staging Service (`StagingService.cs`)
+- ✅ `UpdateMatchAsync` - In-memory cache for manual match overrides
+- ✅ Match overrides applied during staging scan
+- ✅ Overrides cleared when file is rejected/imported
+
+#### UI Enhancements (`ManualImportPage.tsx`)
+- ✅ **Edit Match Modal**
+  - Series search with debounced queries
+  - Displays publisher, year, issue count
+  - Pre-selects current match if exists
+  - Confirm/Cancel buttons
+- ✅ **Reject Confirmation Modal**
+  - Displays filename being rejected
+  - Optional reason input
+  - File moved to failed folder
+
+#### API Client (`client.ts`)
+- ✅ `rejectStagedFile(path, reason?)` - Reject a staged file
+- ✅ `updateStagedMatch(path, seriesId, issueId, editionId)` - Update match
+
+### Test Count
+- Previous: 1262 tests
+- Added: 8 tests
+- Total: 1270 tests
+
+### Test Categories (8 tests)
+| Category | Tests |
+|----------|-------|
+| Bulk import | 2 |
+| Reject file | 2 |
+| Update match | 2 |
+| Staged alias | 1 |
+| Move to failed | 1 |
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `ManualImportEndpoints.cs` | Modified - new endpoints |
+| `IStagingService.cs` | Modified - UpdateMatchAsync |
+| `StagingService.cs` | Modified - match override cache |
+| `ManualImportPage.tsx` | Modified - modals + handlers |
+| `client.ts` | Modified - API functions |
+| `ManualImportEndpointTests.cs` | Modified (+8 tests) |
+| `BACKLOG.md` | Updated |
+| `WORKLOG.md` | Updated |
+
+### EPIC 5 Status
+With this iteration, **EPIC 5 Manual Import** is now **COMPLETE**:
+- ✅ Staging folder scanning
+- ✅ Filename parsing
+- ✅ Auto-matching to series
+- ✅ Import to library
+- ✅ Move to failed folder
+- ✅ Edit match (manual override)
+- ✅ Reject file (with reason)
+- ✅ Bulk import
+
+---
+
 ## Iteration 083 (2026-02-09)
 **Correlation ID for Request Tracing (EPIC 13.1)**
 

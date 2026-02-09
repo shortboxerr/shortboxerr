@@ -20,6 +20,10 @@ public class StagingService : IStagingService
     private readonly string _failedFolder;
     private readonly string[] _libraryRoots;
     private readonly string[] _allowedExtensions = { ".cbz", ".cbr", ".pdf" };
+    
+    // Cache for manual match overrides (path -> override)
+    private static readonly Dictionary<string, MatchOverride> _matchOverrides = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly object _overrideLock = new();
 
     public StagingService(
         ShortboxerrDbContext db,
@@ -92,6 +96,9 @@ public class StagingService : IStagingService
             {
                 await TryMatchSeriesAsync(item, parsedInfo.SeriesTitle, cancellationToken);
             }
+
+            // Apply any manual match overrides
+            ApplyMatchOverrides(item);
 
             // Validate file
             ValidateStagedItem(item);
@@ -379,6 +386,12 @@ public class StagingService : IStagingService
 
             File.Move(sourcePath, destPath);
 
+            // Remove any match override for this file
+            lock (_overrideLock)
+            {
+                _matchOverrides.Remove(sourcePath);
+            }
+
             // Log history event
             var historyEvent = new HistoryEvent
             {
@@ -391,12 +404,42 @@ public class StagingService : IStagingService
             _db.HistoryEvents.Add(historyEvent);
             await _db.SaveChangesAsync(cancellationToken);
 
+            _logger.LogInformation("File rejected: {FileName}, Reason: {Reason}", fileName, reason);
+
             return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to move {Source} to failed folder", sourcePath);
             return false;
+        }
+    }
+
+    public Task<bool> UpdateMatchAsync(string sourcePath, int? seriesId, int? issueId, int? editionId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            lock (_overrideLock)
+            {
+                if (seriesId.HasValue || issueId.HasValue || editionId.HasValue)
+                {
+                    _matchOverrides[sourcePath] = new MatchOverride(seriesId, issueId, editionId);
+                    _logger.LogInformation("Match updated for {SourcePath}: SeriesId={SeriesId}, IssueId={IssueId}, EditionId={EditionId}",
+                        sourcePath, seriesId, issueId, editionId);
+                }
+                else
+                {
+                    // Clear override if all IDs are null
+                    _matchOverrides.Remove(sourcePath);
+                    _logger.LogInformation("Match cleared for {SourcePath}", sourcePath);
+                }
+            }
+            return Task.FromResult(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update match for {SourcePath}", sourcePath);
+            return Task.FromResult(false);
         }
     }
 
@@ -489,7 +532,28 @@ public class StagingService : IStagingService
             : SanitizePath(title);
         return $"{name}{extension}";
     }
+
+    private void ApplyMatchOverrides(StagedItem item)
+    {
+        lock (_overrideLock)
+        {
+            if (_matchOverrides.TryGetValue(item.Path, out var matchOverride))
+            {
+                item.SuggestedSeriesId = matchOverride.SeriesId;
+                item.SuggestedEditionId = matchOverride.EditionId;
+                // Note: IssueId is stored but not applied to SuggestedIssueId (not in model yet)
+                item.ParseConfidence = Math.Max(item.ParseConfidence, 80); // Manual match has high confidence
+                _logger.LogDebug("Applied match override for {Path}: SeriesId={SeriesId}, EditionId={EditionId}",
+                    item.Path, matchOverride.SeriesId, matchOverride.EditionId);
+            }
+        }
+    }
 }
+
+/// <summary>
+/// Represents a manual match override for a staged file.
+/// </summary>
+internal record MatchOverride(int? SeriesId, int? IssueId, int? EditionId);
 
 
 
