@@ -296,11 +296,12 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
   - AC: Extract all download host links from release pages ✅
   - AC: Handle pagination for search results (basic - offset support)
   - AC: Parse release details (title, size, date posted, tags) ✅
-- [ ] **GetComics search integration**
+- [x] **GetComics search integration** ✅
   - AC: Search by series name, issue number ✅ (via BuildSearchUrl)
   - AC: Search by keyword/tag/category ✅ (via RawQuery)
-  - AC: RSS feed polling for new releases (/feed/)
-  - AC: Category browsing (DC, Marvel, Image, etc.)
+  - AC: RSS feed polling for new releases (/feed/) ✅
+  - AC: Category browsing (DC, Marvel, Image, etc.) ✅
+  - Note: IRssFeedService with RSS 2.0/Atom support, 31 unit tests
 - [x] **GetComics link resolution** ✅
   - AC: Follow redirects to actual download URLs ✅ (handled by HttpClient)
   - AC: Handle multiple mirror options with priority ✅ (host priority sorting)

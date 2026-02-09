@@ -1,5 +1,63 @@
 # Worklog
 
+## Iteration 075 (2026-02-09)
+**GetComics RSS Feed & Category Support**
+
+### Commits
+1. `feat: add RSS feed and category browsing to GetComicsAdapter`
+
+### Deliverables
+
+#### RSS Feed Service
+- ✅ `IRssFeedService` interface for fetching and parsing RSS feeds
+- ✅ `RssFeedService` implementation:
+  - RSS 2.0 format parsing with full metadata extraction
+  - Atom format parsing support
+  - Date parsing for various RFC 822 and ISO 8601 formats
+  - Enclosure support for media attachments
+  - Category/tag extraction
+  - Error handling with detailed result messages
+
+#### RSS Feed Models
+- ✅ `RssFeedResult` for feed fetch/parse results
+- ✅ `RssFeedItem` for individual feed entries
+- ✅ `DdlCategories` constants for known publisher categories
+- ✅ Display name mapping for categories
+
+#### GetComicsAdapter Enhancements
+- ✅ `GetRssFeedAsync()` - Fetch latest releases from main RSS feed
+- ✅ `GetCategoryAsync()` - Browse releases by publisher category
+- ✅ `GetCategoryRssFeedAsync()` - Fetch category-specific RSS feeds
+- ✅ `GetAvailableCategories()` - Get list of supported categories
+- ✅ RSS item to DdlCandidate conversion with tag extraction
+- ✅ Publication date preservation from RSS feed
+
+#### DdlCandidate Enhancement
+- ✅ Added `Description` property for RSS item summaries
+
+#### DI Registration
+- ✅ `IRssFeedService` registered with HttpClient factory
+
+#### Tests
+- ✅ 31 new unit tests:
+  - `RssFeedServiceTests` (17 tests) - RSS 2.0 and Atom parsing
+  - `DdlCategoriesTests` (3 tests) - Category display names
+  - `GetComicsAdapterRssTests` (11 tests) - RSS/category integration
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Ddl/IRssFeedService.cs` | New - interface and models |
+| `src/Shortboxerr.Core/Ddl/DdlCandidate.cs` | Added Description property |
+| `src/Shortboxerr.Infrastructure/Ddl/RssFeedService.cs` | New - implementation |
+| `src/Shortboxerr.Infrastructure/Ddl/GetComicsAdapter.cs` | Added RSS/category methods |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Added RSS service registration |
+| `tests/Shortboxerr.Tests/RssFeedServiceTests.cs` | New - 20 tests |
+| `tests/Shortboxerr.Tests/GetComicsAdapterRssTests.cs` | New - 11 tests |
+| `docs/BACKLOG.md` | Mark GetComics search integration complete |
+
+---
+
 ## Iteration 074 (2026-02-09)
 **EPIC 10.4: NZB → Import Handoff**
 

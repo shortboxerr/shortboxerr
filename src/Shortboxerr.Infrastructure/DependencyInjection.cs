@@ -68,6 +68,7 @@ public static class DependencyInjection
         services.AddSingleton<IDdlSiteAdapterFactory, DdlSiteAdapterFactory>();
         services.AddSingleton<IDdlSearchService, DdlSearchService>();
         services.AddSingleton<IDownloadHostResolverFactory, DownloadHostResolverFactory>();
+        services.AddHttpClient<IRssFeedService, RssFeedService>();
         services.AddSingleton<IDdlDownloadService>(sp =>
         {
             var resolverFactory = sp.GetRequiredService<IDownloadHostResolverFactory>();

@@ -9,15 +9,18 @@ namespace Shortboxerr.Infrastructure.Ddl;
 /// DDL site adapter for GetComics.org.
 /// GetComics is a primary DDL site for comic downloads, featuring releases from major publishers.
 /// This adapter parses search results and extracts download links from various file hosts.
+/// Supports RSS feed polling and category browsing.
 /// </summary>
 public partial class GetComicsAdapter : BaseDdlSiteAdapter
 {
     private readonly DdlReleaseParser _parser = new();
+    private readonly IRssFeedService? _rssFeedService;
     private readonly ILogger<GetComicsAdapter>? _logger;
 
-    public GetComicsAdapter(ILogger<GetComicsAdapter>? logger = null)
+    public GetComicsAdapter(ILogger<GetComicsAdapter>? logger = null, IRssFeedService? rssFeedService = null)
     {
         _logger = logger;
+        _rssFeedService = rssFeedService;
     }
 
     public override string SiteType => "GetComics";
@@ -79,6 +82,211 @@ public partial class GetComicsAdapter : BaseDdlSiteAdapter
             _logger?.LogWarning(ex, "GetComics latest fetch failed");
             return DdlSearchResult.Error(ex.Message, SiteType, stopwatch.Elapsed);
         }
+    }
+    
+    /// <summary>
+    /// Gets latest releases from the RSS feed.
+    /// This is more efficient than scraping the HTML page and includes publication dates.
+    /// </summary>
+    /// <param name="limit">Maximum number of items to return</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Search result containing candidates from the RSS feed</returns>
+    public async Task<DdlSearchResult> GetRssFeedAsync(int limit = 50, CancellationToken cancellationToken = default)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        
+        try
+        {
+            var feedUrl = $"{EffectiveBaseUrl}/feed/";
+            _logger?.LogDebug("Fetching GetComics RSS feed: {Url}", feedUrl);
+            
+            RssFeedResult feedResult;
+            
+            if (_rssFeedService != null)
+            {
+                feedResult = await _rssFeedService.FetchFeedAsync(feedUrl, cancellationToken);
+            }
+            else
+            {
+                // Fallback: fetch and parse manually if no RSS service injected
+                var feedContent = await FetchPageAsync(feedUrl, cancellationToken);
+                var rssFeedService = new RssFeedService(HttpClient, null);
+                feedResult = rssFeedService.ParseFeed(feedContent);
+            }
+            
+            if (!feedResult.Success)
+            {
+                stopwatch.Stop();
+                return DdlSearchResult.Error(feedResult.Error ?? "Failed to parse RSS feed", SiteType, stopwatch.Elapsed);
+            }
+            
+            var candidates = feedResult.Items
+                .Take(limit)
+                .Select(item => CreateCandidateFromRssItem(item))
+                .ToList();
+            
+            stopwatch.Stop();
+            _logger?.LogInformation("GetComics RSS feed: {Count} items", candidates.Count);
+            
+            return DdlSearchResult.Ok(candidates, SiteType, candidates.Count, stopwatch.Elapsed);
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            _logger?.LogWarning(ex, "GetComics RSS feed fetch failed");
+            return DdlSearchResult.Error(ex.Message, SiteType, stopwatch.Elapsed);
+        }
+    }
+    
+    /// <summary>
+    /// Gets releases from a specific category (publisher).
+    /// </summary>
+    /// <param name="category">Category slug (e.g., "dc", "marvel", "image")</param>
+    /// <param name="limit">Maximum number of items to return</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Search result containing candidates from the category</returns>
+    public async Task<DdlSearchResult> GetCategoryAsync(string category, int limit = 50, CancellationToken cancellationToken = default)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        
+        try
+        {
+            var categoryUrl = $"{EffectiveBaseUrl}/cat/{category}/";
+            _logger?.LogDebug("Fetching GetComics category: {Category} from {Url}", category, categoryUrl);
+            
+            var html = await FetchPageAsync(categoryUrl, cancellationToken);
+            var candidates = ParseSearchPage(html).Take(limit).ToList();
+            
+            // Tag candidates with category
+            foreach (var candidate in candidates)
+            {
+                candidate.Tags.Add(category);
+            }
+            
+            stopwatch.Stop();
+            _logger?.LogInformation("GetComics category {Category}: {Count} results", category, candidates.Count);
+            
+            return DdlSearchResult.Ok(candidates, SiteType, candidates.Count, stopwatch.Elapsed);
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            _logger?.LogWarning(ex, "GetComics category {Category} fetch failed", category);
+            return DdlSearchResult.Error(ex.Message, SiteType, stopwatch.Elapsed);
+        }
+    }
+    
+    /// <summary>
+    /// Gets releases from a category via its RSS feed.
+    /// </summary>
+    /// <param name="category">Category slug (e.g., "dc", "marvel", "image")</param>
+    /// <param name="limit">Maximum number of items to return</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Search result containing candidates from the category RSS feed</returns>
+    public async Task<DdlSearchResult> GetCategoryRssFeedAsync(string category, int limit = 50, CancellationToken cancellationToken = default)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        
+        try
+        {
+            var feedUrl = $"{EffectiveBaseUrl}/cat/{category}/feed/";
+            _logger?.LogDebug("Fetching GetComics category RSS feed: {Category} from {Url}", category, feedUrl);
+            
+            RssFeedResult feedResult;
+            
+            if (_rssFeedService != null)
+            {
+                feedResult = await _rssFeedService.FetchFeedAsync(feedUrl, cancellationToken);
+            }
+            else
+            {
+                var feedContent = await FetchPageAsync(feedUrl, cancellationToken);
+                var rssFeedService = new RssFeedService(HttpClient, null);
+                feedResult = rssFeedService.ParseFeed(feedContent);
+            }
+            
+            if (!feedResult.Success)
+            {
+                stopwatch.Stop();
+                return DdlSearchResult.Error(feedResult.Error ?? "Failed to parse RSS feed", SiteType, stopwatch.Elapsed);
+            }
+            
+            var candidates = feedResult.Items
+                .Take(limit)
+                .Select(item =>
+                {
+                    var candidate = CreateCandidateFromRssItem(item);
+                    candidate.Tags.Add(category);
+                    return candidate;
+                })
+                .ToList();
+            
+            stopwatch.Stop();
+            _logger?.LogInformation("GetComics category RSS {Category}: {Count} items", category, candidates.Count);
+            
+            return DdlSearchResult.Ok(candidates, SiteType, candidates.Count, stopwatch.Elapsed);
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            _logger?.LogWarning(ex, "GetComics category RSS {Category} fetch failed", category);
+            return DdlSearchResult.Error(ex.Message, SiteType, stopwatch.Elapsed);
+        }
+    }
+    
+    /// <summary>
+    /// Gets all available categories with their display names.
+    /// </summary>
+    /// <returns>Dictionary of category slug to display name</returns>
+    public static IReadOnlyDictionary<string, string> GetAvailableCategories()
+    {
+        return new Dictionary<string, string>
+        {
+            // Publishers
+            { DdlCategories.DC, DdlCategories.GetDisplayName(DdlCategories.DC) },
+            { DdlCategories.Marvel, DdlCategories.GetDisplayName(DdlCategories.Marvel) },
+            { DdlCategories.Image, DdlCategories.GetDisplayName(DdlCategories.Image) },
+            { DdlCategories.DarkHorse, DdlCategories.GetDisplayName(DdlCategories.DarkHorse) },
+            { DdlCategories.IDW, DdlCategories.GetDisplayName(DdlCategories.IDW) },
+            { DdlCategories.Boom, DdlCategories.GetDisplayName(DdlCategories.Boom) },
+            { DdlCategories.Dynamite, DdlCategories.GetDisplayName(DdlCategories.Dynamite) },
+            { DdlCategories.Valiant, DdlCategories.GetDisplayName(DdlCategories.Valiant) },
+            { DdlCategories.Aftershock, DdlCategories.GetDisplayName(DdlCategories.Aftershock) },
+            { DdlCategories.Archie, DdlCategories.GetDisplayName(DdlCategories.Archie) },
+            // Formats
+            { DdlCategories.TPB, DdlCategories.GetDisplayName(DdlCategories.TPB) },
+            { DdlCategories.Weekly, DdlCategories.GetDisplayName(DdlCategories.Weekly) },
+            { DdlCategories.Collections, DdlCategories.GetDisplayName(DdlCategories.Collections) },
+            // Other
+            { DdlCategories.Indie, DdlCategories.GetDisplayName(DdlCategories.Indie) },
+            { DdlCategories.European, DdlCategories.GetDisplayName(DdlCategories.European) },
+            { DdlCategories.Manga, DdlCategories.GetDisplayName(DdlCategories.Manga) }
+        };
+    }
+    
+    private DdlCandidate CreateCandidateFromRssItem(RssFeedItem item)
+    {
+        var parsed = _parser.Parse(item.Title);
+        
+        var candidate = new DdlCandidate
+        {
+            Id = item.Guid ?? Guid.NewGuid().ToString(),
+            ReleaseTitle = item.Title,
+            SourceSite = SiteType,
+            SourceUrl = item.Link,
+            ParsedInfo = parsed,
+            DateFound = item.PubDate ?? DateTime.UtcNow,
+            QualityScore = parsed.Confidence,
+            Description = item.Description
+        };
+        
+        // Add RSS categories as tags
+        foreach (var cat in item.Categories)
+        {
+            candidate.Tags.Add(cat.ToLowerInvariant());
+        }
+        
+        return candidate;
     }
 
     public override async Task<IReadOnlyList<DdlDownloadLink>> ExtractLinksAsync(string pageUrl, CancellationToken cancellationToken = default)

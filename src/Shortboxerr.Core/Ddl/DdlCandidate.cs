@@ -59,6 +59,11 @@ public class DdlCandidate
     public List<string> Tags { get; init; } = new();
     
     /// <summary>
+    /// Description or summary from the source (e.g., RSS feed).
+    /// </summary>
+    public string? Description { get; init; }
+    
+    /// <summary>
     /// Whether this candidate has been filtered out.
     /// </summary>
     public bool IsFiltered { get; set; }
