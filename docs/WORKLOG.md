@@ -1,5 +1,67 @@
 # Worklog
 
+## Iteration 082 (2026-02-09)
+**Human-Readable Log Formatting (EPIC 13.1)**
+
+### Commits
+1. `feat: implement human-readable log formatting (EPIC 13.1)`
+
+### Deliverables
+
+#### ShortSourceContextEnricher (`ShortSourceContextEnricher.cs`)
+- ✅ Extracts class name from fully-qualified namespace
+  - `Shortboxerr.Infrastructure.ComicVine.ComicVineClient` → `ComicVineClient`
+- ✅ Handles generic types (removes backtick suffix)
+  - `Dictionary`1` → `Dictionary`
+- ✅ Configurable `MaxLength` (default: 25) with padding option
+- ✅ Truncates with ellipsis for long names
+- ✅ Handles edge cases: null, empty, whitespace, trailing dot
+
+#### Output Template Presets (`SerilogConfiguration.cs`)
+| Preset | Template | Use Case |
+|--------|----------|----------|
+| `default` | `[{Timestamp}] [{Level:u3}] [{ShortSourceContext}] {Message}` | Human reading |
+| `compact` | `[{Time}] [{Level}] {Message}` | Space-constrained |
+| `verbose` | Includes `{MachineName}`, `{Properties:j}` | Debugging |
+| `json` | JSON structure | Log aggregation |
+
+#### Environment Variable Configuration
+- `SHORTBOXERR_LOG_TEMPLATE` - Accepts preset name or custom template
+- Case-insensitive preset matching
+- Custom templates passed through as-is
+
+#### Console Enhancements
+- ✅ AnsiConsoleTheme.Code for enhanced color contrast
+- ✅ Fixed-width level indicators: `[VRB]`, `[DBG]`, `[INF]`, `[WRN]`, `[ERR]`, `[FTL]`
+
+### Test Count
+- Previous: 1207 tests
+- Added: 38 tests
+- Total: 1245 tests
+
+### Test Categories (38 tests)
+| Category | Tests |
+|----------|-------|
+| ExtractShortName edge cases | 10 |
+| Enricher integration | 5 |
+| Template preset resolution | 8 |
+| Template content verification | 4 |
+| End-to-end formatting | 3 |
+| Property factory helper | 1 |
+| Theory data (inline data) | 7 |
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `ShortSourceContextEnricher.cs` | New |
+| `SerilogConfiguration.cs` | Modified - templates + enricher |
+| `LogFormattingTests.cs` | New (+38 tests) |
+| `BACKLOG.md` | Updated |
+| `WORKLOG.md` | Updated |
+| `SELF_CHECK.md` | Updated |
+
+---
+
 ## Iteration 081 (2026-02-09)
 **Sensitive Data Masking Tests (EPIC 13.1)**
 

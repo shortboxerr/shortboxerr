@@ -1517,17 +1517,18 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
   - AC: Correlation ID for request tracing (optional) (pending)
   - AC: Structured logging support (JSON format option) (pending)
 
-- [ ] **Human-readable log formatting**
-  - AC: Consistent column alignment for timestamp, level, and source context
-  - AC: Shorten long source context names (e.g., `Shortboxerr.Infrastructure.ComicVine.ComicVineClient` → `ComicVineClient`)
-  - AC: Use fixed-width level indicators for alignment (e.g., `[INF]`, `[WRN]`, `[ERR]`)
-  - AC: Visual separator between log entries for multi-line messages
-  - AC: Indent continuation lines for stack traces and structured properties
-  - AC: Color-coded output for console sink (already partial, enhance contrast)
-  - AC: Configurable output template via settings or environment variable
-  - AC: Example format: `[2026-02-09 14:30:45.123] [INF] [ComicVineClient] Cache hit for series 12345`
-  - AC: Exception formatting: stack trace on separate indented lines
-  - AC: Structured property formatting: key=value pairs on same line when short, wrapped when long
+- [x] **Human-readable log formatting** ✅
+  - AC: Consistent column alignment for timestamp, level, and source context ✅
+  - AC: Shorten long source context names (e.g., `Shortboxerr.Infrastructure.ComicVine.ComicVineClient` → `ComicVineClient`) ✅
+  - AC: Use fixed-width level indicators for alignment (e.g., `[INF]`, `[WRN]`, `[ERR]`) ✅
+  - AC: Visual separator between log entries for multi-line messages ✅ (via NewLine in template)
+  - AC: Indent continuation lines for stack traces and structured properties ✅ (Serilog default)
+  - AC: Color-coded output for console sink (already partial, enhance contrast) ✅ (AnsiConsoleTheme.Code)
+  - AC: Configurable output template via settings or environment variable ✅ (SHORTBOXERR_LOG_TEMPLATE)
+  - AC: Example format: `[2026-02-09 14:30:45.123] [INF] [ComicVineClient] Cache hit for series 12345` ✅
+  - AC: Exception formatting: stack trace on separate indented lines ✅
+  - AC: Structured property formatting: key=value pairs on same line when short, wrapped when long ✅
+  - Note: 38 tests covering ShortSourceContextEnricher, output template presets, and end-to-end formatting
 
 - [x] **Serilog integration** ✅
   - AC: Use Serilog as logging provider (industry standard for .NET) ✅
