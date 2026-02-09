@@ -1,3 +1,90 @@
+# Self Check - Iteration 073
+
+## EPIC 10.3: NZB Candidate Processing
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Frontend compiles | ✅ | No frontend changes |
+| Backend compiles | ✅ | dotnet build |
+| Tests pass | ✅ | 1023 tests (84 new) |
+| Git commits | ✅ | 2 commits |
+
+### Acceptance Criteria Status
+
+#### NZB Release Parsing
+| AC | Status |
+|----|--------|
+| Parse NZB release names | ✅ |
+| Extract series, issue, year, quality, format | ✅ |
+| Handle Usenet naming conventions | ✅ |
+| Publisher detection | ✅ |
+| Collection detection | ✅ |
+| Release modifier detection | ✅ |
+
+#### NZB Candidate Model
+| AC | Status |
+|----|--------|
+| Store indexer source, NZB URL, size, age | ✅ |
+| Quality scoring aligned with DecisionEngine | ✅ |
+| Integrate with existing Candidate model | ✅ |
+
+#### NZB Filtering Rules
+| AC | Status |
+|----|--------|
+| Minimum/maximum age limits | ✅ |
+| Size limits | ✅ |
+| Banned/required words | ✅ |
+| Prefer certain indexers | ✅ |
+| Password protection rejection | ✅ |
+| Category include/exclude | ✅ |
+| Parse confidence threshold | ✅ |
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `INzbReleaseParser.cs` | ✅ New |
+| `NzbReleaseParser.cs` | ✅ New |
+| `NzbCandidate.cs` | ✅ New |
+| `NzbFilterSettings.cs` | ✅ New |
+| `INzbFilterService.cs` | ✅ New |
+| `NzbFilterService.cs` | ✅ New |
+| `DependencyInjection.cs` | ✅ Modified |
+| `NzbReleaseParserTests.cs` | ✅ New (46 tests) |
+| `NzbFilterServiceTests.cs` | ✅ New (38 tests) |
+
+### Tests Added
+- Parser basic/empty input tests (2)
+- Scene naming convention tests (3)
+- Volume pattern tests (3)
+- Release modifier tests (4)
+- Quality detection tests (3)
+- Format detection tests (4)
+- Publisher detection tests (4)
+- Collection detection tests (5)
+- Issue number tests (4)
+- Year detection tests (2)
+- Confidence scoring tests (2)
+- Quality score calculation tests (5)
+- Integration tests (4)
+- Real-world example tests (4)
+- Age filtering tests (3)
+- Size filtering tests (4)
+- Password protection tests (2)
+- Word filtering tests (5)
+- Category filtering tests (3)
+- Confidence filtering tests (1)
+- Format preference tests (1)
+- Release modifier preference tests (2)
+- Preferred indexer tests (1)
+- FilterMany tests (3)
+- FilterAndSort tests (2)
+- Default settings tests (2)
+- Check details tests (1)
+
+---
+
 # Self Check - Iteration 072
 
 ## EPIC 10.6: Unified Download Client Modal

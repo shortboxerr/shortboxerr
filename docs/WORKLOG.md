@@ -1,5 +1,81 @@
 # Worklog
 
+## Iteration 073 (2026-02-09)
+**EPIC 10.3: NZB Candidate Processing**
+
+### Commits
+1. `fix: update provider health status after successful test`
+2. `feat: add NZB release parser and filter service`
+
+### Deliverables
+
+#### NZB Release Parser
+- ✅ `INzbReleaseParser` interface for release name parsing
+- ✅ `NzbReleaseParser` implementation with scene naming support:
+  - Series, issue, volume, year extraction
+  - Quality detection (Digital, Webrip, Scan)
+  - Format detection (CBZ, CBR, PDF, EPUB)
+  - Publisher detection (Marvel, DC, Image, etc.)
+  - Collection detection (TPB, HC, Omnibus, Compendium, etc.)
+  - Release modifiers (REPACK, PROPER, INTERNAL)
+  - Release group extraction from suffix
+- ✅ `NzbParsedInfo` for structured metadata output
+- ✅ `CalculateQualityScore()` for ranking releases
+
+#### NZB Candidate Model
+- ✅ `NzbCandidate` class with NZB-specific fields:
+  - Indexer name/ID and priority
+  - NZB URL and info URL
+  - Publication date and age calculation
+  - Categories and password protection status
+  - Grabs, files, poster, group metadata
+- ✅ `FromNewznabRelease()` factory method
+- ✅ `ToCandidate()` for DecisionEngine integration
+
+#### NZB Filter Service
+- ✅ `NzbFilterSettings` with comprehensive options:
+  - Age limits (min/max days)
+  - Size limits (min/max bytes with MB convenience)
+  - Banned/required/preferred words
+  - Category include/exclude
+  - Password protection rejection
+  - Parse confidence threshold
+  - Format and indexer preferences
+  - PROPER/REPACK preference toggles
+- ✅ `INzbFilterService` interface
+- ✅ `NzbFilterService` implementation:
+  - `Filter()` for single candidate with detailed checks
+  - `FilterMany()` for batch filtering with score calculation
+  - `FilterAndSort()` for ranked results
+- ✅ `NzbFilterResult` and `NzbFilterCheck` for audit trail
+- ✅ `NzbRejectionReason` enum for categorized rejections
+
+#### Tests
+- ✅ 84 new unit tests:
+  - `NzbReleaseParserTests` (46 tests)
+  - `NzbFilterServiceTests` (38 tests)
+- ✅ Tests cover parsing, quality scoring, filtering, sorting
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Nzb/INzbReleaseParser.cs` | New |
+| `src/Shortboxerr.Core/Nzb/NzbReleaseParser.cs` | New |
+| `src/Shortboxerr.Core/Nzb/NzbCandidate.cs` | New |
+| `src/Shortboxerr.Core/Nzb/NzbFilterSettings.cs` | New |
+| `src/Shortboxerr.Core/Nzb/INzbFilterService.cs` | New |
+| `src/Shortboxerr.Infrastructure/Nzb/NzbFilterService.cs` | New |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register services |
+| `tests/Shortboxerr.Tests/NzbReleaseParserTests.cs` | New (46 tests) |
+| `tests/Shortboxerr.Tests/NzbFilterServiceTests.cs` | New (38 tests) |
+
+### Test Results
+- All 1023 tests passing (914 + 109 new) [Note: 25 from previous iteration]
+- Frontend build: ✅
+- Backend build: ✅
+
+---
+
 ## Iteration 072 (2026-02-09)
 **EPIC 10.6: Unified Download Client Modal**
 

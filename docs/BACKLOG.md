@@ -800,20 +800,28 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: Monitor disk space warnings ✅ (GetDiskSpaceAsync)
   - AC: Handle client unavailability gracefully ✅
 
-### 10.3 NZB Candidate Processing
-- [ ] **NZB release parsing**
-  - AC: Parse NZB release names (similar to DDL parser)
-  - AC: Extract series, issue, year, quality, format
-  - AC: Handle Usenet naming conventions
-- [ ] **NZB candidate model**
-  - AC: Store indexer source, NZB URL, size, age
-  - AC: Quality scoring aligned with DecisionEngine
-  - AC: Integrate with existing Candidate model
-- [ ] **NZB filtering rules**
-  - AC: Minimum/maximum age limits
-  - AC: Size limits (same as DDL)
-  - AC: Banned/required words (same as DDL)
-  - AC: Prefer certain indexers
+### 10.3 NZB Candidate Processing ✅ COMPLETED
+- [x] **NZB release parsing** ✅
+  - AC: Parse NZB release names (similar to DDL parser) ✅ (NzbReleaseParser)
+  - AC: Extract series, issue, year, quality, format ✅
+  - AC: Handle Usenet naming conventions ✅ (scene naming with dots, release groups)
+  - AC: Publisher detection (Marvel, DC, Image, etc.) ✅
+  - AC: Collection detection (TPB, HC, Omnibus, etc.) ✅
+  - AC: Release modifier detection (REPACK, PROPER, INTERNAL) ✅
+- [x] **NZB candidate model** ✅
+  - AC: Store indexer source, NZB URL, size, age ✅ (NzbCandidate)
+  - AC: Quality scoring aligned with DecisionEngine ✅ (CalculateQualityScore)
+  - AC: Integrate with existing Candidate model ✅ (ToCandidate() conversion)
+- [x] **NZB filtering rules** ✅
+  - AC: Minimum/maximum age limits ✅
+  - AC: Size limits (same as DDL) ✅
+  - AC: Banned/required words (same as DDL) ✅
+  - AC: Prefer certain indexers ✅
+  - AC: Password protection rejection ✅
+  - AC: Category include/exclude ✅
+  - AC: Parse confidence threshold ✅
+  - AC: Format and quality preferences ✅
+  - Note: 84 unit tests covering parser and filter service
 
 ### 10.4 NZB → Import Handoff
 - [ ] **Post-download detection**
