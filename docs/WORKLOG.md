@@ -1,5 +1,51 @@
 # Worklog
 
+## Iteration 069 (2026-02-09)
+**EPIC 10.2: NZB Download Client Integration - SABnzbd**
+
+### Commits
+1. `feat: implement SABnzbd download client (EPIC 10.2)`
+
+### Deliverables
+
+#### INzbDownloadClient Interface
+- ✅ Common abstraction for NZB download clients
+- ✅ `AddNzbAsync` - Queue NZB by content
+- ✅ `AddNzbUrlAsync` - Queue NZB by URL
+- ✅ `GetQueueAsync` / `GetHistoryAsync` - List downloads
+- ✅ `PauseDownloadAsync` / `ResumeDownloadAsync` - Control downloads
+- ✅ `RemoveDownloadAsync` - Delete from queue/history
+- ✅ `GetDiskSpaceAsync` - Monitor storage
+
+#### ISabnzbdClient Interface
+- ✅ SABnzbd-specific extensions
+- ✅ `GetCategoriesAsync` / `GetScriptsAsync` - Configuration
+- ✅ `PauseQueueAsync` / `ResumeQueueAsync` - Queue control
+- ✅ `SetSpeedLimitAsync` - Bandwidth management
+- ✅ `GetServerStatsAsync` - Statistics
+
+#### SabnzbdClient Implementation
+- ✅ Full SABnzbd JSON API support
+- ✅ Multipart file upload for NZB content
+- ✅ Category and priority assignment
+- ✅ Download state mapping
+- ✅ Size/speed parsing utilities
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Nzb/INzbDownloadClient.cs` | New interface + models |
+| `src/Shortboxerr.Core/Nzb/ISabnzbdClient.cs` | New SABnzbd interface |
+| `src/Shortboxerr.Infrastructure/Nzb/SabnzbdClient.cs` | New implementation |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register service |
+| `tests/Shortboxerr.Tests/SabnzbdClientTests.cs` | 21 unit tests |
+
+### Test Results
+- All 876 tests passing (+21 new)
+- Build: ✅ No errors
+
+---
+
 ## Iteration 068 (2026-02-09)
 **EPIC 10.1: NZB Indexer Integration - Newznab API Client**
 

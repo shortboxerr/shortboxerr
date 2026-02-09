@@ -783,22 +783,22 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: Detect and handle rate limiting
   - AC: Automatic failover to backup indexers
 
-### 10.2 NZB Download Client Integration
-- [ ] **SABnzbd integration**
-  - AC: Add NZB to SABnzbd via API
-  - AC: Category assignment for comics
-  - AC: Priority configuration
-  - AC: Monitor download progress
-  - AC: Detect completion and trigger import
-- [ ] **NZBGet integration**
+### 10.2 NZB Download Client Integration - PARTIAL ✅
+- [x] **SABnzbd integration** ✅
+  - AC: Add NZB to SABnzbd via API ✅
+  - AC: Category assignment for comics ✅
+  - AC: Priority configuration ✅
+  - AC: Monitor download progress ✅
+  - AC: Detect completion and trigger import (via history API) ✅
+- [ ] **NZBGet integration** (deferred)
   - AC: Add NZB to NZBGet via API
   - AC: Category and priority support
   - AC: Progress monitoring
   - AC: Post-processing script integration
-- [ ] **Download client health checks**
-  - AC: Verify connectivity on startup
-  - AC: Monitor disk space warnings
-  - AC: Handle client unavailability gracefully
+- [x] **Download client health checks** ✅
+  - AC: Verify connectivity on startup ✅ (TestConnectionAsync)
+  - AC: Monitor disk space warnings ✅ (GetDiskSpaceAsync)
+  - AC: Handle client unavailability gracefully ✅
 
 ### 10.3 NZB Candidate Processing
 - [ ] **NZB release parsing**
