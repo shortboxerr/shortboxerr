@@ -1,3 +1,55 @@
+# Self Check - Iteration 079
+
+## ReadComicOnline DDL Adapter
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Frontend compiles | ✅ | No frontend changes |
+| Backend compiles | ✅ | dotnet build |
+| Tests pass | ✅ | 1185 tests (25 new) |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+| AC | Status |
+|----|--------|
+| Determine homepage address (multi-domain) | ✅ |
+| HTML scraping for search results | ✅ |
+| Extract download host links | ✅ |
+| Handle pagination | ✅ |
+| Parse release details | ✅ |
+| Search by series name | ✅ |
+| Search by keyword/category | ✅ |
+| Category browsing | ✅ |
+| Follow redirects | ✅ |
+| Handle mirror priority | ✅ |
+| Detect dead links | ✅ |
+
+### Tests Added (25 tests)
+
+| Category | Tests |
+|----------|-------|
+| Adapter properties | 5 |
+| ParseSearchPage | 9 |
+| ParseDownloadLinks | 5 |
+| GetAvailableCategories | 3 |
+| URL building | 1 |
+| Integration-style | 2 |
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `ReadComicOnlineAdapter.cs` | ✅ New |
+| `DdlSiteAdapterFactory.cs` | ✅ Modified |
+| `ReadComicOnlineAdapterTests.cs` | ✅ New (+25 tests) |
+| `BACKLOG.md` | ✅ Updated |
+| `WORKLOG.md` | ✅ Updated |
+| `SELF_CHECK.md` | ✅ Updated |
+
+---
+
 # Self Check - Iteration 078
 
 ## Download Client Host/Port Split & Test-Save Integration

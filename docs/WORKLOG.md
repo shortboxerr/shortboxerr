@@ -1,5 +1,65 @@
 # Worklog
 
+## Iteration 079 (2026-02-09)
+**ReadComicOnline DDL Adapter**
+
+### Commits
+1. `feat: add ReadComicOnline DDL site adapter with homepage detection`
+
+### Deliverables
+
+#### ReadComicOnlineAdapter Implementation
+- ✅ `ReadComicOnlineAdapter` class extending `BaseDdlSiteAdapter`:
+  - Dynamic homepage detection (`DetectHomepageAsync`) for multi-domain support
+  - Known domains: li, to, org, cc (site frequently changes)
+  - HTML parsing for search results (`ParseSearchPage`)
+  - Download link extraction (`ParseDownloadLinks`)
+  - Search by series name (`SearchAsync`)
+  - Latest comics (`GetLatestAsync`)
+  - Category browsing (`GetCategoryAsync`)
+  - Publisher browsing (`GetPublisherAsync`) with slug mapping
+  - Browser-like request headers for anti-bot protection
+  - Rate limit: 5 requests/minute (more restrictive than GetComics)
+
+#### Supported Publishers
+- DC Comics, Marvel Comics, Image Comics, Dark Horse
+- IDW Publishing, BOOM! Studios, Dynamite Entertainment
+- Valiant, Vertigo
+
+#### Supported Genres
+- Action, Adventure, Comedy, Crime, Drama
+- Fantasy, Horror, Mystery, Romance
+- Sci-Fi, Superhero, Thriller
+
+#### Factory Registration
+- ✅ Registered in `DdlSiteAdapterFactory.RegisterBuiltInAdapters()`
+- ✅ SiteType: "ReadComicOnline"
+
+#### Unit Tests (25 new tests)
+- ✅ Adapter properties tests (5)
+- ✅ ParseSearchPage tests (9)
+- ✅ ParseDownloadLinks tests (5)
+- ✅ GetAvailableCategories tests (3)
+- ✅ URL building tests (1)
+- ✅ Integration-style tests (2)
+
+### Test Count
+- Previous: 1160 tests
+- Added: 25 tests
+- Total: 1185 tests
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/Ddl/ReadComicOnlineAdapter.cs` | New - DDL adapter |
+| `src/Shortboxerr.Infrastructure/Ddl/DdlSiteAdapterFactory.cs` | Modified - register adapter |
+| `tests/Shortboxerr.Tests/ReadComicOnlineAdapterTests.cs` | New - 25 unit tests |
+| `docs/BACKLOG.md` | Updated - mark 8.1.2 complete |
+| `docs/WORKLOG.md` | Updated - add iteration 079 |
+| `docs/SELF_CHECK.md` | Updated - add iteration 079 |
+
+---
+
 ## Iteration 078 (2026-02-09)
 **Download Client Host/Port Split & Test-Save Integration**
 
