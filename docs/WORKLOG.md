@@ -1,5 +1,71 @@
 # Worklog
 
+## Iteration 074 (2026-02-09)
+**EPIC 10.4: NZB → Import Handoff**
+
+### Commits
+1. `feat: implement NZB import service for completed downloads`
+
+### Deliverables
+
+#### NZB Import Service
+- ✅ `INzbImportService` interface for handling completed NZB downloads
+- ✅ `NzbImportService` implementation:
+  - Monitor SABnzbd history for completed downloads
+  - Filter already processed downloads via settings persistence
+  - Find comic files (CBZ, CBR, PDF, EPUB) recursively in download paths
+  - Extract ZIP archives (RAR/7z deferred for external tool dependency)
+  - Parse filenames using existing `IFilenameParser`
+  - Match to series/issues in database with fuzzy matching
+  - Auto-import files with high confidence scores
+  - Move unmatched files to staging for manual review
+  - Create HistoryEvent records with download metadata
+  - Track processed downloads to prevent reprocessing
+
+#### NZB Import Models
+- ✅ `NzbCompletedDownload` for representing completed downloads
+- ✅ `NzbImportOptions` with configurable settings:
+  - Auto-import toggle and confidence threshold
+  - Cleanup empty directories option
+  - Category filtering
+  - Archive extraction toggle
+- ✅ `NzbImportResult` with detailed processing results
+- ✅ `NzbImportedFile` for tracking individual file processing
+- ✅ `NzbImportState` enum for tracking import progress
+
+#### Background Service
+- ✅ `NzbImportBackgroundService` hosted service:
+  - Polls SABnzbd at configurable intervals
+  - Reads settings for enable/disable and interval
+  - Error handling with exponential backoff
+  - Category filtering support
+
+#### DI Registration
+- ✅ `INzbImportService` registered as scoped service
+- ✅ `NzbImportBackgroundService` registered as hosted service
+
+#### Tests
+- ✅ 19 new unit tests in `NzbImportServiceTests`:
+  - GetCompletedDownloads filtering tests
+  - ProcessCompletedDownload file finding tests
+  - Auto-import with high confidence tests
+  - Staging workflow tests
+  - History event creation tests
+  - Multiple format support tests
+  - Category filtering tests
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Nzb/INzbImportService.cs` | New - interface and models |
+| `src/Shortboxerr.Infrastructure/Nzb/NzbImportService.cs` | New - implementation |
+| `src/Shortboxerr.Infrastructure/BackgroundServices/NzbImportBackgroundService.cs` | New - background service |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Added NZB import registrations |
+| `tests/Shortboxerr.Tests/NzbImportServiceTests.cs` | New - 19 unit tests |
+| `docs/BACKLOG.md` | Mark EPIC 10.4 complete |
+
+---
+
 ## Iteration 073 (2026-02-09)
 **EPIC 10.3: NZB Candidate Processing**
 

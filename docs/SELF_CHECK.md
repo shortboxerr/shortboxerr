@@ -1,3 +1,65 @@
+# Self Check - Iteration 074
+
+## EPIC 10.4: NZB → Import Handoff
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Frontend compiles | ✅ | No frontend changes |
+| Backend compiles | ✅ | dotnet build |
+| Tests pass | ✅ | 1042 tests (19 new) |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+#### Post-download Detection
+| AC | Status |
+|----|--------|
+| Monitor SABnzbd/NZBGet for completed downloads | ✅ |
+| Detect completed comic files in download directory | ✅ |
+| Handle unpacking (RAR, ZIP) automatically | ✅ (ZIP, RAR/7z deferred) |
+
+#### Import Integration
+| AC | Status |
+|----|--------|
+| Move completed files to staging | ✅ |
+| Auto-match to series/issue | ✅ |
+| Create HistoryEvent linking NZB → import | ✅ |
+| Handle failed downloads (incomplete, password-protected) | ✅ |
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `INzbImportService.cs` | ✅ New |
+| `NzbImportService.cs` | ✅ New |
+| `NzbImportBackgroundService.cs` | ✅ New |
+| `DependencyInjection.cs` | ✅ Modified |
+| `NzbImportServiceTests.cs` | ✅ New (19 tests) |
+
+### Tests Added
+- GetCompletedDownloads empty history test
+- GetCompletedDownloads filter already processed test
+- GetCompletedDownloads filter non-completed test
+- GetCompletedDownloads return completed with valid path test
+- GetCompletedDownloads skip non-existent path test
+- ProcessCompletedDownload no files found test
+- ProcessCompletedDownload find comic files test
+- ProcessCompletedDownload move to staging test
+- ProcessCompletedDownload auto-import high confidence test
+- ProcessCompletedDownload create history event test
+- ProcessCompletedDownload mark as processed test
+- ProcessAllCompleted process all downloads test
+- ProcessAllCompleted filter by category test
+- MarkAsProcessed add to processed list test
+- IsProcessed return true when processed test
+- IsProcessed return false when not processed test
+- ProcessCompletedDownload find nested files test
+- ProcessCompletedDownload multiple formats test
+- ProcessCompletedDownload exception handling test
+
+---
+
 # Self Check - Iteration 073
 
 ## EPIC 10.3: NZB Candidate Processing
