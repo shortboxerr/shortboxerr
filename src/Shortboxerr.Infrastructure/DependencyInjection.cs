@@ -9,12 +9,14 @@ using Shortboxerr.Core.Mylar3Migration;
 using Shortboxerr.Core.Models;
 using Shortboxerr.Core.Providers;
 using Shortboxerr.Core.Notifications;
+using Shortboxerr.Core.Nzb;
 using Shortboxerr.Core.PullList;
 using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.ComicVine;
 using Shortboxerr.Infrastructure.Ddl;
 using Shortboxerr.Infrastructure.Ddl.Resolvers;
 using Shortboxerr.Infrastructure.Mylar3Migration;
+using Shortboxerr.Infrastructure.Nzb;
 using Shortboxerr.Infrastructure.Persistence;
 using Shortboxerr.Infrastructure.Providers;
 using Shortboxerr.Infrastructure.PullList;
@@ -111,6 +113,10 @@ public static class DependencyInjection
 
         // Pull list service
         services.AddScoped<IPullListService, PullListService>();
+
+        // NZB/Usenet services
+        services.AddHttpClient<INewznabClient, NewznabClient>();
+        services.AddScoped<INzbIndexerProvider, NzbIndexerProvider>();
 
         // Notification service
         services.AddScoped<INotificationService, Notifications.NotificationService>();
