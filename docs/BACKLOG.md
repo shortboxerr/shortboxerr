@@ -906,6 +906,18 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: Show NZB downloads in activity feed
   - AC: Download progress from SABnzbd/NZBGet
   - AC: Queue management (pause, remove, priority)
+- [ ] **Download settings scoping by client type**
+  - AC: "Maximum concurrent downloads" setting should ONLY apply to DDL download clients
+  - AC: SABnzbd/NZBGet manage their own concurrent downloads - setting should not affect them
+  - AC: Future torrent clients (qBittorrent, Transmission) manage their own queues - setting should not affect them
+  - AC: UI should clarify which settings apply to which client types (e.g., "DDL Settings" section)
+  - AC: "Automatically retry failed downloads" may have different meanings:
+    - For DDL: Retry the HTTP download on network failure (existing behavior)
+    - For Usenet: Re-add NZB to queue if download fails (different behavior - may need re-search)
+    - For Torrent: Resume stalled torrent or find alternative (different behavior)
+  - AC: Consider splitting into separate settings per client category or adding contextual help
+  - AC: Document behavior differences in UI tooltips/descriptions
+  - Note: Current settings may mislead users expecting them to apply to all download clients
 
 ### 10.7 NZB Conformance Tests ✅ COMPLETED
 - [x] **Newznab API tests** ✅
