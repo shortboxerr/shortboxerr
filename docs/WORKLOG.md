@@ -1,5 +1,78 @@
 # Worklog
 
+## Iteration 077 (2026-02-09)
+**1fichier & Zippyshare Resolvers**
+
+### Commits
+1. `feat: add 1fichier and Zippyshare download host resolvers`
+
+### Deliverables
+
+#### 1fichier Resolver
+- ✅ `OneFichierResolver` implementation:
+  - Supports 1fichier.com, 1fichier.fr, 1fichier.info domains
+  - CDN URL extraction (cz, fr, cf domains)
+  - Wait time detection for free users
+  - Filename extraction (class, title, og:title)
+  - File size extraction (MB/GB, French units MO/GO)
+  - Error state detection (file not found, password protected, premium only)
+  - Form-based download link extraction
+  - Priority 6 (after Dropbox, before defunct hosts)
+
+#### Zippyshare Resolver (Defunct Service)
+- ✅ `ZippyshareResolver` implementation:
+  - Gracefully detects defunct Zippyshare links
+  - Supports all known server subdomains (www1-www20)
+  - Returns `HostUnavailable` with shutdown date info
+  - `IsAvailable = false` so factory excludes from active resolvers
+  - Server number and file key extraction (for historical reference)
+  - Priority 99 (lowest priority)
+
+#### Factory Registration
+- ✅ Both resolvers registered in `DownloadHostResolverFactory`
+- ✅ Factory's `GetAvailableResolvers()` correctly excludes Zippyshare
+- ✅ Factory's `GetAllResolvers()` includes both for visibility
+
+#### Unit Tests (40 new tests)
+- ✅ 1fichier tests (20 tests):
+  - URL pattern matching for all domains
+  - Wait time extraction (span and counter variable)
+  - Direct download URL extraction (CDN patterns)
+  - Filename extraction (multiple sources)
+  - File size extraction (various units)
+  - Priority and availability checks
+- ✅ Zippyshare tests (16 tests):
+  - URL pattern matching for all server numbers
+  - Defunct status verification
+  - ResolveAsync returns HostUnavailable
+  - VerifyAsync returns unavailable
+  - Server number extraction
+  - File key extraction
+  - Shutdown date verification
+- ✅ Factory integration tests (4 tests):
+  - GetResolver returns 1fichier for 1fichier URLs
+  - GetAllResolvers includes Zippyshare
+  - GetAvailableResolvers excludes Zippyshare
+  - GetHostInfos shows correct availability
+
+### Test Count
+- Previous: 1100 tests
+- Added: 40 resolver tests
+- Total: 1140 tests
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/Ddl/Resolvers/OneFichierResolver.cs` | New - 1fichier resolver |
+| `src/Shortboxerr.Infrastructure/Ddl/Resolvers/ZippyshareResolver.cs` | New - Zippyshare resolver |
+| `src/Shortboxerr.Infrastructure/Ddl/Resolvers/DownloadHostResolverFactory.cs` | Modified - register new resolvers |
+| `tests/Shortboxerr.Tests/DownloadHostResolverTests.cs` | Modified - 40 new tests |
+| `docs/BACKLOG.md` | Updated - mark 1fichier and Zippyshare complete |
+| `docs/WORKLOG.md` | Updated - add iteration 077 |
+| `docs/SELF_CHECK.md` | Updated - add iteration 077 |
+
+---
+
 ## Iteration 076 (2026-02-09)
 **DDL End-to-End Integration Tests**
 

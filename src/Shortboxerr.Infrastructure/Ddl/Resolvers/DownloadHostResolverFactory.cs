@@ -112,9 +112,14 @@ public class DownloadHostResolverFactory : IDownloadHostResolverFactory
         RegisterResolver(new DropboxResolver(
             _loggerFactory?.CreateLogger<DropboxResolver>()));
 
-        // Future resolvers (not yet implemented):
-        // - 1fichier (Priority 6)
-        // - Zippyshare (defunct, detect and skip)
+        // 1fichier - Priority 6 (French host, common for comics)
+        RegisterResolver(new OneFichierResolver(
+            _loggerFactory?.CreateLogger<OneFichierResolver>()));
+
+        // Zippyshare - Defunct (shut down March 2023)
+        // Registered to gracefully detect and skip defunct links
+        RegisterResolver(new ZippyshareResolver(
+            _loggerFactory?.CreateLogger<ZippyshareResolver>()));
     }
 
     /// <summary>

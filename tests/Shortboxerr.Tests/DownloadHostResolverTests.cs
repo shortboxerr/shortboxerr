@@ -509,7 +509,430 @@ public class DownloadHostResolverTests
 
     #endregion
 
+    #region OneFichierResolver Tests
+
+    [Fact]
+    public void OneFichierResolver_CanResolve_StandardUrl()
+    {
+        var resolver = new OneFichierResolver();
+        Assert.True(resolver.CanResolve("https://1fichier.com/?abc123xyz"));
+    }
+
+    [Fact]
+    public void OneFichierResolver_CanResolve_FrDomain()
+    {
+        var resolver = new OneFichierResolver();
+        Assert.True(resolver.CanResolve("https://1fichier.fr/?abc123xyz"));
+    }
+
+    [Fact]
+    public void OneFichierResolver_CanResolve_InfoDomain()
+    {
+        var resolver = new OneFichierResolver();
+        Assert.True(resolver.CanResolve("https://1fichier.info/?abc123xyz"));
+    }
+
+    [Fact]
+    public void OneFichierResolver_CannotResolve_OtherHost()
+    {
+        var resolver = new OneFichierResolver();
+        Assert.False(resolver.CanResolve("https://mediafire.com/file/abc123"));
+    }
+
+    [Fact]
+    public void OneFichierResolver_ExtractWaitTime_StandardFormat()
+    {
+        var html = """
+            <html>
+            <body>
+                <p>Please wait <span>60</span> seconds before downloading</p>
+            </body>
+            </html>
+            """;
+
+        var waitTime = OneFichierResolver.ExtractWaitTime(html);
+        Assert.Equal(60, waitTime);
+    }
+
+    [Fact]
+    public void OneFichierResolver_ExtractWaitTime_CounterVariable()
+    {
+        var html = """
+            <script>
+            var count = 45;
+            </script>
+            """;
+
+        var waitTime = OneFichierResolver.ExtractWaitTime(html);
+        Assert.Equal(45, waitTime);
+    }
+
+    [Fact]
+    public void OneFichierResolver_ExtractWaitTime_NoWaitRequired()
+    {
+        var html = """
+            <html>
+            <body>
+                <a href="https://cdn.1fichier.com/download/abc123">Download</a>
+            </body>
+            </html>
+            """;
+
+        var waitTime = OneFichierResolver.ExtractWaitTime(html);
+        Assert.Equal(0, waitTime);
+    }
+
+    [Fact]
+    public void OneFichierResolver_ExtractDirectDownloadUrl_CdnLink()
+    {
+        var html = """
+            <html>
+            <body>
+                <a href="https://cdn1.1fichier.com/download/abc123/file.cbz">Download</a>
+            </body>
+            </html>
+            """;
+
+        var url = OneFichierResolver.ExtractDirectDownloadUrl(html);
+        Assert.Equal("https://cdn1.1fichier.com/download/abc123/file.cbz", url);
+    }
+
+    [Fact]
+    public void OneFichierResolver_ExtractDirectDownloadUrl_CzDomain()
+    {
+        var html = """
+            <html>
+            <body>
+                <a href="https://cz1.1fichier.com/abc123/comic.cbz">Download</a>
+            </body>
+            </html>
+            """;
+
+        var url = OneFichierResolver.ExtractDirectDownloadUrl(html);
+        Assert.Equal("https://cz1.1fichier.com/abc123/comic.cbz", url);
+    }
+
+    [Fact]
+    public void OneFichierResolver_ExtractDirectDownloadUrl_FrDomain()
+    {
+        var html = """
+            <html>
+            <body>
+                <a href="https://fr5.1fichier.com/abc123/batman.cbz">Click to download</a>
+            </body>
+            </html>
+            """;
+
+        var url = OneFichierResolver.ExtractDirectDownloadUrl(html);
+        Assert.Equal("https://fr5.1fichier.com/abc123/batman.cbz", url);
+    }
+
+    [Fact]
+    public void OneFichierResolver_ExtractFilename_FromClass()
+    {
+        var html = """
+            <html>
+            <body>
+                <div class="file-name">Amazing Spider-Man 001 (2024).cbz</div>
+            </body>
+            </html>
+            """;
+
+        var filename = OneFichierResolver.ExtractFilename(html);
+        Assert.Equal("Amazing Spider-Man 001 (2024).cbz", filename);
+    }
+
+    [Fact]
+    public void OneFichierResolver_ExtractFilename_FromTitle()
+    {
+        var html = """
+            <html>
+            <head>
+                <title>Batman 150 (2024).cbr - Download</title>
+            </head>
+            </html>
+            """;
+
+        var filename = OneFichierResolver.ExtractFilename(html);
+        Assert.Equal("Batman 150 (2024).cbr", filename);
+    }
+
+    [Fact]
+    public void OneFichierResolver_ExtractFilename_FromOgTitle()
+    {
+        var html = """
+            <html>
+            <head>
+                <meta property="og:title" content="Superman 001.cbz" />
+            </head>
+            </html>
+            """;
+
+        var filename = OneFichierResolver.ExtractFilename(html);
+        Assert.Equal("Superman 001.cbz", filename);
+    }
+
+    [Fact]
+    public void OneFichierResolver_ExtractFileSize_MB()
+    {
+        var html = """
+            <html>
+            <body>
+                <span class="size">Size: 45.5 MB</span>
+            </body>
+            </html>
+            """;
+
+        var size = OneFichierResolver.ExtractFileSize(html);
+        Assert.NotNull(size);
+        Assert.True(size > 47_000_000 && size < 48_000_000); // ~47.7 MB
+    }
+
+    [Fact]
+    public void OneFichierResolver_ExtractFileSize_MO_FrenchUnit()
+    {
+        var html = """
+            <html>
+            <body>
+                <span>Taille: 100 MO</span>
+            </body>
+            </html>
+            """;
+
+        var size = OneFichierResolver.ExtractFileSize(html);
+        Assert.NotNull(size);
+        Assert.True(size > 104_000_000); // > 100 MB
+    }
+
+    [Fact]
+    public void OneFichierResolver_ExtractFileSize_GB()
+    {
+        var html = """
+            <html>
+            <body>
+                <span>File size: 1.5 GB</span>
+            </body>
+            </html>
+            """;
+
+        var size = OneFichierResolver.ExtractFileSize(html);
+        Assert.NotNull(size);
+        Assert.True(size > 1_500_000_000); // > 1.5 GB
+    }
+
+    [Fact]
+    public void OneFichierResolver_HasCorrectPriority()
+    {
+        var resolver = new OneFichierResolver();
+        Assert.Equal(6, resolver.Priority);
+    }
+
+    [Fact]
+    public void OneFichierResolver_IsAvailable()
+    {
+        var resolver = new OneFichierResolver();
+        Assert.True(resolver.IsAvailable);
+    }
+
+    #endregion
+
+    #region ZippyshareResolver Tests
+
+    [Fact]
+    public void ZippyshareResolver_CanResolve_StandardUrl()
+    {
+        var resolver = new ZippyshareResolver();
+        Assert.True(resolver.CanResolve("https://www.zippyshare.com/v/abc123/file.html"));
+    }
+
+    [Fact]
+    public void ZippyshareResolver_CanResolve_NumberedServer()
+    {
+        var resolver = new ZippyshareResolver();
+        Assert.True(resolver.CanResolve("https://www15.zippyshare.com/v/abc123/file.html"));
+    }
+
+    [Fact]
+    public void ZippyshareResolver_CanResolve_AllKnownServers()
+    {
+        var resolver = new ZippyshareResolver();
+        
+        // Test a sample of known server numbers
+        Assert.True(resolver.CanResolve("https://www1.zippyshare.com/v/abc/file.html"));
+        Assert.True(resolver.CanResolve("https://www5.zippyshare.com/v/abc/file.html"));
+        Assert.True(resolver.CanResolve("https://www10.zippyshare.com/v/abc/file.html"));
+        Assert.True(resolver.CanResolve("https://www20.zippyshare.com/v/abc/file.html"));
+    }
+
+    [Fact]
+    public void ZippyshareResolver_CannotResolve_OtherHost()
+    {
+        var resolver = new ZippyshareResolver();
+        Assert.False(resolver.CanResolve("https://mediafire.com/file/abc123"));
+    }
+
+    [Fact]
+    public void ZippyshareResolver_IsNotAvailable()
+    {
+        var resolver = new ZippyshareResolver();
+        Assert.False(resolver.IsAvailable);
+    }
+
+    [Fact]
+    public void ZippyshareResolver_HasLowPriority()
+    {
+        var resolver = new ZippyshareResolver();
+        Assert.Equal(99, resolver.Priority); // Low priority since defunct
+    }
+
+    [Fact]
+    public async Task ZippyshareResolver_ResolveAsync_ReturnsHostUnavailable()
+    {
+        var resolver = new ZippyshareResolver();
+        
+        var result = await resolver.ResolveAsync("https://www15.zippyshare.com/v/abc123/file.html");
+        
+        Assert.False(result.Success);
+        Assert.Equal(HostResolverFailureReason.HostUnavailable, result.FailureReason);
+        Assert.Contains("shut down", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ZippyshareResolver_VerifyAsync_ReturnsUnavailable()
+    {
+        var resolver = new ZippyshareResolver();
+        
+        var result = await resolver.VerifyAsync("https://www15.zippyshare.com/v/abc123/file.html");
+        
+        Assert.False(result.IsAvailable);
+        Assert.Equal(HostResolverFailureReason.HostUnavailable, result.FailureReason);
+        Assert.Contains("shut down", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ZippyshareResolver_ExtractServerNumber_ValidServer()
+    {
+        var serverNum = ZippyshareResolver.ExtractServerNumber("https://www15.zippyshare.com/v/abc123/file.html");
+        Assert.Equal(15, serverNum);
+    }
+
+    [Fact]
+    public void ZippyshareResolver_ExtractServerNumber_SingleDigit()
+    {
+        var serverNum = ZippyshareResolver.ExtractServerNumber("https://www3.zippyshare.com/v/abc123/file.html");
+        Assert.Equal(3, serverNum);
+    }
+
+    [Fact]
+    public void ZippyshareResolver_ExtractServerNumber_MainSite()
+    {
+        var serverNum = ZippyshareResolver.ExtractServerNumber("https://www.zippyshare.com/v/abc123/file.html");
+        Assert.Null(serverNum); // No number in "www"
+    }
+
+    [Fact]
+    public void ZippyshareResolver_ExtractFileKey_ValidPath()
+    {
+        var fileKey = ZippyshareResolver.ExtractFileKey("https://www15.zippyshare.com/v/abc123xyz/file.html");
+        Assert.Equal("abc123xyz", fileKey);
+    }
+
+    [Fact]
+    public void ZippyshareResolver_ExtractFileKey_InvalidPath()
+    {
+        var fileKey = ZippyshareResolver.ExtractFileKey("https://www15.zippyshare.com/invalid/path");
+        Assert.Null(fileKey);
+    }
+
+    [Fact]
+    public void ZippyshareResolver_IsZippyshareUrl_True()
+    {
+        Assert.True(ZippyshareResolver.IsZippyshareUrl("https://www15.zippyshare.com/v/abc123/file.html"));
+        Assert.True(ZippyshareResolver.IsZippyshareUrl("https://zippyshare.com/v/abc123/file.html"));
+    }
+
+    [Fact]
+    public void ZippyshareResolver_IsZippyshareUrl_False()
+    {
+        Assert.False(ZippyshareResolver.IsZippyshareUrl("https://mediafire.com/file/abc123"));
+        Assert.False(ZippyshareResolver.IsZippyshareUrl("https://google.com"));
+        Assert.False(ZippyshareResolver.IsZippyshareUrl(""));
+        Assert.False(ZippyshareResolver.IsZippyshareUrl(null!));
+    }
+
+    [Fact]
+    public void ZippyshareResolver_ShutdownDate_IsCorrect()
+    {
+        // Zippyshare shut down on March 19, 2023
+        Assert.Equal(new DateTime(2023, 3, 19, 0, 0, 0, DateTimeKind.Utc), ZippyshareResolver.ShutdownDate);
+    }
+
+    #endregion
+
     #region Factory with New Resolvers Tests
+
+    [Fact]
+    public void Factory_GetResolver_ReturnsOneFichierForOneFichierUrl()
+    {
+        var factory = new DownloadHostResolverFactory();
+        var resolver = factory.GetResolver("https://1fichier.com/?abc123");
+
+        Assert.NotNull(resolver);
+        Assert.Equal("1fichier", resolver.HostId);
+    }
+
+    [Fact]
+    public void Factory_GetResolver_DoesNotReturnZippyshareByDefault()
+    {
+        var factory = new DownloadHostResolverFactory();
+        // Zippyshare is registered but IsAvailable = false, so GetResolver won't return it
+        var resolver = factory.GetResolver("https://www15.zippyshare.com/v/abc123/file.html");
+
+        // Should return null because Zippyshare is not available
+        Assert.Null(resolver);
+    }
+
+    [Fact]
+    public void Factory_GetAllResolvers_IncludesZippyshare()
+    {
+        var factory = new DownloadHostResolverFactory();
+        var resolvers = factory.GetAllResolvers();
+
+        Assert.Contains(resolvers, r => r.HostId == "Zippyshare");
+    }
+
+    [Fact]
+    public void Factory_GetAvailableResolvers_ExcludesZippyshare()
+    {
+        var factory = new DownloadHostResolverFactory();
+        var resolvers = factory.GetAvailableResolvers();
+
+        Assert.DoesNotContain(resolvers, r => r.HostId == "Zippyshare");
+    }
+
+    [Fact]
+    public void Factory_GetHostInfos_IncludesOneFichier()
+    {
+        var factory = new DownloadHostResolverFactory();
+        var infos = factory.GetHostInfos();
+
+        var oneFichier = infos.FirstOrDefault(h => h.HostId == "1fichier");
+        Assert.NotNull(oneFichier);
+        Assert.Equal("1fichier", oneFichier.DisplayName);
+        Assert.True(oneFichier.IsAvailable);
+    }
+
+    [Fact]
+    public void Factory_GetHostInfos_ZippyshareShowsNotAvailable()
+    {
+        var factory = new DownloadHostResolverFactory();
+        var infos = factory.GetHostInfos();
+
+        var zippyshare = infos.FirstOrDefault(h => h.HostId == "Zippyshare");
+        Assert.NotNull(zippyshare);
+        Assert.Contains("Defunct", zippyshare.DisplayName);
+        Assert.False(zippyshare.IsAvailable);
+    }
 
     [Fact]
     public void Factory_GetResolver_ReturnsDropboxForDropboxUrl()
@@ -543,6 +966,8 @@ public class DownloadHostResolverTests
         Assert.Contains(infos, h => h.HostId == "Pixeldrain");
         Assert.Contains(infos, h => h.HostId == "GoogleDrive");
         Assert.Contains(infos, h => h.HostId == "Dropbox");
+        Assert.Contains(infos, h => h.HostId == "1fichier");
+        Assert.Contains(infos, h => h.HostId == "Zippyshare");
     }
 
     #endregion

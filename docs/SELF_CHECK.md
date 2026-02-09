@@ -1,3 +1,64 @@
+# Self Check - Iteration 077
+
+## 1fichier & Zippyshare Resolvers
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Frontend compiles | ✅ | No frontend changes |
+| Backend compiles | ✅ | dotnet build |
+| Tests pass | ✅ | 1140 tests (40 new) |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+#### 1fichier Resolver
+| AC | Status |
+|----|--------|
+| Parse download page | ✅ |
+| Handle wait times for free users | ✅ |
+| Extract filename | ✅ |
+| Extract file size | ✅ |
+| Error detection | ✅ |
+
+#### Zippyshare Resolver
+| AC | Status |
+|----|--------|
+| Detect defunct links gracefully | ✅ |
+| Return HostUnavailable | ✅ |
+| IsAvailable = false | ✅ |
+
+### Tests Added (40 tests)
+
+| Category | Tests |
+|----------|-------|
+| 1fichier URL matching | 4 |
+| 1fichier wait time extraction | 3 |
+| 1fichier download URL extraction | 3 |
+| 1fichier filename extraction | 3 |
+| 1fichier file size extraction | 3 |
+| 1fichier priority/availability | 2 |
+| Zippyshare URL matching | 4 |
+| Zippyshare defunct handling | 2 |
+| Zippyshare resolve/verify | 2 |
+| Zippyshare extraction helpers | 5 |
+| Zippyshare shutdown date | 1 |
+| Factory integration | 8 |
+
+### Files Changed
+| File | Status |
+|------|--------|
+| `OneFichierResolver.cs` | ✅ New |
+| `ZippyshareResolver.cs` | ✅ New |
+| `DownloadHostResolverFactory.cs` | ✅ Modified |
+| `DownloadHostResolverTests.cs` | ✅ Modified (+40 tests) |
+| `BACKLOG.md` | ✅ Updated |
+| `WORKLOG.md` | ✅ Updated |
+| `SELF_CHECK.md` | ✅ Updated |
+
+---
+
 # Self Check - Iteration 076
 
 ## DDL End-to-End Integration Tests

@@ -366,16 +366,21 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
   - AC: Extract confirmation token for large files ✅
   - AC: Support folder links with file listing (detection only - folder download deferred)
 
-#### 8.2.7 Legacy/Additional Hosts
-- [ ] **Zippyshare resolver** (defunct, legacy support)
-  - AC: Detect and skip defunct links gracefully
-- [ ] **Rapidgator/Uploaded resolver** (premium)
+#### 8.2.7 Legacy/Additional Hosts - PARTIAL ✅
+- [x] **Zippyshare resolver** ✅ (defunct, graceful handling)
+  - AC: Detect and skip defunct links gracefully ✅
+  - AC: Returns HostUnavailable with shutdown date info ✅
+  - AC: IsAvailable = false so factory excludes from active resolvers ✅
+- [ ] **Rapidgator/Uploaded resolver** (premium) - deferred
   - AC: Support premium account credentials
   - AC: Free tier with wait times (optional)
-- [ ] **1fichier resolver**
-  - AC: Parse download page
-  - AC: Handle wait times for free users
-- [ ] **Usenet/NZB integration**
+- [x] **1fichier resolver** ✅
+  - AC: Parse download page ✅ (CDN, CZ, FR domains)
+  - AC: Handle wait times for free users ✅ (detection)
+  - AC: Extract filename from page ✅ (class, title, og:title)
+  - AC: Extract file size ✅ (MB/GB, French units MO/GO)
+  - AC: Error detection (file not found, password protected, premium only) ✅
+- [ ] **Usenet/NZB integration** - deferred
   - AC: NZB file download from DDL sites
   - AC: Pass to configured Usenet downloader (SABnzbd, NZBGet)
 
