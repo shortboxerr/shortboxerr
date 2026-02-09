@@ -1,3 +1,60 @@
+# Self Check - Iteration 083
+
+## Correlation ID for Request Tracing (EPIC 13.1)
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Frontend compiles | ✅ | No frontend changes |
+| Backend compiles | ✅ | dotnet build |
+| Tests pass | ✅ | 1262 tests (+17 new) |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+| AC | Status |
+|----|--------|
+| Correlation ID from X-Correlation-ID header | ✅ |
+| Fallback to X-Request-ID header | ✅ |
+| Generate ID if no header present | ✅ |
+| Add to HttpContext.TraceIdentifier | ✅ |
+| Add to response headers | ✅ |
+| Serilog enricher for log events | ✅ |
+| Template with correlation ID | ✅ |
+| JSON template with correlation ID | ✅ |
+
+### Test Categories (17 tests)
+
+| Category | Tests |
+|----------|-------|
+| Middleware header precedence | 4 |
+| ID generation | 3 |
+| Enricher | 4 |
+| Output templates | 3 |
+| Template presets | 3 |
+
+### Files Changed
+
+| File | Status |
+|------|--------|
+| `CorrelationIdMiddleware.cs` | ✅ New |
+| `CorrelationIdEnricher.cs` | ✅ New |
+| `SerilogConfiguration.cs` | ✅ Modified |
+| `Program.cs` | ✅ Modified |
+| `Infrastructure.csproj` | ✅ Modified |
+| `CorrelationIdTests.cs` | ✅ New (+17 tests) |
+| `BACKLOG.md` | ✅ Updated |
+| `WORKLOG.md` | ✅ Updated |
+| `SELF_CHECK.md` | ✅ Updated |
+
+### EPIC Status
+
+**EPIC 13.1 File-Based Logging: COMPLETE** ✅
+**EPIC 13.2 Log Categories & Content: COMPLETE** ✅
+
+---
+
 # Self Check - Iteration 082
 
 ## Human-Readable Log Formatting (EPIC 13.1)

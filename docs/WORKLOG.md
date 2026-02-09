@@ -1,5 +1,77 @@
 # Worklog
 
+## Iteration 083 (2026-02-09)
+**Correlation ID for Request Tracing (EPIC 13.1)**
+
+### Commits
+1. `feat: implement correlation ID for request tracing (EPIC 13.1)`
+
+### Deliverables
+
+#### CorrelationIdMiddleware (`Middleware/CorrelationIdMiddleware.cs`)
+- ✅ Reads `X-Correlation-ID` header from incoming requests
+- ✅ Falls back to `X-Request-ID` header if not present
+- ✅ Generates unique ID if no header: `yyyyMMddHHmmss-random8`
+- ✅ Sets `HttpContext.TraceIdentifier` for downstream logging
+- ✅ Adds correlation ID to response headers
+
+#### CorrelationIdEnricher (`Logging/CorrelationIdEnricher.cs`)
+- ✅ Serilog enricher reads from `HttpContext.TraceIdentifier`
+- ✅ Adds `CorrelationId` property to all log events
+- ✅ Uses `-` placeholder when no HTTP context available
+
+#### Output Templates Updated
+| Template | Now Includes CorrelationId |
+|----------|---------------------------|
+| `DefaultOutputTemplate` | No (opt-in) |
+| `CorrelationOutputTemplate` | ✅ New |
+| `VerboseOutputTemplate` | ✅ |
+| `JsonOutputTemplate` | ✅ |
+
+#### Configuration
+- `SHORTBOXERR_LOG_TEMPLATE=correlation` enables correlation ID in logs
+- Format: `[timestamp] [level] [correlationId] [source] message`
+
+### Test Count
+- Previous: 1245 tests
+- Added: 17 tests
+- Total: 1262 tests
+
+### Test Categories (17 tests)
+| Category | Tests |
+|----------|-------|
+| Middleware header precedence | 4 |
+| ID generation | 3 |
+| Enricher | 4 |
+| Output templates | 3 |
+| Template presets | 3 |
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `CorrelationIdMiddleware.cs` | New |
+| `CorrelationIdEnricher.cs` | New |
+| `SerilogConfiguration.cs` | Modified - templates + enricher |
+| `Program.cs` | Modified - middleware |
+| `Infrastructure.csproj` | Modified - HTTP abstractions |
+| `CorrelationIdTests.cs` | New (+17 tests) |
+| `BACKLOG.md` | Updated |
+| `WORKLOG.md` | Updated |
+| `SELF_CHECK.md` | Updated |
+
+### EPIC 13.1 Status
+With this iteration, **EPIC 13.1 File-Based Logging** is now **COMPLETE**:
+- ✅ Sensitive data protection
+- ✅ Log file configuration
+- ✅ Log rotation
+- ✅ Log format (timestamp, level, source, correlation ID)
+- ✅ Human-readable log formatting
+- ✅ Serilog integration
+- ✅ Correlation ID for request tracing
+- ✅ Structured logging (JSON format)
+
+---
+
 ## Iteration 082 (2026-02-09)
 **Human-Readable Log Formatting (EPIC 13.1)**
 

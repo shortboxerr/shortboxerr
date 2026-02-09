@@ -1478,7 +1478,7 @@ Different caching behavior based on whether a week is "active" (before/on releas
 Comprehensive logging system for troubleshooting, monitoring, and operational visibility. Must achieve behavioral parity with Mylar3, Sonarr, and Radarr logging capabilities.
 
 ### 13.1 File-Based Logging
-**Status: READY**
+**Status: COMPLETE** ✅
 
 ⚠️ **CRITICAL SECURITY REQUIREMENT: NEVER LOG SENSITIVE DATA**
 - API keys (ComicVine, indexers, download clients) MUST be masked/redacted
@@ -1510,12 +1510,19 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
   - AC: Date-based rotation option (daily/weekly) ✅ (daily implemented)
   - AC: Compressed archive of rotated logs (optional) (deferred)
 
-- [x] **Log format** ✅ (partial)
+- [x] **Log format** ✅
   - AC: Timestamp with milliseconds: `2026-02-04 20:30:45.123` ✅
   - AC: Log level indicator: `[Info]`, `[Warn]`, `[Error]`, etc. ✅
   - AC: Source/category: `[PullListService]`, `[ComicVineClient]`, etc. ✅
-  - AC: Correlation ID for request tracing (optional) (pending)
-  - AC: Structured logging support (JSON format option) (pending)
+  - AC: Correlation ID for request tracing ✅
+    - CorrelationIdMiddleware reads X-Correlation-ID or X-Request-ID headers
+    - Generates unique ID if not provided (format: yyyyMMddHHmmss-random8)
+    - CorrelationIdEnricher adds to all log events in request scope
+    - New template preset: `SHORTBOXERR_LOG_TEMPLATE=correlation`
+    - 17 tests for middleware, enricher, and template handling
+  - AC: Structured logging support (JSON format option) ✅
+    - JsonOutputTemplate: `{ "timestamp": ..., "level": ..., "correlationId": ..., "source": ..., "message": ..., "properties": ... }`
+    - Use `SHORTBOXERR_LOG_TEMPLATE=json` to enable
 
 - [x] **Human-readable log formatting** ✅
   - AC: Consistent column alignment for timestamp, level, and source context ✅
@@ -1537,7 +1544,7 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
   - AC: Async file writing for performance ✅
 
 ### 13.2 Log Categories & Content
-**Status: READY**
+**Status: COMPLETE** ✅
 
 - [x] **Application lifecycle logs** ✅
   - AC: Startup/shutdown events with version info ✅
