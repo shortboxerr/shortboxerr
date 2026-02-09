@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>GetComics – Free DC and Marvel Comics Download</title>
+    <link>https://getcomics.org</link>
+    <description>GetComics is an awesome place to download free comics. Download comics for free.</description>
+    <lastBuildDate>Wed, 15 Mar 2023 12:00:00 +0000</lastBuildDate>
+    <item>
+      <title>Batman 003 (2023) (Digital) (Zone-Empire)</title>
+      <link>https://getcomics.org/dc/batman-003-2023-digital/</link>
+      <pubDate>Wed, 15 Mar 2023 10:00:00 +0000</pubDate>
+      <category>DC</category>
+      <description>Batman continues his investigation into the mysterious Failsafe protocol...</description>
+    </item>
+    <item>
+      <title>Spider-Man 001 (2023) (Digital) (Zone-Empire)</title>
+      <link>https://getcomics.org/marvel/spider-man-001-2023-digital/</link>
+      <pubDate>Wed, 15 Mar 2023 09:30:00 +0000</pubDate>
+      <category>Marvel</category>
+      <description>A new era begins for Peter Parker as Spider-Man...</description>
+    </item>
+    <item>
+      <title>X-Men 025 (2023) (Digital) (Zone-Empire)</title>
+      <link>https://getcomics.org/marvel/x-men-025-2023-digital/</link>
+      <pubDate>Wed, 15 Mar 2023 09:00:00 +0000</pubDate>
+      <category>Marvel</category>
+      <description>The Fall of X continues as the mutants face extinction...</description>
+    </item>
+    <item>
+      <title>Saga Vol. 11 (2023) (Digital)</title>
+      <link>https://getcomics.org/image/saga-vol-11-2023/</link>
+      <pubDate>Tue, 14 Mar 2023 15:00:00 +0000</pubDate>
+      <category>Image</category>
+      <description>The award-winning series continues with another epic volume...</description>
+    </item>
+    <item>
+      <title>The Walking Dead Deluxe 060 (2023) (Digital)</title>
+      <link>https://getcomics.org/image/walking-dead-deluxe-060-2023/</link>
+      <pubDate>Tue, 14 Mar 2023 14:00:00 +0000</pubDate>
+      <category>Image</category>
+      <description>The deluxe recolored edition continues...</description>
+    </item>
+  </channel>
+</rss>

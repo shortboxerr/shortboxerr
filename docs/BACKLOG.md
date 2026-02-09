@@ -400,7 +400,7 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
   - AC: Request queuing to prevent bans ✅ (AcquireAsync blocks until available)
   - AC: Cloudflare challenge handling (deferred)
 
-### 8.5 DDL Adapter Tests - PARTIAL ✅
+### 8.5 DDL Adapter Tests ✅ COMPLETED
 - [x] **GetComics fixture tests** ✅
   - AC: Mock HTML responses for search results ✅
   - AC: Mock HTML responses for release pages ✅
@@ -409,9 +409,14 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
   - AC: Mock responses for each host type ✅ (35 unit tests)
   - AC: Test redirect following and URL extraction ✅
   - AC: Test failure scenarios (expired, removed, rate limited) ✅
-- [ ] **Integration tests**
-  - AC: Cached real responses for regression testing
-  - AC: End-to-end: search → parse → resolve → download
+- [x] **Integration tests** ✅ (27 tests)
+  - AC: Cached real responses for regression testing ✅
+  - AC: End-to-end: search → parse → filter → resolve tests ✅
+  - AC: Parser edge case tests ✅
+  - AC: Filter configuration tests ✅
+  - AC: Resolver factory selection tests ✅
+  - AC: RSS feed service tests ✅
+  - AC: Error handling and failure reason tests ✅
 
 ---
 

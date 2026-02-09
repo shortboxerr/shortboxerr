@@ -1,5 +1,77 @@
 # Worklog
 
+## Iteration 076 (2026-02-09)
+**DDL End-to-End Integration Tests**
+
+### Commits
+1. `test: add DDL end-to-end integration tests with cached responses`
+
+### Deliverables
+
+#### Cached Response Fixtures
+- ✅ `getcomics_search_batman.html` - Mock search results page
+- ✅ `getcomics_release_batman001.html` - Mock release detail page
+- ✅ `getcomics_rss_feed.xml` - Mock RSS feed with multiple publishers
+- ✅ `pixeldrain_file_abc123.json` - Mock Pixeldrain API response
+- ✅ `mediafire_file_xyz789.html` - Mock MediaFire download page
+
+#### Integration Test Suite (27 tests)
+- ✅ **Search Flow Tests**:
+  - Parser handles various release title formats
+  - Filter settings apply correctly to candidates
+  - RSS feed service parses new releases
+  - Category RSS feeds parse correctly
+- ✅ **Parse Flow Tests**:
+  - Metadata extraction (series, issue, format, year)
+  - Banned word rejection
+  - Size limit rejection
+- ✅ **Resolve Flow Tests**:
+  - Pixeldrain file ID extraction
+  - MediaFire download URL extraction
+  - Resolver factory selects correct resolver
+  - Fallback to Direct resolver for unknown hosts
+- ✅ **Download Flow Tests**:
+  - Download service tracks active downloads
+  - Default options have Mylar3-compatible values
+- ✅ **Full Pipeline Tests**:
+  - Parse to filter flow
+  - Multi-site aggregation with deduplication
+  - Auto-match with existing series
+- ✅ **Categories Tests**:
+  - GetAvailableCategories returns expected publishers
+  - DdlCategories provides all publishers
+- ✅ **Error Handling Tests**:
+  - Resolver failure reasons cover all cases
+  - Download failure reasons cover all cases
+  - Search site unavailable returns error
+- ✅ **Regression Tests**:
+  - Parser handles edge cases
+  - Filter handles all filter types
+
+#### Test Infrastructure
+- ✅ Updated `.csproj` to copy HTML/XML fixtures to output
+- ✅ Improved HTTP mock setup using callback approach
+- ✅ Helper methods for creating test candidates
+
+### Test Count
+- Previous: 1073 tests
+- Added: 27 DDL integration tests
+- Total: 1100 tests
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `tests/Shortboxerr.Tests/DdlEndToEndIntegrationTests.cs` | New - integration tests |
+| `tests/Shortboxerr.Tests/Shortboxerr.Tests.csproj` | Updated - copy HTML/XML fixtures |
+| `tests/Shortboxerr.Tests/Fixtures/CachedResponses/*.html` | New - cached HTML responses |
+| `tests/Shortboxerr.Tests/Fixtures/CachedResponses/*.xml` | New - cached RSS feed |
+| `tests/Shortboxerr.Tests/Fixtures/CachedResponses/*.json` | New - cached API response |
+| `docs/BACKLOG.md` | Updated - mark integration tests complete |
+| `docs/WORKLOG.md` | Updated - add iteration 076 |
+| `docs/SELF_CHECK.md` | Updated - rubric results |
+
+---
+
 ## Iteration 075 (2026-02-09)
 **GetComics RSS Feed & Category Support**
 
