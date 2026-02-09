@@ -1,5 +1,72 @@
 # Worklog
 
+## Iteration 081 (2026-02-09)
+**Sensitive Data Masking Tests (EPIC 13.1)**
+
+### Commits
+1. `test: add comprehensive sensitive data masking unit tests`
+
+### Deliverables
+
+#### Test Coverage (`SensitiveDataMaskingTests.cs`)
+- ✅ **22 new tests** (35 total in file, expanded from 13)
+- ✅ Expanded from basic query param masking to full coverage
+
+#### SensitiveDataDestructuringPolicy Tests (14 tests)
+- ✅ Masks API keys in dictionaries
+- ✅ Masks passwords in dictionaries
+- ✅ Masks tokens (access_token, refresh_token) in dictionaries
+- ✅ Masks secrets (client_secret) in dictionaries
+- ✅ Masks Authorization headers
+- ✅ Masks connection strings
+- ✅ Masks multiple sensitive fields simultaneously
+- ✅ Handles empty dictionaries
+- ✅ Masks object properties with ApiKey
+- ✅ Masks object properties with Password
+- ✅ Ignores primitive types
+- ✅ Masks case-insensitively (APIKEY, ApiKey, apikey)
+
+#### SensitiveDataEnricher Tests (3 tests)
+- ✅ Adds SensitiveFieldsMasked property when sensitive fields present
+- ✅ Does not add property when no sensitive fields
+- ✅ Counts multiple sensitive fields correctly
+
+#### End-to-End Log Output Tests (7 tests)
+- ✅ API keys do not appear in log output
+- ✅ Passwords do not appear in log output
+- ✅ Connection string credentials do not appear
+- ✅ Authorization header tokens do not appear
+- ✅ Multiple sensitive fields all masked
+- ✅ SABnzbd API keys do not appear
+- ✅ Newznab API keys do not appear
+
+#### Test Infrastructure
+- ✅ Custom `TestSink` for capturing log events in memory
+- ✅ `TestPropertyValueFactory` for unit testing destructuring policy
+- ✅ `TestPropertyFactory` for unit testing enricher
+
+### Test Count
+- Previous: 1185 tests
+- Added: 22 tests
+- Total: 1207 tests
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `tests/Shortboxerr.Tests/SensitiveDataMaskingTests.cs` | Expanded - comprehensive tests |
+| `docs/BACKLOG.md` | Updated - mark tests as completed |
+| `docs/WORKLOG.md` | Updated - add iteration 081 |
+| `docs/SELF_CHECK.md` | Updated - add iteration 081 |
+
+### Security Verification
+These tests verify the critical security requirement from EPIC 13.1:
+- **API keys** (ComicVine, indexers, download clients) - VERIFIED MASKED
+- **Passwords** and authentication tokens - VERIFIED MASKED
+- **Connection strings** - VERIFIED MASKED
+- **Authorization headers** - VERIFIED MASKED
+
+---
+
 ## Iteration 080 (2026-02-09)
 **Download Settings Scoping by Client Type**
 

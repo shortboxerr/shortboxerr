@@ -1493,7 +1493,8 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
   - AC: Mask query string parameters containing sensitive keys ✅
   - AC: Mask Authorization headers in HTTP logs ✅
   - AC: Mask connection strings (show server/database only, not credentials) ✅
-  - AC: Unit tests to verify no credentials appear in log output (pending)
+  - AC: Unit tests to verify no credentials appear in log output ✅
+  - Note: 35 comprehensive tests covering SensitiveDataDestructuringPolicy, SensitiveDataEnricher, query param masking, and end-to-end log verification
 
 - [x] **Log file configuration** ✅
   - AC: Configurable log directory (default: `{data}/logs/`) ✅ (via SHORTBOXERR_LOG_DIR env var)

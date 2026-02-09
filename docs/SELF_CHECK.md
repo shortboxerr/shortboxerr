@@ -1,3 +1,55 @@
+# Self Check - Iteration 081
+
+## Sensitive Data Masking Tests (EPIC 13.1)
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Frontend compiles | ✅ | No frontend changes |
+| Backend compiles | ✅ | dotnet build |
+| Tests pass | ✅ | 1207 tests (+22 new) |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+| AC | Status |
+|----|--------|
+| Unit tests to verify no credentials appear in log output | ✅ |
+
+### Test Categories (22 new tests, 35 total)
+
+| Category | Tests |
+|----------|-------|
+| SensitiveDataDestructuringPolicy | 14 |
+| SensitiveDataEnricher | 3 |
+| End-to-end log verification | 7 |
+| Test infrastructure (TestSink) | 1 |
+
+### Sensitive Data Masking Coverage
+
+| Sensitive Data Type | Verified Masked |
+|---------------------|-----------------|
+| apiKey | ✅ |
+| api_key | ✅ |
+| password | ✅ |
+| token (access_token, refresh_token) | ✅ |
+| secret (client_secret) | ✅ |
+| credential | ✅ |
+| authorization (headers) | ✅ |
+| connectionstring | ✅ |
+
+### Files Changed
+
+| File | Status |
+|------|--------|
+| `SensitiveDataMaskingTests.cs` | ✅ Expanded (+22 tests) |
+| `BACKLOG.md` | ✅ Updated |
+| `WORKLOG.md` | ✅ Updated |
+| `SELF_CHECK.md` | ✅ Updated |
+
+---
+
 # Self Check - Iteration 080
 
 ## Download Settings Scoping by Client Type
