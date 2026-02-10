@@ -236,6 +236,7 @@ app.MapDdlSiteEndpoints();
 app.MapSearchSettingsEndpoints();
 app.MapPullListEndpoints();
 app.MapNotificationEndpoints();
+app.MapActivityEndpoints();
 app.MapCacheEndpoints();
 app.MapSettingsEndpoints();
 app.MapComicVineEndpoints();

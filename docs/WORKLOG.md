@@ -1,5 +1,70 @@
 # Worklog
 
+## Iteration 092 (2026-02-10)
+**Deferred Items Audit + Activity Integration (EPIC 14.1, 10)**
+
+### Commits
+1. `feat: complete deferred items audit and add activity service (24 tests)`
+
+### Deliverables
+
+#### Deferred Items Audit (EPIC 14.1)
+- ✅ Audited all 28 deferred items across EPICs 4, 8, 10, 11, 14
+- ✅ Categorized by effort (S/M/L) and impact (H/M/L)
+- ✅ Created prioritized list (P1 through P5)
+- ✅ Documented blockers and dependencies
+
+**Audit Summary Table:**
+| Priority | Count | Description |
+|----------|-------|-------------|
+| P1 | 4 | High value, low effort - recommended next |
+| P2 | 5 | High value, medium effort |
+| P3 | 5 | Medium value, medium effort |
+| P4 | 6 | Lower priority or complex |
+| P5 | 8 | Low priority or deferred |
+
+#### Activity Integration (EPIC 10 - P1 Item)
+- ✅ `IActivityService` interface for download activity tracking
+- ✅ `ActivityService` implementation aggregating from all providers
+- ✅ `DownloadActivity` unified model for DDL, NZB, and Torrent downloads
+- ✅ `ActivitySummary` for dashboard statistics
+- ✅ API endpoints at `/api/v1/activity/*`:
+  - GET `/` - Active downloads
+  - GET `/history` - Recent history
+  - GET `/summary` - Statistics
+  - GET `/{id}` - Single download
+  - POST `/{id}/pause` - Pause download
+  - POST `/{id}/resume` - Resume download
+  - DELETE `/{id}` - Cancel download
+  - POST `/{id}/retry` - Retry failed
+  - DELETE `/history/{id}` - Remove from history
+  - DELETE `/history/completed` - Clear completed
+
+#### Unit Tests (24 tests)
+| Category | Count | Description |
+|----------|-------|-------------|
+| GetActiveDownloads | 4 | No providers, single, multiple, error handling |
+| GetSummary | 2 | With/without downloads |
+| History | 4 | Add, get, remove, clear |
+| GetById | 3 | Active, history, not found |
+| Cancel | 2 | Success and not found |
+| DownloadActivity | 4 | Progress, speed, ETA formatting |
+| ActivitySummary | 3 | Speed display, status flags |
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Activity/IActivityService.cs` | New - Interface and models |
+| `src/Shortboxerr.Infrastructure/Activity/ActivityService.cs` | New - Implementation |
+| `src/Shortboxerr.Api/Endpoints/ActivityEndpoints.cs` | New - API endpoints |
+| `src/Shortboxerr.Core/Providers/IDownloadProvider.cs` | Added Stalled/Unknown states |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register ActivityService |
+| `src/Shortboxerr.Api/Program.cs` | Map activity endpoints |
+| `tests/Shortboxerr.Tests/ActivityServiceTests.cs` | New - 24 unit tests |
+| `docs/BACKLOG.md` | Updated audit and marked activity complete |
+
+---
+
 ## Iteration 091 (2026-02-10)
 **Search Result Scoring with Mylar3 Parity (EPIC 14.6)**
 

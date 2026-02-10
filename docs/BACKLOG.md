@@ -910,10 +910,13 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: On successful test, set Status to "Healthy" and clear any previous error message ✅
   - AC: On failed test, set Status to "Unhealthy" and store the error message for display ✅
   - Note: 21 new unit tests for SabnzbdSettings (10 tests) and legacy host format parsing (11 tests)
-- [ ] **Activity integration** (deferred)
-  - AC: Show NZB downloads in activity feed
-  - AC: Download progress from SABnzbd/NZBGet
-  - AC: Queue management (pause, remove, priority)
+- [x] **Activity integration** ✅
+  - AC: Show NZB downloads in activity feed ✅
+  - AC: Download progress from SABnzbd/NZBGet ✅
+  - AC: Queue management (pause, remove, priority) ✅
+  - Note: IActivityService aggregates downloads from all providers (DDL, NZB, Torrent)
+  - Note: API endpoints at /api/v1/activity/* for active, history, summary, cancel
+  - Note: 24 unit tests in ActivityServiceTests.cs
 - [x] **Download settings scoping by client type** ✅
   - AC: "Maximum concurrent downloads" setting should ONLY apply to DDL download clients ✅
   - AC: SABnzbd/NZBGet manage their own concurrent downloads - setting should not affect them ✅ (documented)
@@ -1697,39 +1700,80 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
 
 ## EPIC 14: Future Enhancements
 
-### 14.1 Deferred Items Completion Tracking
+### 14.1 Deferred Items Completion Tracking ✅ AUDITED
 Track and prioritize completion of deferred items across all EPICs.
 
-- [ ] **Deferred items audit**
-  - AC: Review all items marked "(deferred)" across EPICs 4, 8, 10, 11
-  - AC: Categorize by effort (small/medium/large) and user impact (high/medium/low)
-  - AC: Create prioritized list based on user requests and parity requirements
-  - AC: Document which items are blocked and what unblocks them
+- [x] **Deferred items audit** ✅
+  - AC: Review all items marked "(deferred)" across EPICs 4, 8, 10, 11 ✅
+  - AC: Categorize by effort (small/medium/large) and user impact (high/medium/low) ✅
+  - AC: Create prioritized list based on user requests and parity requirements ✅
+  - AC: Document which items are blocked and what unblocks them ✅
+  - Note: Audit completed 2026-02-10; 28 deferred items identified across 7 categories
 
-- [ ] **Deferred item: Variant cover detection** (EPIC 9)
-  - Original: "Variant cover detection (optional) - DEFERRED"
-  - Effort: Medium
-  - Impact: Medium (nice-to-have for collectors)
+#### Deferred Items Audit Summary
 
-- [ ] **Deferred item: Site availability checks** (EPIC 8)
-  - Original: "Site availability checks (deferred)"
-  - Effort: Medium
-  - Impact: High (helps maintain DDL reliability)
+| Priority | Item | EPIC | Effort | Impact | Blocker |
+|----------|------|------|--------|--------|---------|
+| **P1 - High Value, Low Effort** |||||
+| ~~1~~ | ~~Activity integration for downloads~~ | 10 | M | H | ✅ Completed |
+| 2 | UI indicators (filter/sort by status) | 11 | S | H | None |
+| 3 | RAR/7z unpacking support | 10 | S | M | SharpCompress library |
+| 4 | Site availability checks | 8 | M | H | None |
+| **P2 - High Value, Medium Effort** |||||
+| 5 | Auto-search on release | 11 | M | H | None |
+| 6 | Mylar3 NZB settings import | 10 | M | H | Config parser |
+| 7 | Indexer health monitoring | 10 | M | H | None |
+| 8 | Download client failover | 10 | M | H | None |
+| 9 | Transmission integration | 14 | M | M | qBittorrent complete |
+| **P3 - Medium Value, Medium Effort** |||||
+| 10 | Variant cover detection | 9 | M | M | None |
+| 11 | Host reliability tracking | 8 | M | M | Statistics DB |
+| 12 | Host blacklisting | 8 | S | M | None |
+| 13 | First-time user experience | 11 | M | M | None |
+| 14 | Publisher filter dropdown | 11 | S | M | ComicVine API |
+| **P4 - Lower Priority / Complex** |||||
+| 15 | NZBHydra2 support | 10 | L | M | None |
+| 16 | Deluge integration | 14 | M | L | Transmission first |
+| 17 | Cloudflare challenge handling | 8 | L | M | Complex |
+| 18 | Mega.nz resolver | 8 | L | M | Encryption |
+| 19 | Rapidgator/Uploaded resolver | 8 | M | L | Premium accounts |
+| 20 | Torrent → Import handoff | 14 | M | M | Torrent clients |
+| **P5 - Low Priority / Deferred** |||||
+| 21 | Request batching (ComicVine) | 12 | M | L | Performance only |
+| 22 | Rate limit awareness | 12 | M | L | Performance only |
+| 23 | Character/team appearances | 9 | M | L | API rate limits |
+| 24 | Usenet/NZB from DDL sites | 8 | M | L | Niche use case |
+| 25 | Folder download (Dropbox/Drive) | 8 | M | L | Complex |
+| 26 | Distributed cache pub/sub | 12 | L | L | Single-instance OK |
+| 27 | Automation tests | 11 | L | M | Full pipeline |
+| 28 | Full integration tests | 10 | L | M | Full pipeline |
 
-- [ ] **Deferred item: NZBHydra2 support** (EPIC 10)
-  - Original: "NZBHydra2 support (deferred)"
-  - Effort: Large
-  - Impact: Medium (power user feature)
+**Legend:**
+- **Effort**: S = Small (< 1 day), M = Medium (1-3 days), L = Large (> 3 days)
+- **Impact**: H = High (core functionality), M = Medium (nice-to-have), L = Low (edge case)
 
-- [ ] **Deferred item: Mylar3 NZB settings import** (EPIC 10)
-  - Original: "Mylar3 NZB settings import (deferred)"
-  - Effort: Medium
-  - Impact: High (migration convenience)
+#### Recommended Next Steps (P1 Items)
 
-- [ ] **Deferred item: Activity integration for downloads** (EPIC 10)
-  - Original: "Activity integration (deferred)"
-  - Effort: Medium
-  - Impact: High (user visibility into download progress)
+1. ~~**Activity integration for downloads** (EPIC 10)~~ ✅ COMPLETED
+   - Shows NZB/torrent downloads in activity feed
+   - Progress bars, speeds, queue management
+   - High visibility feature for users
+   - Note: IActivityService + API endpoints + 24 tests
+
+2. **UI indicators** (EPIC 11)
+   - Filter/sort series list by status
+   - Small effort, high value for usability
+   - No blockers
+
+3. **RAR/7z unpacking** (EPIC 10)
+   - SharpCompress library already handles ZIP
+   - Add RAR and 7z support
+   - Small effort for common archive formats
+
+4. **Site availability checks** (EPIC 8)
+   - Periodic health checks for DDL sites
+   - Auto-disable failing adapters
+   - Medium effort, high reliability impact
 
 ### 14.2 NZBGet Integration (Sonarr/Radarr/Mylar3 Parity) ✅ COMPLETED
 Full NZBGet support as an alternative to SABnzbd.

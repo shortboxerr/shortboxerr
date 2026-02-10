@@ -23,7 +23,9 @@ using Shortboxerr.Infrastructure.Notifications;
 using Shortboxerr.Infrastructure.PullList;
 using Shortboxerr.Infrastructure.Search;
 using Shortboxerr.Infrastructure.Services;
+using Shortboxerr.Core.Activity;
 using Shortboxerr.Core.Search;
+using Shortboxerr.Infrastructure.Activity;
 
 namespace Shortboxerr.Infrastructure;
 
@@ -64,6 +66,7 @@ public static class DependencyInjection
         services.AddScoped<ISettingsService, SettingsService>();
         services.AddScoped<ISearchSettingsService, SearchSettingsService>();
         services.AddScoped<ISearchResultScorer, SearchResultScorer>();
+        services.AddScoped<IActivityService, ActivityService>();
 
         // DDL services
         services.AddSingleton<IDdlReleaseParser, DdlReleaseParser>();

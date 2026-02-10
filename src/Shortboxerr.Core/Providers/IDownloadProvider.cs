@@ -198,7 +198,17 @@ public enum DownloadState
     /// <summary>
     /// Download is being processed (post-download verification).
     /// </summary>
-    Processing = 7
+    Processing = 7,
+    
+    /// <summary>
+    /// Download has stalled (no progress for extended period).
+    /// </summary>
+    Stalled = 8,
+    
+    /// <summary>
+    /// Download state is unknown.
+    /// </summary>
+    Unknown = 99
 }
 
 
