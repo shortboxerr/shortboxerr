@@ -1694,6 +1694,195 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
 
 ---
 
+## EPIC 14: Future Enhancements
+
+### 14.1 Deferred Items Completion Tracking
+Track and prioritize completion of deferred items across all EPICs.
+
+- [ ] **Deferred items audit**
+  - AC: Review all items marked "(deferred)" across EPICs 4, 8, 10, 11
+  - AC: Categorize by effort (small/medium/large) and user impact (high/medium/low)
+  - AC: Create prioritized list based on user requests and parity requirements
+  - AC: Document which items are blocked and what unblocks them
+
+- [ ] **Deferred item: Variant cover detection** (EPIC 9)
+  - Original: "Variant cover detection (optional) - DEFERRED"
+  - Effort: Medium
+  - Impact: Medium (nice-to-have for collectors)
+
+- [ ] **Deferred item: Site availability checks** (EPIC 8)
+  - Original: "Site availability checks (deferred)"
+  - Effort: Medium
+  - Impact: High (helps maintain DDL reliability)
+
+- [ ] **Deferred item: NZBHydra2 support** (EPIC 10)
+  - Original: "NZBHydra2 support (deferred)"
+  - Effort: Large
+  - Impact: Medium (power user feature)
+
+- [ ] **Deferred item: Mylar3 NZB settings import** (EPIC 10)
+  - Original: "Mylar3 NZB settings import (deferred)"
+  - Effort: Medium
+  - Impact: High (migration convenience)
+
+- [ ] **Deferred item: Activity integration for downloads** (EPIC 10)
+  - Original: "Activity integration (deferred)"
+  - Effort: Medium
+  - Impact: High (user visibility into download progress)
+
+### 14.2 NZBGet Integration (Sonarr/Radarr/Mylar3 Parity)
+Full NZBGet support as an alternative to SABnzbd.
+
+**Reference implementations:**
+- Sonarr: `src/NzbDrone.Core/Download/Clients/Nzbget/`
+- Radarr: `src/NzbDrone.Core/Download/Clients/Nzbget/`
+- Mylar3: `mylar/nzbget.py`
+
+- [ ] **NZBGet client implementation**
+  - AC: Create `INzbgetClient` interface matching SABnzbd patterns
+  - AC: Implement NZBGet JSON-RPC API client
+  - AC: Authentication: username/password (not API key like SABnzbd)
+  - AC: Methods: append (add NZB), listgroups (get queue), history, editqueue
+
+- [ ] **NZBGet provider**
+  - AC: Create `NzbgetDownloadProvider` implementing `IDownloadProvider`
+  - AC: Configuration: Host, Port, Username, Password, Category, Priority, Use SSL
+  - AC: Test connection validates API access and returns version
+  - AC: Health status monitoring
+
+- [ ] **NZBGet download operations**
+  - AC: Add NZB by URL or file content
+  - AC: Set category (for post-processing organization)
+  - AC: Set priority (Very Low, Low, Normal, High, Very High, Force)
+  - AC: Monitor download progress (percentage, speed, ETA)
+  - AC: Detect completion via history API
+  - AC: Handle download failures (re-queue, retry logic)
+
+- [ ] **NZBGet post-processing**
+  - AC: Detect post-processing completion (unpack, repair)
+  - AC: Handle post-processing failures gracefully
+  - AC: Trigger import on successful post-processing
+  - AC: Support NZBGet's `nzbToMedia` integration patterns
+
+- [ ] **NZBGet UI**
+  - AC: Add NZBGet to implementation dropdown in Download Client modal
+  - AC: Dynamic form fields for NZBGet configuration
+  - AC: Connection test with version display
+  - AC: Priority dropdown with NZBGet-specific values
+
+- [ ] **NZBGet tests**
+  - AC: Unit tests for NZBGet API client (mock responses)
+  - AC: Provider tests matching SABnzbd test coverage
+  - AC: Integration tests for add/status/remove operations
+  - Target: 20+ tests to match SABnzbd coverage
+
+### 14.3 Torrent Download Client Integration (Sonarr/Radarr Parity)
+Support for torrent-based downloading via popular clients.
+
+**Reference implementations:**
+- Sonarr: `src/NzbDrone.Core/Download/Clients/QBittorrent/`
+- Sonarr: `src/NzbDrone.Core/Download/Clients/Transmission/`
+- Sonarr: `src/NzbDrone.Core/Download/Clients/Deluge/`
+
+**Priority order (based on Sonarr/Radarr popularity):**
+1. qBittorrent (most popular, excellent API)
+2. Transmission (lightweight, good API)
+3. Deluge (feature-rich, daemon-based)
+
+- [ ] **Torrent client abstraction**
+  - AC: Create `ITorrentClient` interface
+  - AC: Methods: AddTorrent(url/magnet/file), GetStatus(hash), RemoveTorrent(hash), GetQueue()
+  - AC: Common model for torrent status (downloading, seeding, paused, completed)
+
+- [ ] **qBittorrent integration**
+  - AC: Implement qBittorrent Web API v2 client
+  - AC: Authentication: username/password with session cookie
+  - AC: Add torrent by URL, magnet link, or .torrent file
+  - AC: Category assignment
+  - AC: Download path configuration
+  - AC: Monitor progress and completion
+  - AC: Handle ratio limits / seeding requirements
+
+- [ ] **Transmission integration**
+  - AC: Implement Transmission RPC client
+  - AC: Authentication: username/password
+  - AC: Session ID handling
+  - AC: Add torrent by URL or base64-encoded file
+  - AC: Download directory configuration
+  - AC: Monitor progress and completion
+
+- [ ] **Deluge integration** (lower priority)
+  - AC: Implement Deluge JSON-RPC client
+  - AC: Authentication: password-based
+  - AC: Add torrent with label support
+  - AC: Monitor progress and completion
+
+- [ ] **Torrent → Import handoff**
+  - AC: Detect completed torrents
+  - AC: Handle hardlinks vs copy based on configuration
+  - AC: Respect seeding requirements (don't remove until ratio met)
+  - AC: Support "move completed" scenarios
+
+- [ ] **Torrent UI**
+  - AC: Add qBittorrent/Transmission/Deluge to implementation dropdown
+  - AC: Dynamic form fields per client type
+  - AC: Connection test with version display
+  - AC: Category/label configuration
+
+- [ ] **Torrent tests**
+  - AC: Unit tests for each client API
+  - AC: Provider tests for add/status/remove
+  - AC: Mock torrent completion scenarios
+  - Target: 15+ tests per client
+
+### 14.4 Theme Accessibility & Color Scheme Audit
+Ensure proper contrast and accessibility for both light and dark themes.
+
+**Standards reference:**
+- WCAG 2.1 Level AA contrast ratios (4.5:1 for normal text, 3:1 for large text)
+- Material Design color guidelines
+- Sonarr/Radarr theme patterns
+
+- [ ] **Dark theme audit**
+  - AC: Verify all text colors meet WCAG 2.1 AA contrast ratios against backgrounds
+  - AC: Check badge colors (success/warning/danger/info) are distinguishable
+  - AC: Verify form inputs have clear borders/focus states
+  - AC: Check disabled state colors are clearly "muted" but still readable
+  - AC: Verify link colors are distinguishable from regular text
+  - AC: Check table row hover/selected states are clearly visible
+  - AC: Verify modal overlays don't obscure content
+
+- [ ] **Light theme audit**
+  - AC: Create/verify light theme color palette
+  - AC: Same accessibility checks as dark theme
+  - AC: Verify light theme doesn't feel "washed out"
+  - AC: Check that colored elements (badges, buttons) pop appropriately
+
+- [ ] **Color contrast fixes**
+  - AC: Document any failing contrast ratios with specific CSS variables
+  - AC: Propose color adjustments to meet WCAG AA
+  - AC: Implement fixes across all affected components
+  - AC: Test with browser accessibility tools (Lighthouse, axe)
+
+- [ ] **Color scheme documentation**
+  - AC: Document all CSS variables with purpose and usage
+  - AC: Create color palette reference (e.g., in Storybook or style guide)
+  - AC: Include accessibility notes for future development
+
+- [ ] **Theme toggle UX**
+  - AC: Verify theme switch is instantaneous (no flash)
+  - AC: Check system preference detection works correctly
+  - AC: Verify theme persists across page refreshes
+  - AC: Test theme in all pages (no unstyled components)
+
+- [ ] **Accessibility testing**
+  - AC: Run Lighthouse accessibility audit on key pages
+  - AC: Test with screen reader (VoiceOver/NVDA)
+  - AC: Test with high contrast mode (Windows)
+  - AC: Test keyboard navigation for all interactive elements
+
+---
+
 ## Story Ordering Notes
 
 **EPIC 4 Implementation Order:**
