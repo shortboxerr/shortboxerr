@@ -15,14 +15,17 @@ public static class SeriesEndpoints
             .WithTags("Series")
             .WithOpenApi();
 
-        // GET all series (with paging and server-side caching)
+        // GET all series (with paging, filtering, and server-side caching)
         group.MapGet("/", async (
             ShortboxerrDbContext db,
             ICacheService cacheService,
             int page = 1,
             int pageSize = 20,
             string? sortKey = "title",
-            string? sortDir = "asc") =>
+            string? sortDir = "asc",
+            string? status = null,
+            string? publisher = null,
+            bool? monitored = null) =>
         {
             // Generate cache key including query parameters
             var cacheKey = cacheService.GenerateKey(
@@ -30,7 +33,10 @@ public static class SeriesEndpoints
                 page,
                 pageSize,
                 sortKey ?? "title",
-                sortDir ?? "asc");
+                sortDir ?? "asc",
+                status ?? "all",
+                publisher ?? "all",
+                monitored?.ToString() ?? "all");
 
             // Cache for 2 minutes
             var result = await cacheService.GetOrCreateAsync(cacheKey, async () =>
@@ -39,6 +45,28 @@ public static class SeriesEndpoints
                     .Include(s => s.Issues)
                     .Include(s => s.Editions)
                     .AsQueryable();
+
+                // Apply status filter
+                if (!string.IsNullOrEmpty(status) && status.ToLowerInvariant() != "all")
+                {
+                    if (Enum.TryParse<SeriesStatus>(status, ignoreCase: true, out var parsedStatus))
+                    {
+                        query = query.Where(s => s.Status == parsedStatus);
+                    }
+                }
+
+                // Apply publisher filter
+                if (!string.IsNullOrEmpty(publisher) && publisher.ToLowerInvariant() != "all")
+                {
+                    query = query.Where(s => s.Publisher != null && 
+                        s.Publisher.ToLower().Contains(publisher.ToLower()));
+                }
+
+                // Apply monitored filter
+                if (monitored.HasValue)
+                {
+                    query = query.Where(s => s.Monitored == monitored.Value);
+                }
 
                 // Apply sorting
                 query = (sortKey?.ToLowerInvariant(), sortDir?.ToLowerInvariant()) switch
@@ -49,6 +77,12 @@ public static class SeriesEndpoints
                     ("startyear", _) => query.OrderBy(s => s.StartYear),
                     ("createdat", "desc") => query.OrderByDescending(s => s.CreatedAt),
                     ("createdat", _) => query.OrderBy(s => s.CreatedAt),
+                    ("status", "desc") => query.OrderByDescending(s => s.Status),
+                    ("status", _) => query.OrderBy(s => s.Status),
+                    ("publisher", "desc") => query.OrderByDescending(s => s.Publisher),
+                    ("publisher", _) => query.OrderBy(s => s.Publisher),
+                    ("issuecount", "desc") => query.OrderByDescending(s => s.Issues.Count),
+                    ("issuecount", _) => query.OrderBy(s => s.Issues.Count),
                     _ => query.OrderBy(s => s.SortTitle ?? s.Title)
                 };
 
@@ -68,7 +102,67 @@ public static class SeriesEndpoints
             return Results.Ok(result);
         })
         .WithName("GetAllSeries")
+        .WithSummary("Get all series with optional filtering and sorting")
+        .WithDescription("Supports filtering by status (Continuing/Ended/Hiatus), publisher, and monitored state. Supports sorting by title, startyear, createdat, status, publisher, issuecount.")
         .WithHttpCache(120); // 2 minutes HTTP cache for list view
+
+        // GET filter options for series list
+        group.MapGet("/filter-options", async (
+            ShortboxerrDbContext db,
+            ICacheService cacheService) =>
+        {
+            var cacheKey = cacheService.GenerateKey(CacheKeys.SeriesList, "filter-options");
+
+            var options = await cacheService.GetOrCreateAsync(cacheKey, async () =>
+            {
+                // Get distinct publishers
+                var publishers = await db.Series
+                    .Where(s => s.Publisher != null)
+                    .Select(s => s.Publisher!)
+                    .Distinct()
+                    .OrderBy(p => p)
+                    .ToListAsync();
+
+                // Get status counts
+                var statusCounts = await db.Series
+                    .GroupBy(s => s.Status)
+                    .Select(g => new { Status = g.Key, Count = g.Count() })
+                    .ToListAsync();
+
+                return new SeriesFilterOptions
+                {
+                    Statuses = Enum.GetValues<SeriesStatus>()
+                        .Select(s => new FilterOption<SeriesStatus>
+                        {
+                            Value = s,
+                            Label = s.ToString(),
+                            Count = statusCounts.FirstOrDefault(x => x.Status == s)?.Count ?? 0
+                        })
+                        .ToList(),
+                    Publishers = publishers.Select(p => new FilterOption<string>
+                    {
+                        Value = p,
+                        Label = p,
+                        Count = 0 // Can add count if needed
+                    }).ToList(),
+                    SortOptions = new List<SortOption>
+                    {
+                        new() { Value = "title", Label = "Title" },
+                        new() { Value = "startyear", Label = "Start Year" },
+                        new() { Value = "createdat", Label = "Date Added" },
+                        new() { Value = "status", Label = "Status" },
+                        new() { Value = "publisher", Label = "Publisher" },
+                        new() { Value = "issuecount", Label = "Issue Count" }
+                    },
+                    TotalSeries = await db.Series.CountAsync()
+                };
+            }, TimeSpan.FromMinutes(5));
+
+            return Results.Ok(options);
+        })
+        .WithName("GetSeriesFilterOptions")
+        .WithSummary("Get available filter options for series list")
+        .WithHttpCache(300);
 
         // GET single series by ID (with ETag support and server-side caching)
         group.MapGet("/{id:int}", async (
@@ -338,3 +432,39 @@ public record SetSeriesStatusResponse
     public StatusSource NewSource { get; init; }
 }
 
+/// <summary>
+/// Available filter and sort options for the series list.
+/// </summary>
+public record SeriesFilterOptions
+{
+    /// <summary>Available status values with counts.</summary>
+    public List<FilterOption<SeriesStatus>> Statuses { get; init; } = new();
+    
+    /// <summary>Available publishers.</summary>
+    public List<FilterOption<string>> Publishers { get; init; } = new();
+    
+    /// <summary>Available sort options.</summary>
+    public List<SortOption> SortOptions { get; init; } = new();
+    
+    /// <summary>Total number of series.</summary>
+    public int TotalSeries { get; init; }
+}
+
+/// <summary>
+/// A filter option with its value, label, and count.
+/// </summary>
+public record FilterOption<T>
+{
+    public T Value { get; init; } = default!;
+    public string Label { get; init; } = "";
+    public int Count { get; init; }
+}
+
+/// <summary>
+/// A sort option with its value and label.
+/// </summary>
+public record SortOption
+{
+    public string Value { get; init; } = "";
+    public string Label { get; init; } = "";
+}

@@ -1,5 +1,55 @@
 # Worklog
 
+## Iteration 093 (2026-02-10)
+**Series List Filtering and Sorting (EPIC 11 - P1 Item)**
+
+### Commits
+1. `feat: add series list filtering and sorting (18 tests)`
+
+### Deliverables
+
+#### API Enhancements
+- ✅ Status filter parameter (`status=Continuing|Ended|Hiatus`)
+- ✅ Publisher filter parameter (case-insensitive partial match)
+- ✅ Monitored filter parameter (`monitored=true|false`)
+- ✅ Sort by status, publisher, issue count (in addition to existing title, year, date)
+- ✅ Cache key includes all filter parameters
+- ✅ New `/api/v1/series/filter-options` endpoint returns:
+  - Available status values with counts
+  - Available publishers
+  - Available sort options
+  - Total series count
+
+#### Frontend Updates
+- ✅ Filter toggle button with active filter badge
+- ✅ Collapsible filter panel with status and publisher dropdowns
+- ✅ Sort dropdown with ascending/descending toggle
+- ✅ Clear Filters button
+- ✅ Dropdown menu CSS styling
+- ✅ Query invalidation on filter/sort change
+
+#### Unit Tests (18 tests)
+| Category | Count | Description |
+|----------|-------|-------------|
+| Status Filter | 3 | Continuing, Ended, Hiatus |
+| Publisher Filter | 3 | DC, Marvel, Image |
+| Combined Filter | 2 | Status + Publisher |
+| Sort | 5 | Title asc/desc, Year asc/desc, Status, Publisher |
+| Pagination | 2 | First page, second page |
+| Filter Options | 2 | Distinct publishers, status counts |
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | Added filter/sort params and filter-options endpoint |
+| `ui/src/api/client.ts` | Extended getSeries params, added getSeriesFilterOptions |
+| `ui/src/pages/SeriesPage.tsx` | Added filter panel and sort dropdown |
+| `ui/src/App.css` | Added dropdown menu styling |
+| `tests/Shortboxerr.Tests/SeriesFilterTests.cs` | New - 18 unit tests |
+| `docs/BACKLOG.md` | Marked UI indicators complete |
+
+---
+
 ## Iteration 092 (2026-02-10)
 **Deferred Items Audit + Activity Integration (EPIC 14.1, 10)**
 

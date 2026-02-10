@@ -107,6 +107,14 @@ export interface Series {
   coverImageUrl: string | null;
 }
 
+// Filter options for series list
+export interface SeriesFilterOptions {
+  statuses: { value: number; label: string; count: number }[];
+  publishers: { value: string; label: string; count: number }[];
+  sortOptions: { value: string; label: string }[];
+  totalSeries: number;
+}
+
 // Map API series to UI series
 function toSeries(api: ApiSeries): Series {
   const statusMap: Record<number, string> = {
@@ -1067,11 +1075,25 @@ export const api = {
   },
 
   // Series
-  getSeries: async (params: { search?: string; page?: number; pageSize?: number }): Promise<PagedResult<Series>> => {
+  getSeries: async (params: { 
+    search?: string; 
+    page?: number; 
+    pageSize?: number;
+    sortKey?: string;
+    sortDir?: string;
+    status?: string;
+    publisher?: string;
+    monitored?: boolean;
+  }): Promise<PagedResult<Series>> => {
     const query = new URLSearchParams();
     if (params.search) query.set('search', params.search);
     if (params.page) query.set('page', String(params.page));
     if (params.pageSize) query.set('pageSize', String(params.pageSize));
+    if (params.sortKey) query.set('sortKey', params.sortKey);
+    if (params.sortDir) query.set('sortDir', params.sortDir);
+    if (params.status) query.set('status', params.status);
+    if (params.publisher) query.set('publisher', params.publisher);
+    if (params.monitored !== undefined) query.set('monitored', String(params.monitored));
 
     try {
       const response = await fetchApi<ApiPagedResult<ApiSeries>>(`/api/v1/series?${query}`);
@@ -1085,6 +1107,10 @@ export const api = {
     } catch {
       return { items: [], page: 1, pageSize: 50, totalCount: 0, totalPages: 0 };
     }
+  },
+
+  getSeriesFilterOptions: async (): Promise<SeriesFilterOptions> => {
+    return fetchApi<SeriesFilterOptions>('/api/v1/series/filter-options');
   },
 
   deleteSeries: async (id: number): Promise<void> => {

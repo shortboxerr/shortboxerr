@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Plus, RefreshCw, Trash2, Edit, MoreVertical, BookOpen, Search, X, Loader2, AlertCircle, ExternalLink } from 'lucide-react';
+import { Plus, RefreshCw, Trash2, Edit, MoreVertical, BookOpen, Search, X, Loader2, AlertCircle, ExternalLink, Filter, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { api } from '../api/client';
 import type { SeriesMatchCandidate } from '../api/client';
 
@@ -9,13 +9,43 @@ export function SeriesPage() {
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  
+  // Filter and sort state
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [publisherFilter, setPublisherFilter] = useState<string>('all');
+  const [sortKey, setSortKey] = useState<string>('title');
+  const [sortDir, setSortDir] = useState<string>('asc');
+  
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  const { data: seriesData, isLoading } = useQuery({
-    queryKey: ['series', search],
-    queryFn: () => api.getSeries({ search, page: 1, pageSize: 50 }),
+  // Fetch filter options
+  const { data: filterOptions } = useQuery({
+    queryKey: ['series-filter-options'],
+    queryFn: () => api.getSeriesFilterOptions(),
+    staleTime: 60000, // Cache for 1 minute
   });
+
+  const { data: seriesData, isLoading } = useQuery({
+    queryKey: ['series', search, statusFilter, publisherFilter, sortKey, sortDir],
+    queryFn: () => api.getSeries({ 
+      search, 
+      page: 1, 
+      pageSize: 50,
+      status: statusFilter !== 'all' ? statusFilter : undefined,
+      publisher: publisherFilter !== 'all' ? publisherFilter : undefined,
+      sortKey,
+      sortDir,
+    }),
+  });
+
+  const hasActiveFilters = statusFilter !== 'all' || publisherFilter !== 'all';
+
+  const clearFilters = () => {
+    setStatusFilter('all');
+    setPublisherFilter('all');
+  };
 
   const deleteMutation = useMutation({
     mutationFn: api.deleteSeries,
@@ -87,6 +117,58 @@ export function SeriesPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
           
+          {/* Filter Toggle Button */}
+          <button 
+            className={`btn ${showFilters ? 'btn-primary' : ''} ${hasActiveFilters ? 'btn-active' : ''}`}
+            onClick={() => setShowFilters(!showFilters)}
+            title="Toggle Filters"
+          >
+            <Filter size={16} />
+            Filters
+            {hasActiveFilters && (
+              <span className="badge badge-primary" style={{ marginLeft: '4px', padding: '2px 6px', fontSize: '11px' }}>
+                {(statusFilter !== 'all' ? 1 : 0) + (publisherFilter !== 'all' ? 1 : 0)}
+              </span>
+            )}
+          </button>
+
+          {/* Sort Dropdown */}
+          <div className="dropdown">
+            <button className="btn" title="Sort By">
+              <ArrowUpDown size={16} />
+              Sort: {filterOptions?.sortOptions?.find(o => o.value === sortKey)?.label || 'Title'}
+              {sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
+            </button>
+            <div className="dropdown-content" style={{ minWidth: '180px' }}>
+              {(filterOptions?.sortOptions || [
+                { value: 'title', label: 'Title' },
+                { value: 'startyear', label: 'Start Year' },
+                { value: 'createdat', label: 'Date Added' },
+                { value: 'status', label: 'Status' },
+                { value: 'publisher', label: 'Publisher' },
+                { value: 'issuecount', label: 'Issue Count' },
+              ]).map(option => (
+                <button
+                  key={option.value}
+                  className={`dropdown-item ${sortKey === option.value ? 'active' : ''}`}
+                  onClick={() => {
+                    if (sortKey === option.value) {
+                      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortKey(option.value);
+                      setSortDir('asc');
+                    }
+                  }}
+                >
+                  {option.label}
+                  {sortKey === option.value && (
+                    sortDir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+          
           <div className="toolbar-spacer" />
           
           {selectedIds.size > 0 && (
@@ -114,6 +196,63 @@ export function SeriesPage() {
             <RefreshCw size={18} className={refreshAllMutation.isPending ? 'spinning' : ''} />
           </button>
         </div>
+        
+        {/* Filter Panel */}
+        {showFilters && (
+          <div className="filter-panel" style={{ 
+            display: 'flex', 
+            gap: '16px', 
+            padding: '12px 16px', 
+            background: 'var(--bg-secondary)', 
+            borderRadius: '8px',
+            marginBottom: '16px',
+            alignItems: 'center',
+            flexWrap: 'wrap'
+          }}>
+            <div className="form-group" style={{ marginBottom: 0, minWidth: '150px' }}>
+              <label className="form-label" style={{ marginBottom: '4px', fontSize: '12px' }}>Status</label>
+              <select 
+                className="input"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="all">All Statuses</option>
+                {(filterOptions?.statuses || []).map(status => (
+                  <option key={status.label} value={status.label}>
+                    {status.label} ({status.count})
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="form-group" style={{ marginBottom: 0, minWidth: '200px' }}>
+              <label className="form-label" style={{ marginBottom: '4px', fontSize: '12px' }}>Publisher</label>
+              <select 
+                className="input"
+                value={publisherFilter}
+                onChange={(e) => setPublisherFilter(e.target.value)}
+              >
+                <option value="all">All Publishers</option>
+                {(filterOptions?.publishers || []).map(pub => (
+                  <option key={pub.value} value={pub.value}>
+                    {pub.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            {hasActiveFilters && (
+              <button 
+                className="btn btn-ghost" 
+                onClick={clearFilters}
+                style={{ marginTop: '16px' }}
+              >
+                <X size={14} />
+                Clear Filters
+              </button>
+            )}
+          </div>
+        )}
         
         <div className="table-container">
           {isLoading ? (

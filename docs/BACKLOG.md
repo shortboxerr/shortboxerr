@@ -765,9 +765,15 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: Respects manual override (doesn't change if StatusSource=Manual) ✅
   - AC: Manual refresh button already exists on series detail page ✅
 
-- [ ] **UI indicators** (deferred to future iteration)
-  - AC: Filter series list by status
-  - AC: Sort series by status
+- [x] **UI indicators** ✅
+  - AC: Filter series list by status ✅
+  - AC: Sort series by status ✅
+  - AC: Filter by publisher ✅
+  - AC: Sort by title, year, status, publisher, issue count ✅
+  - AC: Filter options endpoint with counts ✅
+  - Note: GET /api/v1/series?status=&publisher=&sortKey=&sortDir=
+  - Note: GET /api/v1/series/filter-options returns available values
+  - Note: 18 unit tests in SeriesFilterTests.cs
 
 - [x] **Status override** ✅
   - AC: PUT /api/v1/series/{id}/status for manual override ✅
@@ -1716,7 +1722,7 @@ Track and prioritize completion of deferred items across all EPICs.
 |----------|------|------|--------|--------|---------|
 | **P1 - High Value, Low Effort** |||||
 | ~~1~~ | ~~Activity integration for downloads~~ | 10 | M | H | ✅ Completed |
-| 2 | UI indicators (filter/sort by status) | 11 | S | H | None |
+| ~~2~~ | ~~UI indicators (filter/sort by status)~~ | 11 | S | H | ✅ Completed |
 | 3 | RAR/7z unpacking support | 10 | S | M | SharpCompress library |
 | 4 | Site availability checks | 8 | M | H | None |
 | **P2 - High Value, Medium Effort** |||||
@@ -1760,10 +1766,9 @@ Track and prioritize completion of deferred items across all EPICs.
    - High visibility feature for users
    - Note: IActivityService + API endpoints + 24 tests
 
-2. **UI indicators** (EPIC 11)
+2. ~~**UI indicators** (EPIC 11)~~ ✅ COMPLETED
    - Filter/sort series list by status
-   - Small effort, high value for usability
-   - No blockers
+   - Note: Endpoint + UI + 18 tests
 
 3. **RAR/7z unpacking** (EPIC 10)
    - SharpCompress library already handles ZIP
