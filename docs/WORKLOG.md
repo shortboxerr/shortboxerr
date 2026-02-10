@@ -1,5 +1,61 @@
 # Worklog
 
+## Iteration 086 (2026-02-10)
+**ReadComicOnline RSS Feed Support (EPIC 14.5)**
+
+### Commits
+1. `feat: add RSS feed support to ReadComicOnlineAdapter`
+
+### Deliverables
+
+#### ReadComicOnlineAdapter RSS Methods
+- ✅ `GetRssFeedAsync(int limit)` - Main RSS feed with fallback
+- ✅ `GetCategoryRssFeedAsync(string category, int limit)` - Category RSS feeds
+- ✅ `GetPublisherRssFeedAsync(string publisher, int limit)` - Publisher RSS feeds
+- ✅ `CreateCandidateFromRssItem(RssFeedItem item)` - Helper method
+
+#### Features
+- Tries multiple RSS feed URL patterns (common paths)
+- Gracefully falls back to HTML scraping if RSS unavailable
+- Includes RSS categories as tags on candidates
+- Sets DateFound from RSS PubDate
+- Respects rate limits via existing adapter infrastructure
+
+#### Unit Tests (8 new tests)
+- `GetRssFeedAsync_WithMockRssService_ReturnsCandidates`
+- `GetRssFeedAsync_WhenRssNotAvailable_FallsBackToHtmlScraping`
+- `GetCategoryRssFeedAsync_WithMockRssService_ReturnsCandidatesWithCategoryTag`
+- `GetPublisherRssFeedAsync_WithMockRssService_ReturnsCandidatesWithPublisherTag`
+- `GetRssFeedAsync_SetsSourceSiteCorrectly`
+- `GetRssFeedAsync_RespectsLimitParameter`
+- `GetRssFeedAsync_IncludesRssCategoriesAsTags`
+- `GetRssFeedAsync_SetsDateFoundFromPubDate`
+
+### Parity Status
+
+| Feature | GetComics | ReadComicOnline |
+|---------|-----------|-----------------|
+| SearchAsync | ✅ | ✅ |
+| GetLatestAsync | ✅ | ✅ |
+| GetRssFeedAsync | ✅ | ✅ (NEW) |
+| GetCategoryAsync | ✅ | ✅ |
+| GetCategoryRssFeedAsync | ✅ | ✅ (NEW) |
+| GetAvailableCategories | ✅ | ✅ |
+| ExtractLinksAsync | ✅ | ✅ |
+| GetPublisherAsync | ❌ | ✅ |
+| GetPublisherRssFeedAsync | ❌ | ✅ (NEW) |
+| DetectHomepageAsync | ❌ | ✅ |
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `ReadComicOnlineAdapter.cs` | Added RSS methods |
+| `ReadComicOnlineAdapterTests.cs` | Added 8 RSS tests |
+| `BACKLOG.md` | Updated |
+| `WORKLOG.md` | Updated |
+
+---
+
 ## Iteration 085 (2026-02-09)
 **Theme Accessibility & Color Scheme Audit (EPIC 14.4)**
 

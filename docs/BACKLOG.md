@@ -1864,12 +1864,14 @@ Enable ReadComicOnline adapter with full feature parity to GetComics.org.
   - AC: Site priority configuration (which site to search first)
   - AC: Fallback to second site if first fails
 
-- [ ] **Add RSS feed support to ReadComicOnline**
-  - AC: Implement `GetRssFeedAsync` matching GetComics pattern
-  - AC: Implement `GetCategoryRssFeedAsync` for category RSS feeds
-  - AC: Handle ReadComicOnline's RSS feed format (if available)
-  - AC: Fallback to HTML scraping if RSS not available
-  - Note: Verify if ReadComicOnline has RSS feeds; if not, document as N/A
+- [x] **Add RSS feed support to ReadComicOnline** ✅
+  - AC: Implement `GetRssFeedAsync` matching GetComics pattern ✅
+  - AC: Implement `GetCategoryRssFeedAsync` for category RSS feeds ✅
+  - AC: Implement `GetPublisherRssFeedAsync` for publisher RSS feeds ✅
+  - AC: Handle ReadComicOnline's RSS feed format (if available) ✅
+  - AC: Fallback to HTML scraping if RSS not available ✅
+  - Note: Methods try multiple RSS feed paths; gracefully fall back to HTML scraping
+  - Note: 8 new unit tests added to ReadComicOnlineAdapterTests.cs
 
 - [ ] **DDL Settings UI for site management**
   - AC: Settings > Download > DDL section

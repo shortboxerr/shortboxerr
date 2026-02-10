@@ -229,6 +229,275 @@ public partial class ReadComicOnlineAdapter : BaseDdlSiteAdapter
     }
 
     /// <summary>
+    /// Gets latest releases from the RSS feed.
+    /// ReadComicOnline may use different RSS feed paths - this method tries common patterns.
+    /// Falls back to HTML scraping via GetLatestAsync if RSS is unavailable.
+    /// </summary>
+    /// <param name="limit">Maximum number of items to return</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Search result containing candidates from the RSS feed</returns>
+    public async Task<DdlSearchResult> GetRssFeedAsync(int limit = 50, CancellationToken cancellationToken = default)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        
+        try
+        {
+            // Try common RSS feed paths used by similar sites
+            var feedPaths = new[] { "/feed/", "/rss/", "/rss.xml", "/feed.xml", "/Rss" };
+            
+            foreach (var feedPath in feedPaths)
+            {
+                var feedUrl = $"{EffectiveBaseUrl}{feedPath}";
+                _logger?.LogDebug("Trying ReadComicOnline RSS feed: {Url}", feedUrl);
+                
+                try
+                {
+                    RssFeedResult feedResult;
+                    
+                    if (_rssFeedService != null)
+                    {
+                        feedResult = await _rssFeedService.FetchFeedAsync(feedUrl, cancellationToken);
+                    }
+                    else
+                    {
+                        // Fallback: fetch and parse manually if no RSS service injected
+                        var feedContent = await FetchPageAsync(feedUrl, cancellationToken);
+                        var rssFeedService = new RssFeedService(HttpClient, null);
+                        feedResult = rssFeedService.ParseFeed(feedContent);
+                    }
+                    
+                    if (feedResult.Success && feedResult.Items.Any())
+                    {
+                        var candidates = feedResult.Items
+                            .Take(limit)
+                            .Select(item => CreateCandidateFromRssItem(item))
+                            .ToList();
+                        
+                        stopwatch.Stop();
+                        _logger?.LogInformation("ReadComicOnline RSS feed ({Path}): {Count} items", feedPath, candidates.Count);
+                        
+                        return DdlSearchResult.Ok(candidates, SiteType, candidates.Count, stopwatch.Elapsed);
+                    }
+                }
+                catch (HttpRequestException)
+                {
+                    // Try next feed path
+                    continue;
+                }
+            }
+            
+            // RSS not available - fall back to HTML scraping
+            _logger?.LogDebug("ReadComicOnline RSS feed not available, falling back to HTML scraping");
+            stopwatch.Stop();
+            return await GetLatestAsync(limit, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            _logger?.LogWarning(ex, "ReadComicOnline RSS feed fetch failed");
+            return DdlSearchResult.Error(ex.Message, SiteType, stopwatch.Elapsed);
+        }
+    }
+    
+    /// <summary>
+    /// Gets releases from a category via its RSS feed.
+    /// Falls back to GetCategoryAsync if RSS is unavailable.
+    /// </summary>
+    /// <param name="category">Category slug (e.g., "action", "superhero")</param>
+    /// <param name="limit">Maximum number of items to return</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Search result containing candidates from the category RSS feed</returns>
+    public async Task<DdlSearchResult> GetCategoryRssFeedAsync(string category, int limit = 50, CancellationToken cancellationToken = default)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        
+        try
+        {
+            // Try common category RSS feed patterns
+            var feedPaths = new[]
+            {
+                $"/ComicList/Genre/{Uri.EscapeDataString(category)}/feed/",
+                $"/Genre/{Uri.EscapeDataString(category)}/rss/",
+                $"/cat/{Uri.EscapeDataString(category)}/feed/"
+            };
+            
+            foreach (var feedPath in feedPaths)
+            {
+                var feedUrl = $"{EffectiveBaseUrl}{feedPath}";
+                _logger?.LogDebug("Trying ReadComicOnline category RSS feed: {Category} from {Url}", category, feedUrl);
+                
+                try
+                {
+                    RssFeedResult feedResult;
+                    
+                    if (_rssFeedService != null)
+                    {
+                        feedResult = await _rssFeedService.FetchFeedAsync(feedUrl, cancellationToken);
+                    }
+                    else
+                    {
+                        var feedContent = await FetchPageAsync(feedUrl, cancellationToken);
+                        var rssFeedService = new RssFeedService(HttpClient, null);
+                        feedResult = rssFeedService.ParseFeed(feedContent);
+                    }
+                    
+                    if (feedResult.Success && feedResult.Items.Any())
+                    {
+                        var candidates = feedResult.Items
+                            .Take(limit)
+                            .Select(item =>
+                            {
+                                var candidate = CreateCandidateFromRssItem(item);
+                                candidate.Tags.Add(category.ToLowerInvariant());
+                                return candidate;
+                            })
+                            .ToList();
+                        
+                        stopwatch.Stop();
+                        _logger?.LogInformation("ReadComicOnline category RSS {Category}: {Count} items", category, candidates.Count);
+                        
+                        return DdlSearchResult.Ok(candidates, SiteType, candidates.Count, stopwatch.Elapsed);
+                    }
+                }
+                catch (HttpRequestException)
+                {
+                    // Try next feed path
+                    continue;
+                }
+            }
+            
+            // RSS not available - fall back to HTML scraping
+            _logger?.LogDebug("ReadComicOnline category RSS not available for {Category}, falling back to HTML scraping", category);
+            stopwatch.Stop();
+            return await GetCategoryAsync(category, limit, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            _logger?.LogWarning(ex, "ReadComicOnline category RSS {Category} fetch failed", category);
+            return DdlSearchResult.Error(ex.Message, SiteType, stopwatch.Elapsed);
+        }
+    }
+    
+    /// <summary>
+    /// Gets releases from a publisher via its RSS feed.
+    /// Falls back to GetPublisherAsync if RSS is unavailable.
+    /// </summary>
+    /// <param name="publisher">Publisher name (e.g., "DC", "Marvel")</param>
+    /// <param name="limit">Maximum number of items to return</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Search result containing candidates from the publisher RSS feed</returns>
+    public async Task<DdlSearchResult> GetPublisherRssFeedAsync(string publisher, int limit = 50, CancellationToken cancellationToken = default)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        
+        try
+        {
+            var publisherSlug = publisher.ToLowerInvariant() switch
+            {
+                "dc" or "dc comics" => "DC-Comics",
+                "marvel" or "marvel comics" => "Marvel",
+                "image" or "image comics" => "Image",
+                "dark horse" or "darkhorse" => "Dark-Horse",
+                "idw" or "idw publishing" => "IDW",
+                "boom" or "boom studios" => "BOOM-Studios",
+                "dynamite" => "Dynamite-Entertainment",
+                "valiant" => "Valiant",
+                _ => publisher.Replace(" ", "-")
+            };
+            
+            // Try common publisher RSS feed patterns
+            var feedPaths = new[]
+            {
+                $"/ComicList/Publisher/{publisherSlug}/feed/",
+                $"/Publisher/{publisherSlug}/rss/",
+                $"/cat/{publisherSlug.ToLowerInvariant()}/feed/"
+            };
+            
+            foreach (var feedPath in feedPaths)
+            {
+                var feedUrl = $"{EffectiveBaseUrl}{feedPath}";
+                _logger?.LogDebug("Trying ReadComicOnline publisher RSS feed: {Publisher} from {Url}", publisher, feedUrl);
+                
+                try
+                {
+                    RssFeedResult feedResult;
+                    
+                    if (_rssFeedService != null)
+                    {
+                        feedResult = await _rssFeedService.FetchFeedAsync(feedUrl, cancellationToken);
+                    }
+                    else
+                    {
+                        var feedContent = await FetchPageAsync(feedUrl, cancellationToken);
+                        var rssFeedService = new RssFeedService(HttpClient, null);
+                        feedResult = rssFeedService.ParseFeed(feedContent);
+                    }
+                    
+                    if (feedResult.Success && feedResult.Items.Any())
+                    {
+                        var candidates = feedResult.Items
+                            .Take(limit)
+                            .Select(item =>
+                            {
+                                var candidate = CreateCandidateFromRssItem(item);
+                                candidate.Tags.Add(publisher.ToLowerInvariant());
+                                return candidate;
+                            })
+                            .ToList();
+                        
+                        stopwatch.Stop();
+                        _logger?.LogInformation("ReadComicOnline publisher RSS {Publisher}: {Count} items", publisher, candidates.Count);
+                        
+                        return DdlSearchResult.Ok(candidates, SiteType, candidates.Count, stopwatch.Elapsed);
+                    }
+                }
+                catch (HttpRequestException)
+                {
+                    // Try next feed path
+                    continue;
+                }
+            }
+            
+            // RSS not available - fall back to HTML scraping
+            _logger?.LogDebug("ReadComicOnline publisher RSS not available for {Publisher}, falling back to HTML scraping", publisher);
+            stopwatch.Stop();
+            return await GetPublisherAsync(publisher, limit, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            _logger?.LogWarning(ex, "ReadComicOnline publisher RSS {Publisher} fetch failed", publisher);
+            return DdlSearchResult.Error(ex.Message, SiteType, stopwatch.Elapsed);
+        }
+    }
+    
+    private DdlCandidate CreateCandidateFromRssItem(RssFeedItem item)
+    {
+        var parsed = _parser.Parse(item.Title);
+        
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            ReleaseTitle = item.Title,
+            SourceSite = SiteType,
+            SourceUrl = item.Link,
+            ParsedInfo = parsed,
+            DateFound = item.PubDate ?? DateTime.UtcNow,
+            Description = item.Description,
+            QualityScore = parsed.Confidence
+        };
+        
+        // Add RSS categories as tags
+        foreach (var cat in item.Categories)
+        {
+            candidate.Tags.Add(cat.ToLowerInvariant());
+        }
+        
+        return candidate;
+    }
+
+    /// <summary>
     /// Gets all available categories with their display names.
     /// </summary>
     public static IReadOnlyDictionary<string, string> GetAvailableCategories()

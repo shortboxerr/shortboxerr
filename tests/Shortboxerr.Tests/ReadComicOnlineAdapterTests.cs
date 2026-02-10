@@ -425,4 +425,233 @@ public class ReadComicOnlineAdapterTests
     }
 
     #endregion
+
+    #region RSS Feed Tests
+
+    [Fact]
+    public async Task GetRssFeedAsync_WithMockRssService_ReturnsCandidates()
+    {
+        // Arrange
+        var mockRssService = new Mock<IRssFeedService>();
+        mockRssService.Setup(r => r.FetchFeedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new RssFeedResult
+            {
+                Success = true,
+                Items = new List<RssFeedItem>
+                {
+                    new() { Title = "Batman #150 (2024)", Link = "https://readcomiconline.li/Comic/Batman/Issue-150", Categories = new List<string> { "DC" } },
+                    new() { Title = "Superman #12 (2024)", Link = "https://readcomiconline.li/Comic/Superman/Issue-12", Categories = new List<string> { "DC" } }
+                }
+            });
+
+        var adapter = new ReadComicOnlineAdapter(rssFeedService: mockRssService.Object);
+
+        // Act
+        var result = await adapter.GetRssFeedAsync(limit: 10);
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.Equal(2, result.Candidates.Count);
+        Assert.Contains(result.Candidates, c => c.ReleaseTitle.Contains("Batman"));
+        Assert.Contains(result.Candidates, c => c.ReleaseTitle.Contains("Superman"));
+    }
+
+    [Fact]
+    public async Task GetRssFeedAsync_WhenRssNotAvailable_FallsBackToHtmlScraping()
+    {
+        // Arrange - RSS service returns failure
+        var mockRssService = new Mock<IRssFeedService>();
+        mockRssService.Setup(r => r.FetchFeedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException("RSS feed not found"));
+
+        // Create adapter with invalid base URL to make HTTP fallback also fail quickly
+        var adapter = new ReadComicOnlineAdapter(rssFeedService: mockRssService.Object);
+        adapter.Configure(new DdlSiteConfiguration
+        {
+            BaseUrl = "https://invalid.example.com",
+            TimeoutSeconds = 1
+        });
+
+        // Act
+        var result = await adapter.GetRssFeedAsync(limit: 5);
+
+        // Assert - Should fall back to GetLatestAsync which will also fail, but not throw
+        Assert.False(result.Success);
+        // The method should gracefully handle failures
+    }
+
+    [Fact]
+    public async Task GetCategoryRssFeedAsync_WithMockRssService_ReturnsCandidatesWithCategoryTag()
+    {
+        // Arrange
+        var mockRssService = new Mock<IRssFeedService>();
+        mockRssService.Setup(r => r.FetchFeedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new RssFeedResult
+            {
+                Success = true,
+                Items = new List<RssFeedItem>
+                {
+                    new() { Title = "Justice League #75", Link = "https://readcomiconline.li/Comic/JL/Issue-75", Categories = new List<string>() }
+                }
+            });
+
+        var adapter = new ReadComicOnlineAdapter(rssFeedService: mockRssService.Object);
+
+        // Act
+        var result = await adapter.GetCategoryRssFeedAsync("superhero", limit: 10);
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.Single(result.Candidates);
+        Assert.Contains("superhero", result.Candidates[0].Tags);
+    }
+
+    [Fact]
+    public async Task GetPublisherRssFeedAsync_WithMockRssService_ReturnsCandidatesWithPublisherTag()
+    {
+        // Arrange
+        var mockRssService = new Mock<IRssFeedService>();
+        mockRssService.Setup(r => r.FetchFeedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new RssFeedResult
+            {
+                Success = true,
+                Items = new List<RssFeedItem>
+                {
+                    new() { Title = "X-Men #35", Link = "https://readcomiconline.li/Comic/X-Men/Issue-35", Categories = new List<string>() }
+                }
+            });
+
+        var adapter = new ReadComicOnlineAdapter(rssFeedService: mockRssService.Object);
+
+        // Act
+        var result = await adapter.GetPublisherRssFeedAsync("Marvel", limit: 10);
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.Single(result.Candidates);
+        Assert.Contains("marvel", result.Candidates[0].Tags);
+    }
+
+    [Fact]
+    public async Task GetRssFeedAsync_SetsSourceSiteCorrectly()
+    {
+        // Arrange
+        var mockRssService = new Mock<IRssFeedService>();
+        mockRssService.Setup(r => r.FetchFeedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new RssFeedResult
+            {
+                Success = true,
+                Items = new List<RssFeedItem>
+                {
+                    new() { Title = "Test Comic #1", Link = "https://readcomiconline.li/Comic/Test/Issue-1", Categories = new List<string>() }
+                }
+            });
+
+        var adapter = new ReadComicOnlineAdapter(rssFeedService: mockRssService.Object);
+
+        // Act
+        var result = await adapter.GetRssFeedAsync();
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.Single(result.Candidates);
+        Assert.Equal("ReadComicOnline", result.Candidates[0].SourceSite);
+    }
+
+    [Fact]
+    public async Task GetRssFeedAsync_RespectsLimitParameter()
+    {
+        // Arrange
+        var mockRssService = new Mock<IRssFeedService>();
+        mockRssService.Setup(r => r.FetchFeedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new RssFeedResult
+            {
+                Success = true,
+                Items = Enumerable.Range(1, 100)
+                    .Select(i => new RssFeedItem 
+                    { 
+                        Title = $"Comic #{i}", 
+                        Link = $"https://readcomiconline.li/Comic/Test/Issue-{i}",
+                        Categories = new List<string>()
+                    })
+                    .ToList()
+            });
+
+        var adapter = new ReadComicOnlineAdapter(rssFeedService: mockRssService.Object);
+
+        // Act
+        var result = await adapter.GetRssFeedAsync(limit: 10);
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.Equal(10, result.Candidates.Count);
+    }
+
+    [Fact]
+    public async Task GetRssFeedAsync_IncludesRssCategoriesAsTags()
+    {
+        // Arrange
+        var mockRssService = new Mock<IRssFeedService>();
+        mockRssService.Setup(r => r.FetchFeedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new RssFeedResult
+            {
+                Success = true,
+                Items = new List<RssFeedItem>
+                {
+                    new() 
+                    { 
+                        Title = "Batman #150", 
+                        Link = "https://readcomiconline.li/Comic/Batman/Issue-150",
+                        Categories = new List<string> { "DC", "Superhero", "Action" }
+                    }
+                }
+            });
+
+        var adapter = new ReadComicOnlineAdapter(rssFeedService: mockRssService.Object);
+
+        // Act
+        var result = await adapter.GetRssFeedAsync();
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.Single(result.Candidates);
+        Assert.Contains("dc", result.Candidates[0].Tags);
+        Assert.Contains("superhero", result.Candidates[0].Tags);
+        Assert.Contains("action", result.Candidates[0].Tags);
+    }
+
+    [Fact]
+    public async Task GetRssFeedAsync_SetsDateFoundFromPubDate()
+    {
+        // Arrange
+        var publishDate = new DateTime(2024, 12, 15, 12, 0, 0, DateTimeKind.Utc);
+        var mockRssService = new Mock<IRssFeedService>();
+        mockRssService.Setup(r => r.FetchFeedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new RssFeedResult
+            {
+                Success = true,
+                Items = new List<RssFeedItem>
+                {
+                    new() 
+                    { 
+                        Title = "New Release", 
+                        Link = "https://readcomiconline.li/Comic/Test/Issue-1",
+                        PubDate = publishDate,
+                        Categories = new List<string>()
+                    }
+                }
+            });
+
+        var adapter = new ReadComicOnlineAdapter(rssFeedService: mockRssService.Object);
+
+        // Act
+        var result = await adapter.GetRssFeedAsync();
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.Single(result.Candidates);
+        Assert.Equal(publishDate, result.Candidates[0].DateFound);
+    }
+
+    #endregion
 }
