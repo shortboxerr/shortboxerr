@@ -152,6 +152,33 @@ public class SearchSettings
 
     #endregion
 
+    #region Scoring Configuration
+
+    /// <summary>
+    /// Configurable weights for search result scoring.
+    /// </summary>
+    public ScoringWeights ScoringWeights { get; set; } = new();
+
+    /// <summary>
+    /// List of trusted release groups that receive a score bonus.
+    /// </summary>
+    public TrustedReleaseGroups TrustedReleaseGroups { get; set; } = new();
+
+    /// <summary>
+    /// Expected file size ranges for scoring.
+    /// </summary>
+    public ExpectedSizeRanges ExpectedSizeRanges { get; set; } = new();
+
+    /// <summary>
+    /// Words that boost the score when found in release title.
+    /// </summary>
+    public List<string> PreferredWords { get; set; } = new()
+    {
+        "digital", "hd", "proper", "repack"
+    };
+
+    #endregion
+
     /// <summary>
     /// Settings key for persistence.
     /// </summary>

@@ -1,5 +1,79 @@
 # Worklog
 
+## Iteration 091 (2026-02-10)
+**Search Result Scoring with Mylar3 Parity (EPIC 14.6)**
+
+### Commits
+1. `feat: add search result scoring with Mylar3 parity (59 tests)`
+
+### Deliverables
+
+#### Search Result Scorer
+- ✅ `ISearchResultScorer` interface - Scores and ranks search candidates
+- ✅ `SearchResultScorer` implementation - Full Mylar3-style scoring
+- ✅ `ScoredCandidate` - Candidate with score breakdown
+- ✅ `ScoreBreakdown` - Detailed breakdown of all scoring factors
+- ✅ `SearchContext` - Target series/issue/year for matching
+
+#### Scoring Factors
+| Factor | Weight | Description |
+|--------|--------|-------------|
+| Quality | 100 | Digital > Webrip > Scan |
+| Size | 50 | Within expected MB range |
+| Release Group | 75 | Trusted groups bonus |
+| Year Match | 50 | Exact vs close vs mismatch |
+| Issue Match | 100 | Critical - exact match required |
+| Series Match | 100 | Title similarity scoring |
+| Format | 25 | CBZ > CBR > PDF preference |
+| Source Priority | 30 | Lower priority = higher score |
+| Freshness | 20 | Recent releases bonus |
+| Preferred Words | +10 each | "digital", "hd", etc. |
+| Blacklist Penalty | -50 each | "sample", "watermark", etc. |
+
+#### Configuration Classes
+- ✅ `ScoringWeights` - Configurable weights for all factors
+- ✅ `TrustedReleaseGroups` - Trusted groups list (Minutemen, DCP, Empire, etc.)
+- ✅ `ExpectedSizeRanges` - Min/max/ideal sizes for singles and packs
+- ✅ Extended `SearchSettings` with scoring configuration
+
+#### Key Features
+- Quality detection from title (digital, webrip, scan markers)
+- Release group extraction from various title formats
+- Series title normalization (removes articles, special chars)
+- Levenshtein distance for fuzzy matching
+- Normalized score (0-100%) and letter grade (A/B/C/D/F)
+- Minimum threshold (30%) for acceptable candidates
+- Penalties can reduce score below positive points
+
+#### Unit Tests (59 tests)
+| Category | Count | Description |
+|----------|-------|-------------|
+| Quality Scoring | 5 | Digital/Webrip/Scan detection, preferences |
+| Size Scoring | 4 | Within range, below min, above max, unknown |
+| Release Group | 5 | Trusted, unknown, no group, extraction patterns |
+| Year Match | 4 | Exact, close, no year, no target |
+| Issue Match | 4 | Exact, wrong, missing, collection for pack |
+| Series Match | 4 | Exact, partial, missing, article handling |
+| Format | 4 | Preferred, secondary, CBZ-only, unknown |
+| Source Priority | 2 | Priority 1 vs lower |
+| Word Scoring | 3 | Preferred words, blacklist single, multiple |
+| Integration | 6 | Sorting, best candidate, totals, threshold, grades |
+| Custom Config | 2 | Custom weights, custom trusted groups |
+| Supporting Classes | 10 | Weights, groups, ranges, components, breakdown |
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Search/ISearchResultScorer.cs` | New - Interface and DTOs |
+| `src/Shortboxerr.Core/Search/ScoringWeights.cs` | New - Weight configuration |
+| `src/Shortboxerr.Core/Search/SearchSettings.cs` | Extended with scoring config |
+| `src/Shortboxerr.Infrastructure/Search/SearchResultScorer.cs` | New - Implementation |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register scorer |
+| `tests/Shortboxerr.Tests/SearchResultScorerTests.cs` | New - 59 unit tests |
+| `docs/BACKLOG.md` | Mark search ordering as complete |
+
+---
+
 ## Iteration 090 (2026-02-10)
 **qBittorrent Torrent Client Integration (EPIC 14.3)**
 

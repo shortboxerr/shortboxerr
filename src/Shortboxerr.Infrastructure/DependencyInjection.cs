@@ -63,6 +63,7 @@ public static class DependencyInjection
         services.AddSingleton<IDecisionEngine, DecisionEngine>();
         services.AddScoped<ISettingsService, SettingsService>();
         services.AddScoped<ISearchSettingsService, SearchSettingsService>();
+        services.AddScoped<ISearchResultScorer, SearchResultScorer>();
 
         // DDL services
         services.AddSingleton<IDdlReleaseParser, DdlReleaseParser>();
