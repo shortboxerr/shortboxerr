@@ -812,10 +812,11 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: Priority configuration ✅
   - AC: Monitor download progress ✅
   - AC: Detect completion and trigger import (via history API) ✅
-- [ ] **NZBGet integration** (deferred)
-  - AC: Add NZB to NZBGet via API
-  - AC: Category and priority support
-  - AC: Progress monitoring
+- [x] **NZBGet integration** ✅ (completed in EPIC 14.2)
+  - AC: Add NZB to NZBGet via API ✅
+  - AC: Category and priority support ✅
+  - AC: Progress monitoring ✅
+  - Note: Full implementation in EPIC 14.2
   - AC: Post-processing script integration
 - [x] **Download client health checks** ✅
   - AC: Verify connectivity on startup ✅ (TestConnectionAsync)
@@ -1793,7 +1794,7 @@ Full NZBGet support as an alternative to SABnzbd.
     - Settings (12 tests)
     - Priority enum (6 tests)
 
-### 14.3 Torrent Download Client Integration (Sonarr/Radarr Parity)
+### 14.3 Torrent Download Client Integration (Sonarr/Radarr Parity) - PARTIAL ✅
 Support for torrent-based downloading via popular clients.
 
 **Reference implementations:**
@@ -1802,25 +1803,27 @@ Support for torrent-based downloading via popular clients.
 - Sonarr: `src/NzbDrone.Core/Download/Clients/Deluge/`
 
 **Priority order (based on Sonarr/Radarr popularity):**
-1. qBittorrent (most popular, excellent API)
-2. Transmission (lightweight, good API)
-3. Deluge (feature-rich, daemon-based)
+1. qBittorrent (most popular, excellent API) ✅
+2. Transmission (lightweight, good API) - deferred
+3. Deluge (feature-rich, daemon-based) - deferred
 
-- [ ] **Torrent client abstraction**
-  - AC: Create `ITorrentClient` interface
-  - AC: Methods: AddTorrent(url/magnet/file), GetStatus(hash), RemoveTorrent(hash), GetQueue()
-  - AC: Common model for torrent status (downloading, seeding, paused, completed)
+- [x] **Torrent client abstraction** ✅
+  - AC: Create `ITorrentClient` interface ✅
+  - AC: Methods: AddTorrent(url/magnet/file), GetStatus(hash), RemoveTorrent(hash), GetQueue() ✅
+  - AC: Common model for torrent status (downloading, seeding, paused, completed) ✅
+  - Note: `ITorrentClient` and `IQBittorrentClient` in `Shortboxerr.Core/Torrent/`
 
-- [ ] **qBittorrent integration**
-  - AC: Implement qBittorrent Web API v2 client
-  - AC: Authentication: username/password with session cookie
-  - AC: Add torrent by URL, magnet link, or .torrent file
-  - AC: Category assignment
-  - AC: Download path configuration
-  - AC: Monitor progress and completion
-  - AC: Handle ratio limits / seeding requirements
+- [x] **qBittorrent integration** ✅
+  - AC: Implement qBittorrent Web API v2 client ✅
+  - AC: Authentication: username/password with session cookie ✅
+  - AC: Add torrent by URL, magnet link, or .torrent file ✅
+  - AC: Category assignment ✅
+  - AC: Download path configuration ✅
+  - AC: Monitor progress and completion ✅
+  - AC: Handle ratio limits / seeding requirements ✅
+  - Note: Full implementation in `QBittorrentClient.cs`
 
-- [ ] **Transmission integration**
+- [ ] **Transmission integration** (deferred)
   - AC: Implement Transmission RPC client
   - AC: Authentication: username/password
   - AC: Session ID handling
@@ -1828,29 +1831,40 @@ Support for torrent-based downloading via popular clients.
   - AC: Download directory configuration
   - AC: Monitor progress and completion
 
-- [ ] **Deluge integration** (lower priority)
+- [ ] **Deluge integration** (deferred)
   - AC: Implement Deluge JSON-RPC client
   - AC: Authentication: password-based
   - AC: Add torrent with label support
   - AC: Monitor progress and completion
 
-- [ ] **Torrent → Import handoff**
+- [ ] **Torrent → Import handoff** (deferred)
   - AC: Detect completed torrents
   - AC: Handle hardlinks vs copy based on configuration
   - AC: Respect seeding requirements (don't remove until ratio met)
   - AC: Support "move completed" scenarios
 
-- [ ] **Torrent UI**
-  - AC: Add qBittorrent/Transmission/Deluge to implementation dropdown
-  - AC: Dynamic form fields per client type
-  - AC: Connection test with version display
-  - AC: Category/label configuration
+- [x] **Torrent UI** ✅ (qBittorrent only)
+  - AC: Add qBittorrent to implementation dropdown ✅
+  - AC: Dynamic form fields for qBittorrent configuration ✅
+  - AC: Connection test with version display ✅
+  - AC: Category/label configuration ✅
+  - Note: Registered in ProviderFactory with full settings schema
 
-- [ ] **Torrent tests**
-  - AC: Unit tests for each client API
-  - AC: Provider tests for add/status/remove
-  - AC: Mock torrent completion scenarios
-  - Target: 15+ tests per client
+- [x] **Torrent tests** ✅ (qBittorrent)
+  - AC: Unit tests for qBittorrent API client ✅
+  - AC: Provider tests for add/status/remove ✅
+  - AC: Mock torrent completion scenarios ✅
+  - Note: 69 unit tests in `QBittorrentClientTests.cs` covering:
+    - TestConnection (3 tests)
+    - Version (2 tests)
+    - AddTorrent (6 tests)
+    - GetTorrents (4 tests)
+    - Download Control (6 tests)
+    - qBittorrent-Specific (13 tests)
+    - ClientType (1 test)
+    - State Mapping (19 tests)
+    - Hash Extraction (3 tests)
+    - Settings (12 tests)
 
 ### 14.5 ReadComicOnline Parity with GetComics ✅ COMPLETED
 Enable ReadComicOnline adapter with full feature parity to GetComics.org.

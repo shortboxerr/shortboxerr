@@ -107,6 +107,43 @@ public class ProviderFactory : IProviderFactory
             }
             """
         );
+
+        // Register qBittorrent Download Client
+        RegisterProvider(
+            name: "qBittorrent",
+            displayName: "qBittorrent",
+            description: "Popular torrent client with excellent Web API",
+            category: ProviderCategory.DownloadClient,
+            type: ProviderType.Torrent,
+            requiresBaseUrl: true,
+            requiresCredentials: true,
+            requiresApiKey: false,
+            factory: def =>
+            {
+                var qbtFactory = new QBittorrentDownloadProviderFactory(_services);
+                return qbtFactory.Create(def);
+            },
+            settingsSchema: """
+            {
+                "type": "object",
+                "properties": {
+                    "host": { "type": "string", "title": "Host", "description": "qBittorrent hostname or IP address" },
+                    "port": { "type": "integer", "title": "Port", "default": 8080, "description": "qBittorrent Web UI port (default: 8080)" },
+                    "username": { "type": "string", "title": "Username", "default": "admin" },
+                    "password": { "type": "string", "title": "Password", "format": "password" },
+                    "category": { "type": "string", "title": "Category", "default": "comics", "description": "Category for comic downloads" },
+                    "savePath": { "type": "string", "title": "Save Path", "description": "Custom save path (optional)" },
+                    "useSsl": { "type": "boolean", "title": "Use SSL", "default": false },
+                    "addPaused": { "type": "boolean", "title": "Add Paused", "default": false, "description": "Add torrents in paused state" },
+                    "ratioLimit": { "type": "number", "title": "Ratio Limit", "description": "Stop seeding when ratio is reached (e.g., 1.0 = 100%)" },
+                    "seedingTimeLimit": { "type": "integer", "title": "Seeding Time Limit (min)", "description": "Stop seeding after this many minutes" },
+                    "sequentialDownload": { "type": "boolean", "title": "Sequential Download", "default": false, "description": "Download pieces in order" },
+                    "firstLastPiecePriority": { "type": "boolean", "title": "First/Last Piece Priority", "default": false, "description": "Prioritize first and last pieces" }
+                },
+                "required": ["host"]
+            }
+            """
+        );
     }
 
     private void RegisterProvider(

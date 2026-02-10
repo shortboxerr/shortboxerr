@@ -1,5 +1,71 @@
 # Worklog
 
+## Iteration 090 (2026-02-10)
+**qBittorrent Torrent Client Integration (EPIC 14.3)**
+
+### Commits
+1. `feat: add qBittorrent torrent client integration (69 tests)`
+
+### Deliverables
+
+#### Torrent Client Abstraction
+- ✅ `ITorrentClient` interface - Common interface for all torrent clients
+- ✅ `IQBittorrentClient` interface - qBittorrent-specific extensions
+- ✅ `TorrentClientType` enum - QBittorrent, Transmission, Deluge, RTorrent
+- ✅ `TorrentState` enum - Queued, Downloading, Paused, Checking, Seeding, Completed, etc.
+- ✅ `TorrentStatus` model - Hash, Name, State, Progress, Speeds, Ratio, ETA
+- ✅ `TorrentAddOptions` - Category, SavePath, Paused, Priority, Ratio limits
+- ✅ `TorrentDiskSpace` - Free/total bytes, IsLow flag
+
+#### qBittorrent Client Implementation
+- ✅ `QBittorrentClient` - Full Web API v2 implementation
+- ✅ Session-based authentication with cookie management
+- ✅ Add torrents by magnet, URL, or file content
+- ✅ Torrent control: pause, resume, remove, recheck, force start
+- ✅ Queue management: get all, get status, set priority, set category
+- ✅ Global controls: pause/resume all, speed limits
+- ✅ Categories management: list, create
+- ✅ Transfer info and disk space monitoring
+
+#### qBittorrent Provider
+- ✅ `QBittorrentDownloadProvider` implementing `IDownloadProvider`
+- ✅ `QBittorrentDownloadProviderFactory` for provider creation
+- ✅ Settings parsing from JSON and legacy BaseUrl formats
+- ✅ Health status with disk space warnings
+- ✅ Download, status, cancel, and list operations
+
+#### Provider Registration
+- ✅ qBittorrent registered in `ProviderFactory`
+- ✅ Full settings schema with all configuration options
+- ✅ Category: DownloadClient, Type: Torrent
+
+#### Unit Tests (69 tests)
+| Category | Count | Description |
+|----------|-------|-------------|
+| TestConnection | 3 | Valid, HTTP error, auth failure |
+| Version | 2 | GetVersion, GetApiVersion |
+| AddTorrent | 6 | Magnet, URL, file, options, invalid |
+| GetTorrents | 4 | All, empty, status, not found |
+| Download Control | 6 | Pause, resume, remove, delete files, pause/resume all |
+| qBittorrent-Specific | 13 | Categories, transfer info, limits, recheck, force, priority |
+| ClientType | 1 | Returns QBittorrent |
+| State Mapping | 19 | All qBittorrent states mapped correctly |
+| Hash Extraction | 3 | Magnet URI hash extraction tests |
+| Settings | 12 | Port, URL, SSL, defaults |
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Torrent/ITorrentClient.cs` | New - Interface and models |
+| `src/Shortboxerr.Core/Torrent/IQBittorrentClient.cs` | New - qBittorrent-specific interface |
+| `src/Shortboxerr.Infrastructure/Torrent/QBittorrentClient.cs` | New - Client implementation |
+| `src/Shortboxerr.Infrastructure/Providers/QBittorrentDownloadProvider.cs` | New - Provider and factory |
+| `src/Shortboxerr.Infrastructure/Providers/ProviderFactory.cs` | Register qBittorrent |
+| `tests/Shortboxerr.Tests/QBittorrentClientTests.cs` | New - 69 unit tests |
+| `docs/BACKLOG.md` | Mark EPIC 14.3 as partial (qBittorrent complete) |
+
+---
+
 ## Iteration 089 (2026-02-10)
 **NZBGet Integration Unit Tests (EPIC 14.2)**
 
