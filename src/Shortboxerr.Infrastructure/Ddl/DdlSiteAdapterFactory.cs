@@ -123,6 +123,66 @@ public class DdlSiteAdapterFactory : IDdlSiteAdapterFactory
         _enabledSites.Remove(siteType);
     }
 
+    /// <summary>
+    /// Check if a site is currently enabled.
+    /// </summary>
+    public bool IsSiteEnabled(string siteType)
+    {
+        return _enabledSites.Contains(siteType);
+    }
+
+    /// <summary>
+    /// Get site information including enabled status.
+    /// </summary>
+    public IReadOnlyList<DdlSiteStatus> GetSiteStatuses()
+    {
+        return _adapterFactories.Keys
+            .Select(siteType =>
+            {
+                var adapter = GetAdapter(siteType);
+                return new DdlSiteStatus
+                {
+                    SiteType = adapter.SiteType,
+                    DisplayName = adapter.DisplayName,
+                    DefaultBaseUrl = adapter.DefaultBaseUrl,
+                    RequiresAuthentication = adapter.RequiresAuthentication,
+                    DefaultRateLimitPerMinute = adapter.DefaultRateLimitPerMinute,
+                    IsEnabled = _enabledSites.Contains(siteType),
+                    Priority = GetSitePriority(siteType)
+                };
+            })
+            .OrderBy(s => s.Priority)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Set enabled sites from a list (replaces current enabled set).
+    /// </summary>
+    public void SetEnabledSites(IEnumerable<string> siteTypes)
+    {
+        _enabledSites.Clear();
+        foreach (var siteType in siteTypes.Where(s => _adapterFactories.ContainsKey(s)))
+        {
+            _enabledSites.Add(siteType);
+        }
+    }
+
+    /// <summary>
+    /// Get the priority of a site (lower = higher priority).
+    /// </summary>
+    private int GetSitePriority(string siteType)
+    {
+        // Default priorities - can be overridden via settings later
+        return siteType switch
+        {
+            "GetComics" => 1,        // Primary - most comprehensive
+            "ReadComicOnline" => 2,  // Secondary - good backup
+            "GettyComics" => 3,      // Legacy/test
+            "MockDdl" => 99,         // Test only
+            _ => 50
+        };
+    }
+
     private void RegisterBuiltInAdapters()
     {
         // Register mock/sample adapters for testing
@@ -133,10 +193,60 @@ public class DdlSiteAdapterFactory : IDdlSiteAdapterFactory
         RegisterAdapter("GetComics", () => new GetComicsAdapter());
         RegisterAdapter("ReadComicOnline", () => new ReadComicOnlineAdapter());
         
-        // Enable mock by default for development/testing
-        // GetComics, ReadComicOnline, and real adapters should be enabled via configuration/UI in production
-        EnableSite("MockDdl");
+        // Enable real DDL sites by default for production use
+        EnableSite("GetComics");
+        EnableSite("ReadComicOnline");
+        
+        // Note: MockDdl is available but not enabled by default
+        // Enable it via settings or environment variable for testing:
+        // Environment.GetEnvironmentVariable("SHORTBOXERR_ENABLE_MOCK_DDL") == "true"
+        if (Environment.GetEnvironmentVariable("SHORTBOXERR_ENABLE_MOCK_DDL") == "true")
+        {
+            EnableSite("MockDdl");
+        }
     }
+}
+
+/// <summary>
+/// Extended site information including runtime status.
+/// </summary>
+public class DdlSiteStatus : DdlSiteInfo
+{
+    /// <summary>
+    /// Whether this site is currently enabled for searches.
+    /// </summary>
+    public bool IsEnabled { get; init; }
+    
+    /// <summary>
+    /// Priority order for multi-site searches (lower = higher priority).
+    /// </summary>
+    public int Priority { get; init; }
+    
+    /// <summary>
+    /// Last health check result.
+    /// </summary>
+    public DdlSiteHealth Health { get; init; } = DdlSiteHealth.Unknown;
+    
+    /// <summary>
+    /// Last error message if unhealthy.
+    /// </summary>
+    public string? LastError { get; init; }
+    
+    /// <summary>
+    /// When the last successful search was performed.
+    /// </summary>
+    public DateTime? LastSuccessfulSearch { get; init; }
+}
+
+/// <summary>
+/// Health status for a DDL site.
+/// </summary>
+public enum DdlSiteHealth
+{
+    Unknown = 0,
+    Healthy = 1,
+    Degraded = 2,
+    Unhealthy = 3
 }
 
 

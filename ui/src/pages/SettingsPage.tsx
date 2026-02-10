@@ -4,7 +4,8 @@ import {
   Settings, Server, Download, Shield, 
   FolderOpen, Plug, Save, Plus, Edit, Trash2, 
   CheckCircle, XCircle, AlertCircle, Play, GripVertical,
-  Copy, RefreshCw, X, Database, ExternalLink, Eye, EyeOff, Calendar, FileText, HardDrive, Bell
+  Copy, RefreshCw, X, Database, ExternalLink, Eye, EyeOff, Calendar, FileText, HardDrive, Bell,
+  Globe, Activity, Loader2
 } from 'lucide-react';
 import { api } from '../api/client';
 import type { 
@@ -1631,27 +1632,7 @@ function IndexersSettings() {
 
   return (
     <>
-      <SettingsSection title="DDL Sites (Built-in)">
-        <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px' }}>
-          DDL indexers (GetComics, etc.) are built-in with Mylar3 parity. Configure site-specific settings below.
-        </p>
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
-          gap: '12px' 
-        }}>
-          <DdlSiteCard 
-            name="GetComics.org" 
-            description="Primary DDL source for comics"
-            enabled={true}
-          />
-          <DdlSiteCard 
-            name="ReadComicOnline" 
-            description="Online comic reader with downloads"
-            enabled={false}
-          />
-        </div>
-      </SettingsSection>
+      <DdlSitesSection />
 
       <SettingsSection title="Usenet / NZB Indexers">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -1751,27 +1732,226 @@ function IndexersSettings() {
   );
 }
 
-function DdlSiteCard({ name, description, enabled }: { name: string; description: string; enabled: boolean }) {
+// DDL Site Management Section
+interface DdlSite {
+  siteType: string;
+  displayName: string;
+  defaultBaseUrl: string;
+  requiresAuthentication: boolean;
+  defaultRateLimitPerMinute: number;
+  isEnabled: boolean;
+  priority: number;
+  health: string;
+  lastError?: string;
+  lastSuccessfulSearch?: string;
+}
+
+interface DdlTestResult {
+  siteType: string;
+  success: boolean;
+  message: string;
+  sampleResultCount: number;
+  latencyMs: number;
+}
+
+function DdlSitesSection() {
+  const queryClient = useQueryClient();
+  const [testingId, setTestingId] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<DdlTestResult | null>(null);
+
+  const { data: sites, isLoading, refetch } = useQuery<DdlSite[]>({
+    queryKey: ['ddlSites'],
+    queryFn: async () => {
+      const response = await fetch('/api/v1/ddl/sites');
+      if (!response.ok) throw new Error('Failed to fetch DDL sites');
+      return response.json();
+    },
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: async ({ siteType, enable }: { siteType: string; enable: boolean }) => {
+      const response = await fetch(`/api/v1/ddl/sites/${siteType}/${enable ? 'enable' : 'disable'}`, {
+        method: 'POST',
+      });
+      if (!response.ok) throw new Error('Failed to toggle site');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ddlSites'] });
+    },
+  });
+
+  const testSite = async (siteType: string) => {
+    setTestingId(siteType);
+    setTestResult(null);
+    try {
+      const response = await fetch(`/api/v1/ddl/sites/${siteType}/test`, { method: 'POST' });
+      const result = await response.json();
+      setTestResult(result);
+    } catch (error) {
+      setTestResult({
+        siteType,
+        success: false,
+        message: 'Test failed: ' + (error instanceof Error ? error.message : 'Unknown error'),
+        sampleResultCount: 0,
+        latencyMs: 0,
+      });
+    } finally {
+      setTestingId(null);
+    }
+  };
+
+  const getSiteDescription = (siteType: string): string => {
+    switch (siteType) {
+      case 'GetComics':
+        return 'Primary DDL source with comprehensive comic releases';
+      case 'ReadComicOnline':
+        return 'Comic reading site with download links';
+      case 'MockDdl':
+        return 'Test/development adapter';
+      case 'GettyComics':
+        return 'Legacy test adapter';
+      default:
+        return 'DDL site adapter';
+    }
+  };
+
+  return (
+    <SettingsSection title="DDL Sites (Built-in)">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
+          DDL indexers are built-in with Mylar3 parity. Enable/disable sites and test connectivity.
+        </p>
+        <button className="btn btn-icon" onClick={() => refetch()} title="Refresh">
+          <RefreshCw size={16} />
+        </button>
+      </div>
+
+      {isLoading ? (
+        <div className="loading"><div className="spinner" /></div>
+      ) : !sites?.length ? (
+        <div className="empty-state" style={{ padding: '40px 20px' }}>
+          <Globe size={48} />
+          <div className="empty-state-title">No DDL sites available</div>
+        </div>
+      ) : (
+        <>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', 
+            gap: '12px' 
+          }}>
+            {sites
+              .filter(site => site.siteType !== 'MockDdl' && site.siteType !== 'GettyComics')
+              .map((site) => (
+                <DdlSiteCard 
+                  key={site.siteType}
+                  site={site}
+                  description={getSiteDescription(site.siteType)}
+                  onToggle={(enable) => toggleMutation.mutate({ siteType: site.siteType, enable })}
+                  onTest={() => testSite(site.siteType)}
+                  isTesting={testingId === site.siteType}
+                  isToggling={toggleMutation.isPending}
+                />
+              ))}
+          </div>
+          
+          {testResult && (
+            <div style={{
+              marginTop: '16px',
+              padding: '12px 16px',
+              borderRadius: 'var(--radius-md)',
+              background: testResult.success ? 'rgba(92, 184, 92, 0.1)' : 'rgba(217, 83, 79, 0.1)',
+              border: `1px solid ${testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)'}`,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                {testResult.success ? (
+                  <CheckCircle size={16} style={{ color: 'var(--accent-success)' }} />
+                ) : (
+                  <XCircle size={16} style={{ color: 'var(--accent-danger)' }} />
+                )}
+                <span style={{ fontWeight: 500 }}>{testResult.siteType} Test {testResult.success ? 'Passed' : 'Failed'}</span>
+              </div>
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                {testResult.message}
+                {testResult.success && (
+                  <span style={{ marginLeft: '8px', color: 'var(--text-muted)' }}>
+                    ({testResult.latencyMs}ms)
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div style={{ marginTop: '12px', fontSize: '12px', color: 'var(--text-muted)' }}>
+            {sites.filter(s => s.isEnabled && s.siteType !== 'MockDdl').length} of {sites.filter(s => s.siteType !== 'MockDdl' && s.siteType !== 'GettyComics').length} sites enabled
+          </div>
+        </>
+      )}
+    </SettingsSection>
+  );
+}
+
+function DdlSiteCard({ 
+  site, 
+  description, 
+  onToggle, 
+  onTest, 
+  isTesting,
+  isToggling
+}: { 
+  site: DdlSite; 
+  description: string; 
+  onToggle: (enable: boolean) => void;
+  onTest: () => void;
+  isTesting: boolean;
+  isToggling: boolean;
+}) {
   return (
     <div style={{
       padding: '16px',
       background: 'var(--bg-tertiary)',
       borderRadius: 'var(--radius-md)',
-      border: `1px solid ${enabled ? 'var(--accent-success)' : 'var(--border-color)'}`,
+      border: `1px solid ${site.isEnabled ? 'var(--accent-success)' : 'var(--border-color)'}`,
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-        <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{name}</div>
+        <div>
+          <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{site.displayName}</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Priority: {site.priority}</div>
+        </div>
         <div style={{ 
           fontSize: '11px', 
           padding: '2px 8px', 
           borderRadius: 'var(--radius-sm)',
-          background: enabled ? 'rgba(92, 184, 92, 0.2)' : 'rgba(150, 150, 150, 0.2)',
-          color: enabled ? 'var(--accent-success)' : 'var(--text-muted)',
+          background: site.isEnabled ? 'rgba(92, 184, 92, 0.2)' : 'rgba(150, 150, 150, 0.2)',
+          color: site.isEnabled ? 'var(--accent-success)' : 'var(--text-muted)',
         }}>
-          {enabled ? 'Enabled' : 'Disabled'}
+          {site.isEnabled ? 'Enabled' : 'Disabled'}
         </div>
       </div>
-      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{description}</div>
+      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>{description}</div>
+      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+        Rate limit: {site.defaultRateLimitPerMinute} req/min
+      </div>
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <button 
+          className="btn btn-secondary" 
+          onClick={onTest}
+          disabled={isTesting}
+          style={{ flex: 1 }}
+        >
+          {isTesting ? <Loader2 size={14} className="spin" /> : <Activity size={14} />}
+          Test
+        </button>
+        <button 
+          className={`btn ${site.isEnabled ? 'btn-secondary' : 'btn-primary'}`}
+          onClick={() => onToggle(!site.isEnabled)}
+          disabled={isToggling}
+          style={{ flex: 1 }}
+        >
+          {site.isEnabled ? 'Disable' : 'Enable'}
+        </button>
+      </div>
     </div>
   );
 }

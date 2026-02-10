@@ -41,5 +41,36 @@ public interface IDdlSiteAdapterFactory
     bool IsRegistered(string siteType);
 }
 
+/// <summary>
+/// Information about a DDL site adapter.
+/// </summary>
+public class DdlSiteInfo
+{
+    /// <summary>
+    /// Unique identifier for the site type.
+    /// </summary>
+    public required string SiteType { get; init; }
+    
+    /// <summary>
+    /// Display name for the site.
+    /// </summary>
+    public required string DisplayName { get; init; }
+    
+    /// <summary>
+    /// Default base URL for the site.
+    /// </summary>
+    public required string DefaultBaseUrl { get; init; }
+    
+    /// <summary>
+    /// Whether the site requires authentication.
+    /// </summary>
+    public bool RequiresAuthentication { get; init; }
+    
+    /// <summary>
+    /// Default rate limit (requests per minute).
+    /// </summary>
+    public int DefaultRateLimitPerMinute { get; init; }
+}
+
 
 

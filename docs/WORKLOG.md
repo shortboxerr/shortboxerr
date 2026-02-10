@@ -1,5 +1,95 @@
 # Worklog
 
+## Iteration 087 (2026-02-10)
+**ReadComicOnline Production Enable & DDL Site Management (EPIC 14.5)**
+
+### Commits
+1. `feat: add GetPublisherAsync and GetPublisherRssFeedAsync to GetComicsAdapter`
+2. `feat: enable GetComics and ReadComicOnline by default, add DDL site management`
+
+### Deliverables
+
+#### DDL Site Management API
+- ✅ `GET /api/v1/ddl/sites` - List all sites with status
+- ✅ `GET /api/v1/ddl/sites/enabled` - List enabled sites
+- ✅ `POST /api/v1/ddl/sites/{siteType}/enable` - Enable a site
+- ✅ `POST /api/v1/ddl/sites/{siteType}/disable` - Disable a site
+- ✅ `POST /api/v1/ddl/sites/{siteType}/test` - Test site connectivity
+- ✅ `PUT /api/v1/ddl/sites/enabled` - Set enabled sites (bulk)
+
+#### DdlSiteAdapterFactory Enhancements
+- ✅ `IsSiteEnabled(siteType)` - Check if site is enabled
+- ✅ `GetSiteStatuses()` - Get all sites with runtime status
+- ✅ `SetEnabledSites(siteTypes)` - Replace enabled set
+- ✅ Default priorities: GetComics=1, ReadComicOnline=2
+- ✅ Environment variable `SHORTBOXERR_ENABLE_MOCK_DDL` for testing
+
+#### GetComicsAdapter Publisher Methods
+- ✅ `GetPublisherAsync(publisher, limit)` - Get by publisher (HTML)
+- ✅ `GetPublisherRssFeedAsync(publisher, limit)` - Get by publisher (RSS)
+- ✅ Publisher name mapping (DC, Marvel, BOOM! Studios, etc.)
+- ✅ 4 new unit tests
+
+#### DDL Settings UI
+- ✅ Dynamic DDL Sites section in Settings > Indexers
+- ✅ Cards showing site info, priority, rate limits
+- ✅ Enable/Disable toggle per site
+- ✅ Test Connection button with result display
+- ✅ Site count summary
+
+#### Unit Tests (17 new tests total)
+**DdlSiteManagementTests.cs (13 tests)**
+- `Factory_RegistersBuiltInAdapters`
+- `Factory_EnablesGetComicsAndReadComicOnlineByDefault`
+- `Factory_MockDdlNotEnabledByDefault`
+- `Factory_CanEnableSite`
+- `Factory_CanDisableSite`
+- `Factory_IsSiteEnabled_ReturnsCorrectStatus`
+- `Factory_SetEnabledSites_ReplacesCurrentSet`
+- `Factory_GetSiteStatuses_ReturnsAllSites`
+- `Factory_GetSiteStatuses_IncludesEnabledFlag`
+- `Factory_GetSiteStatuses_SortedByPriority`
+- `Factory_GetAvailableSiteInfos_ReturnsCorrectInfo`
+- `Adapter_GetComics_HasCorrectRateLimit`
+- `Adapter_ReadComicOnline_HasRestrictiveRateLimit`
+
+**GetComicsAdapterTests.cs (4 new tests)**
+- `GetPublisherRssFeedAsync_WithMockRssService_ReturnsCandidates`
+- `GetPublisherRssFeedAsync_MapsPublisherNames`
+- `GetPublisherAsync_MapsPublisherNamesToCategories`
+- `GetPublisherRssFeedAsync_MapsVariousPublisherNames`
+
+### Final Parity Status
+
+| Feature | GetComics | ReadComicOnline |
+|---------|-----------|-----------------|
+| SearchAsync | ✅ | ✅ |
+| GetLatestAsync | ✅ | ✅ |
+| GetRssFeedAsync | ✅ | ✅ |
+| GetCategoryAsync | ✅ | ✅ |
+| GetCategoryRssFeedAsync | ✅ | ✅ |
+| GetPublisherAsync | ✅ (NEW) | ✅ |
+| GetPublisherRssFeedAsync | ✅ (NEW) | ✅ |
+| GetAvailableCategories | ✅ | ✅ |
+| ExtractLinksAsync | ✅ | ✅ |
+| DetectHomepageAsync | ❌ | ✅ |
+| **Enabled by Default** | ✅ | ✅ |
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/Ddl/GetComicsAdapter.cs` | Added publisher methods |
+| `src/Shortboxerr.Infrastructure/Ddl/DdlSiteAdapterFactory.cs` | Enable sites by default, add status methods |
+| `src/Shortboxerr.Core/Ddl/IDdlSiteAdapterFactory.cs` | Added DdlSiteInfo class |
+| `src/Shortboxerr.Core/Ddl/IDdlSearchService.cs` | Restored interface with result types |
+| `src/Shortboxerr.Api/Endpoints/DdlSiteEndpoints.cs` | New - DDL site management API |
+| `src/Shortboxerr.Api/Program.cs` | Register DDL site endpoints |
+| `ui/src/pages/SettingsPage.tsx` | DDL Sites UI section |
+| `tests/Shortboxerr.Tests/DdlSiteManagementTests.cs` | New - 13 unit tests |
+| `tests/Shortboxerr.Tests/GetComicsAdapterTests.cs` | Added 4 publisher tests |
+
+---
+
 ## Iteration 086 (2026-02-10)
 **ReadComicOnline RSS Feed Support (EPIC 14.5)**
 
