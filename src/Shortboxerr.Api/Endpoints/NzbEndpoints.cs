@@ -321,6 +321,23 @@ public static class NzbEndpoints
             return Results.Ok(result);
         }
 
+        if (request.ClientType == NzbDownloadClientType.NZBGet)
+        {
+            if (request.Nzbget == null ||
+                string.IsNullOrWhiteSpace(request.Nzbget.Host) ||
+                string.IsNullOrWhiteSpace(request.Nzbget.Username) ||
+                string.IsNullOrWhiteSpace(request.Nzbget.Password))
+            {
+                return Results.Ok(NzbClientTestResult.Failed("NZBGet host, username, and password are required"));
+            }
+
+            // Create a temporary client to test
+            using var httpClient = new HttpClient();
+            var client = new Shortboxerr.Infrastructure.Nzb.NzbgetClient(httpClient, request.Nzbget);
+            var result = await client.TestConnectionAsync(cancellationToken);
+            return Results.Ok(result);
+        }
+
         return Results.Ok(NzbClientTestResult.Failed($"Client type {request.ClientType} is not yet supported"));
     }
 
@@ -425,6 +442,7 @@ public class TestDownloadClientRequest
 {
     public NzbDownloadClientType ClientType { get; set; }
     public SabnzbdSettings? Sabnzbd { get; set; }
+    public NzbgetSettings? Nzbget { get; set; }
 }
 
 public class NzbSearchResponse

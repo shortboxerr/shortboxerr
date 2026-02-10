@@ -75,6 +75,38 @@ public class ProviderFactory : IProviderFactory
             }
             """
         );
+
+        // Register NZBGet Download Client
+        RegisterProvider(
+            name: "NZBGet",
+            displayName: "NZBGet",
+            description: "Usenet download client using JSON-RPC API",
+            category: ProviderCategory.DownloadClient,
+            type: ProviderType.Usenet,
+            requiresBaseUrl: true,
+            requiresCredentials: true,
+            requiresApiKey: false,
+            factory: def =>
+            {
+                var nzbgetFactory = new NzbgetDownloadProviderFactory(_services);
+                return nzbgetFactory.Create(def);
+            },
+            settingsSchema: """
+            {
+                "type": "object",
+                "properties": {
+                    "host": { "type": "string", "title": "Host", "description": "NZBGet hostname or IP address" },
+                    "port": { "type": "integer", "title": "Port", "default": 6789, "description": "NZBGet port (default: 6789)" },
+                    "username": { "type": "string", "title": "Username", "default": "nzbget" },
+                    "password": { "type": "string", "title": "Password", "format": "password" },
+                    "category": { "type": "string", "title": "Category", "default": "comics" },
+                    "useSsl": { "type": "boolean", "title": "Use SSL", "default": false },
+                    "addPaused": { "type": "boolean", "title": "Add Paused", "default": false, "description": "Add downloads in paused state" }
+                },
+                "required": ["host", "username", "password"]
+            }
+            """
+        );
     }
 
     private void RegisterProvider(

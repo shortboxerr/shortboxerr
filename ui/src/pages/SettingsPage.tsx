@@ -5,22 +5,24 @@ import {
   FolderOpen, Plug, Save, Plus, Edit, Trash2, 
   CheckCircle, XCircle, AlertCircle, Play, GripVertical,
   Copy, RefreshCw, X, Database, ExternalLink, Eye, EyeOff, Calendar, FileText, HardDrive, Bell,
-  Globe, Activity, Loader2
+  Globe, Activity, Loader2, Search, RotateCcw
 } from 'lucide-react';
 import { api } from '../api/client';
 import type { 
   Provider, CreateProviderRequest, ProviderTestResult, ComicVineTestResult,
   NzbIndexer, NzbIndexerRequest, NzbTestResult, NzbIndexerPreset,
-  WebhookProviderSettings, WebhookProviderRequest, NotificationEventType
+  WebhookProviderSettings, WebhookProviderRequest, NotificationEventType,
+  SearchSettings, PreferredQuality
 } from '../api/client';
 import { useTheme } from '../App';
 
-type SettingsTab = 'general' | 'indexers' | 'download' | 'notifications' | 'import' | 'ui' | 'security' | 'comicvine' | 'pulllist';
+type SettingsTab = 'general' | 'indexers' | 'download' | 'notifications' | 'import' | 'ui' | 'security' | 'comicvine' | 'pulllist' | 'search';
 
 const tabs: { id: SettingsTab; icon: React.ElementType; label: string }[] = [
   { id: 'general', icon: Settings, label: 'General' },
   { id: 'comicvine', icon: Database, label: 'ComicVine' },
   { id: 'pulllist', icon: Calendar, label: 'Pull List' },
+  { id: 'search', icon: Search, label: 'Search' },
   { id: 'indexers', icon: Plug, label: 'Indexers' },
   { id: 'download', icon: Download, label: 'Download Clients' },
   { id: 'notifications', icon: Bell, label: 'Notifications' },
@@ -76,6 +78,7 @@ export function SettingsPage() {
             {activeTab === 'general' && <GeneralSettings />}
             {activeTab === 'comicvine' && <ComicVineSettingsTab />}
             {activeTab === 'pulllist' && <PullListSettingsTab />}
+            {activeTab === 'search' && <SearchSettingsTab />}
             {activeTab === 'indexers' && <IndexersSettings />}
             {activeTab === 'download' && <DownloadClientsSettings />}
             {activeTab === 'notifications' && <NotificationsSettings />}
@@ -1150,6 +1153,302 @@ function ComicVineSettingsTab() {
           </SettingsSection>
         </>
       )}
+    </>
+  );
+}
+
+// ============== SEARCH SETTINGS ==============
+
+function SearchSettingsTab() {
+  const queryClient = useQueryClient();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ['searchSettings'],
+    queryFn: api.getSearchSettings,
+  });
+
+  const [localSettings, setLocalSettings] = useState<SearchSettings | null>(null);
+
+  // Sync local state when data loads
+  useEffect(() => {
+    if (settings && !localSettings) {
+      setLocalSettings(settings);
+    }
+  }, [settings, localSettings]);
+
+  const handleSave = async () => {
+    if (!localSettings) return;
+    setIsSaving(true);
+    try {
+      await api.updateSearchSettings(localSettings);
+      queryClient.invalidateQueries({ queryKey: ['searchSettings'] });
+    } catch (error) {
+      console.error('Failed to save search settings:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleReset = async () => {
+    setIsResetting(true);
+    try {
+      const result = await api.resetSearchSettings();
+      setLocalSettings(result.settings);
+      queryClient.invalidateQueries({ queryKey: ['searchSettings'] });
+    } catch (error) {
+      console.error('Failed to reset search settings:', error);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const updateSetting = <K extends keyof SearchSettings>(key: K, value: SearchSettings[K]) => {
+    if (localSettings) {
+      setLocalSettings({ ...localSettings, [key]: value });
+    }
+  };
+
+  const updateListSetting = (key: 'blacklistWords' | 'whitelistWords' | 'ignoreWords' | 'formatPreference', value: string) => {
+    if (localSettings) {
+      setLocalSettings({ 
+        ...localSettings, 
+        [key]: value.split(',').map(s => s.trim()).filter(Boolean)
+      });
+    }
+  };
+
+  if (isLoading || !localSettings) {
+    return <div className="loading"><div className="spinner" /></div>;
+  }
+
+  return (
+    <>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Search Settings</h2>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button 
+            className="btn btn-secondary" 
+            onClick={handleReset} 
+            disabled={isResetting}
+          >
+            <RotateCcw size={16} />
+            Reset to Defaults
+          </button>
+          <button 
+            className="btn btn-primary" 
+            onClick={handleSave} 
+            disabled={isSaving}
+          >
+            <Save size={16} />
+            {isSaving ? 'Saving...' : 'Save Settings'}
+          </button>
+        </div>
+      </div>
+
+      <SettingsSection title="Provider Toggles">
+        <SettingsField label="Enable DDL Search" description="Search DDL providers (GetComics, ReadComicOnline)">
+          <input
+            type="checkbox"
+            checked={localSettings.enableDdlSearch}
+            onChange={e => updateSetting('enableDdlSearch', e.target.checked)}
+          />
+        </SettingsField>
+        <SettingsField label="Enable NZB Search" description="Search Usenet/NZB indexers">
+          <input
+            type="checkbox"
+            checked={localSettings.enableNzbSearch}
+            onChange={e => updateSetting('enableNzbSearch', e.target.checked)}
+          />
+        </SettingsField>
+        <SettingsField label="Enable Torrent Search" description="Search torrent providers (requires configuration)">
+          <input
+            type="checkbox"
+            checked={localSettings.enableTorrentSearch}
+            onChange={e => updateSetting('enableTorrentSearch', e.target.checked)}
+          />
+        </SettingsField>
+      </SettingsSection>
+
+      <SettingsSection title="Search Behavior">
+        <SettingsField label="Search Delay (seconds)" description="Delay between consecutive searches to avoid rate limiting">
+          <input
+            type="number"
+            value={localSettings.searchDelaySeconds}
+            min={0}
+            max={60}
+            onChange={e => updateSetting('searchDelaySeconds', parseInt(e.target.value) || 0)}
+            style={{ width: '100px' }}
+          />
+        </SettingsField>
+        <SettingsField label="Prefer Pack Releases" description="Prioritize releases that include multiple issues">
+          <input
+            type="checkbox"
+            checked={localSettings.preferPackReleases}
+            onChange={e => updateSetting('preferPackReleases', e.target.checked)}
+          />
+        </SettingsField>
+        <SettingsField label="Max Results Per Provider" description="Maximum results to fetch from each provider">
+          <input
+            type="number"
+            value={localSettings.maxResultsPerProvider}
+            min={1}
+            max={200}
+            onChange={e => updateSetting('maxResultsPerProvider', parseInt(e.target.value) || 50)}
+            style={{ width: '100px' }}
+          />
+        </SettingsField>
+        <SettingsField label="Search Tier Cutoff" description="Stop after this many providers if match found (0 = search all)">
+          <input
+            type="number"
+            value={localSettings.searchTierCutoff}
+            min={0}
+            max={10}
+            onChange={e => updateSetting('searchTierCutoff', parseInt(e.target.value) || 0)}
+            style={{ width: '100px' }}
+          />
+        </SettingsField>
+      </SettingsSection>
+
+      <SettingsSection title="Quality Preferences">
+        <SettingsField label="Preferred Quality" description="Preferred quality tier for releases">
+          <select
+            value={localSettings.preferredQuality}
+            onChange={e => updateSetting('preferredQuality', parseInt(e.target.value) as PreferredQuality)}
+            style={{ width: '200px' }}
+          >
+            <option value={0}>Any</option>
+            <option value={1}>Digital (highest quality)</option>
+            <option value={2}>Webrip</option>
+            <option value={3}>Scan</option>
+          </select>
+        </SettingsField>
+        <SettingsField label="CBZ Only" description="Only accept CBZ format files (reject CBR, PDF, etc.)">
+          <input
+            type="checkbox"
+            checked={localSettings.cbzOnly}
+            onChange={e => updateSetting('cbzOnly', e.target.checked)}
+          />
+        </SettingsField>
+        <SettingsField label="Format Preference" description="Comma-separated format preference order (e.g., cbz, cbr, pdf)">
+          <input
+            type="text"
+            value={localSettings.formatPreference.join(', ')}
+            onChange={e => updateListSetting('formatPreference', e.target.value)}
+            placeholder="cbz, cbr, pdf"
+            style={{ width: '250px' }}
+          />
+        </SettingsField>
+      </SettingsSection>
+
+      <SettingsSection title="Size Limits">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <SettingsField label="Min Size (MB)" description="Minimum file size for single issues (0 = no minimum)">
+            <input
+              type="number"
+              value={localSettings.minSizeMb}
+              min={0}
+              onChange={e => updateSetting('minSizeMb', parseInt(e.target.value) || 0)}
+              style={{ width: '100px' }}
+            />
+          </SettingsField>
+          <SettingsField label="Max Size (MB)" description="Maximum file size for single issues (0 = no maximum)">
+            <input
+              type="number"
+              value={localSettings.maxSizeMb}
+              min={0}
+              onChange={e => updateSetting('maxSizeMb', parseInt(e.target.value) || 0)}
+              style={{ width: '100px' }}
+            />
+          </SettingsField>
+          <SettingsField label="Min Pack Size (MB)" description="Minimum size for pack/collection releases">
+            <input
+              type="number"
+              value={localSettings.minSizePackMb}
+              min={0}
+              onChange={e => updateSetting('minSizePackMb', parseInt(e.target.value) || 0)}
+              style={{ width: '100px' }}
+            />
+          </SettingsField>
+          <SettingsField label="Max Pack Size (MB)" description="Maximum size for pack/collection releases">
+            <input
+              type="number"
+              value={localSettings.maxSizePackMb}
+              min={0}
+              onChange={e => updateSetting('maxSizePackMb', parseInt(e.target.value) || 0)}
+              style={{ width: '100px' }}
+            />
+          </SettingsField>
+        </div>
+      </SettingsSection>
+
+      <SettingsSection title="Filtering">
+        <SettingsField label="Blacklist Words" description="Comma-separated words that disqualify a release">
+          <input
+            type="text"
+            value={localSettings.blacklistWords.join(', ')}
+            onChange={e => updateListSetting('blacklistWords', e.target.value)}
+            placeholder="sample, preview, watermark"
+            style={{ width: '100%' }}
+          />
+        </SettingsField>
+        <SettingsField label="Whitelist Words" description="Comma-separated required words (leave empty for no requirement)">
+          <input
+            type="text"
+            value={localSettings.whitelistWords.join(', ')}
+            onChange={e => updateListSetting('whitelistWords', e.target.value)}
+            placeholder=""
+            style={{ width: '100%' }}
+          />
+        </SettingsField>
+        <SettingsField label="Ignore Words" description="Comma-separated words to strip from release names during matching">
+          <input
+            type="text"
+            value={localSettings.ignoreWords.join(', ')}
+            onChange={e => updateListSetting('ignoreWords', e.target.value)}
+            placeholder="repack, proper, fixed"
+            style={{ width: '100%' }}
+          />
+        </SettingsField>
+      </SettingsSection>
+
+      <SettingsSection title="Automation">
+        <SettingsField label="Auto-Search Enabled" description="Automatically search for missing/wanted issues">
+          <input
+            type="checkbox"
+            checked={localSettings.autoSearchEnabled}
+            onChange={e => updateSetting('autoSearchEnabled', e.target.checked)}
+          />
+        </SettingsField>
+        <SettingsField label="Auto-Search Interval (hours)" description="How often to run automatic searches">
+          <input
+            type="number"
+            value={localSettings.autoSearchIntervalHours}
+            min={1}
+            max={168}
+            onChange={e => updateSetting('autoSearchIntervalHours', parseInt(e.target.value) || 24)}
+            style={{ width: '100px' }}
+          />
+        </SettingsField>
+        <SettingsField label="Search New Series on Add" description="Automatically search when adding a new series">
+          <input
+            type="checkbox"
+            checked={localSettings.searchNewSeriesOnAdd}
+            onChange={e => updateSetting('searchNewSeriesOnAdd', e.target.checked)}
+          />
+        </SettingsField>
+        <SettingsField label="Stale Search Threshold (days)" description="Re-search if not found after this many days (0 = disable)">
+          <input
+            type="number"
+            value={localSettings.staleSearchThresholdDays}
+            min={0}
+            max={365}
+            onChange={e => updateSetting('staleSearchThresholdDays', parseInt(e.target.value) || 0)}
+            style={{ width: '100px' }}
+          />
+        </SettingsField>
+      </SettingsSection>
     </>
   );
 }

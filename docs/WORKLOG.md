@@ -1,5 +1,82 @@
 # Worklog
 
+## Iteration 088 (2026-02-10)
+**Mylar3 Search Settings Parity (EPIC 14.6)**
+
+### Commits
+1. `feat: add search settings with Mylar3 parity`
+
+### Deliverables
+
+#### SearchSettings Entity
+- ✅ `SearchSettings.cs` - Comprehensive settings class with all Mylar3 options
+- ✅ Search behavior: delay, pack preference, tier cutoff, max results
+- ✅ Quality preferences: preferred quality enum, format ordering, CBZ-only
+- ✅ Size limits: min/max for singles and packs
+- ✅ Filtering: blacklist, whitelist, ignore words
+- ✅ Provider toggles: DDL, NZB, torrent enable/disable
+- ✅ Automation: auto-search, intervals, thresholds
+
+#### SearchSettingsService
+- ✅ `ISearchSettingsService` interface
+- ✅ `SearchSettingsService` implementation with caching
+- ✅ Settings persistence via ISettingsService
+- ✅ Comprehensive validation
+
+#### API Endpoints
+- ✅ `GET /api/v1/settings/search` - Get current settings
+- ✅ `PUT /api/v1/settings/search` - Update settings
+- ✅ `POST /api/v1/settings/search/reset` - Reset to defaults
+- ✅ `POST /api/v1/settings/search/validate` - Validate settings
+- ✅ `GET /api/v1/settings/search/defaults` - Get defaults
+
+#### Settings UI
+- ✅ New "Search" tab in Settings page
+- ✅ Provider Toggles section
+- ✅ Search Behavior section
+- ✅ Quality Preferences section
+- ✅ Size Limits section
+- ✅ Filtering section
+- ✅ Automation section
+- ✅ Save/Reset to Defaults buttons
+
+#### Unit Tests (20 tests)
+- `GetSettingsAsync_ReturnsDefaultsWhenNoSettingsStored`
+- `GetSettingsAsync_ReturnsStoredSettings`
+- `GetSettingsAsync_CachesResult`
+- `SaveSettingsAsync_SavesValidSettings`
+- `SaveSettingsAsync_ThrowsOnInvalidSettings`
+- `SaveSettingsAsync_UpdatesCache`
+- `ResetToDefaultsAsync_SavesDefaultSettings`
+- `ValidateSettings_AcceptsValidSettings`
+- `ValidateSettings_RejectsNegativeSearchDelay`
+- `ValidateSettings_RejectsNegativeMinSize`
+- `ValidateSettings_RejectsMinSizeGreaterThanMaxSize`
+- `ValidateSettings_RejectsMinPackSizeGreaterThanMaxPackSize`
+- `ValidateSettings_RejectsInvalidAutoSearchInterval`
+- `ValidateSettings_RejectsNegativeStaleThreshold`
+- `ValidateSettings_RejectsEmptyFormatPreference`
+- `ValidateSettings_RejectsNegativeSearchTierCutoff`
+- `ValidateSettings_RejectsInvalidMaxResults`
+- `SearchSettings_Default_HasCorrectValues`
+- `SearchSettings_Default_HasCorrectBlacklistWords`
+- `SearchSettings_Default_HasCorrectIgnoreWords`
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Search/SearchSettings.cs` | New - Search settings model |
+| `src/Shortboxerr.Core/Search/ISearchSettingsService.cs` | New - Service interface |
+| `src/Shortboxerr.Infrastructure/Search/SearchSettingsService.cs` | New - Service implementation |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register SearchSettingsService |
+| `src/Shortboxerr.Api/Endpoints/SearchSettingsEndpoints.cs` | New - API endpoints |
+| `src/Shortboxerr.Api/Program.cs` | Register search settings endpoints |
+| `ui/src/api/client.ts` | Add SearchSettings types and API functions |
+| `ui/src/pages/SettingsPage.tsx` | Add SearchSettingsTab component |
+| `tests/Shortboxerr.Tests/SearchSettingsServiceTests.cs` | New - 20 unit tests |
+
+---
+
 ## Iteration 087 (2026-02-10)
 **ReadComicOnline Production Enable & DDL Site Management (EPIC 14.5)**
 

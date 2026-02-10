@@ -366,11 +366,52 @@ export interface WeeklyExportInfo {
 export interface SeriesPullListSettingsDto {
   seriesId: number;
   monitoringModeOverride?: number | null;
-  includeAnnuals?: boolean | null;
-  includeSpecials?: boolean | null;
-  skipVariants?: boolean | null;
-  searchPriority: number;
 }
+
+// Search Settings
+export interface SearchSettings {
+  // Search Behavior
+  searchDelaySeconds: number;
+  preferPackReleases: boolean;
+  searchTierCutoff: number;
+  maxResultsPerProvider: number;
+  
+  // Quality Preferences
+  preferredQuality: PreferredQuality;
+  formatPreference: string[];
+  cbzOnly: boolean;
+  
+  // Size Limits
+  minSizeMb: number;
+  maxSizeMb: number;
+  minSizePackMb: number;
+  maxSizePackMb: number;
+  
+  // Filtering
+  blacklistWords: string[];
+  whitelistWords: string[];
+  ignoreWords: string[];
+  
+  // Provider Toggles
+  enableDdlSearch: boolean;
+  enableNzbSearch: boolean;
+  enableTorrentSearch: boolean;
+  
+  // Automation
+  autoSearchEnabled: boolean;
+  autoSearchIntervalHours: number;
+  searchNewSeriesOnAdd: boolean;
+  staleSearchThresholdDays: number;
+}
+
+// PreferredQuality values (matches backend enum)
+export type PreferredQuality = 0 | 1 | 2 | 3;
+export const PreferredQuality = {
+  Any: 0 as const,
+  Digital: 1 as const,
+  Webrip: 2 as const,
+  Scan: 3 as const,
+};
 
 // Discovery types for Mylar3 "This Week" parity
 export interface WeeklyDiscoveryList {
@@ -1603,6 +1644,28 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(settings),
     });
+  },
+
+  // Search Settings
+  getSearchSettings: async (): Promise<SearchSettings> => {
+    return fetchApi<SearchSettings>('/api/v1/settings/search');
+  },
+
+  updateSearchSettings: async (settings: SearchSettings): Promise<{ message: string }> => {
+    return fetchApi<{ message: string }>('/api/v1/settings/search', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+  },
+
+  resetSearchSettings: async (): Promise<{ message: string; settings: SearchSettings }> => {
+    return fetchApi<{ message: string; settings: SearchSettings }>('/api/v1/settings/search/reset', {
+      method: 'POST',
+    });
+  },
+
+  getSearchSettingsDefaults: async (): Promise<SearchSettings> => {
+    return fetchApi<SearchSettings>('/api/v1/settings/search/defaults');
   },
 
   // Weekly Export (Mylar3 Parity)
