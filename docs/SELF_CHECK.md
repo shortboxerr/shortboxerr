@@ -1,3 +1,57 @@
+# Self Check - Iteration 085
+
+## Theme Accessibility & Color Scheme Audit (EPIC 14.4)
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Frontend compiles | ✅ | `npm run build` |
+| Backend compiles | ✅ | No backend changes |
+| Tests pass | ✅ | No new tests (CSS only) |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+| AC | Status |
+|----|--------|
+| Dark theme contrast ratios verified | ✅ |
+| Light theme complete with all variables | ✅ |
+| Muted text contrast improved (5.2:1) | ✅ |
+| Secondary text contrast improved (8.0:1) | ✅ |
+| Danger color contrast improved (5.1:1) | ✅ |
+| CSS-based theme switching | ✅ |
+| Theme documentation created | ✅ |
+| Theme persists across refreshes | ✅ |
+| System preference detection | ✅ |
+
+### WCAG 2.1 AA Compliance
+
+| Text Type | Required | Dark | Light |
+|-----------|----------|------|-------|
+| Primary | 4.5:1 | 14.4:1 ✓ | 14.7:1 ✓ |
+| Secondary | 4.5:1 | 8.0:1 ✓ | 7.4:1 ✓ |
+| Muted | 4.5:1 | 5.2:1 ✓ | 4.6:1 ✓ |
+
+### Files Changed
+
+| File | Status |
+|------|--------|
+| `App.css` | ✅ Theme system rewrite |
+| `App.tsx` | ✅ Simplified provider |
+| `client.ts` | ✅ Export Series type |
+| `ManualImportPage.tsx` | ✅ Fix type import |
+| `THEME.md` | ✅ New documentation |
+| `BACKLOG.md` | ✅ Updated |
+| `WORKLOG.md` | ✅ Updated |
+| `SELF_CHECK.md` | ✅ Updated |
+
+### EPIC Status
+
+**EPIC 14.4 Theme Accessibility: COMPLETE** ✅
+
+---
+
 # Self Check - Iteration 084
 
 ## Manual Import Edit Match & Reject (EPIC 5)

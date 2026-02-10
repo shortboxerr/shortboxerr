@@ -4,7 +4,8 @@ import {
   FolderInput, RefreshCw, Check, X, Edit, ChevronRight, 
   FileArchive, AlertCircle, CheckCircle, Search, Loader2
 } from 'lucide-react';
-import { api, Series } from '../api/client';
+import { api } from '../api/client';
+import type { Series } from '../api/client';
 
 // Interface for staged files
 interface StagedFile {
@@ -492,7 +493,7 @@ function EditMatchModal({
                 >
                   <div style={{ fontWeight: 500, marginBottom: '2px' }}>{s.title}</div>
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                    {s.publisher} • {s.startYear && `${s.startYear}`}
+                    {s.publisher}{s.year && ` • ${s.year}`}
                     {s.issueCount && ` • ${s.issueCount} issues`}
                   </div>
                 </div>

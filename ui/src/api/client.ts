@@ -95,10 +95,11 @@ interface ApiSeries {
 }
 
 // UI-friendly format for Series
-interface Series {
+export interface Series {
   id: number;
   title: string;
   year: number | null;
+  startYear?: number | null;
   publisher: string | null;
   status: string;
   issueCount: number;

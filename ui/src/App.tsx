@@ -71,34 +71,14 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [uiSettings]);
 
   // Apply theme to document
+  // Theme variables are defined in CSS via [data-theme="light"] selector
+  // This approach is more maintainable and ensures all variables are properly scoped
   useEffect(() => {
     const newEffectiveTheme = theme === 'system' ? getSystemTheme() : theme;
     setEffectiveTheme(newEffectiveTheme);
     
-    // Apply theme class to document
+    // Apply theme via data attribute - CSS handles the variable values
     document.documentElement.dataset.theme = newEffectiveTheme;
-    
-    // Also update CSS custom properties for immediate effect
-    if (newEffectiveTheme === 'light') {
-      document.documentElement.style.setProperty('--bg-primary', '#f8f9fa');
-      document.documentElement.style.setProperty('--bg-secondary', '#ffffff');
-      document.documentElement.style.setProperty('--bg-tertiary', '#e9ecef');
-      document.documentElement.style.setProperty('--bg-active', '#dee2e6');
-      document.documentElement.style.setProperty('--text-primary', '#212529');
-      document.documentElement.style.setProperty('--text-secondary', '#495057');
-      document.documentElement.style.setProperty('--text-muted', '#6c757d');
-      document.documentElement.style.setProperty('--border-color', '#dee2e6');
-    } else {
-      // Reset to dark theme (default CSS variables)
-      document.documentElement.style.removeProperty('--bg-primary');
-      document.documentElement.style.removeProperty('--bg-secondary');
-      document.documentElement.style.removeProperty('--bg-tertiary');
-      document.documentElement.style.removeProperty('--bg-active');
-      document.documentElement.style.removeProperty('--text-primary');
-      document.documentElement.style.removeProperty('--text-secondary');
-      document.documentElement.style.removeProperty('--text-muted');
-      document.documentElement.style.removeProperty('--border-color');
-    }
   }, [theme]);
 
   // Listen for system theme changes
