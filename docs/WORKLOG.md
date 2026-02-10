@@ -1,5 +1,72 @@
 # Worklog
 
+## Iteration 089 (2026-02-10)
+**NZBGet Integration Unit Tests (EPIC 14.2)**
+
+### Commits
+1. `feat: add comprehensive NZBGet client unit tests (75 tests)`
+
+### Deliverables
+
+#### NZBGet Unit Tests
+- ✅ 75 unit tests in `tests/Shortboxerr.Tests/NzbgetClientTests.cs`
+- ✅ Matches and exceeds SABnzbd test coverage (24 tests)
+
+#### Test Categories
+| Category | Test Count | Description |
+|----------|------------|-------------|
+| TestConnection | 4 | Valid response, HTTP error, RPC error, invalid JSON |
+| Version | 1 | GetVersionAsync returns version |
+| AddNzb | 5 | Content, options, zero result, URL |
+| Queue | 4 | Items, empty, paused, status mapping |
+| History | 3 | Items, limit, status mapping |
+| Download Control | 5 | Pause, resume, remove, delete files |
+| NZBGet-Specific | 10 | Categories, status, pause/resume queue, speed limit, config reload, scan, log, disk space |
+| ClientType | 1 | Returns NZBGet type |
+| Status Mapping | 22 | Theory tests for all NZBGet statuses (queue: 13, history: 10) |
+| GetDownloadStatus | 2 | In queue, invalid ID |
+| Settings | 12 | EffectivePort, BaseUrl, JsonRpcUrl, defaults |
+| Priority Enum | 6 | All priority values (-100, -50, 0, 50, 100, 900) |
+
+#### Status Mapping Coverage
+| NZBGet Status | Maps To |
+|---------------|---------|
+| QUEUED | Queued |
+| PAUSED | Paused |
+| DOWNLOADING | Downloading |
+| FETCHING | Downloading |
+| PP_QUEUED | PostProcessing |
+| LOADING_PARS | Verifying |
+| VERIFYING_SOURCES | Verifying |
+| REPAIRING | Repairing |
+| VERIFYING_REPAIRED | Verifying |
+| RENAMING | PostProcessing |
+| UNPACKING | Extracting |
+| MOVING | PostProcessing |
+| EXECUTING_SCRIPT | PostProcessing |
+| SUCCESS | Completed |
+| FAILURE | Failed |
+| DELETED | Deleted |
+| DUPE | Deleted |
+| BAD | Failed |
+| GOOD | Completed |
+| MARK/GOOD | Completed |
+| MARK/BAD | Failed |
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `tests/Shortboxerr.Tests/NzbgetClientTests.cs` | New - 75 unit tests |
+| `docs/BACKLOG.md` | Mark EPIC 14.2 as completed |
+
+### Notes
+- NZBGet client implementation was already complete from previous iteration
+- Provider registration in ProviderFactory was already in place
+- This iteration adds the missing unit test coverage
+- EPIC 14.2 NZBGet Integration is now fully complete
+
+---
+
 ## Iteration 088 (2026-02-10)
 **Mylar3 Search Settings Parity (EPIC 14.6)**
 

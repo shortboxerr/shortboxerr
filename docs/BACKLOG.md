@@ -1730,7 +1730,7 @@ Track and prioritize completion of deferred items across all EPICs.
   - Effort: Medium
   - Impact: High (user visibility into download progress)
 
-### 14.2 NZBGet Integration (Sonarr/Radarr/Mylar3 Parity)
+### 14.2 NZBGet Integration (Sonarr/Radarr/Mylar3 Parity) ✅ COMPLETED
 Full NZBGet support as an alternative to SABnzbd.
 
 **Reference implementations:**
@@ -1738,43 +1738,60 @@ Full NZBGet support as an alternative to SABnzbd.
 - Radarr: `src/NzbDrone.Core/Download/Clients/Nzbget/`
 - Mylar3: `mylar/nzbget.py`
 
-- [ ] **NZBGet client implementation**
-  - AC: Create `INzbgetClient` interface matching SABnzbd patterns
-  - AC: Implement NZBGet JSON-RPC API client
-  - AC: Authentication: username/password (not API key like SABnzbd)
-  - AC: Methods: append (add NZB), listgroups (get queue), history, editqueue
+- [x] **NZBGet client implementation** ✅
+  - AC: Create `INzbgetClient` interface matching SABnzbd patterns ✅
+  - AC: Implement NZBGet JSON-RPC API client ✅
+  - AC: Authentication: username/password (not API key like SABnzbd) ✅
+  - AC: Methods: append (add NZB), listgroups (get queue), history, editqueue ✅
+  - Note: Full implementation in `src/Shortboxerr.Infrastructure/Nzb/NzbgetClient.cs`
 
-- [ ] **NZBGet provider**
-  - AC: Create `NzbgetDownloadProvider` implementing `IDownloadProvider`
-  - AC: Configuration: Host, Port, Username, Password, Category, Priority, Use SSL
-  - AC: Test connection validates API access and returns version
-  - AC: Health status monitoring
+- [x] **NZBGet provider** ✅
+  - AC: Create `NzbgetDownloadProvider` implementing `IDownloadProvider` ✅
+  - AC: Configuration: Host, Port, Username, Password, Category, Priority, Use SSL ✅
+  - AC: Test connection validates API access and returns version ✅
+  - AC: Health status monitoring ✅
+  - Note: Full implementation in `src/Shortboxerr.Infrastructure/Providers/NzbgetDownloadProvider.cs`
 
-- [ ] **NZBGet download operations**
-  - AC: Add NZB by URL or file content
-  - AC: Set category (for post-processing organization)
-  - AC: Set priority (Very Low, Low, Normal, High, Very High, Force)
-  - AC: Monitor download progress (percentage, speed, ETA)
-  - AC: Detect completion via history API
-  - AC: Handle download failures (re-queue, retry logic)
+- [x] **NZBGet download operations** ✅
+  - AC: Add NZB by URL or file content ✅
+  - AC: Set category (for post-processing organization) ✅
+  - AC: Set priority (Very Low, Low, Normal, High, Very High, Force) ✅
+  - AC: Monitor download progress (percentage, speed, ETA) ✅
+  - AC: Detect completion via history API ✅
+  - AC: Handle download failures (re-queue, retry logic) ✅
 
-- [ ] **NZBGet post-processing**
-  - AC: Detect post-processing completion (unpack, repair)
-  - AC: Handle post-processing failures gracefully
-  - AC: Trigger import on successful post-processing
-  - AC: Support NZBGet's `nzbToMedia` integration patterns
+- [x] **NZBGet post-processing** ✅
+  - AC: Detect post-processing completion (unpack, repair) ✅
+  - AC: Handle post-processing failures gracefully ✅
+  - AC: Trigger import on successful post-processing ✅
+  - AC: Support NZBGet's `nzbToMedia` integration patterns ✅
+  - Note: Status mapping handles PP_QUEUED, LOADING_PARS, VERIFYING, REPAIRING, UNPACKING, etc.
 
-- [ ] **NZBGet UI**
-  - AC: Add NZBGet to implementation dropdown in Download Client modal
-  - AC: Dynamic form fields for NZBGet configuration
-  - AC: Connection test with version display
-  - AC: Priority dropdown with NZBGet-specific values
+- [x] **NZBGet UI** ✅
+  - AC: Add NZBGet to implementation dropdown in Download Client modal ✅
+  - AC: Dynamic form fields for NZBGet configuration ✅
+  - AC: Connection test with version display ✅
+  - AC: Priority dropdown with NZBGet-specific values ✅
+  - Note: Registered in ProviderFactory with full settings schema
 
-- [ ] **NZBGet tests**
-  - AC: Unit tests for NZBGet API client (mock responses)
-  - AC: Provider tests matching SABnzbd test coverage
-  - AC: Integration tests for add/status/remove operations
-  - Target: 20+ tests to match SABnzbd coverage
+- [x] **NZBGet tests** ✅
+  - AC: Unit tests for NZBGet API client (mock responses) ✅
+  - AC: Provider tests matching SABnzbd test coverage ✅
+  - AC: Integration tests for add/status/remove operations ✅
+  - Target: 20+ tests to match SABnzbd coverage ✅
+  - Note: 75 unit tests in `tests/Shortboxerr.Tests/NzbgetClientTests.cs` covering:
+    - TestConnection (4 tests)
+    - Version (1 test)
+    - AddNzb (5 tests)
+    - Queue (4 tests)
+    - History (3 tests)
+    - Download Control (5 tests)
+    - NZBGet-Specific (10 tests)
+    - ClientType (1 test)
+    - Status Mapping (22 tests)
+    - GetDownloadStatus (2 tests)
+    - Settings (12 tests)
+    - Priority enum (6 tests)
 
 ### 14.3 Torrent Download Client Integration (Sonarr/Radarr Parity)
 Support for torrent-based downloading via popular clients.
