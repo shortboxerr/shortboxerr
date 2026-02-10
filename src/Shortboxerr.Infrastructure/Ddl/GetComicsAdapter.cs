@@ -235,6 +235,66 @@ public partial class GetComicsAdapter : BaseDdlSiteAdapter
     }
     
     /// <summary>
+    /// Gets releases from a publisher via its RSS feed.
+    /// Note: In GetComics, publishers are treated as categories, so this delegates to GetCategoryRssFeedAsync.
+    /// This method exists for API parity with ReadComicOnlineAdapter.
+    /// </summary>
+    /// <param name="publisher">Publisher name (e.g., "DC", "Marvel", "Image")</param>
+    /// <param name="limit">Maximum number of items to return</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Search result containing candidates from the publisher RSS feed</returns>
+    public Task<DdlSearchResult> GetPublisherRssFeedAsync(string publisher, int limit = 50, CancellationToken cancellationToken = default)
+    {
+        // Map common publisher names to GetComics category slugs
+        var categorySlug = publisher.ToLowerInvariant() switch
+        {
+            "dc" or "dc comics" => DdlCategories.DC,
+            "marvel" or "marvel comics" => DdlCategories.Marvel,
+            "image" or "image comics" => DdlCategories.Image,
+            "dark horse" or "darkhorse" or "dark horse comics" => DdlCategories.DarkHorse,
+            "idw" or "idw publishing" => DdlCategories.IDW,
+            "boom" or "boom studios" or "boom! studios" => DdlCategories.Boom,
+            "dynamite" or "dynamite entertainment" => DdlCategories.Dynamite,
+            "valiant" or "valiant comics" => DdlCategories.Valiant,
+            "aftershock" or "aftershock comics" => DdlCategories.Aftershock,
+            "archie" or "archie comics" => DdlCategories.Archie,
+            _ => publisher.ToLowerInvariant().Replace(" ", "-")
+        };
+
+        return GetCategoryRssFeedAsync(categorySlug, limit, cancellationToken);
+    }
+
+    /// <summary>
+    /// Gets releases from a publisher via HTML scraping.
+    /// Note: In GetComics, publishers are treated as categories, so this delegates to GetCategoryAsync.
+    /// This method exists for API parity with ReadComicOnlineAdapter.
+    /// </summary>
+    /// <param name="publisher">Publisher name (e.g., "DC", "Marvel", "Image")</param>
+    /// <param name="limit">Maximum number of items to return</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Search result containing candidates from the publisher</returns>
+    public Task<DdlSearchResult> GetPublisherAsync(string publisher, int limit = 50, CancellationToken cancellationToken = default)
+    {
+        // Map common publisher names to GetComics category slugs
+        var categorySlug = publisher.ToLowerInvariant() switch
+        {
+            "dc" or "dc comics" => DdlCategories.DC,
+            "marvel" or "marvel comics" => DdlCategories.Marvel,
+            "image" or "image comics" => DdlCategories.Image,
+            "dark horse" or "darkhorse" or "dark horse comics" => DdlCategories.DarkHorse,
+            "idw" or "idw publishing" => DdlCategories.IDW,
+            "boom" or "boom studios" or "boom! studios" => DdlCategories.Boom,
+            "dynamite" or "dynamite entertainment" => DdlCategories.Dynamite,
+            "valiant" or "valiant comics" => DdlCategories.Valiant,
+            "aftershock" or "aftershock comics" => DdlCategories.Aftershock,
+            "archie" or "archie comics" => DdlCategories.Archie,
+            _ => publisher.ToLowerInvariant().Replace(" ", "-")
+        };
+
+        return GetCategoryAsync(categorySlug, limit, cancellationToken);
+    }
+
+    /// <summary>
     /// Gets all available categories with their display names.
     /// </summary>
     /// <returns>Dictionary of category slug to display name</returns>
