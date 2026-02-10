@@ -6,7 +6,6 @@ using Shortboxerr.Core.Models;
 using Shortboxerr.Core.Nzb;
 using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.Persistence;
-using System.IO.Compression;
 
 namespace Shortboxerr.Infrastructure.Nzb;
 
@@ -20,6 +19,7 @@ public class NzbImportService : INzbImportService
     private readonly IFilenameParser _filenameParser;
     private readonly IStagingService _stagingService;
     private readonly ISettingsService _settingsService;
+    private readonly IArchiveExtractor _archiveExtractor;
     private readonly ILogger<NzbImportService> _logger;
     private readonly string _stagingFolder;
     private readonly string[] _comicExtensions = { ".cbz", ".cbr", ".pdf", ".epub" };
@@ -34,6 +34,7 @@ public class NzbImportService : INzbImportService
         IFilenameParser filenameParser,
         IStagingService stagingService,
         ISettingsService settingsService,
+        IArchiveExtractor archiveExtractor,
         IConfiguration configuration,
         ILogger<NzbImportService> logger)
     {
@@ -42,6 +43,7 @@ public class NzbImportService : INzbImportService
         _filenameParser = filenameParser;
         _stagingService = stagingService;
         _settingsService = settingsService;
+        _archiveExtractor = archiveExtractor;
         _logger = logger;
         
         _stagingFolder = Environment.GetEnvironmentVariable("SHORTBOXERR_STAGING") 
@@ -302,29 +304,37 @@ public class NzbImportService : INzbImportService
     private async Task<List<string>> ExtractArchiveAsync(string archivePath, CancellationToken cancellationToken)
     {
         var extractedFiles = new List<string>();
-        var ext = Path.GetExtension(archivePath).ToLowerInvariant();
         
         try
         {
-            if (ext == ".zip")
+            // Check if archive type is supported
+            if (!_archiveExtractor.IsSupportedArchive(archivePath))
             {
-                var extractDir = Path.Combine(
-                    Path.GetDirectoryName(archivePath) ?? "",
-                    Path.GetFileNameWithoutExtension(archivePath) + "_extracted");
-                
-                if (!Directory.Exists(extractDir))
-                {
-                    Directory.CreateDirectory(extractDir);
-                    await Task.Run(() => ZipFile.ExtractToDirectory(archivePath, extractDir), cancellationToken);
-                    
-                    extractedFiles.AddRange(Directory.EnumerateFiles(extractDir, "*", SearchOption.AllDirectories));
-                    _logger.LogInformation("Extracted {Count} files from {Archive}", extractedFiles.Count, archivePath);
-                }
+                _logger.LogWarning("Unsupported archive format: {Archive}", archivePath);
+                return extractedFiles;
             }
-            else if (ext == ".rar" || ext == ".7z")
+
+            // Extract to sibling directory
+            var result = await _archiveExtractor.ExtractToSiblingDirectoryAsync(archivePath, cancellationToken);
+            
+            if (result.Success)
             {
-                // RAR/7z extraction requires external tools - log and skip for now
-                _logger.LogWarning("RAR/7z extraction not yet implemented: {Archive}", archivePath);
+                extractedFiles.AddRange(result.ExtractedFiles);
+                _logger.LogInformation(
+                    "Extracted {Count} files ({Size:N0} bytes) from {Archive} ({Type}) in {Duration}ms",
+                    result.FileCount,
+                    result.TotalExtractedSize,
+                    Path.GetFileName(archivePath),
+                    result.ArchiveType,
+                    result.Duration.TotalMilliseconds);
+            }
+            else if (result.IsPasswordProtected)
+            {
+                _logger.LogWarning("Archive is password-protected, skipping: {Archive}", archivePath);
+            }
+            else
+            {
+                _logger.LogError("Failed to extract archive: {Archive} - {Error}", archivePath, result.ErrorMessage);
             }
         }
         catch (Exception ex)

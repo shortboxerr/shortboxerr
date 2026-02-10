@@ -856,7 +856,7 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
 - [x] **Post-download detection** ✅
   - AC: Monitor SABnzbd/NZBGet for completed downloads ✅
   - AC: Detect completed comic files in download directory ✅
-  - AC: Handle unpacking (RAR, ZIP) automatically ✅ (ZIP supported, RAR/7z deferred)
+  - AC: Handle unpacking (RAR, ZIP, 7z) automatically ✅
 - [x] **Import integration** ✅
   - AC: Move completed files to staging ✅
   - AC: Auto-match to series/issue ✅
@@ -1723,7 +1723,7 @@ Track and prioritize completion of deferred items across all EPICs.
 | **P1 - High Value, Low Effort** |||||
 | ~~1~~ | ~~Activity integration for downloads~~ | 10 | M | H | ✅ Completed |
 | ~~2~~ | ~~UI indicators (filter/sort by status)~~ | 11 | S | H | ✅ Completed |
-| 3 | RAR/7z unpacking support | 10 | S | M | SharpCompress library |
+| ~~3~~ | ~~RAR/7z unpacking support~~ | 10 | S | M | ✅ Completed |
 | 4 | Site availability checks | 8 | M | H | None |
 | **P2 - High Value, Medium Effort** |||||
 | 5 | Auto-search on release | 11 | M | H | None |
@@ -1770,10 +1770,9 @@ Track and prioritize completion of deferred items across all EPICs.
    - Filter/sort series list by status
    - Note: Endpoint + UI + 18 tests
 
-3. **RAR/7z unpacking** (EPIC 10)
-   - SharpCompress library already handles ZIP
-   - Add RAR and 7z support
-   - Small effort for common archive formats
+3. ~~**RAR/7z unpacking** (EPIC 10)~~ ✅ COMPLETED
+   - Added SharpCompress library for RAR/7z support
+   - Note: IArchiveExtractor service + 37 tests
 
 4. **Site availability checks** (EPIC 8)
    - Periodic health checks for DDL sites

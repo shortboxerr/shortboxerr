@@ -1,5 +1,68 @@
 # Worklog
 
+## Iteration 094 (2026-02-10)
+**RAR/7z Archive Unpacking Support (EPIC 10 - P1 Item)**
+
+### Commits
+1. `feat: add RAR/7z archive extraction support (37 tests)`
+
+### Deliverables
+
+#### Archive Extraction Service
+- ✅ `IArchiveExtractor` interface with methods:
+  - `ExtractAsync` - Extract to specified directory
+  - `ExtractToSiblingDirectoryAsync` - Extract to adjacent folder
+  - `ListFilesAsync` - List archive contents
+  - `IsSupportedArchive` - Check if format is supported
+  - `GetArchiveType` - Detect archive type
+- ✅ `ArchiveExtractionResult` with detailed extraction info:
+  - Success/failure status
+  - List of extracted files
+  - Total size extracted
+  - Duration
+  - Password-protected detection
+- ✅ `ArchiveType` enum (Unknown, Zip, Rar, SevenZip, Tar, GZip, BZip2)
+
+#### Implementation (SharpCompress)
+- ✅ Added SharpCompress 0.36.0 NuGet package
+- ✅ Support for ZIP/CBZ (PK magic bytes)
+- ✅ Support for RAR/CBR (Rar! magic bytes)
+- ✅ Support for 7z (7z magic bytes)
+- ✅ Support for TAR, GZip, BZip2
+- ✅ Magic byte detection for files without extensions
+- ✅ Path sanitization to prevent directory traversal
+- ✅ Password-protected archive detection
+
+#### NzbImportService Updates
+- ✅ Integrated `IArchiveExtractor` into NZB import pipeline
+- ✅ Logs archive type and extraction duration
+- ✅ Handles password-protected archives gracefully
+- ✅ Registered in DI container
+
+#### Unit Tests (37 tests)
+| Category | Count | Description |
+|----------|-------|-------------|
+| Extension Detection | 10 | ZIP, CBZ, RAR, CBR, 7z, TAR, GZ, unsupported |
+| IsSupportedArchive | 10 | Various file types |
+| ZIP Extraction | 4 | Valid, empty, CBZ, sibling directory |
+| List Files | 3 | Valid, nonexistent, unsupported |
+| Error Handling | 4 | Nonexistent, unsupported, corrupted, cancelled |
+| Magic Bytes | 4 | ZIP, RAR, 7z, GZip |
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Services/IArchiveExtractor.cs` | New - Interface and DTOs |
+| `src/Shortboxerr.Infrastructure/Services/ArchiveExtractor.cs` | New - SharpCompress implementation |
+| `src/Shortboxerr.Infrastructure/Nzb/NzbImportService.cs` | Updated - Use IArchiveExtractor |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Registered IArchiveExtractor |
+| `src/Shortboxerr.Infrastructure/Shortboxerr.Infrastructure.csproj` | Added SharpCompress package |
+| `tests/Shortboxerr.Tests/ArchiveExtractorTests.cs` | New - 37 unit tests |
+| `tests/Shortboxerr.Tests/NzbImportServiceTests.cs` | Updated - Added IArchiveExtractor mock |
+| `docs/BACKLOG.md` | Marked RAR/7z support complete |
+
+---
+
 ## Iteration 093 (2026-02-10)
 **Series List Filtering and Sorting (EPIC 11 - P1 Item)**
 

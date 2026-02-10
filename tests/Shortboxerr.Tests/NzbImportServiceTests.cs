@@ -22,6 +22,7 @@ public class NzbImportServiceTests : IDisposable
     private readonly Mock<IFilenameParser> _mockParser;
     private readonly Mock<IStagingService> _mockStagingService;
     private readonly Mock<ISettingsService> _mockSettingsService;
+    private readonly Mock<IArchiveExtractor> _mockArchiveExtractor;
     private readonly NzbImportService _service;
     private readonly string _tempDir;
 
@@ -37,6 +38,7 @@ public class NzbImportServiceTests : IDisposable
         _mockParser = new Mock<IFilenameParser>();
         _mockStagingService = new Mock<IStagingService>();
         _mockSettingsService = new Mock<ISettingsService>();
+        _mockArchiveExtractor = new Mock<IArchiveExtractor>();
 
         // Create temp directory for tests
         _tempDir = Path.Combine(Path.GetTempPath(), "shortboxerr_test_" + Guid.NewGuid().ToString("N"));
@@ -55,6 +57,7 @@ public class NzbImportServiceTests : IDisposable
             _mockParser.Object,
             _mockStagingService.Object,
             _mockSettingsService.Object,
+            _mockArchiveExtractor.Object,
             configuration,
             NullLogger<NzbImportService>.Instance);
     }
