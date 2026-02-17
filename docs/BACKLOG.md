@@ -2285,12 +2285,12 @@ Fix Applied:
 
 - [x] **Toggle wanted status button**
   - AC: If issue is Wanted, show "Skip" button ✅
-  - AC: If issue is Skipped/Missing, show "Mark as Wanted" button ✅
+  - AC: If issue is Skipped/Owned, show "Mark as Wanted" button ✅ (re-search)
   - AC: One-click toggle (no confirmation for status changes) ✅
-  - AC: Owned status set automatically by import only (Mylar3 parity) ✅
+  - AC: Can mark ANY issue as Wanted/Skipped (true Mylar3 parity) ✅
 
 - [x] **Visual status feedback**
-  - AC: Status badge updates immediately on toggle ✅ (cache invalidation)
+  - AC: Status badge updates immediately on toggle ✅ (cache invalidation fixed)
   - AC: Toast/notification confirming change - Not implemented (deferred)
   - AC: Optimistic UI update (don't wait for server response) ✅ (via mutation)
 

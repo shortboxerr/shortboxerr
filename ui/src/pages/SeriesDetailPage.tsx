@@ -511,19 +511,19 @@ function IssueCoverCard({ issue, selected, onSelect, onMarkWanted, onMarkSkipped
                 <ExternalLink size={14} />
               </button>
             )}
-            {/* Status toggle buttons - only for non-owned issues */}
-            {/* Owned status is set automatically by import, not manually */}
-            {status !== 'owned' && status !== 'wanted' && (
+            {/* Status toggle buttons - Mylar3 parity: can mark ANY issue as Wanted/Skipped */}
+            {/* Marking an owned issue as Wanted triggers a re-search (replace/upgrade) */}
+            {status !== 'wanted' && (
               <button 
                 className="btn btn-icon btn-sm btn-action" 
                 onClick={onMarkWanted}
                 disabled={isUpdating}
-                title="Mark as Wanted"
+                title={status === 'owned' ? "Re-search for this issue" : "Mark as Wanted"}
               >
                 <Clock size={14} />
               </button>
             )}
-            {status !== 'owned' && status !== 'skipped' && (
+            {status !== 'skipped' && (
               <button 
                 className="btn btn-icon btn-sm btn-action" 
                 onClick={onMarkSkipped}
@@ -710,19 +710,19 @@ function IssueListRow({ issue, selected, onSelect, onMarkWanted, onMarkSkipped, 
               <ExternalLink size={14} />
             </a>
           )}
-          {/* Status toggle buttons - only for non-owned issues */}
-          {/* Owned status is set automatically by import, not manually */}
-          {status !== 'owned' && status !== 'wanted' && (
+          {/* Status toggle buttons - Mylar3 parity: can mark ANY issue as Wanted/Skipped */}
+          {/* Marking an owned issue as Wanted triggers a re-search (replace/upgrade) */}
+          {status !== 'wanted' && (
             <button 
               className="btn btn-icon btn-sm" 
               onClick={onMarkWanted}
               disabled={isUpdating}
-              title="Mark as Wanted"
+              title={status === 'owned' ? "Re-search" : "Mark as Wanted"}
             >
               <Clock size={14} />
             </button>
           )}
-          {status !== 'owned' && status !== 'skipped' && (
+          {status !== 'skipped' && (
             <button 
               className="btn btn-icon btn-sm" 
               onClick={onMarkSkipped}

@@ -25,17 +25,18 @@
 #### 15.7 Issue Status Toggle - FIXED + MYLAR3 PARITY
 **Bug Found:** Status toggle wasn't working due to:
 1. JSON enum serialization expecting numeric values but UI sending strings
-2. No business rules enforcing proper status transitions
+2. Caching issue - series issues cache not being invalidated on status change
 
 **Fix Applied:**
 - Added `JsonStringEnumConverter` to accept string enum values in API
-- Implemented Mylar3-compatible status rules:
-  - **Owned**: Only set automatically when file is imported (not manually settable)
-  - **Wanted**: Can be toggled for any issue without a file
-  - **Skipped**: Can be toggled for any issue without a file
-  - Issues with files are locked to "Owned" status
-- Removed manual "Mark as Owned" button from UI
-- Bulk actions now only show Wanted/Skip options
+- Fixed cache invalidation to include series cache
+- Implemented TRUE Mylar3-compatible status rules:
+  - **Any status can be set on ANY issue** (including owned issues)
+  - **Wanted on Owned**: Triggers re-search for better version (upgrade/replace)
+  - **HasFile is separate from Status**: Status and file presence are independent
+  - This matches Mylar3 behavior where you can mark a "Downloaded" issue as "Wanted" to search again
+- UI shows Wanted/Skipped buttons for ALL issues (including owned)
+- Button tooltip changes contextually: "Re-search" for owned issues, "Mark as Wanted" for others
 
 ### Files Changed
 - `ui/src/pages/SeriesDetailPage.tsx` (ComicVine links + removed Owned button)
