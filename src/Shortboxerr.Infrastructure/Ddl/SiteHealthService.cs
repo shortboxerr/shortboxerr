@@ -581,7 +581,7 @@ public class SiteHealthService : ISiteHealthService, IHostedService, IDisposable
         {
             return HealthCheckFailureType.HttpError;
         }
-        if (lower.Contains("parse") || lower.Contains("format") || lower.Contains("invalid"))
+        if (lower.Contains("parse") || lower.Contains("parsing") || lower.Contains("format") || lower.Contains("invalid"))
         {
             return HealthCheckFailureType.ParseError;
         }
