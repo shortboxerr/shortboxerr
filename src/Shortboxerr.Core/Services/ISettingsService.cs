@@ -131,6 +131,16 @@ public class UiSettings
     /// Whether to show relative timestamps (e.g., "2 hours ago").
     /// </summary>
     public bool RelativeTimestamps { get; set; } = true;
+
+    /// <summary>
+    /// Preferred view mode for issues in series detail view: "cover" or "list"
+    /// </summary>
+    public string IssueViewMode { get; set; } = "cover";
+
+    /// <summary>
+    /// Preferred display mode for pull list: "list" or "grid"
+    /// </summary>
+    public string PullListDisplayMode { get; set; } = "list";
 }
 
 /// <summary>

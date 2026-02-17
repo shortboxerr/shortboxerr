@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Calendar, 
@@ -120,6 +120,35 @@ export function PullListPage() {
   const [sortColumn, setSortColumn] = useState<SortColumn>('series');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+
+  // Load UI settings for view preference persistence
+  const { data: uiSettings } = useQuery({
+    queryKey: ['settings', 'ui'],
+    queryFn: () => api.getUiSettings(),
+  });
+
+  // Sync display mode from settings when loaded
+  useEffect(() => {
+    if (uiSettings?.pullListDisplayMode) {
+      setDisplayMode(uiSettings.pullListDisplayMode);
+    }
+  }, [uiSettings?.pullListDisplayMode]);
+
+  // Save display mode preference mutation
+  const saveDisplayModePreference = useMutation({
+    mutationFn: async (newDisplayMode: DisplayMode) => {
+      await api.updateUiSettings({ pullListDisplayMode: newDisplayMode });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings', 'ui'] });
+    },
+  });
+
+  // Handle display mode change with persistence
+  const handleDisplayModeChange = (newMode: DisplayMode) => {
+    setDisplayMode(newMode);
+    saveDisplayModePreference.mutate(newMode);
+  };
 
   // Calculate week date based on offset - memoized to ensure stable reference
   const weekDate = useMemo(() => {
@@ -1226,18 +1255,18 @@ export function PullListPage() {
             </div>
           )}
 
-          {/* Display mode toggle */}
+          {/* Display mode toggle - persisted to user settings */}
           <div className="toolbar-group btn-group">
             <button 
               className={`btn btn-icon ${displayMode === 'list' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setDisplayMode('list')}
+              onClick={() => handleDisplayModeChange('list')}
               title="List View"
             >
               <List size={18} />
             </button>
             <button 
               className={`btn btn-icon ${displayMode === 'grid' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setDisplayMode('grid')}
+              onClick={() => handleDisplayModeChange('grid')}
               title="Cover View"
             >
               <Grid size={18} />

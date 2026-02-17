@@ -787,6 +787,7 @@ export interface UiSettings {
   showFileSizes: boolean;
   relativeTimestamps: boolean;
   issueViewMode: 'cover' | 'list';
+  pullListDisplayMode: 'list' | 'grid';
 }
 
 export interface GeneralSettings {
@@ -1403,7 +1404,7 @@ export const api = {
     try {
       return await fetchApi<UiSettings>('/api/v1/settings/ui');
     } catch {
-      return { theme: 'dark', pageSize: 50, showFileSizes: true, relativeTimestamps: true, issueViewMode: 'cover' };
+      return { theme: 'dark', pageSize: 50, showFileSizes: true, relativeTimestamps: true, issueViewMode: 'cover', pullListDisplayMode: 'list' };
     }
   },
 
