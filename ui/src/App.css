@@ -1104,18 +1104,30 @@ body {
   box-shadow: 0 0 0 2px rgba(93, 156, 236, 0.3);
 }
 
-.issue-card-selected {
+.issue-card-checkbox {
   position: absolute;
   top: 6px;
   left: 6px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--accent-primary);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.issue-card:hover .issue-card-checkbox,
+.issue-card.selected .issue-card-checkbox {
+  opacity: 1;
+}
+
+.issue-card-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--accent-primary);
+}
+
+/* Hide the old selected indicator when checkbox is shown */
+.issue-card-selected {
+  display: none;
 }
 
 /* Issue Card Special Badges */

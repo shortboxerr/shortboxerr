@@ -531,6 +531,15 @@ function IssueCoverCard({ issue, selected, onSelect, onMarkWanted, onMarkSkipped
           {status === 'wanted' && <Clock size={14} />}
           {status === 'skipped' && <X size={14} />}
         </div>
+        {/* Selection checkbox - always visible for easy toggle */}
+        <div className="issue-card-checkbox" onClick={(e) => { e.stopPropagation(); onSelect(); }}>
+          <input 
+            type="checkbox" 
+            checked={selected} 
+            onChange={onSelect}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
         {selected && <div className="issue-card-selected"><Check size={16} /></div>}
         
         {/* Special Issue Badges */}
