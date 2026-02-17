@@ -233,6 +233,7 @@ app.MapDecisionEngineEndpoints();
 app.MapProviderEndpoints();
 app.MapDdlImportEndpoints();
 app.MapDdlSiteEndpoints();
+app.MapSiteHealthEndpoints();
 app.MapSearchSettingsEndpoints();
 app.MapPullListEndpoints();
 app.MapNotificationEndpoints();

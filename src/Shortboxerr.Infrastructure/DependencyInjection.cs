@@ -26,7 +26,6 @@ using Shortboxerr.Infrastructure.Services;
 using Shortboxerr.Core.Activity;
 using Shortboxerr.Core.Search;
 using Shortboxerr.Infrastructure.Activity;
-using Shortboxerr.Infrastructure.Services;
 
 namespace Shortboxerr.Infrastructure;
 
@@ -76,6 +75,11 @@ public static class DependencyInjection
         services.AddSingleton<IDdlRateLimiter, DdlRateLimiter>();
         services.AddSingleton<IDdlSiteAdapterFactory, DdlSiteAdapterFactory>();
         services.AddSingleton<IDdlSearchService, DdlSearchService>();
+        
+        // Site health monitoring service (also runs as hosted service)
+        services.AddSingleton<SiteHealthService>();
+        services.AddSingleton<ISiteHealthService>(sp => sp.GetRequiredService<SiteHealthService>());
+        services.AddHostedService(sp => sp.GetRequiredService<SiteHealthService>());
         services.AddSingleton<IDownloadHostResolverFactory, DownloadHostResolverFactory>();
         services.AddHttpClient<IRssFeedService, RssFeedService>();
         services.AddSingleton<IDdlDownloadService>(sp =>
