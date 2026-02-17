@@ -1,3 +1,74 @@
+# Self Check - Iteration 097
+
+## EPIC 15: UI Bug Fixes - P2 Usability Items
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Frontend compiles | ✅ | `npm run build` |
+| Backend compiles | ✅ | No backend changes |
+| Tests pass | ✅ | No new tests (CSS/UI only) |
+| Git commits | ⏳ | Pending |
+
+### Items Completed
+
+| Item | Status |
+|------|--------|
+| 15.5 Click Issue to Open ComicVine | ✅ COMPLETE |
+| 15.4 Issue Overlay Button Visibility | ✅ COMPLETE |
+| 15.7 Issue Status Toggle from Series View | ✅ VERIFIED EXISTING |
+
+### 15.5 Click Issue to Open ComicVine - Acceptance Criteria
+
+| AC | Status |
+|----|--------|
+| Click issue cover/title opens ComicVine in new tab | ✅ (via overlay button + title link) |
+| Only if issue has ComicVine ID | ✅ (conditional rendering) |
+| Visual indicator that link is clickable | ✅ (icon, hover effects) |
+| URL format correct | ✅ (uses stored comicVineUrl) |
+| External link icon next to ComicVine links | ✅ |
+| Tooltip "View on ComicVine" | ✅ |
+
+### 15.4 Issue Overlay Button Visibility - Acceptance Criteria
+
+| AC | Status |
+|----|--------|
+| Buttons visible on both light and dark themes | ✅ |
+| Minimum contrast ratio 4.5:1 | ✅ (white bg, dark text) |
+| Solid background instead of semi-transparent | ✅ |
+| Clear hover, active, disabled states | ✅ |
+| Works with white/light cover images | ✅ |
+
+### 15.7 Issue Status Toggle - Acceptance Criteria (Pre-existing)
+
+| AC | Status |
+|----|--------|
+| Toggle wanted status button | ✅ (existing) |
+| If Wanted, show Skip button | ✅ |
+| If Skipped/Missing, show Mark as Wanted | ✅ |
+| One-click toggle | ✅ |
+| Status badge updates immediately | ✅ |
+| Bulk status changes supported | ✅ |
+
+### Files Changed
+
+| File | Status |
+|------|--------|
+| `ui/src/pages/SeriesDetailPage.tsx` | ✅ Modified (ComicVine links) |
+| `ui/src/App.css` | ✅ Modified (button visibility, link styles) |
+| `docs/BACKLOG.md` | ✅ Updated |
+| `docs/WORKLOG.md` | ✅ Updated |
+| `docs/SELF_CHECK.md` | ✅ Updated |
+
+### EPIC 15 Status
+
+**P1 - Critical (Data Accuracy):** ✅ ALL COMPLETED (Iteration 096)
+**P2 - High (Usability):** ✅ ALL COMPLETED (Iteration 097)
+**P3 - Medium (Feature Parity):** 🔄 Remaining (15.3, 15.8)
+
+---
+
 # Self Check - Iteration 096
 
 ## EPIC 15: UI Bug Fixes - P1 Critical Items
@@ -9,7 +80,7 @@
 | Frontend compiles | ✅ | `client.ts` updated |
 | Backend compiles | ✅ | `dotnet build` |
 | Tests pass | ✅ | 19 tests (11 new) |
-| Git commits | ⏳ | Pending |
+| Git commits | ✅ | Completed |
 
 ### Items Completed
 

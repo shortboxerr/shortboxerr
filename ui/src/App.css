@@ -1397,6 +1397,30 @@ body {
   white-space: nowrap;
 }
 
+/* Issue title link to ComicVine */
+.issue-title-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.issue-title-link:hover {
+  color: var(--accent-primary);
+}
+
+.issue-title-link .external-link-icon {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+}
+
+.issue-title-link:hover .external-link-icon {
+  opacity: 0.7;
+}
+
 .no-title {
   color: var(--text-muted);
   font-style: italic;
@@ -1515,23 +1539,39 @@ body {
   justify-content: center;
   gap: 4px;
   padding: 8px;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
 }
 
 .issue-card-actions .btn-action {
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--bg-primary);
+  background: #ffffff;
+  color: #1a1d23;
   border-radius: var(--radius-sm);
   padding: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: all 0.15s ease;
 }
 
 .issue-card-actions .btn-action:hover {
-  background: white;
+  background: #f0f0f0;
+  transform: scale(1.05);
 }
 
 .issue-card-actions .btn-action:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
+}
+
+/* ComicVine link button styling */
+.issue-card-actions .btn-action-link {
+  background: var(--accent-primary);
+  color: white;
+  border-color: transparent;
+}
+
+.issue-card-actions .btn-action-link:hover {
+  background: var(--accent-primary-hover);
 }
 
 /* Bulk action buttons */

@@ -302,7 +302,8 @@ public static class SystemEndpoints
     private static async Task<IResult> GetSystemStatus(
         ShortboxerrDbContext dbContext,
         [FromServices] Shortboxerr.Core.Providers.IProviderManager providerManager,
-        [FromServices] Shortboxerr.Core.Ddl.IDdlSiteAdapterFactory ddlFactory)
+        [FromServices] Shortboxerr.Core.Ddl.IDdlSiteAdapterFactory ddlFactory,
+        [FromServices] Shortboxerr.Core.Nzb.INzbIndexerProvider nzbIndexerProvider)
     {
         var process = Process.GetCurrentProcess();
         var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
@@ -314,12 +315,12 @@ public static class SystemEndpoints
         var collectionsCount = await dbContext.EditionTitles.CountAsync();
         var filesCount = await dbContext.FileAssets.CountAsync();
         
-        // Get indexer count from provider manager (NZB indexers)
+        // Get NZB indexer count from NzbIndexerProvider (Newznab indexers like NZBgeek)
         int nzbIndexers = 0;
         try
         {
-            var indexers = await providerManager.GetByCategoryAsync(Shortboxerr.Core.Entities.ProviderCategory.Indexer);
-            nzbIndexers = indexers.Count(i => i.IsEnabled);
+            var indexers = await nzbIndexerProvider.GetIndexersAsync();
+            nzbIndexers = indexers.Count(i => i.Enabled);
         }
         catch
         {

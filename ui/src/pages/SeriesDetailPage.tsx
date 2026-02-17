@@ -469,6 +469,13 @@ function IssueCoverCard({ issue, selected, onSelect, onMarkWanted, onMarkOwned, 
   const placeholderCover = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="150" viewBox="0 0 100 150"%3E%3Crect fill="%232a2d35" width="100" height="150"/%3E%3Ctext fill="%236b7280" font-family="sans-serif" font-size="10" x="50" y="75" text-anchor="middle"%3ENo Cover%3C/text%3E%3C/svg%3E';
   
   const status = getIssueStatus(issue);
+
+  const handleOpenComicVine = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (issue.comicVineUrl) {
+      window.open(issue.comicVineUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
   
   return (
     <div 
@@ -512,6 +519,15 @@ function IssueCoverCard({ issue, selected, onSelect, onMarkWanted, onMarkOwned, 
         {/* Hover Actions Overlay */}
         {showActions && (
           <div className="issue-card-actions" onClick={(e) => e.stopPropagation()}>
+            {issue.comicVineUrl && (
+              <button 
+                className="btn btn-icon btn-sm btn-action btn-action-link" 
+                onClick={handleOpenComicVine}
+                title="View on ComicVine"
+              >
+                <ExternalLink size={14} />
+              </button>
+            )}
             {status !== 'wanted' && (
               <button 
                 className="btn btn-icon btn-sm btn-action" 
@@ -669,7 +685,20 @@ function IssueListRow({ issue, selected, onSelect, onMarkWanted, onMarkOwned, on
       </td>
       <td className="col-title">
         <div className="issue-title-cell">
-          {issue.title || <span className="no-title">Untitled</span>}
+          {issue.comicVineUrl ? (
+            <a 
+              href={issue.comicVineUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="issue-title-link"
+              title="View on ComicVine"
+            >
+              {issue.title || <span className="no-title">Untitled</span>}
+              <ExternalLink size={12} className="external-link-icon" />
+            </a>
+          ) : (
+            issue.title || <span className="no-title">Untitled</span>
+          )}
         </div>
       </td>
       <td className="col-date">
@@ -698,6 +727,17 @@ function IssueListRow({ issue, selected, onSelect, onMarkWanted, onMarkOwned, on
       </td>
       <td className="col-actions">
         <div className="action-buttons">
+          {issue.comicVineUrl && (
+            <a 
+              href={issue.comicVineUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-icon btn-sm"
+              title="View on ComicVine"
+            >
+              <ExternalLink size={14} />
+            </a>
+          )}
           {status !== 'wanted' && (
             <button 
               className="btn btn-icon btn-sm" 

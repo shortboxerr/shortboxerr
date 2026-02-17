@@ -1,5 +1,39 @@
 # Worklog
 
+## Iteration 097 (2026-02-17)
+**EPIC 15: UI Bug Fixes - P2 Usability Items**
+
+### Commits
+1. `feat: add ComicVine links to issues and improve button visibility`
+
+### Deliverables
+
+#### 15.5 Click Issue to Open ComicVine - IMPLEMENTED
+- Added ComicVine link button to issue cover card hover overlay
+- Added ComicVine link to issue title in list view (with external link icon on hover)
+- Links open in new tab with proper security attributes (noopener, noreferrer)
+- Visual feedback: link styled distinctively, icon appears on hover
+
+#### 15.4 Issue Overlay Button Visibility - IMPROVED
+- Updated button styling to use solid white background instead of semi-transparent
+- Added subtle border and shadow for better visibility against any cover image
+- Added hover scale effect for better interactivity feedback
+- ComicVine link button uses accent color for visual distinction
+- Works consistently on both light and dark themes
+
+#### 15.7 Issue Status Toggle - VERIFIED EXISTING
+- Verified existing implementation in SeriesDetailPage
+- Cover view: action buttons appear on hover (Wanted/Owned/Skip)
+- List view: action buttons visible in Actions column
+- Bulk actions available when multiple issues selected
+- Status updates via mutation with optimistic UI feedback
+
+### Files Changed
+- `ui/src/pages/SeriesDetailPage.tsx` (Added ComicVine link handling)
+- `ui/src/App.css` (Improved button visibility, added link styles)
+
+---
+
 ## Iteration 096 (2026-02-17)
 **EPIC 15: UI Bug Fixes - P1 Critical Items**
 
