@@ -301,7 +301,8 @@ public static class SystemEndpoints
 
     private static async Task<IResult> GetSystemStatus(
         ShortboxerrDbContext dbContext,
-        [FromServices] Shortboxerr.Core.Providers.IProviderManager providerManager)
+        [FromServices] Shortboxerr.Core.Providers.IProviderManager providerManager,
+        [FromServices] Shortboxerr.Core.Ddl.IDdlSiteAdapterFactory ddlFactory)
     {
         var process = Process.GetCurrentProcess();
         var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
@@ -313,19 +314,32 @@ public static class SystemEndpoints
         var collectionsCount = await dbContext.EditionTitles.CountAsync();
         var filesCount = await dbContext.FileAssets.CountAsync();
         
-        // Get indexer count from provider manager
-        int enabledIndexers = 0;
-        var indexerStatus = "healthy";
+        // Get indexer count from provider manager (NZB indexers)
+        int nzbIndexers = 0;
         try
         {
             var indexers = await providerManager.GetByCategoryAsync(Shortboxerr.Core.Entities.ProviderCategory.Indexer);
-            enabledIndexers = indexers.Count(i => i.IsEnabled);
-            indexerStatus = enabledIndexers > 0 ? "healthy" : "warning";
+            nzbIndexers = indexers.Count(i => i.IsEnabled);
         }
         catch
         {
-            indexerStatus = "warning";
+            // Ignore errors
         }
+        
+        // Get DDL site count (also count as indexers)
+        int ddlSites = 0;
+        try
+        {
+            var enabledSites = ddlFactory.GetEnabledSites();
+            ddlSites = enabledSites.Count;
+        }
+        catch
+        {
+            // Ignore errors
+        }
+        
+        var enabledIndexers = nzbIndexers + ddlSites;
+        var indexerStatus = enabledIndexers > 0 ? "healthy" : "warning";
 
         return Results.Ok(new SystemStatusResponse
         {
