@@ -2105,6 +2105,201 @@ Ensure full feature parity with Mylar3's search configuration options.
 
 ---
 
+## EPIC 15: UI Bug Fixes & Improvements
+
+Critical bug fixes and usability improvements identified through testing.
+
+### 15.1 Dashboard Statistics Accuracy
+Dashboard counters don't reflect actual data in the system.
+
+- [ ] **Indexer count accuracy**
+  - AC: "X Indexers Enabled" matches actual count of enabled indexers (NZB + DDL sites)
+  - AC: Include both NZB indexers and DDL sites in count
+  - AC: Only count enabled/active providers
+  - AC: Update count when providers are added/removed/toggled
+
+- [ ] **Series count accuracy**
+  - AC: "X Series Tracked" matches actual count of series in database
+  - AC: Should match the count shown in Series page
+  - AC: Update count when series are added/removed
+  - AC: Consider: should this only count monitored series?
+
+- [ ] **Collections count accuracy**
+  - AC: "X Collections Tracked" matches actual count of collections in database
+  - AC: Should match the count shown in Collections page
+  - AC: Update count when collections are added/removed
+
+- [ ] **Dashboard cache invalidation**
+  - AC: Dashboard stats refresh when underlying data changes
+  - AC: Cache invalidation on series/collection/provider CRUD operations
+  - AC: Manual refresh button works correctly
+
+### 15.2 "This Week" Section Accuracy
+Dashboard "This Week" section doesn't match pull list data.
+
+- [ ] **Pull list synchronization**
+  - AC: "This Week" section shows same issues as Pull List > This Week view
+  - AC: Respect same date range logic (Wednesday-to-Wednesday or configurable)
+  - AC: Include both monitored series releases and discovered releases (based on config)
+  - AC: Properly aggregate from ComicVine release data
+
+- [ ] **Status indicators in "This Week"**
+  - AC: Show correct status for each issue (Wanted, Owned, Skipped, Available)
+  - AC: Status updates reflect immediately when changed
+
+- [ ] **Empty state handling**
+  - AC: Show appropriate message when no releases this week
+  - AC: Show loading state while fetching data
+
+### 15.3 Forthcoming Releases View (Mylar3 Parity)
+Mylar3 shows releases for upcoming weeks, not just the current week.
+
+- [ ] **Multi-week pull list view**
+  - AC: View releases for upcoming weeks (2, 4, 8 weeks ahead configurable)
+  - AC: Tab or dropdown to switch between weeks
+  - AC: "Next Week", "2 Weeks Out", "3 Weeks Out" navigation
+  - AC: Show week date range in header (e.g., "Feb 24 - Mar 2")
+
+- [ ] **Forthcoming releases API**
+  - AC: GET /api/v1/pulllist/upcoming?weeks=4 - get releases for next N weeks
+  - AC: Returns array of week objects with releases grouped by week
+  - AC: Include week start/end dates in response
+  - AC: Caching strategy for future weeks (longer TTL acceptable)
+
+- [ ] **Forthcoming releases UI**
+  - AC: Week selector/tabs in Pull List page header
+  - AC: Show issue count per upcoming week
+  - AC: Same issue card format as current week view
+  - AC: Ability to mark issues as Wanted/Skip from future weeks
+
+- [ ] **Calendar view enhancement**
+  - AC: Existing calendar view shows multiple weeks
+  - AC: Navigate forward/backward through months
+  - AC: Click day to see releases for that day
+
+### 15.4 Issue Overlay Button Visibility (Light Theme)
+Mark as owned/skip buttons are difficult to see on light theme.
+
+- [ ] **Improve overlay button contrast**
+  - AC: Buttons visible on both light and dark themes
+  - AC: Minimum contrast ratio 4.5:1 for button text/icons
+  - AC: Consider solid background color instead of semi-transparent
+  - AC: Test with white/light cover images
+
+- [ ] **Button state visibility**
+  - AC: Clear visual distinction between hover, active, disabled states
+  - AC: Selected state clearly visible (e.g., filled vs outline icon)
+
+- [ ] **Alternative button placement**
+  - AC: Consider moving buttons to card footer instead of overlay
+  - AC: Or: show on hover with sufficient backdrop
+
+### 15.5 Click Issue to Open ComicVine
+Users should be able to navigate to ComicVine page for an issue.
+
+- [ ] **Issue ComicVine link**
+  - AC: Click issue cover or title opens ComicVine page in new tab
+  - AC: Only if issue has ComicVine ID
+  - AC: Visual indicator that link is clickable (cursor, underline on hover)
+  - AC: URL format: https://comicvine.gamespot.com/issue/4000-{comicvine_id}/
+
+- [ ] **Series ComicVine link**
+  - AC: Link to series page on ComicVine from series detail page
+  - AC: URL format: https://comicvine.gamespot.com/volume/4050-{comicvine_id}/
+
+- [ ] **External link icon**
+  - AC: Show external link icon next to ComicVine links
+  - AC: Tooltip: "View on ComicVine"
+
+### 15.6 Wanted View Empty State
+Wanted view shows no issues even when issues are marked as wanted.
+
+- [ ] **Wanted page data fetching**
+  - AC: Wanted page queries issues with status = Wanted
+  - AC: Include issues from all series (monitored and unmonitored)
+  - AC: Sort by: series name, then issue number (or configurable)
+
+- [ ] **Wanted page filtering**
+  - AC: Filter by series
+  - AC: Filter by release date (upcoming vs past)
+  - AC: Search by series name or issue title
+
+- [ ] **Wanted API endpoint verification**
+  - AC: GET /api/v1/wanted returns all wanted issues
+  - AC: Verify endpoint is correctly implemented
+  - AC: Verify UI is calling correct endpoint
+
+- [ ] **Empty state vs no data**
+  - AC: Distinguish between "loading", "no wanted issues", and "error"
+  - AC: Show helpful message when no wanted issues
+  - AC: Link to "add series" or "browse pull list" from empty state
+
+### 15.7 Issue Status Toggle from Series View
+Toggle wanted/skipped status directly from issue list in series detail.
+
+- [ ] **Toggle wanted status button**
+  - AC: If issue is Wanted, show "Skip" or "Remove from Wanted" button
+  - AC: If issue is Skipped/Missing, show "Mark as Wanted" button
+  - AC: One-click toggle (no confirmation for status changes)
+
+- [ ] **Visual status feedback**
+  - AC: Status badge updates immediately on toggle
+  - AC: Toast/notification confirming change
+  - AC: Optimistic UI update (don't wait for server response)
+
+- [ ] **Bulk status changes**
+  - AC: Select multiple issues, apply status change to all
+  - AC: "Mark Selected as Wanted" / "Skip Selected" buttons
+
+### 15.8 Pull List Data Accuracy (Mylar3 Parity Investigation)
+Pull list data doesn't match Mylar3's for the same week.
+
+- [ ] **Investigate Mylar3 pull list source**
+  - AC: Document where Mylar3 gets its release data
+  - AC: Determine if Mylar3 uses ComicVine, League of Comic Geeks, or other source
+  - AC: Identify any data transformations Mylar3 applies
+
+- [ ] **ComicVine release date accuracy**
+  - AC: Verify we're using correct date field from ComicVine (store_date vs cover_date)
+  - AC: Verify date parsing handles timezone correctly
+  - AC: Verify week boundary calculation (Wednesday-to-Wednesday)
+
+- [ ] **Publisher filtering differences**
+  - AC: Check if Mylar3 filters by publisher differently
+  - AC: Check if Mylar3 includes variant covers differently
+  - AC: Check if Mylar3 includes digital-only releases differently
+
+- [ ] **Release data augmentation**
+  - AC: Consider alternative/supplementary data sources
+  - AC: League of Comic Geeks API (if available)
+  - AC: Publisher RSS feeds
+  - AC: Cross-reference multiple sources for accuracy
+
+- [ ] **Pull list comparison tool** (debug)
+  - AC: Admin endpoint to compare our pull list with expected data
+  - AC: Export pull list for manual comparison with Mylar3
+  - AC: Log discrepancies for investigation
+
+---
+
+## EPIC 15 Implementation Priority
+
+### P1 - Critical (Data Accuracy)
+1. **15.6 Wanted View Empty State** - Core functionality broken
+2. **15.1 Dashboard Statistics Accuracy** - Misleading data
+3. **15.2 "This Week" Section Accuracy** - Misleading data
+
+### P2 - High (Usability)
+4. **15.7 Issue Status Toggle from Series View** - Missing expected functionality
+5. **15.4 Issue Overlay Button Visibility** - Accessibility issue
+6. **15.5 Click Issue to Open ComicVine** - Missing expected functionality
+
+### P3 - Medium (Feature Parity)
+7. **15.3 Forthcoming Releases View** - Mylar3 parity
+8. **15.8 Pull List Data Accuracy Investigation** - Requires research
+
+---
+
 ## Story Ordering Notes
 
 **EPIC 4 Implementation Order:**
