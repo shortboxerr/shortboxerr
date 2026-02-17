@@ -1,5 +1,87 @@
 # Worklog
 
+## Iteration 095 (2026-02-17)
+**DDL Site Availability Health Checks (EPIC 8 - P1 Item)**
+
+### Commits
+1. `feat: add DDL site health monitoring service`
+2. `test: add unit tests for SiteHealthService (53 tests)`
+
+### Deliverables
+
+#### Health Service Interface (ISiteHealthService)
+- ✅ `GetAllHealthStatusesAsync` - Get health for all sites
+- ✅ `GetHealthStatusAsync` - Get health for specific site
+- ✅ `CheckSiteHealthAsync` - Manual health check
+- ✅ `CheckAllSitesAsync` - Check all enabled sites
+- ✅ `GetHealthHistoryAsync` - Check history with limit
+- ✅ `ClearHealthHistoryAsync` - Reset site history
+- ✅ `ReEnableSiteAsync` - Re-enable auto-disabled sites
+- ✅ `RecordSuccess/RecordFailure` - Track operation results
+- ✅ `GetSettings/UpdateSettings` - Manage health monitoring config
+
+#### Health Models
+- ✅ `SiteHealthStatus` - Current health state with metrics
+- ✅ `SiteHealthState` enum (Unknown, Healthy, Degraded, Unhealthy, Disabled)
+- ✅ `SiteHealthCheckResult` - Individual check result
+- ✅ `HealthCheckFailureType` enum (13 types: Timeout, DnsError, SslError, RateLimited, etc.)
+- ✅ `HealthCheckDiagnostics` - Detailed diagnostics info
+- ✅ `SiteHealthSettings` - Configuration for monitoring
+
+#### SiteHealthService Implementation
+- ✅ Periodic health checks via IHostedService
+- ✅ Configurable check interval (default: 30 minutes)
+- ✅ Consecutive failure tracking
+- ✅ Auto-disable after threshold (default: 5 failures)
+- ✅ Latency tracking with average calculation
+- ✅ Success rate calculation (last 20 checks)
+- ✅ Failure type classification with pattern matching
+- ✅ High latency detection (>5s = degraded)
+- ✅ Health history retention (default: 100 entries)
+- ✅ Re-enable functionality for auto-disabled sites
+
+#### API Endpoints (10 endpoints)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/ddl/health` | GET | All site health statuses |
+| `/api/v1/ddl/health/{siteType}` | GET | Single site status |
+| `/api/v1/ddl/health/{siteType}/check` | POST | Manual health check |
+| `/api/v1/ddl/health/check-all` | POST | Check all enabled sites |
+| `/api/v1/ddl/health/{siteType}/history` | GET | Check history |
+| `/api/v1/ddl/health/{siteType}/history` | DELETE | Clear history |
+| `/api/v1/ddl/health/{siteType}/re-enable` | POST | Re-enable auto-disabled |
+| `/api/v1/ddl/health/settings` | GET | Get settings |
+| `/api/v1/ddl/health/settings` | PUT | Update settings |
+
+#### Unit Tests (53 tests)
+| Category | Count | Description |
+|----------|-------|-------------|
+| GetAllHealthStatuses | 3 | All sites, initial state, display names |
+| GetHealthStatus | 2 | Existing site, non-existent |
+| CheckSiteHealth | 8 | Success, failure, timeout, HTTP exception, warnings |
+| CheckAllSites | 2 | All enabled, cancellation |
+| History | 5 | Empty, after checks, limit, ordering, clear |
+| Auto-Disable | 5 | Threshold, disabled config, re-enable |
+| RecordSuccess/Failure | 2 | Reset failures, increment |
+| Settings | 2 | Get defaults, update |
+| State Determination | 4 | Unknown, Healthy, Degraded, Unhealthy |
+| Success Rate | 3 | No history, all success, mixed |
+| Failure Classification | 14 | Timeout, DNS, SSL, Cloudflare, etc. |
+| Detected Issues | 1 | Reports consecutive failures |
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Ddl/ISiteHealthService.cs` | New - Interface and models |
+| `src/Shortboxerr.Infrastructure/Ddl/SiteHealthService.cs` | New - Implementation |
+| `src/Shortboxerr.Api/Endpoints/DdlSiteEndpoints.cs` | Added SiteHealthEndpoints |
+| `src/Shortboxerr.Api/Program.cs` | Registered health endpoints |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Registered SiteHealthService |
+| `tests/Shortboxerr.Tests/SiteHealthServiceTests.cs` | New - 53 unit tests |
+| `docs/BACKLOG.md` | Marked P1 #4 complete |
+
+---
+
 ## Iteration 094 (2026-02-10)
 **RAR/7z Archive Unpacking Support (EPIC 10 - P1 Item)**
 

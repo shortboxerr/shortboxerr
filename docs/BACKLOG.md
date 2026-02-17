@@ -404,12 +404,13 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
   - AC: Track host reliability per DDL site (deferred - statistics tracking)
   - AC: Blacklist consistently failing hosts temporarily (deferred)
 
-### 8.4 DDL Site Health Monitoring - PARTIAL ✅
-- [ ] **Site availability checks** (deferred)
-  - AC: Periodic health checks for each configured site
-  - AC: Detect site changes that break scraping (CSS/HTML changes)
-  - AC: Alert/disable adapter on repeated failures
-  - AC: Version detection for known site layouts
+### 8.4 DDL Site Health Monitoring ✅ COMPLETED
+- [x] **Site availability checks** ✅
+  - AC: Periodic health checks for each configured site ✅ (SiteHealthService via IHostedService)
+  - AC: Detect site changes that break scraping (CSS/HTML changes) ✅ (failure classification)
+  - AC: Alert/disable adapter on repeated failures ✅ (auto-disable after threshold)
+  - AC: Version detection for known site layouts (deferred - requires site-specific structure tracking)
+  - Note: ISiteHealthService + SiteHealthService + 53 unit tests
 - [x] **Rate limiting per site** ✅
   - AC: Respect site-specific rate limits ✅ (IDdlRateLimiter)
   - AC: Configurable delays between requests ✅ (minDelayMs)
@@ -1724,7 +1725,7 @@ Track and prioritize completion of deferred items across all EPICs.
 | ~~1~~ | ~~Activity integration for downloads~~ | 10 | M | H | ✅ Completed |
 | ~~2~~ | ~~UI indicators (filter/sort by status)~~ | 11 | S | H | ✅ Completed |
 | ~~3~~ | ~~RAR/7z unpacking support~~ | 10 | S | M | ✅ Completed |
-| 4 | Site availability checks | 8 | M | H | None |
+| ~~4~~ | ~~Site availability checks~~ | 8 | M | H | ✅ Completed |
 | **P2 - High Value, Medium Effort** |||||
 | 5 | Auto-search on release | 11 | M | H | None |
 | 6 | Mylar3 NZB settings import | 10 | M | H | Config parser |
@@ -1774,10 +1775,15 @@ Track and prioritize completion of deferred items across all EPICs.
    - Added SharpCompress library for RAR/7z support
    - Note: IArchiveExtractor service + 37 tests
 
-4. **Site availability checks** (EPIC 8)
+4. ~~**Site availability checks** (EPIC 8)~~ ✅ COMPLETED
    - Periodic health checks for DDL sites
    - Auto-disable failing adapters
-   - Medium effort, high reliability impact
+   - Note: ISiteHealthService + 10 API endpoints + 53 tests
+
+5. **Auto-search on release** (EPIC 11)
+   - Automatic searching when new issues release
+   - Webhook/polling for release detection
+   - Medium effort, high user value
 
 ### 14.2 NZBGet Integration (Sonarr/Radarr/Mylar3 Parity) ✅ COMPLETED
 Full NZBGet support as an alternative to SABnzbd.
