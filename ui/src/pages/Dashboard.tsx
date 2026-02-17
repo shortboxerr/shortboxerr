@@ -72,13 +72,13 @@ export function Dashboard() {
               icon={Download}
               label="Indexers"
               status={stats?.indexerStatus === 'healthy' ? 'healthy' : 'warning'}
-              message={\`\${stats?.enabledIndexers ?? 0} enabled\`}
+              message={`${stats?.enabledIndexers ?? 0} enabled`}
             />
             <StatusCard
               icon={Clock}
               label="Queue"
               status="healthy"
-              message={\`\${stats?.queuedDownloads ?? 0} pending\`}
+              message={`${stats?.queuedDownloads ?? 0} pending`}
             />
           </div>
         </div>
@@ -124,7 +124,7 @@ function StatusCard({
           width: '48px',
           height: '48px',
           borderRadius: 'var(--radius-md)',
-          background: \`\${statusColors[status]}15\`,
+          background: `${statusColors[status]}15`,
           color: statusColors[status],
           display: 'flex',
           alignItems: 'center',
@@ -165,7 +165,7 @@ function RecentActivityList() {
     <div className="activity-list">
       {activities.map((activity) => (
         <div key={activity.id} className="activity-item">
-          <div className={\`activity-icon \${activity.type}\`}>
+          <div className={`activity-icon ${activity.type}`}>
             {activity.type === 'success' && <CheckCircle size={20} />}
             {activity.type === 'warning' && <AlertCircle size={20} />}
             {activity.type === 'info' && <Download size={20} />}
@@ -224,7 +224,7 @@ function ThisWeekWidget({ issues, stats }: { issues: PullListIssue[]; stats?: Pu
           {wantedIssues.map((issue) => (
             <Link 
               key={issue.issueId} 
-              to={\`/series/\${issue.seriesId}\`}
+              to={`/series/${issue.seriesId}`}
               className="widget-list-item"
             >
               {issue.coverImageUrl ? (
