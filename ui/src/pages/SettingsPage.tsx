@@ -17,12 +17,13 @@ import type {
 } from '../api/client';
 import { useTheme } from '../App';
 
-type SettingsTab = 'general' | 'indexers' | 'download' | 'notifications' | 'import' | 'ui' | 'security' | 'comicvine' | 'pulllist' | 'search';
+type SettingsTab = 'general' | 'indexers' | 'download' | 'notifications' | 'import' | 'ui' | 'security' | 'comicvine' | 'pulllist' | 'search' | 'annuals';
 
 const tabs: { id: SettingsTab; icon: React.ElementType; label: string }[] = [
   { id: 'general', icon: Settings, label: 'General' },
   { id: 'comicvine', icon: Database, label: 'ComicVine' },
   { id: 'pulllist', icon: Calendar, label: 'Pull List' },
+  { id: 'annuals', icon: FileText, label: 'Annual Handling' },
   { id: 'search', icon: Search, label: 'Search' },
   { id: 'indexers', icon: Plug, label: 'Indexers' },
   { id: 'download', icon: Download, label: 'Download Clients' },
@@ -96,6 +97,7 @@ export function SettingsPage() {
             {activeTab === 'general' && <GeneralSettings />}
             {activeTab === 'comicvine' && <ComicVineSettingsTab />}
             {activeTab === 'pulllist' && <PullListSettingsTab />}
+            {activeTab === 'annuals' && <AnnualHandlingSettingsTab />}
             {activeTab === 'search' && <SearchSettingsTab />}
             {activeTab === 'indexers' && <IndexersSettings />}
             {activeTab === 'download' && <DownloadClientsSettings />}
@@ -1601,80 +1603,6 @@ function PullListSettingsTab() {
         </SettingsField>
       </SettingsSection>
 
-      <SettingsSection title="Annual & Special Issue Handling">
-        <div style={{ 
-          background: 'var(--bg-tertiary)', 
-          padding: '12px 16px', 
-          borderRadius: 'var(--radius-md)', 
-          marginBottom: '16px',
-          fontSize: '13px',
-          color: 'var(--text-secondary)',
-          lineHeight: '1.5'
-        }}>
-          <strong style={{ color: 'var(--text-primary)' }}>About Annuals:</strong>
-          <p style={{ margin: '8px 0 0 0' }}>
-            Annual issues are special yearly releases that supplement a regular series (e.g., "Batman Annual #1"). 
-            When enabled, annuals are automatically detected based on ComicVine metadata and included in your pull list.
-          </p>
-          <p style={{ margin: '8px 0 0 0' }}>
-            These settings control the <em>global default</em> behavior. You can override these settings on a 
-            per-series basis via the series settings (gear icon on any series detail page).
-          </p>
-        </div>
-
-        <SettingsField label="Include Annuals" description="Automatically add annual issues to your wanted list when monitoring a series">
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={currentSettings.includeAnnualsInAutoAdd}
-              onChange={(e) => handleUpdate('includeAnnualsInAutoAdd', e.target.checked)}
-              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-            />
-            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
-              Include annual issues in auto-add to wanted list
-            </span>
-          </label>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', marginLeft: '26px' }}>
-            Annual issues are detected by issue number text containing "Annual" or by ComicVine metadata.
-          </div>
-        </SettingsField>
-
-        <SettingsField label="Include Specials" description="Include special one-shots, giant-size issues, and other non-standard releases">
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={currentSettings.includeSpecialsInAutoAdd}
-              onChange={(e) => handleUpdate('includeSpecialsInAutoAdd', e.target.checked)}
-              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-            />
-            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
-              Include special issues (one-shots, giant-size, etc.) in auto-add
-            </span>
-          </label>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', marginLeft: '26px' }}>
-            Specials include: Giant-Size, King-Size, One-Shot, 80-Page Giant, and other non-numbered issues.
-          </div>
-        </SettingsField>
-
-        <SettingsField label="Skip Variant Covers" description="Avoid downloading multiple versions of the same issue">
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={currentSettings.skipVariantCovers}
-              onChange={(e) => handleUpdate('skipVariantCovers', e.target.checked)}
-              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-            />
-            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
-              Skip variant covers when auto-adding
-            </span>
-          </label>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', marginLeft: '26px' }}>
-            Variant covers are alternate covers for the same issue (e.g., #1A, #1B, Virgin Cover, etc.).
-            Enable this to only track the main cover version.
-          </div>
-        </SettingsField>
-      </SettingsSection>
-
       <SettingsSection title="Search Settings">
         <SettingsField 
           label="Search Delay (Hours)" 
@@ -1805,6 +1733,189 @@ function PullListSettingsTab() {
             </div>
           </>
         )}
+      </SettingsSection>
+    </>
+  );
+}
+
+// === Annual Handling Settings Tab ===
+function AnnualHandlingSettingsTab() {
+  const queryClient = useQueryClient();
+  
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ['pulllistSettings'],
+    queryFn: api.getPullListSettings,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: api.updatePullListSettings,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pulllistSettings'] });
+    },
+  });
+
+  if (isLoading) {
+    return <div className="loading"><div className="spinner" /></div>;
+  }
+
+  const currentSettings = settings ?? {
+    weekStartDay: 0,
+    releaseDay: 3,
+    defaultMonitoringMode: 1,
+    searchDelayHours: 6,
+    autoAddToWanted: true,
+    includeAnnualsInAutoAdd: true,
+    includeSpecialsInAutoAdd: false,
+    skipVariantCovers: true,
+    upcomingWeeksToShow: 4,
+    pastWeeksToShow: 4,
+    exportWeeklyPullList: false,
+    weeklyExportDirectory: null,
+    weeklyExportFormat: 'Json' as const,
+    autoExportOnReleaseDay: true,
+    exportFields: null,
+  };
+
+  const handleUpdate = (field: string, value: unknown) => {
+    updateMutation.mutate({ ...currentSettings, [field]: value });
+  };
+
+  return (
+    <>
+      <SettingsSection title="About Annual Issues">
+        <div style={{ 
+          background: 'var(--bg-tertiary)', 
+          padding: '16px 20px', 
+          borderRadius: 'var(--radius-md)', 
+          fontSize: '13px',
+          color: 'var(--text-secondary)',
+          lineHeight: '1.6'
+        }}>
+          <strong style={{ color: 'var(--text-primary)', fontSize: '14px' }}>What are Annual Issues?</strong>
+          <p style={{ margin: '10px 0 0 0' }}>
+            <strong>Annuals</strong> are special yearly comic book releases that supplement a regular ongoing series. 
+            For example, "Batman Annual #1" accompanies the main Batman series but is released as a special annual publication.
+            These are typically larger issues with self-contained stories or important storyline events.
+          </p>
+          <p style={{ margin: '12px 0 0 0' }}>
+            <strong>Detection:</strong> Shortboxerr automatically identifies annual issues by:
+          </p>
+          <ul style={{ margin: '8px 0 0 20px', padding: 0 }}>
+            <li>Issue number text containing "Annual" (e.g., "Annual 1", "Annual 2024")</li>
+            <li>ComicVine metadata classification</li>
+            <li>Series title containing "Annual" keywords</li>
+          </ul>
+          <p style={{ margin: '12px 0 0 0' }}>
+            <strong>Series-Annual Integration:</strong> When a regular series has associated annual releases on ComicVine, 
+            Shortboxerr can automatically track them alongside the main series. Annuals will appear in your pull list 
+            with the parent series and can be searched/downloaded together.
+          </p>
+        </div>
+      </SettingsSection>
+
+      <SettingsSection title="Include Annuals in Pull List">
+        <SettingsField label="Include Annual Issues" description="Automatically add annual issues to your wanted list">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={currentSettings.includeAnnualsInAutoAdd}
+              onChange={(e) => handleUpdate('includeAnnualsInAutoAdd', e.target.checked)}
+              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+            />
+            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+              Include annual issues when auto-adding to wanted list
+            </span>
+          </label>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px', marginLeft: '26px', lineHeight: '1.5' }}>
+            When enabled, newly released annuals for your monitored series will automatically be added to your wanted list 
+            based on your monitoring mode settings. Disable this if you prefer to manually select which annuals to track.
+          </div>
+        </SettingsField>
+      </SettingsSection>
+
+      <SettingsSection title="Special Issues">
+        <SettingsField label="Include Special Issues" description="Track special one-shots, giant-size issues, and other non-standard releases">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={currentSettings.includeSpecialsInAutoAdd}
+              onChange={(e) => handleUpdate('includeSpecialsInAutoAdd', e.target.checked)}
+              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+            />
+            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+              Include special issues in auto-add
+            </span>
+          </label>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px', marginLeft: '26px', lineHeight: '1.5' }}>
+            Special issues include: Giant-Size, King-Size, One-Shot, 80-Page Giant, Specials, and other non-standard numbered issues.
+            These are typically standalone stories or commemorative publications.
+          </div>
+        </SettingsField>
+      </SettingsSection>
+
+      <SettingsSection title="Variant Covers">
+        <div style={{ 
+          background: 'var(--bg-tertiary)', 
+          padding: '12px 16px', 
+          borderRadius: 'var(--radius-md)', 
+          marginBottom: '16px',
+          fontSize: '13px',
+          color: 'var(--text-secondary)',
+          lineHeight: '1.5'
+        }}>
+          <strong style={{ color: 'var(--text-primary)' }}>About Variant Covers:</strong>
+          <p style={{ margin: '8px 0 0 0' }}>
+            Variant covers are alternate covers for the same comic issue. A single issue like "Amazing Spider-Man #1" 
+            might have 5-10+ different covers (regular, variant A, B, virgin cover, incentive covers, etc.). 
+            The content inside is identical - only the cover artwork differs.
+          </p>
+        </div>
+
+        <SettingsField label="Skip Variant Covers" description="Avoid downloading duplicate content with different covers">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={currentSettings.skipVariantCovers}
+              onChange={(e) => handleUpdate('skipVariantCovers', e.target.checked)}
+              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+            />
+            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+              Skip variant covers when auto-adding issues
+            </span>
+          </label>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px', marginLeft: '26px', lineHeight: '1.5' }}>
+            Recommended for most users. Enable this to only track the main cover version of each issue.
+            Disable if you're a collector who wants to track specific variant covers.
+          </div>
+        </SettingsField>
+      </SettingsSection>
+
+      <SettingsSection title="Per-Series Overrides">
+        <div style={{ 
+          background: 'var(--bg-secondary)', 
+          border: '1px solid var(--border-color)',
+          padding: '16px 20px', 
+          borderRadius: 'var(--radius-md)', 
+          fontSize: '13px',
+          color: 'var(--text-secondary)',
+          lineHeight: '1.5'
+        }}>
+          <strong style={{ color: 'var(--text-primary)' }}>Customizing Individual Series</strong>
+          <p style={{ margin: '10px 0 0 0' }}>
+            The settings above control the <em>global default</em> behavior for all series.
+          </p>
+          <p style={{ margin: '10px 0 0 0' }}>
+            To customize annual/special issue handling for a specific series:
+          </p>
+          <ol style={{ margin: '8px 0 0 20px', padding: 0 }}>
+            <li>Navigate to the series detail page</li>
+            <li>Click the settings icon (gear) in the header</li>
+            <li>Adjust the annual/special issue settings for that series</li>
+          </ol>
+          <p style={{ margin: '10px 0 0 0', fontStyle: 'italic' }}>
+            Per-series settings override the global defaults configured here.
+          </p>
+        </div>
       </SettingsSection>
     </>
   );
