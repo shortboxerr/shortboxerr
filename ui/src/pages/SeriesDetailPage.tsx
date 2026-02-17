@@ -160,21 +160,35 @@ export function SeriesDetailPage() {
 
   const allIssues = issuesData?.items ?? [];
 
-  // Filter issues based on status and annual visibility
-  const filteredIssues = useMemo(() => {
-    return allIssues.filter(issue => {
-      // Filter by annuals visibility
-      if (!showAnnuals && issue.isAnnual) return false;
-      
+  // Separate regular issues from annuals
+  const { regularIssues, annualIssues } = useMemo(() => {
+    const regular: Issue[] = [];
+    const annuals: Issue[] = [];
+    
+    allIssues.forEach(issue => {
       // Filter by status
-      if (statusFilter === 'all') return true;
-      const status = getIssueStatus(issue);
-      return status === statusFilter;
+      if (statusFilter !== 'all') {
+        const status = getIssueStatus(issue);
+        if (status !== statusFilter) return;
+      }
+      
+      if (issue.isAnnual) {
+        annuals.push(issue);
+      } else {
+        regular.push(issue);
+      }
     });
-  }, [allIssues, statusFilter, showAnnuals]);
+    
+    return { regularIssues: regular, annualIssues: annuals };
+  }, [allIssues, statusFilter]);
+
+  // Combined filtered issues (for selection purposes)
+  const filteredIssues = useMemo(() => {
+    return showAnnuals ? [...regularIssues, ...annualIssues] : regularIssues;
+  }, [regularIssues, annualIssues, showAnnuals]);
 
   // Count annuals for display
-  const annualCount = allIssues.filter(i => i.isAnnual).length;
+  const annualCount = annualIssues.length;
 
   // Counts for stats
   const ownedCount = allIssues.filter(i => i.hasFile).length;
@@ -475,7 +489,7 @@ export function SeriesDetailPage() {
           {/* Issues Display */}
           {isLoadingIssues ? (
             <div className="loading"><div className="spinner" /></div>
-          ) : filteredIssues.length === 0 ? (
+          ) : regularIssues.length === 0 && annualIssues.length === 0 ? (
             <div className="empty-state" style={{ padding: '40px 20px' }}>
               <BookOpen size={48} style={{ opacity: 0.3 }} />
               <div className="empty-state-title">
@@ -487,35 +501,133 @@ export function SeriesDetailPage() {
                   : `There are no issues with status "${statusFilter}".`}
               </div>
             </div>
-          ) : viewMode === 'cover' ? (
-            <div className="issues-grid">
-              {filteredIssues.map((issue) => (
-                <IssueCoverCard 
-                  key={issue.id} 
-                  issue={issue} 
-                  selected={selectedIssues.has(issue.id)}
-                  onSelect={() => toggleIssueSelection(issue.id)}
-                  onMarkWanted={() => handleMarkAsWanted([issue.id])}
-                  onMarkSkipped={() => handleMarkAsSkipped([issue.id])}
-                  isUpdating={updateIssueStatus.isPending}
-                />
-              ))}
-            </div>
           ) : (
-            <IssueListView 
-              issues={filteredIssues}
-              selectedIds={selectedIssues}
-              onSelect={toggleIssueSelection}
-              onToggleSelectAll={toggleSelectAllIssues}
-              allSelected={allIssuesSelected}
-              someSelected={someIssuesSelected}
-              sortKey={sortKey}
-              sortDir={sortDir}
-              onSort={toggleSort}
-              onMarkWanted={handleMarkAsWanted}
-              onMarkSkipped={handleMarkAsSkipped}
-              isUpdating={updateIssueStatus.isPending}
-            />
+            <>
+              {/* Regular Issues Section */}
+              {regularIssues.length > 0 && (
+                <>
+                  {viewMode === 'cover' ? (
+                    <div className="issues-grid">
+                      {regularIssues.map((issue) => (
+                        <IssueCoverCard 
+                          key={issue.id} 
+                          issue={issue} 
+                          selected={selectedIssues.has(issue.id)}
+                          onSelect={() => toggleIssueSelection(issue.id)}
+                          onMarkWanted={() => handleMarkAsWanted([issue.id])}
+                          onMarkSkipped={() => handleMarkAsSkipped([issue.id])}
+                          isUpdating={updateIssueStatus.isPending}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <IssueListView 
+                      issues={regularIssues}
+                      selectedIds={selectedIssues}
+                      onSelect={toggleIssueSelection}
+                      onToggleSelectAll={toggleSelectAllIssues}
+                      allSelected={allIssuesSelected}
+                      someSelected={someIssuesSelected}
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={toggleSort}
+                      onMarkWanted={handleMarkAsWanted}
+                      onMarkSkipped={handleMarkAsSkipped}
+                      isUpdating={updateIssueStatus.isPending}
+                    />
+                  )}
+                </>
+              )}
+
+              {/* Annuals Section */}
+              {showAnnuals && annualIssues.length > 0 && (
+                <div className="annuals-section" style={{ marginTop: regularIssues.length > 0 ? '32px' : '0' }}>
+                  <div className="section-header" style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px',
+                    marginBottom: '16px',
+                    paddingBottom: '12px',
+                    borderBottom: '1px solid var(--border-color)'
+                  }}>
+                    <Star size={18} style={{ color: 'var(--accent-primary)' }} />
+                    <h3 style={{ 
+                      margin: 0, 
+                      fontSize: '16px', 
+                      fontWeight: 600,
+                      color: 'var(--text-primary)'
+                    }}>
+                      Annuals
+                    </h3>
+                    <span style={{ 
+                      fontSize: '13px', 
+                      color: 'var(--text-muted)',
+                      marginLeft: '4px'
+                    }}>
+                      ({annualIssues.length})
+                    </span>
+                  </div>
+                  
+                  {viewMode === 'cover' ? (
+                    <div className="issues-grid">
+                      {annualIssues.map((issue) => (
+                        <IssueCoverCard 
+                          key={issue.id} 
+                          issue={issue} 
+                          selected={selectedIssues.has(issue.id)}
+                          onSelect={() => toggleIssueSelection(issue.id)}
+                          onMarkWanted={() => handleMarkAsWanted([issue.id])}
+                          onMarkSkipped={() => handleMarkAsSkipped([issue.id])}
+                          isUpdating={updateIssueStatus.isPending}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <IssueListView 
+                      issues={annualIssues}
+                      selectedIds={selectedIssues}
+                      onSelect={toggleIssueSelection}
+                      onToggleSelectAll={() => {
+                        // Toggle all annuals
+                        const allAnnualIds = new Set(annualIssues.map(i => i.id));
+                        const allAnnualsSelected = annualIssues.every(i => selectedIssues.has(i.id));
+                        if (allAnnualsSelected) {
+                          setSelectedIssues(prev => {
+                            const next = new Set(prev);
+                            annualIssues.forEach(i => next.delete(i.id));
+                            return next;
+                          });
+                        } else {
+                          setSelectedIssues(prev => new Set([...prev, ...allAnnualIds]));
+                        }
+                      }}
+                      allSelected={annualIssues.every(i => selectedIssues.has(i.id))}
+                      someSelected={annualIssues.some(i => selectedIssues.has(i.id))}
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={toggleSort}
+                      onMarkWanted={handleMarkAsWanted}
+                      onMarkSkipped={handleMarkAsSkipped}
+                      isUpdating={updateIssueStatus.isPending}
+                      showHeader={false}
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* Empty state when filter hides all issues */}
+              {regularIssues.length === 0 && (!showAnnuals || annualIssues.length === 0) && (
+                <div className="empty-state" style={{ padding: '40px 20px' }}>
+                  <BookOpen size={48} style={{ opacity: 0.3 }} />
+                  <div className="empty-state-title">
+                    No {statusFilter} issues
+                  </div>
+                  <div className="empty-state-text">
+                    There are no issues with status "{statusFilter}".
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -854,11 +966,12 @@ interface IssueListViewProps {
   onMarkWanted: (ids: number[]) => void;
   onMarkSkipped: (ids: number[]) => void;
   isUpdating: boolean;
+  showHeader?: boolean;
 }
 
 function IssueListView({ 
   issues, selectedIds, onSelect, onToggleSelectAll, allSelected, someSelected,
-  sortKey, sortDir, onSort, onMarkWanted, onMarkSkipped, isUpdating 
+  sortKey, sortDir, onSort, onMarkWanted, onMarkSkipped, isUpdating, showHeader = true 
 }: IssueListViewProps) {
   const SortIcon = sortDir === 'asc' ? SortAsc : SortDesc;
   const selectAllRef = useRef<HTMLInputElement>(null);
@@ -873,32 +986,34 @@ function IssueListView({
   return (
     <div className="issues-table-wrapper">
       <table className="issues-table">
-        <thead>
-          <tr>
-            <th className="col-checkbox">
-              <input 
-                ref={selectAllRef}
-                type="checkbox" 
-                checked={allSelected}
-                onChange={onToggleSelectAll}
-              />
-            </th>
-            <th className="col-number sortable" onClick={() => onSort('issueNumber')}>
-              # {sortKey === 'issueNumber' && <SortIcon size={12} />}
-            </th>
-            <th className="col-title sortable" onClick={() => onSort('title')}>
-              Title {sortKey === 'title' && <SortIcon size={12} />}
-            </th>
-            <th className="col-date sortable" onClick={() => onSort('releaseDate')}>
-              Release Date {sortKey === 'releaseDate' && <SortIcon size={12} />}
-            </th>
-            <th className="col-status sortable" onClick={() => onSort('status')}>
-              Status {sortKey === 'status' && <SortIcon size={12} />}
-            </th>
-            <th className="col-tags">Tags</th>
-            <th className="col-actions">Actions</th>
-          </tr>
-        </thead>
+        {showHeader && (
+          <thead>
+            <tr>
+              <th className="col-checkbox">
+                <input 
+                  ref={selectAllRef}
+                  type="checkbox" 
+                  checked={allSelected}
+                  onChange={onToggleSelectAll}
+                />
+              </th>
+              <th className="col-number sortable" onClick={() => onSort('issueNumber')}>
+                # {sortKey === 'issueNumber' && <SortIcon size={12} />}
+              </th>
+              <th className="col-title sortable" onClick={() => onSort('title')}>
+                Title {sortKey === 'title' && <SortIcon size={12} />}
+              </th>
+              <th className="col-date sortable" onClick={() => onSort('releaseDate')}>
+                Release Date {sortKey === 'releaseDate' && <SortIcon size={12} />}
+              </th>
+              <th className="col-status sortable" onClick={() => onSort('status')}>
+                Status {sortKey === 'status' && <SortIcon size={12} />}
+              </th>
+              <th className="col-tags">Tags</th>
+              <th className="col-actions">Actions</th>
+            </tr>
+          </thead>
+        )}
         <tbody>
           {issues.map((issue) => (
             <IssueListRow 
