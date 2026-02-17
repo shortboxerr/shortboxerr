@@ -537,9 +537,14 @@ interface WantedItem {
   type: 'issue' | 'collection';
   title: string;
   series: string;
+  seriesId?: number;
   issueNumber?: number;
+  issueNumberText?: string;
   volumeNumber?: number;
   editionType?: string;
+  coverImageUrl?: string;
+  comicVineId?: number;
+  comicVineUrl?: string;
   dateAdded: string;
 }
 
@@ -1184,9 +1189,47 @@ export const api = {
   },
 
   // Wanted
-  getWanted: async (_params: { type: string; search?: string }): Promise<PagedResult<WantedItem>> => {
-    // This would filter series/editions without files
-    return { items: [], page: 1, pageSize: 50, totalCount: 0, totalPages: 0 };
+  getWanted: async (params: { type: string; search?: string }): Promise<PagedResult<WantedItem>> => {
+    const query = new URLSearchParams();
+    if (params.search) query.set('search', params.search);
+    
+    const endpoint = params.type === 'collections' 
+      ? '/api/v1/wanted/collections' 
+      : '/api/v1/wanted/issues';
+    
+    try {
+      const response = await fetchApi<{
+        items: any[];
+        page: number;
+        pageSize: number;
+        totalCount: number;
+        totalPages: number;
+      }>(`${endpoint}?${query}`);
+      
+      return {
+        items: response.items.map((item: any) => ({
+          id: item.id,
+          type: params.type === 'collections' ? 'collection' : 'issue',
+          title: item.title,
+          series: item.series,
+          seriesId: item.seriesId,
+          issueNumber: item.issueNumber,
+          issueNumberText: item.issueNumberText,
+          volumeNumber: item.volumeNumber,
+          editionType: item.editionType,
+          coverImageUrl: item.coverImageUrl,
+          comicVineId: item.comicVineId,
+          comicVineUrl: item.comicVineUrl,
+          dateAdded: item.dateAdded ? new Date(item.dateAdded).toLocaleDateString() : 'Unknown',
+        })),
+        page: response.page,
+        pageSize: response.pageSize,
+        totalCount: response.totalCount,
+        totalPages: response.totalPages,
+      };
+    } catch {
+      return { items: [], page: 1, pageSize: 50, totalCount: 0, totalPages: 0 };
+    }
   },
 
   // History

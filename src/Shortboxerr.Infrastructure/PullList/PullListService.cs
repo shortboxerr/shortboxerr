@@ -1553,6 +1553,13 @@ public class PullListService : IPullListService
             .Include(i => i.Series)
             .AsQueryable();
 
+        // Default to monitored-only when no filter specified (pull list shows tracked series)
+        // This ensures consistency with GetStatsAsync which also filters by monitored
+        bool filterByMonitored = filter?.MonitoredOnly ?? true;
+        
+        if (filterByMonitored)
+            query = query.Where(i => i.Series!.Monitored);
+
         if (filter != null)
         {
             if (filter.SeriesIds?.Any() == true)
@@ -1563,9 +1570,6 @@ public class PullListService : IPullListService
 
             if (filter.Statuses?.Any() == true)
                 query = query.Where(i => filter.Statuses.Contains(i.Status));
-
-            if (filter.MonitoredOnly == true)
-                query = query.Where(i => i.Series!.Monitored);
 
             if (!filter.IncludeAnnuals)
                 query = query.Where(i => !i.IsAnnual);

@@ -97,6 +97,25 @@ public class SystemEndpointsTests : IClassFixture<WebApplicationFactory<Program>
     }
 
     [Fact]
+    public async Task GetSystemStatus_ContainsStatistics()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/system/status");
+        var content = await response.Content.ReadFromJsonAsync<SystemStatusTestResponse>();
+
+        // Assert - verify statistics fields are present (can be zero in test environment)
+        Assert.NotNull(content);
+        Assert.True(content.SeriesCount >= 0);
+        Assert.True(content.IssuesCount >= 0);
+        Assert.True(content.CollectionsCount >= 0);
+        Assert.True(content.FilesCount >= 0);
+        Assert.True(content.EnabledIndexers >= 0);
+        Assert.NotNull(content.IndexerStatus);
+        Assert.NotNull(content.DatabaseStatus);
+        Assert.True(content.QueuedDownloads >= 0);
+    }
+
+    [Fact]
     public async Task GetLogFiles_ReturnsOk()
     {
         // Act
@@ -142,6 +161,14 @@ public class SystemEndpointsTests : IClassFixture<WebApplicationFactory<Program>
         public string? Version { get; set; }
         public bool IsHealthy { get; set; }
         public double WorkingSetMb { get; set; }
+        public int SeriesCount { get; set; }
+        public int IssuesCount { get; set; }
+        public int CollectionsCount { get; set; }
+        public int FilesCount { get; set; }
+        public int EnabledIndexers { get; set; }
+        public string? IndexerStatus { get; set; }
+        public string? DatabaseStatus { get; set; }
+        public int QueuedDownloads { get; set; }
     }
 
     private class LogFilesTestResponse

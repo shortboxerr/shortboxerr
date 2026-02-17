@@ -1,3 +1,86 @@
+# Self Check - Iteration 096
+
+## EPIC 15: UI Bug Fixes - P1 Critical Items
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Frontend compiles | ✅ | `client.ts` updated |
+| Backend compiles | ✅ | `dotnet build` |
+| Tests pass | ✅ | 19 tests (11 new) |
+| Git commits | ⏳ | Pending |
+
+### Items Completed
+
+| Item | Status |
+|------|--------|
+| 15.6 Wanted View Empty State | ✅ COMPLETE |
+| 15.1 Dashboard Statistics Accuracy | ✅ COMPLETE |
+| 15.2 "This Week" Section Accuracy | ✅ COMPLETE |
+
+### 15.6 Wanted View - Acceptance Criteria
+
+| AC | Status |
+|----|--------|
+| Wanted page queries issues with status = Wanted | ✅ |
+| Sort by series name, then issue number | ✅ |
+| GET /api/v1/wanted/issues returns wanted issues | ✅ |
+| GET /api/v1/wanted/collections returns monitored editions | ✅ |
+| GET /api/v1/wanted/count returns counts | ✅ |
+| UI calls correct endpoint | ✅ |
+
+### 15.1 Dashboard Statistics - Acceptance Criteria
+
+| AC | Status |
+|----|--------|
+| Series count matches database | ✅ |
+| Collections count matches database | ✅ |
+| Issues count from database | ✅ |
+| Files count from database | ✅ |
+| Indexer count from ProviderManager | ✅ |
+| Indexer status indicator | ✅ |
+
+### 15.2 "This Week" Section - Acceptance Criteria
+
+| AC | Status |
+|----|--------|
+| Shows same issues as Pull List page | ✅ |
+| Default to monitored series only | ✅ |
+| Consistent with ReleasingThisWeek stat | ✅ |
+| Correct status indicators | ✅ |
+
+### API Endpoints (3 new)
+
+| Endpoint | Status |
+|----------|--------|
+| GET /api/v1/wanted/issues | ✅ |
+| GET /api/v1/wanted/collections | ✅ |
+| GET /api/v1/wanted/count | ✅ |
+
+### Test Summary (11 new tests)
+
+| File | Tests |
+|------|-------|
+| WantedEndpointsTests.cs | 10 |
+| SystemEndpointsTests.cs | 1 |
+
+### Files Changed
+
+| File | Status |
+|------|--------|
+| `WantedEndpoints.cs` | ✅ New |
+| `SystemEndpoints.cs` | ✅ Modified |
+| `Program.cs` | ✅ Modified |
+| `PullListService.cs` | ✅ Modified |
+| `ui/src/api/client.ts` | ✅ Modified |
+| `WantedEndpointsTests.cs` | ✅ New |
+| `SystemEndpointsTests.cs` | ✅ Modified |
+| `BACKLOG.md` | ✅ Updated |
+| `WORKLOG.md` | ✅ Updated |
+
+---
+
 # Self Check - Iteration 095
 
 ## DDL Site Availability Health Checks (EPIC 8.4 - P1 Item)

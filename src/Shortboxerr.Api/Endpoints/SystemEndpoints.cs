@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Shortboxerr.Infrastructure.Persistence;
 
@@ -298,11 +299,33 @@ public static class SystemEndpoints
         return Results.Ok(response);
     }
 
-    private static IResult GetSystemStatus()
+    private static async Task<IResult> GetSystemStatus(
+        ShortboxerrDbContext dbContext,
+        [FromServices] Shortboxerr.Core.Providers.IProviderManager providerManager)
     {
         var process = Process.GetCurrentProcess();
         var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
         var version = assembly.GetName().Version?.ToString() ?? "0.1.0";
+
+        // Query actual statistics from database
+        var seriesCount = await dbContext.Series.CountAsync();
+        var issuesCount = await dbContext.Issues.CountAsync();
+        var collectionsCount = await dbContext.EditionTitles.CountAsync();
+        var filesCount = await dbContext.FileAssets.CountAsync();
+        
+        // Get indexer count from provider manager
+        int enabledIndexers = 0;
+        var indexerStatus = "healthy";
+        try
+        {
+            var indexers = await providerManager.GetByCategoryAsync(Shortboxerr.Core.Entities.ProviderCategory.Indexer);
+            enabledIndexers = indexers.Count(i => i.IsEnabled);
+            indexerStatus = enabledIndexers > 0 ? "healthy" : "warning";
+        }
+        catch
+        {
+            indexerStatus = "warning";
+        }
 
         return Results.Ok(new SystemStatusResponse
         {
@@ -311,7 +334,17 @@ public static class SystemEndpoints
             StartTime = StartTime,
             Uptime = DateTime.UtcNow - StartTime,
             IsHealthy = true,
-            WorkingSetMb = process.WorkingSet64 / (1024.0 * 1024.0)
+            WorkingSetMb = process.WorkingSet64 / (1024.0 * 1024.0),
+            
+            // Statistics
+            SeriesCount = seriesCount,
+            IssuesCount = issuesCount,
+            CollectionsCount = collectionsCount,
+            FilesCount = filesCount,
+            EnabledIndexers = enabledIndexers,
+            IndexerStatus = indexerStatus,
+            DatabaseStatus = "Connected",
+            QueuedDownloads = 0  // TODO: connect to actual queue when implemented
         });
     }
 
@@ -420,6 +453,16 @@ public class SystemStatusResponse
     public TimeSpan Uptime { get; set; }
     public bool IsHealthy { get; set; }
     public double WorkingSetMb { get; set; }
+    
+    // Statistics
+    public int SeriesCount { get; set; }
+    public int IssuesCount { get; set; }
+    public int CollectionsCount { get; set; }
+    public int FilesCount { get; set; }
+    public int EnabledIndexers { get; set; }
+    public string IndexerStatus { get; set; } = "healthy";
+    public string DatabaseStatus { get; set; } = "Connected";
+    public int QueuedDownloads { get; set; }
 }
 
 public class LogFilesResponse

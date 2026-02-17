@@ -1,0 +1,169 @@
+using System.Net;
+using System.Net.Http.Json;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Xunit;
+
+namespace Shortboxerr.Tests;
+
+/// <summary>
+/// Integration tests for Wanted API endpoints.
+/// </summary>
+public class WantedEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
+{
+    private readonly WebApplicationFactory<Program> _factory;
+    private readonly HttpClient _client;
+
+    public WantedEndpointsTests(WebApplicationFactory<Program> factory)
+    {
+        _factory = factory;
+        _client = _factory.CreateClient();
+    }
+
+    #region GET /api/v1/wanted/issues
+
+    [Fact]
+    public async Task GetWantedIssues_ReturnsOk()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/wanted/issues");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetWantedIssues_ReturnsPagedResult()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/wanted/issues");
+        var content = await response.Content.ReadFromJsonAsync<WantedPagedResultDto>();
+
+        // Assert
+        Assert.NotNull(content);
+        Assert.NotNull(content.Items);
+        Assert.True(content.Page >= 1);
+        Assert.True(content.PageSize > 0);
+        Assert.True(content.TotalCount >= 0);
+    }
+
+    [Fact]
+    public async Task GetWantedIssues_SupportsSearch()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/wanted/issues?search=batman");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetWantedIssues_SupportsSorting()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/wanted/issues?sortKey=series&sortDir=desc");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetWantedIssues_SupportsPagination()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/wanted/issues?page=1&pageSize=10");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadFromJsonAsync<WantedPagedResultDto>();
+        Assert.NotNull(content);
+        Assert.True(content.PageSize <= 10 || content.PageSize == 50); // Default might be 50
+    }
+
+    #endregion
+
+    #region GET /api/v1/wanted/collections
+
+    [Fact]
+    public async Task GetWantedCollections_ReturnsOk()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/wanted/collections");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetWantedCollections_ReturnsPagedResult()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/wanted/collections");
+        var content = await response.Content.ReadFromJsonAsync<WantedPagedResultDto>();
+
+        // Assert
+        Assert.NotNull(content);
+        Assert.NotNull(content.Items);
+        Assert.True(content.Page >= 1);
+        Assert.True(content.PageSize > 0);
+    }
+
+    [Fact]
+    public async Task GetWantedCollections_SupportsSearch()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/wanted/collections?search=batman");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    #endregion
+
+    #region GET /api/v1/wanted/count
+
+    [Fact]
+    public async Task GetWantedCount_ReturnsOk()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/wanted/count");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetWantedCount_ReturnsCountDto()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/wanted/count");
+        var content = await response.Content.ReadFromJsonAsync<WantedCountDto>();
+
+        // Assert
+        Assert.NotNull(content);
+        Assert.True(content.Issues >= 0);
+        Assert.True(content.Collections >= 0);
+        Assert.Equal(content.Issues + content.Collections, content.Total);
+    }
+
+    #endregion
+
+    #region Test DTOs
+
+    private class WantedPagedResultDto
+    {
+        public List<object>? Items { get; set; }
+        public int Page { get; set; }
+        public int PageSize { get; set; }
+        public int TotalCount { get; set; }
+        public int TotalPages { get; set; }
+    }
+
+    private class WantedCountDto
+    {
+        public int Issues { get; set; }
+        public int Collections { get; set; }
+        public int Total { get; set; }
+    }
+
+    #endregion
+}

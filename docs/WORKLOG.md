@@ -1,5 +1,62 @@
 # Worklog
 
+## Iteration 096 (2026-02-17)
+**EPIC 15: UI Bug Fixes - P1 Critical Items**
+
+### Commits
+1. `feat: add wanted API endpoints and fix dashboard statistics`
+
+### Deliverables
+
+#### 15.6 Wanted View Empty State - FIXED
+- Created `/api/v1/wanted/issues` - Paginated wanted issues with search/sort
+- Created `/api/v1/wanted/collections` - Monitored editions without files
+- Created `/api/v1/wanted/count` - Count endpoint for dashboard
+- Updated frontend `getWanted()` to call real API (was returning empty)
+- SQLite-compatible sorting (decimal IssueNumber sorted in memory)
+
+#### 15.1 Dashboard Statistics Accuracy - FIXED
+- Updated `/api/v1/system/status` to include real statistics:
+  - `SeriesCount` - Actual series count from database
+  - `IssuesCount` - Actual issues count from database
+  - `CollectionsCount` - Actual EditionTitles count from database
+  - `FilesCount` - Actual file assets count from database
+  - `EnabledIndexers` - Count from ProviderManager (NZB + DDL)
+  - `IndexerStatus` - "healthy" if indexers enabled, "warning" if none
+  - `DatabaseStatus` - Always "Connected"
+  - `QueuedDownloads` - Placeholder (0) for future queue implementation
+
+#### 15.2 "This Week" Section Accuracy - FIXED
+- Fixed `BuildIssueQuery` to default `MonitoredOnly = true` when no filter
+- Ensures consistency between:
+  - `GetStatsAsync.ReleasingThisWeek` (counts monitored only)
+  - `GetWeeklyReleasesAsync` (now also filters monitored only by default)
+- Dashboard "This Week" now matches Pull List page data
+
+### API Endpoints (3 new)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/wanted/issues` | GET | Paginated wanted issues |
+| `/api/v1/wanted/collections` | GET | Paginated wanted collections |
+| `/api/v1/wanted/count` | GET | Issues + Collections counts |
+
+### Unit Tests
+| Category | Count | Description |
+|----------|-------|-------------|
+| WantedEndpoints | 10 | Issues, collections, count endpoints |
+| SystemEndpoints | 1 | New statistics fields |
+
+### Files Changed
+- `src/Shortboxerr.Api/Endpoints/WantedEndpoints.cs` (NEW)
+- `src/Shortboxerr.Api/Endpoints/SystemEndpoints.cs` (Updated for stats)
+- `src/Shortboxerr.Api/Program.cs` (Register endpoints)
+- `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` (MonitoredOnly default)
+- `ui/src/api/client.ts` (getWanted API call + interface updates)
+- `tests/Shortboxerr.Tests/WantedEndpointsTests.cs` (NEW - 10 tests)
+- `tests/Shortboxerr.Tests/SystemEndpointsTests.cs` (1 new test)
+
+---
+
 ## Iteration 095 (2026-02-17)
 **DDL Site Availability Health Checks (EPIC 8 - P1 Item)**
 

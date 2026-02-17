@@ -236,6 +236,7 @@ app.MapDdlSiteEndpoints();
 app.MapSiteHealthEndpoints();
 app.MapSearchSettingsEndpoints();
 app.MapPullListEndpoints();
+app.MapWantedEndpoints();
 app.MapNotificationEndpoints();
 app.MapActivityEndpoints();
 app.MapCacheEndpoints();
