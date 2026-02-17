@@ -3,10 +3,10 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   ArrowLeft, ExternalLink, RefreshCw, Calendar, BookOpen, HardDrive, 
-  Check, X, Clock, Grid, List, Filter, SortAsc, SortDesc, Star, Zap, Trash2
+  Check, X, Clock, Grid, List, Filter, SortAsc, SortDesc, Star, Zap, Trash2, Settings
 } from 'lucide-react';
 import { api } from '../api/client';
-import type { Issue, IssueStatus } from '../api/client';
+import type { Issue, IssueStatus, SeriesPullListSettingsDto } from '../api/client';
 
 type ViewMode = 'cover' | 'list';
 type SortKey = 'issueNumber' | 'releaseDate' | 'status' | 'title';
@@ -32,6 +32,23 @@ export function SeriesDetailPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedIssues, setSelectedIssues] = useState<Set<number>>(new Set());
   const [showAnnuals, setShowAnnuals] = useState(true);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  
+  // Fetch series-specific pull list settings
+  const { data: seriesSettings } = useQuery({
+    queryKey: ['series', seriesId, 'pulllist-settings'],
+    queryFn: () => api.getSeriesPullListSettings(seriesId),
+    enabled: seriesId > 0,
+  });
+
+  // Update series settings mutation
+  const updateSeriesSettings = useMutation({
+    mutationFn: (settings: SeriesPullListSettingsDto) => 
+      api.updateSeriesPullListSettings(seriesId, settings),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['series', seriesId, 'pulllist-settings'] });
+    },
+  });
 
   // Sync view mode from settings when loaded
   useEffect(() => {
@@ -237,6 +254,13 @@ export function SeriesDetailPage() {
         </Link>
         <h1 className="page-title">{series.title}</h1>
         <div className="toolbar-group">
+          <button 
+            className="btn btn-icon" 
+            title="Series Settings (Annual/Special Handling)"
+            onClick={() => setShowSettingsModal(true)}
+          >
+            <Settings size={18} />
+          </button>
           <button 
             className="btn btn-icon" 
             title="Refresh Series Metadata from ComicVine"
@@ -496,7 +520,182 @@ export function SeriesDetailPage() {
         </div>
       </div>
 
+      {/* Series Settings Modal */}
+      {showSettingsModal && (
+        <SeriesSettingsModal
+          seriesTitle={series.title}
+          settings={seriesSettings}
+          onClose={() => setShowSettingsModal(false)}
+          onSave={(newSettings) => {
+            updateSeriesSettings.mutate({ ...newSettings, seriesId });
+            setShowSettingsModal(false);
+          }}
+          isSaving={updateSeriesSettings.isPending}
+        />
+      )}
     </>
+  );
+}
+
+// === Series Settings Modal ===
+interface SeriesSettingsModalProps {
+  seriesTitle: string;
+  settings?: SeriesPullListSettingsDto;
+  onClose: () => void;
+  onSave: (settings: SeriesPullListSettingsDto) => void;
+  isSaving: boolean;
+}
+
+function SeriesSettingsModal({ seriesTitle, settings, onClose, onSave, isSaving }: SeriesSettingsModalProps) {
+  const [includeAnnuals, setIncludeAnnuals] = useState(settings?.includeAnnuals ?? null);
+  const [includeSpecials, setIncludeSpecials] = useState(settings?.includeSpecials ?? null);
+  const [skipVariants, setSkipVariants] = useState(settings?.skipVariants ?? null);
+
+  const handleSave = () => {
+    onSave({
+      seriesId: settings?.seriesId ?? 0,
+      includeAnnuals,
+      includeSpecials,
+      skipVariants,
+      searchPriority: settings?.searchPriority ?? 0,
+    });
+  };
+
+  // Tri-state checkbox helper: null = use global default, true/false = override
+  const TriStateCheckbox = ({ 
+    value, 
+    onChange, 
+    label, 
+    globalDefault 
+  }: { 
+    value: boolean | null; 
+    onChange: (v: boolean | null) => void; 
+    label: string;
+    globalDefault: boolean;
+  }) => {
+    const cycle = () => {
+      if (value === null) onChange(true);
+      else if (value === true) onChange(false);
+      else onChange(null);
+    };
+
+    return (
+      <div 
+        className="tristate-checkbox" 
+        onClick={cycle}
+        style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '10px', 
+          cursor: 'pointer',
+          padding: '8px',
+          borderRadius: 'var(--radius-sm)',
+          background: 'var(--bg-tertiary)',
+          marginBottom: '8px'
+        }}
+      >
+        <div style={{
+          width: '20px',
+          height: '20px',
+          borderRadius: '4px',
+          border: '2px solid var(--border-color)',
+          background: value === null ? 'transparent' : value ? 'var(--accent-primary)' : 'transparent',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '12px',
+          color: 'white'
+        }}>
+          {value === null && <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>—</span>}
+          {value === true && <Check size={14} />}
+          {value === false && <X size={14} />}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{label}</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+            {value === null 
+              ? `Using global default (${globalDefault ? 'enabled' : 'disabled'})`
+              : value ? 'Enabled for this series' : 'Disabled for this series'
+            }
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+        <div className="modal-header">
+          <h2 className="modal-title">Series Settings</h2>
+          <button className="btn btn-icon" onClick={onClose}>
+            <X size={20} />
+          </button>
+        </div>
+        <div className="modal-body">
+          <div style={{ 
+            background: 'var(--bg-secondary)', 
+            padding: '12px 16px', 
+            borderRadius: 'var(--radius-md)', 
+            marginBottom: '16px',
+            border: '1px solid var(--border-color)'
+          }}>
+            <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>
+              {seriesTitle}
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Override global annual/special issue handling for this series
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Issue Types
+            </div>
+            
+            <TriStateCheckbox 
+              value={includeAnnuals} 
+              onChange={setIncludeAnnuals}
+              label="Include Annuals"
+              globalDefault={true}
+            />
+            
+            <TriStateCheckbox 
+              value={includeSpecials} 
+              onChange={setIncludeSpecials}
+              label="Include Specials"
+              globalDefault={false}
+            />
+            
+            <TriStateCheckbox 
+              value={skipVariants} 
+              onChange={setSkipVariants}
+              label="Skip Variant Covers"
+              globalDefault={true}
+            />
+          </div>
+
+          <div style={{ 
+            fontSize: '11px', 
+            color: 'var(--text-muted)', 
+            background: 'var(--bg-tertiary)',
+            padding: '10px 12px',
+            borderRadius: 'var(--radius-sm)',
+            lineHeight: '1.5'
+          }}>
+            <strong>Click to cycle:</strong> Use global → Enable → Disable → Use global
+            <br />
+            Changes only affect auto-add behavior for new issues. Existing wanted issues are not affected.
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save Settings'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
