@@ -37,12 +37,6 @@ export function Dashboard() {
           </div>
           
           <div className="card">
-            <div className="card-title">Collections</div>
-            <div className="stat-value">{isLoading ? '-' : stats?.collectionsCount ?? 0}</div>
-            <div className="stat-label">TPBs & Hardcovers</div>
-          </div>
-          
-          <div className="card">
             <div className="card-title">Issues</div>
             <div className="stat-value">{isLoading ? '-' : stats?.issuesCount ?? 0}</div>
             <div className="stat-label">Single issues</div>
@@ -53,6 +47,14 @@ export function Dashboard() {
             <div className="stat-value">{isLoading ? '-' : stats?.filesCount ?? 0}</div>
             <div className="stat-label">In library</div>
           </div>
+          
+          <Link to="/wanted" className="card card-clickable" style={{ textDecoration: 'none' }}>
+            <div className="card-title">Wanted</div>
+            <div className="stat-value" style={{ color: 'var(--accent-warning)' }}>
+              {pullStats?.totalWantedIssues ?? 0}
+            </div>
+            <div className="stat-label">Issues to find</div>
+          </Link>
         </div>
         
         <div style={{ marginTop: '24px' }}>
@@ -70,13 +72,13 @@ export function Dashboard() {
               icon={Download}
               label="Indexers"
               status={stats?.indexerStatus === 'healthy' ? 'healthy' : 'warning'}
-              message={`${stats?.enabledIndexers ?? 0} enabled`}
+              message={\`\${stats?.enabledIndexers ?? 0} enabled\`}
             />
             <StatusCard
               icon={Clock}
               label="Queue"
               status="healthy"
-              message={`${stats?.queuedDownloads ?? 0} pending`}
+              message={\`\${stats?.queuedDownloads ?? 0} pending\`}
             />
           </div>
         </div>
@@ -122,7 +124,7 @@ function StatusCard({
           width: '48px',
           height: '48px',
           borderRadius: 'var(--radius-md)',
-          background: `${statusColors[status]}15`,
+          background: \`\${statusColors[status]}15\`,
           color: statusColors[status],
           display: 'flex',
           alignItems: 'center',
@@ -163,7 +165,7 @@ function RecentActivityList() {
     <div className="activity-list">
       {activities.map((activity) => (
         <div key={activity.id} className="activity-item">
-          <div className={`activity-icon ${activity.type}`}>
+          <div className={\`activity-icon \${activity.type}\`}>
             {activity.type === 'success' && <CheckCircle size={20} />}
             {activity.type === 'warning' && <AlertCircle size={20} />}
             {activity.type === 'info' && <Download size={20} />}
@@ -222,7 +224,7 @@ function ThisWeekWidget({ issues, stats }: { issues: PullListIssue[]; stats?: Pu
           {wantedIssues.map((issue) => (
             <Link 
               key={issue.issueId} 
-              to={`/series/${issue.seriesId}`}
+              to={\`/series/\${issue.seriesId}\`}
               className="widget-list-item"
             >
               {issue.coverImageUrl ? (
@@ -274,10 +276,6 @@ function ComingSoonWidget({ stats }: { stats?: PullListStats }) {
           <span className="widget-stat-value">{stats?.releasingNextWeek ?? 0}</span>
           <span className="widget-stat-label">next week</span>
         </div>
-        <div className="widget-stat wanted">
-          <span className="widget-stat-value">{stats?.totalWantedIssues ?? 0}</span>
-          <span className="widget-stat-label">total wanted</span>
-        </div>
         {(stats?.missedIssues ?? 0) > 0 && (
           <div className="widget-stat missed">
             <span className="widget-stat-value">{stats?.missedIssues}</span>
@@ -305,4 +303,3 @@ function ComingSoonWidget({ stats }: { stats?: PullListStats }) {
     </div>
   );
 }
-
