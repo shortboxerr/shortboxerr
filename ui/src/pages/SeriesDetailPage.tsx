@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -168,8 +168,16 @@ export function SeriesDetailPage() {
     setSelectedIssues(newSelected);
   };
 
-  const selectAllVisible = () => {
-    setSelectedIssues(new Set(filteredIssues.map(i => i.id)));
+  const allIssuesSelected = filteredIssues.length > 0 && selectedIssues.size === filteredIssues.length;
+  const someIssuesSelected = selectedIssues.size > 0;
+
+  const toggleSelectAllIssues = () => {
+    // If any items are selected, clear selection; otherwise select all visible
+    if (someIssuesSelected) {
+      setSelectedIssues(new Set());
+    } else {
+      setSelectedIssues(new Set(filteredIssues.map(i => i.id)));
+    }
   };
 
   const clearSelection = () => {
@@ -382,6 +390,17 @@ export function SeriesDetailPage() {
               </button>
             </div>
 
+            {/* Select All Button (useful for cover view) */}
+            {viewMode === 'cover' && filteredIssues.length > 0 && (
+              <button 
+                className="btn btn-sm"
+                onClick={toggleSelectAllIssues}
+                title={someIssuesSelected ? 'Deselect All' : 'Select All'}
+              >
+                {someIssuesSelected ? 'Deselect All' : 'Select All'}
+              </button>
+            )}
+
             {/* Bulk Selection */}
             {selectedIssues.size > 0 && (
               <div className="bulk-actions">
@@ -443,7 +462,9 @@ export function SeriesDetailPage() {
               issues={filteredIssues}
               selectedIds={selectedIssues}
               onSelect={toggleIssueSelection}
-              onSelectAll={selectAllVisible}
+              onToggleSelectAll={toggleSelectAllIssues}
+              allSelected={allIssuesSelected}
+              someSelected={someIssuesSelected}
               sortKey={sortKey}
               sortDir={sortDir}
               onSort={toggleSort}
@@ -595,7 +616,9 @@ interface IssueListViewProps {
   issues: Issue[];
   selectedIds: Set<number>;
   onSelect: (id: number) => void;
-  onSelectAll: () => void;
+  onToggleSelectAll: () => void;
+  allSelected: boolean;
+  someSelected: boolean;
   sortKey: SortKey;
   sortDir: SortDir;
   onSort: (key: SortKey) => void;
@@ -605,10 +628,18 @@ interface IssueListViewProps {
 }
 
 function IssueListView({ 
-  issues, selectedIds, onSelect, onSelectAll, sortKey, sortDir, onSort,
-  onMarkWanted, onMarkSkipped, isUpdating 
+  issues, selectedIds, onSelect, onToggleSelectAll, allSelected, someSelected,
+  sortKey, sortDir, onSort, onMarkWanted, onMarkSkipped, isUpdating 
 }: IssueListViewProps) {
   const SortIcon = sortDir === 'asc' ? SortAsc : SortDesc;
+  const selectAllRef = useRef<HTMLInputElement>(null);
+
+  // Set indeterminate state on checkbox
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = someSelected && !allSelected;
+    }
+  }, [someSelected, allSelected]);
   
   return (
     <div className="issues-table-wrapper">
@@ -617,9 +648,10 @@ function IssueListView({
           <tr>
             <th className="col-checkbox">
               <input 
+                ref={selectAllRef}
                 type="checkbox" 
-                checked={selectedIds.size === issues.length && issues.length > 0}
-                onChange={onSelectAll}
+                checked={allSelected}
+                onChange={onToggleSelectAll}
               />
             </th>
             <th className="col-number sortable" onClick={() => onSort('issueNumber')}>
