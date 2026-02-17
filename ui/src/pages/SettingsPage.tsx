@@ -1601,8 +1601,28 @@ function PullListSettingsTab() {
         </SettingsField>
       </SettingsSection>
 
-      <SettingsSection title="Issue Filtering">
-        <SettingsField label="Include Annuals">
+      <SettingsSection title="Annual & Special Issue Handling">
+        <div style={{ 
+          background: 'var(--bg-tertiary)', 
+          padding: '12px 16px', 
+          borderRadius: 'var(--radius-md)', 
+          marginBottom: '16px',
+          fontSize: '13px',
+          color: 'var(--text-secondary)',
+          lineHeight: '1.5'
+        }}>
+          <strong style={{ color: 'var(--text-primary)' }}>About Annuals:</strong>
+          <p style={{ margin: '8px 0 0 0' }}>
+            Annual issues are special yearly releases that supplement a regular series (e.g., "Batman Annual #1"). 
+            When enabled, annuals are automatically detected based on ComicVine metadata and included in your pull list.
+          </p>
+          <p style={{ margin: '8px 0 0 0' }}>
+            These settings control the <em>global default</em> behavior. You can override these settings on a 
+            per-series basis via the series settings (gear icon on any series detail page).
+          </p>
+        </div>
+
+        <SettingsField label="Include Annuals" description="Automatically add annual issues to your wanted list when monitoring a series">
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
             <input
               type="checkbox"
@@ -1614,9 +1634,12 @@ function PullListSettingsTab() {
               Include annual issues in auto-add to wanted list
             </span>
           </label>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', marginLeft: '26px' }}>
+            Annual issues are detected by issue number text containing "Annual" or by ComicVine metadata.
+          </div>
         </SettingsField>
 
-        <SettingsField label="Include Specials">
+        <SettingsField label="Include Specials" description="Include special one-shots, giant-size issues, and other non-standard releases">
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
             <input
               type="checkbox"
@@ -1628,9 +1651,12 @@ function PullListSettingsTab() {
               Include special issues (one-shots, giant-size, etc.) in auto-add
             </span>
           </label>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', marginLeft: '26px' }}>
+            Specials include: Giant-Size, King-Size, One-Shot, 80-Page Giant, and other non-numbered issues.
+          </div>
         </SettingsField>
 
-        <SettingsField label="Skip Variant Covers">
+        <SettingsField label="Skip Variant Covers" description="Avoid downloading multiple versions of the same issue">
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
             <input
               type="checkbox"
@@ -1639,9 +1665,13 @@ function PullListSettingsTab() {
               style={{ width: '18px', height: '18px', cursor: 'pointer' }}
             />
             <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
-              Skip variant covers (issues like #1A, #1B) when auto-adding
+              Skip variant covers when auto-adding
             </span>
           </label>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', marginLeft: '26px' }}>
+            Variant covers are alternate covers for the same issue (e.g., #1A, #1B, Virgin Cover, etc.).
+            Enable this to only track the main cover version.
+          </div>
         </SettingsField>
       </SettingsSection>
 

@@ -381,7 +381,11 @@ export interface WeeklyExportInfo {
 
 export interface SeriesPullListSettingsDto {
   seriesId: number;
-  monitoringModeOverride?: number | null;
+  monitoringModeOverride?: string | null;
+  includeAnnuals?: boolean | null;
+  includeSpecials?: boolean | null;
+  skipVariants?: boolean | null;
+  searchPriority?: number;
 }
 
 // Search Settings

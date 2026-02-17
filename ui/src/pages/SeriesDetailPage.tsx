@@ -31,6 +31,7 @@ export function SeriesDetailPage() {
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedIssues, setSelectedIssues] = useState<Set<number>>(new Set());
+  const [showAnnuals, setShowAnnuals] = useState(true);
 
   // Sync view mode from settings when loaded
   useEffect(() => {
@@ -142,15 +143,21 @@ export function SeriesDetailPage() {
 
   const allIssues = issuesData?.items ?? [];
 
-  // Filter issues based on status
+  // Filter issues based on status and annual visibility
   const filteredIssues = useMemo(() => {
-    if (statusFilter === 'all') return allIssues;
-    
     return allIssues.filter(issue => {
+      // Filter by annuals visibility
+      if (!showAnnuals && issue.isAnnual) return false;
+      
+      // Filter by status
+      if (statusFilter === 'all') return true;
       const status = getIssueStatus(issue);
       return status === statusFilter;
     });
-  }, [allIssues, statusFilter]);
+  }, [allIssues, statusFilter, showAnnuals]);
+
+  // Count annuals for display
+  const annualCount = allIssues.filter(i => i.isAnnual).length;
 
   // Counts for stats
   const ownedCount = allIssues.filter(i => i.hasFile).length;
@@ -368,6 +375,19 @@ export function SeriesDetailPage() {
               </select>
             </div>
 
+            {/* Annuals Toggle */}
+            {annualCount > 0 && (
+              <label className="toolbar-checkbox" title="Show/hide annual issues">
+                <input 
+                  type="checkbox" 
+                  checked={showAnnuals} 
+                  onChange={(e) => setShowAnnuals(e.target.checked)}
+                />
+                <Star size={14} />
+                Annuals ({annualCount})
+              </label>
+            )}
+
             {/* Sort Dropdown */}
             <div className="sort-dropdown">
               {sortDir === 'asc' ? <SortAsc size={16} /> : <SortDesc size={16} />}
@@ -475,6 +495,7 @@ export function SeriesDetailPage() {
           )}
         </div>
       </div>
+
     </>
   );
 }
