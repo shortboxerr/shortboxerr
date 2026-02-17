@@ -14,6 +14,13 @@ public class DdlSearchServiceTests
     public DdlSearchServiceTests()
     {
         _adapterFactory = new DdlSiteAdapterFactory();
+        
+        // Disable real DDL sites and only enable MockDdl for testing
+        // Real sites would make network calls and return unpredictable data
+        ((DdlSiteAdapterFactory)_adapterFactory).DisableSite("GetComics");
+        ((DdlSiteAdapterFactory)_adapterFactory).DisableSite("ReadComicOnline");
+        ((DdlSiteAdapterFactory)_adapterFactory).EnableSite("MockDdl");
+        
         _searchService = new DdlSearchService(_adapterFactory, new DdlReleaseParser());
     }
 
