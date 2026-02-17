@@ -2268,17 +2268,26 @@ Wanted view shows no issues even when issues are marked as wanted.
 ### 15.7 Issue Status Toggle from Series View ✅ COMPLETED
 Toggle wanted/skipped status directly from issue list in series detail.
 
-**Verified in Iteration 097 (already implemented):**
-- Cover view: action buttons (Wanted/Owned/Skip) appear on hover overlay
-- List view: action buttons visible in Actions column for each row
-- Bulk actions: select multiple issues via checkboxes, then use toolbar buttons
-- Status updates via React Query mutation with cache invalidation
-- Button visibility depends on current status (won't show current status option)
+**Fixed in Iteration 097:**
+
+Bug: Status toggle wasn't working due to JSON enum serialization issue and missing business rules.
+
+Fix Applied:
+- Added `JsonStringEnumConverter` for proper enum serialization
+- Implemented Mylar3-compatible status rules:
+  - **Owned**: Only set by import process when file exists (not manually)
+  - **Wanted/Skipped**: Can be toggled for issues without files
+  - Issues with files are locked to Owned status
+- Removed manual "Mark as Owned" button (Mylar3 parity)
+- Cover view: Wanted/Skip buttons appear on hover (not Owned)
+- List view: Wanted/Skip buttons in Actions column (not Owned)
+- Bulk actions: Wanted/Skip options only (not Owned)
 
 - [x] **Toggle wanted status button**
-  - AC: If issue is Wanted, show "Skip" or "Remove from Wanted" button ✅
+  - AC: If issue is Wanted, show "Skip" button ✅
   - AC: If issue is Skipped/Missing, show "Mark as Wanted" button ✅
   - AC: One-click toggle (no confirmation for status changes) ✅
+  - AC: Owned status set automatically by import only (Mylar3 parity) ✅
 
 - [x] **Visual status feedback**
   - AC: Status badge updates immediately on toggle ✅ (cache invalidation)

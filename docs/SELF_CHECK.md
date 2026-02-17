@@ -40,23 +40,31 @@
 | Clear hover, active, disabled states | ✅ |
 | Works with white/light cover images | ✅ |
 
-### 15.7 Issue Status Toggle - Acceptance Criteria (Pre-existing)
+### 15.7 Issue Status Toggle - Acceptance Criteria (FIXED)
+
+**Bug Fixed:** Status toggle wasn't working (JSON enum serialization + missing business rules)
 
 | AC | Status |
 |----|--------|
-| Toggle wanted status button | ✅ (existing) |
+| JSON accepts string enum values (Wanted/Skipped) | ✅ (added JsonStringEnumConverter) |
+| Toggle wanted status button | ✅ |
 | If Wanted, show Skip button | ✅ |
 | If Skipped/Missing, show Mark as Wanted | ✅ |
 | One-click toggle | ✅ |
 | Status badge updates immediately | ✅ |
 | Bulk status changes supported | ✅ |
+| Owned set by import only (Mylar3 parity) | ✅ |
+| No manual "Mark as Owned" button | ✅ |
+| Issues with files locked to Owned | ✅ |
 
 ### Files Changed
 
 | File | Status |
 |------|--------|
-| `ui/src/pages/SeriesDetailPage.tsx` | ✅ Modified (ComicVine links) |
+| `ui/src/pages/SeriesDetailPage.tsx` | ✅ Modified (ComicVine links + status toggle fix) |
 | `ui/src/App.css` | ✅ Modified (button visibility, link styles) |
+| `src/Shortboxerr.Api/Program.cs` | ✅ Modified (JsonStringEnumConverter) |
+| `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` | ✅ Modified (Mylar3 status rules) |
 | `docs/BACKLOG.md` | ✅ Updated |
 | `docs/WORKLOG.md` | ✅ Updated |
 | `docs/SELF_CHECK.md` | ✅ Updated |

@@ -1,10 +1,11 @@
 # Worklog
 
 ## Iteration 097 (2026-02-17)
-**EPIC 15: UI Bug Fixes - P2 Usability Items**
+**EPIC 15: UI Bug Fixes - P2 Usability Items + Issue Status Fix**
 
 ### Commits
 1. `feat: add ComicVine links to issues and improve button visibility`
+2. `fix: issue status toggle and enforce Mylar3 status rules`
 
 ### Deliverables
 
@@ -21,16 +22,26 @@
 - ComicVine link button uses accent color for visual distinction
 - Works consistently on both light and dark themes
 
-#### 15.7 Issue Status Toggle - VERIFIED EXISTING
-- Verified existing implementation in SeriesDetailPage
-- Cover view: action buttons appear on hover (Wanted/Owned/Skip)
-- List view: action buttons visible in Actions column
-- Bulk actions available when multiple issues selected
-- Status updates via mutation with optimistic UI feedback
+#### 15.7 Issue Status Toggle - FIXED + MYLAR3 PARITY
+**Bug Found:** Status toggle wasn't working due to:
+1. JSON enum serialization expecting numeric values but UI sending strings
+2. No business rules enforcing proper status transitions
+
+**Fix Applied:**
+- Added `JsonStringEnumConverter` to accept string enum values in API
+- Implemented Mylar3-compatible status rules:
+  - **Owned**: Only set automatically when file is imported (not manually settable)
+  - **Wanted**: Can be toggled for any issue without a file
+  - **Skipped**: Can be toggled for any issue without a file
+  - Issues with files are locked to "Owned" status
+- Removed manual "Mark as Owned" button from UI
+- Bulk actions now only show Wanted/Skip options
 
 ### Files Changed
-- `ui/src/pages/SeriesDetailPage.tsx` (Added ComicVine link handling)
+- `ui/src/pages/SeriesDetailPage.tsx` (ComicVine links + removed Owned button)
 - `ui/src/App.css` (Improved button visibility, added link styles)
+- `src/Shortboxerr.Api/Program.cs` (Added JsonStringEnumConverter)
+- `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` (Status rules)
 
 ---
 
