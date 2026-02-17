@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
@@ -9,6 +10,7 @@ using Shortboxerr.Infrastructure;
 using Shortboxerr.Infrastructure.Logging;
 using Shortboxerr.Infrastructure.Persistence;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 // Configure Serilog early (before WebApplication builder)
 // Container-first: uses /config/logs when SHORTBOXERR_CONFIG is set
@@ -74,6 +76,13 @@ var connectionString = Environment.GetEnvironmentVariable("SHORTBOXERR_DB")
     ?? builder.Configuration.GetConnectionString("DefaultConnection")
     ?? $"Data Source={dbPath}";
 builder.Services.AddInfrastructure(connectionString, enableDebugMode: isDebug);
+
+// Configure JSON serialization to use string enums
+builder.Services.Configure<JsonOptions>(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+});
 
 // Add HttpContextAccessor for correlation ID enrichment
 builder.Services.AddHttpContextAccessor();

@@ -194,7 +194,9 @@ public class PullListService : IPullListService
         int issueId,
         CancellationToken cancellationToken = default)
     {
-        return await UpdateIssueStatusAsync(issueId, IssueStatus.Owned, cancellationToken);
+        // Owned status should only be set when a file exists - this is called by import process
+        // Manual marking as Owned is not allowed (Mylar3 parity)
+        return await UpdateIssueStatusAsync(issueId, IssueStatus.Owned, cancellationToken, allowOwned: true);
     }
 
     public async Task<PullListActionResult> MarkAsSkippedAsync(
@@ -215,6 +217,7 @@ public class PullListService : IPullListService
         try
         {
             var issues = await _dbContext.Issues
+                .Include(i => i.File)
                 .Where(i => ids.Contains(i.Id))
                 .ToListAsync(cancellationToken);
 
@@ -222,10 +225,39 @@ public class PullListService : IPullListService
             {
                 try
                 {
+                    // Apply status rules (Mylar3 parity):
+                    // - Owned: Only set by import process when file exists, not manually
+                    // - Wanted/Skipped: Can be toggled freely for issues without files
+                    // - If issue has file, status is Owned and cannot be changed manually
+                    
+                    var hasFile = issue.File != null || issue.HasFile;
+                    
+                    if (hasFile)
+                    {
+                        // Issue already has a file - status is locked to Owned
+                        _logger.LogDebug("Issue {IssueId} has file, skipping status change", issue.Id);
+                        result.FailedIssueIds.Add(issue.Id);
+                        result.FailedCount++;
+                        continue;
+                    }
+                    
+                    if (newStatus == IssueStatus.Owned)
+                    {
+                        // Cannot manually mark as Owned - this is set by import process only
+                        _logger.LogDebug("Issue {IssueId} cannot be manually marked as Owned", issue.Id);
+                        result.FailedIssueIds.Add(issue.Id);
+                        result.FailedCount++;
+                        continue;
+                    }
+                    
                     issue.Status = newStatus;
+                    // Monitored = true for Wanted, false for Skipped/other
                     issue.Monitored = newStatus == IssueStatus.Wanted;
                     issue.UpdatedAt = DateTime.UtcNow;
                     result.SuccessCount++;
+                    
+                    _logger.LogDebug("Updated issue {IssueId} to status {Status}, Monitored={Monitored}", 
+                        issue.Id, newStatus, issue.Monitored);
                 }
                 catch (Exception ex)
                 {
@@ -271,17 +303,49 @@ public class PullListService : IPullListService
     private async Task<PullListActionResult> UpdateIssueStatusAsync(
         int issueId,
         IssueStatus newStatus,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool allowOwned = false)
     {
         try
         {
-            var issue = await _dbContext.Issues.FindAsync(new object[] { issueId }, cancellationToken);
+            var issue = await _dbContext.Issues
+                .Include(i => i.File)
+                .FirstOrDefaultAsync(i => i.Id == issueId, cancellationToken);
+                
             if (issue == null)
             {
                 return new PullListActionResult
                 {
                     Success = false,
                     Error = $"Issue {issueId} not found",
+                    IssueId = issueId
+                };
+            }
+
+            // Status rules (Mylar3 parity):
+            // - If issue has file, it's Owned and cannot be changed manually
+            // - Owned status can only be set via import process (allowOwned = true)
+            // - Wanted/Skipped can be toggled freely for issues without files
+            
+            var hasFile = issue.File != null || issue.HasFile;
+            
+            if (hasFile && newStatus != IssueStatus.Owned)
+            {
+                return new PullListActionResult
+                {
+                    Success = false,
+                    Error = "Cannot change status of issue with existing file",
+                    IssueId = issueId,
+                    NewStatus = IssueStatus.Owned
+                };
+            }
+            
+            if (newStatus == IssueStatus.Owned && !allowOwned && !hasFile)
+            {
+                return new PullListActionResult
+                {
+                    Success = false,
+                    Error = "Owned status is set automatically when file is imported",
                     IssueId = issueId
                 };
             }
@@ -295,7 +359,8 @@ public class PullListService : IPullListService
             // Invalidate pull list cache since status affects query results
             InvalidatePullListCache();
 
-            _logger.LogInformation("Updated issue {IssueId} to status {Status}", issueId, newStatus);
+            _logger.LogInformation("Updated issue {IssueId} to status {Status}, Monitored={Monitored}", 
+                issueId, newStatus, issue.Monitored);
 
             return new PullListActionResult
             {

@@ -67,28 +67,23 @@ export function SeriesDetailPage() {
   });
 
   // Action handlers
+  // Note: "Owned" status is set automatically by the import process when a file is added
+  // Only "Wanted" and "Skipped" can be toggled manually (Mylar3 parity)
   const handleMarkAsWanted = (issueIds: number[]) => {
     updateIssueStatus.mutate({ issueIds, status: 'Wanted' });
-  };
-
-  const handleMarkAsOwned = (issueIds: number[]) => {
-    updateIssueStatus.mutate({ issueIds, status: 'Owned' });
   };
 
   const handleMarkAsSkipped = (issueIds: number[]) => {
     updateIssueStatus.mutate({ issueIds, status: 'Skipped' });
   };
 
-  const handleBulkAction = (action: 'wanted' | 'owned' | 'skipped') => {
+  const handleBulkAction = (action: 'wanted' | 'skipped') => {
     const ids = Array.from(selectedIssues);
     if (ids.length === 0) return;
     
     switch (action) {
       case 'wanted':
         handleMarkAsWanted(ids);
-        break;
-      case 'owned':
-        handleMarkAsOwned(ids);
         break;
       case 'skipped':
         handleMarkAsSkipped(ids);
@@ -372,15 +367,6 @@ export function SeriesDetailPage() {
                   Wanted
                 </button>
                 <button 
-                  className="btn btn-sm btn-success" 
-                  onClick={() => handleBulkAction('owned')}
-                  disabled={updateIssueStatus.isPending}
-                  title="Mark selected as Owned"
-                >
-                  <Check size={14} />
-                  Owned
-                </button>
-                <button 
                   className="btn btn-sm btn-muted" 
                   onClick={() => handleBulkAction('skipped')}
                   disabled={updateIssueStatus.isPending}
@@ -418,7 +404,6 @@ export function SeriesDetailPage() {
                   selected={selectedIssues.has(issue.id)}
                   onSelect={() => toggleIssueSelection(issue.id)}
                   onMarkWanted={() => handleMarkAsWanted([issue.id])}
-                  onMarkOwned={() => handleMarkAsOwned([issue.id])}
                   onMarkSkipped={() => handleMarkAsSkipped([issue.id])}
                   isUpdating={updateIssueStatus.isPending}
                 />
@@ -434,7 +419,6 @@ export function SeriesDetailPage() {
               sortDir={sortDir}
               onSort={toggleSort}
               onMarkWanted={handleMarkAsWanted}
-              onMarkOwned={handleMarkAsOwned}
               onMarkSkipped={handleMarkAsSkipped}
               isUpdating={updateIssueStatus.isPending}
             />
@@ -459,12 +443,11 @@ interface IssueCoverCardProps {
   selected: boolean;
   onSelect: () => void;
   onMarkWanted: () => void;
-  onMarkOwned: () => void;
   onMarkSkipped: () => void;
   isUpdating: boolean;
 }
 
-function IssueCoverCard({ issue, selected, onSelect, onMarkWanted, onMarkOwned, onMarkSkipped, isUpdating }: IssueCoverCardProps) {
+function IssueCoverCard({ issue, selected, onSelect, onMarkWanted, onMarkSkipped, isUpdating }: IssueCoverCardProps) {
   const [showActions, setShowActions] = useState(false);
   const placeholderCover = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="150" viewBox="0 0 100 150"%3E%3Crect fill="%232a2d35" width="100" height="150"/%3E%3Ctext fill="%236b7280" font-family="sans-serif" font-size="10" x="50" y="75" text-anchor="middle"%3ENo Cover%3C/text%3E%3C/svg%3E';
   
@@ -528,7 +511,9 @@ function IssueCoverCard({ issue, selected, onSelect, onMarkWanted, onMarkOwned, 
                 <ExternalLink size={14} />
               </button>
             )}
-            {status !== 'wanted' && (
+            {/* Status toggle buttons - only for non-owned issues */}
+            {/* Owned status is set automatically by import, not manually */}
+            {status !== 'owned' && status !== 'wanted' && (
               <button 
                 className="btn btn-icon btn-sm btn-action" 
                 onClick={onMarkWanted}
@@ -538,17 +523,7 @@ function IssueCoverCard({ issue, selected, onSelect, onMarkWanted, onMarkOwned, 
                 <Clock size={14} />
               </button>
             )}
-            {status !== 'owned' && (
-              <button 
-                className="btn btn-icon btn-sm btn-action" 
-                onClick={onMarkOwned}
-                disabled={isUpdating}
-                title="Mark as Owned"
-              >
-                <Check size={14} />
-              </button>
-            )}
-            {status !== 'skipped' && status !== 'owned' && (
+            {status !== 'owned' && status !== 'skipped' && (
               <button 
                 className="btn btn-icon btn-sm btn-action" 
                 onClick={onMarkSkipped}
@@ -596,14 +571,13 @@ interface IssueListViewProps {
   sortDir: SortDir;
   onSort: (key: SortKey) => void;
   onMarkWanted: (ids: number[]) => void;
-  onMarkOwned: (ids: number[]) => void;
   onMarkSkipped: (ids: number[]) => void;
   isUpdating: boolean;
 }
 
 function IssueListView({ 
   issues, selectedIds, onSelect, onSelectAll, sortKey, sortDir, onSort,
-  onMarkWanted, onMarkOwned, onMarkSkipped, isUpdating 
+  onMarkWanted, onMarkSkipped, isUpdating 
 }: IssueListViewProps) {
   const SortIcon = sortDir === 'asc' ? SortAsc : SortDesc;
   
@@ -643,7 +617,6 @@ function IssueListView({
               selected={selectedIds.has(issue.id)}
               onSelect={() => onSelect(issue.id)}
               onMarkWanted={() => onMarkWanted([issue.id])}
-              onMarkOwned={() => onMarkOwned([issue.id])}
               onMarkSkipped={() => onMarkSkipped([issue.id])}
               isUpdating={isUpdating}
             />
@@ -660,12 +633,11 @@ interface IssueListRowProps {
   selected: boolean;
   onSelect: () => void;
   onMarkWanted: () => void;
-  onMarkOwned: () => void;
   onMarkSkipped: () => void;
   isUpdating: boolean;
 }
 
-function IssueListRow({ issue, selected, onSelect, onMarkWanted, onMarkOwned, onMarkSkipped, isUpdating }: IssueListRowProps) {
+function IssueListRow({ issue, selected, onSelect, onMarkWanted, onMarkSkipped, isUpdating }: IssueListRowProps) {
   const status = getIssueStatus(issue);
   const statusLabels: Record<string, string> = {
     owned: 'Owned',
@@ -738,7 +710,9 @@ function IssueListRow({ issue, selected, onSelect, onMarkWanted, onMarkOwned, on
               <ExternalLink size={14} />
             </a>
           )}
-          {status !== 'wanted' && (
+          {/* Status toggle buttons - only for non-owned issues */}
+          {/* Owned status is set automatically by import, not manually */}
+          {status !== 'owned' && status !== 'wanted' && (
             <button 
               className="btn btn-icon btn-sm" 
               onClick={onMarkWanted}
@@ -748,17 +722,7 @@ function IssueListRow({ issue, selected, onSelect, onMarkWanted, onMarkOwned, on
               <Clock size={14} />
             </button>
           )}
-          {status !== 'owned' && (
-            <button 
-              className="btn btn-icon btn-sm" 
-              onClick={onMarkOwned}
-              disabled={isUpdating}
-              title="Mark as Owned"
-            >
-              <Check size={14} />
-            </button>
-          )}
-          {status !== 'skipped' && status !== 'owned' && (
+          {status !== 'owned' && status !== 'skipped' && (
             <button 
               className="btn btn-icon btn-sm" 
               onClick={onMarkSkipped}
