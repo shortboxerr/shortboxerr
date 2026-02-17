@@ -25,11 +25,28 @@ cd src/Shortboxerr.Api && dotnet run --urls "http://0.0.0.0:5000"
 cd ui && npm run dev
 ```
 
-### Restarting Servers
+### Restarting Servers (STOP-WAIT-VERIFY-START)
+
+**Important:** Vite auto-increments port if 8585 is busy (→ 8586, 8587...). Always verify ports are free!
+
 ```bash
-# Kill app servers only
-pkill -f "Shortboxerr" 2>/dev/null || true
-pkill -f "vite" 2>/dev/null || true
+# 1. STOP
+pkill -9 -f "Shortboxerr.Api" 2>/dev/null || true
+pkill -9 -f "vite" 2>/dev/null || true
+
+# 2. WAIT
+sleep 3
+
+# 3. VERIFY ports are free
+lsof -i :5000 -i :8585 2>/dev/null | grep LISTEN || echo "OK"
+
+# 4. START (backend first, then frontend)
+cd src/Shortboxerr.Api && dotnet run --urls "http://0.0.0.0:5000" &
+sleep 3
+cd ui && npm run dev &
+
+# 5. FINAL CHECK - should show ONLY 5000 and 8585
+lsof -i :5000 -i :8585 -i :8586 | grep LISTEN
 ```
 
 > **Warning:** Never run `pkill -f "node"` - it kills Cursor's internal server.

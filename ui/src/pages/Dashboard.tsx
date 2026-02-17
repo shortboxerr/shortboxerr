@@ -22,6 +22,12 @@ export function Dashboard() {
     staleTime: 60000,
   });
 
+  const { data: wantedCount } = useQuery({
+    queryKey: ['wanted', 'count', 'dashboard'],
+    queryFn: () => api.getWantedCount(),
+    staleTime: 60000,
+  });
+
   return (
     <>
       <header className="page-header">
@@ -31,9 +37,17 @@ export function Dashboard() {
       <div className="page-content">
         <div className="card-grid">
           <div className="card">
-            <div className="card-title">Series</div>
-            <div className="stat-value">{isLoading ? '-' : stats?.seriesCount ?? 0}</div>
-            <div className="stat-label">Tracked series</div>
+            <div className="card-title">Library</div>
+            <div style={{ display: 'flex', gap: '24px' }}>
+              <Link to="/series" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div className="stat-value">{isLoading ? '-' : stats?.seriesCount ?? 0}</div>
+                <div className="stat-label" style={{ color: 'var(--accent-primary)' }}>Series</div>
+              </Link>
+              <Link to="/collections" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div className="stat-value">{isLoading ? '-' : stats?.collectionsCount ?? 0}</div>
+                <div className="stat-label" style={{ color: 'var(--accent-primary)' }}>Collections</div>
+              </Link>
+            </div>
           </div>
           
           <div className="card">
@@ -48,13 +62,23 @@ export function Dashboard() {
             <div className="stat-label">In library</div>
           </div>
           
-          <Link to="/wanted" className="card card-clickable" style={{ textDecoration: 'none' }}>
+          <div className="card">
             <div className="card-title">Wanted</div>
-            <div className="stat-value" style={{ color: 'var(--accent-warning)' }}>
-              {pullStats?.totalWantedIssues ?? 0}
+            <div style={{ display: 'flex', gap: '24px' }}>
+              <Link to="/wanted?type=issues" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div className="stat-value" style={{ color: 'var(--accent-warning)' }}>
+                  {wantedCount?.issues ?? pullStats?.totalWantedIssues ?? 0}
+                </div>
+                <div className="stat-label" style={{ color: 'var(--accent-primary)' }}>Issues</div>
+              </Link>
+              <Link to="/wanted?type=collections" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div className="stat-value" style={{ color: 'var(--accent-warning)' }}>
+                  {wantedCount?.collections ?? 0}
+                </div>
+                <div className="stat-label" style={{ color: 'var(--accent-primary)' }}>Collections</div>
+              </Link>
             </div>
-            <div className="stat-label">Issues to find</div>
-          </Link>
+          </div>
         </div>
         
         <div style={{ marginTop: '24px' }}>
@@ -73,6 +97,7 @@ export function Dashboard() {
               label="Indexers"
               status={stats?.indexerStatus === 'healthy' ? 'healthy' : 'warning'}
               message={`${stats?.enabledIndexers ?? 0} enabled`}
+              linkTo="/settings?tab=indexers"
             />
             <StatusCard
               icon={Clock}
@@ -104,12 +129,14 @@ function StatusCard({
   icon: Icon, 
   label, 
   status, 
-  message 
+  message,
+  linkTo
 }: { 
   icon: React.ElementType; 
   label: string; 
   status: 'healthy' | 'warning' | 'error';
   message: string;
+  linkTo?: string;
 }) {
   const statusColors = {
     healthy: 'var(--accent-success)',
@@ -117,8 +144,8 @@ function StatusCard({
     error: 'var(--accent-danger)',
   };
 
-  return (
-    <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+  const content = (
+    <>
       <div
         style={{
           width: '48px',
@@ -137,6 +164,24 @@ function StatusCard({
         <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{label}</div>
         <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{message}</div>
       </div>
+    </>
+  );
+
+  if (linkTo) {
+    return (
+      <Link 
+        to={linkTo} 
+        className="card card-clickable" 
+        style={{ display: 'flex', alignItems: 'center', gap: '16px', textDecoration: 'none' }}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      {content}
     </div>
   );
 }

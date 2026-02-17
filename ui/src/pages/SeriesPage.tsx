@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Plus, RefreshCw, Trash2, Edit, MoreVertical, BookOpen, Search, X, Loader2, AlertCircle, ExternalLink, Filter, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, RefreshCw, Trash2, Edit, BookOpen, Search, X, Loader2, AlertCircle, ExternalLink, Filter, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { api } from '../api/client';
 import type { SeriesMatchCandidate } from '../api/client';
 
@@ -64,9 +64,19 @@ export function SeriesPage() {
 
   const series = seriesData?.items ?? [];
   const allSelected = series.length > 0 && selectedIds.size === series.length;
+  const someSelected = selectedIds.size > 0;
+  const selectAllRef = useRef<HTMLInputElement>(null);
+
+  // Set indeterminate state on checkbox (can't be done via JSX)
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = someSelected && !allSelected;
+    }
+  }, [someSelected, allSelected]);
 
   const toggleSelectAll = () => {
-    if (allSelected) {
+    // If any items are selected, clear selection; otherwise select all
+    if (someSelected) {
       setSelectedIds(new Set());
     } else {
       setSelectedIds(new Set(series.map((s) => s.id)));
@@ -90,10 +100,14 @@ export function SeriesPage() {
     selectedIds.forEach((id) => deleteMutation.mutate(id));
   };
 
-  const handleSeriesAdded = () => {
+  const handleSeriesAdded = useCallback(async () => {
+    // Force refetch BEFORE closing modal to ensure new series appears
+    await queryClient.refetchQueries({ queryKey: ['series'], type: 'active' });
+    await queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+    await queryClient.invalidateQueries({ queryKey: ['series-filter-options'] });
+    // Now close modal after data is refreshed
     setShowAddModal(false);
-    queryClient.invalidateQueries({ queryKey: ['series'] });
-  };
+  }, [queryClient]);
 
   return (
     <>
@@ -277,6 +291,7 @@ export function SeriesPage() {
                 <tr>
                   <th className="table-checkbox">
                     <input 
+                      ref={selectAllRef}
                       type="checkbox" 
                       checked={allSelected}
                       onChange={toggleSelectAll}
@@ -313,12 +328,20 @@ export function SeriesPage() {
                     </td>
                     <td>{item.issueCount}</td>
                     <td>{item.filesCount}</td>
-                    <td className="table-actions">
+                    <td className="table-actions" onClick={(e) => e.stopPropagation()}>
                       <button className="btn btn-icon" title="Edit">
                         <Edit size={16} />
                       </button>
-                      <button className="btn btn-icon" title="More">
-                        <MoreVertical size={16} />
+                      <button 
+                        className="btn btn-icon" 
+                        title="Delete Series"
+                        onClick={() => {
+                          if (confirm(`Delete "${item.title}"? This cannot be undone.`)) {
+                            deleteMutation.mutate(item.id);
+                          }
+                        }}
+                      >
+                        <Trash2 size={16} />
                       </button>
                     </td>
                   </tr>
@@ -358,15 +381,15 @@ function getStatusBadge(status: string): string {
 // Add Series Modal Component
 interface AddSeriesModalProps {
   onClose: () => void;
-  onAdded: () => void;
+  onAdded: () => Promise<void>;
 }
 
 function AddSeriesModal({ onClose, onAdded }: AddSeriesModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedSeries, setSelectedSeries] = useState<SeriesMatchCandidate | null>(null);
-  const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Debounce search query
   useEffect(() => {
@@ -383,31 +406,39 @@ function AddSeriesModal({ onClose, onAdded }: AddSeriesModalProps) {
     staleTime: 60000,
   });
 
-  const handleAdd = useCallback(async () => {
-    if (!selectedSeries) return;
-    
-    setIsAdding(true);
-    setAddError(null);
-
-    try {
-      const result = await api.addSeriesFromComicVine(selectedSeries.comicVineId, {
-        monitored: true,
-        monitoringMode: 'AllIssues',
-      });
-
+  const addSeriesMutation = useMutation({
+    mutationFn: (comicVineId: number) => api.addSeriesFromComicVine(comicVineId, {
+      monitored: true,
+      monitoringMode: 'AllIssues',
+    }),
+    onSuccess: async (result) => {
       if (result.success) {
-        onAdded();
+        // Show refreshing state while waiting for list to update
+        setIsRefreshing(true);
+        try {
+          // Parent handles refetch - await it to keep modal open until data refreshes
+          await onAdded();
+        } finally {
+          setIsRefreshing(false);
+        }
       } else if (result.alreadyExists) {
         setAddError(`This series already exists in your library (ID: ${result.existingSeriesId})`);
       } else {
         setAddError(result.error || 'Failed to add series');
       }
-    } catch (e) {
+    },
+    onError: (e) => {
       setAddError(e instanceof Error ? e.message : 'Failed to add series');
-    } finally {
-      setIsAdding(false);
-    }
-  }, [selectedSeries, onAdded]);
+    },
+  });
+
+  const handleAdd = useCallback(() => {
+    if (!selectedSeries) return;
+    setAddError(null);
+    addSeriesMutation.mutate(selectedSeries.comicVineId);
+  }, [selectedSeries, addSeriesMutation]);
+
+  const isAdding = addSeriesMutation.isPending || isRefreshing;
 
   // Close on escape key
   useEffect(() => {
@@ -524,7 +555,12 @@ function AddSeriesModal({ onClose, onAdded }: AddSeriesModalProps) {
             onClick={handleAdd}
             disabled={!selectedSeries || isAdding}
           >
-            {isAdding ? (
+            {isRefreshing ? (
+              <>
+                <Loader2 size={16} className="spin" />
+                Refreshing list...
+              </>
+            ) : addSeriesMutation.isPending ? (
               <>
                 <Loader2 size={16} className="spin" />
                 Adding...

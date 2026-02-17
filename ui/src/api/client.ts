@@ -1241,6 +1241,19 @@ export const api = {
     }
   },
 
+  getWantedCount: async (): Promise<{ issues: number; collections: number; total: number }> => {
+    try {
+      const response = await fetchApi<{ Issues: number; Collections: number; Total: number }>('/api/v1/wanted/count');
+      return {
+        issues: response.Issues,
+        collections: response.Collections,
+        total: response.Total,
+      };
+    } catch {
+      return { issues: 0, collections: 0, total: 0 };
+    }
+  },
+
   // History
   getHistory: async (params: { type?: string; search?: string }): Promise<PagedResult<HistoryEvent>> => {
     const query = new URLSearchParams();

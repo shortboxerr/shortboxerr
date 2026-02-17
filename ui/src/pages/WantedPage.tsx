@@ -1,13 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { Search, RefreshCw, Download, BookOpen, Library } from 'lucide-react';
 import { api } from '../api/client';
 
 // WantedItem interface is used implicitly through the API response
 
+type WantedTab = 'issues' | 'collections';
+
 export function WantedPage() {
-  const [tab, setTab] = useState<'issues' | 'collections'>('issues');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const typeFromUrl = searchParams.get('type') as WantedTab | null;
+  const [tab, setTab] = useState<WantedTab>(
+    typeFromUrl === 'collections' ? 'collections' : 'issues'
+  );
   const [search, setSearch] = useState('');
+
+  const handleTabChange = (newTab: WantedTab) => {
+    setTab(newTab);
+    setSearchParams({ type: newTab });
+  };
+
+  useEffect(() => {
+    if (typeFromUrl === 'collections' || typeFromUrl === 'issues') {
+      setTab(typeFromUrl);
+    }
+  }, [typeFromUrl]);
 
   const { data: wanted, isLoading, refetch } = useQuery({
     queryKey: ['wanted', tab, search],
@@ -33,7 +51,7 @@ export function WantedPage() {
           <div className="toolbar-group" style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
             <button 
               className={`btn ${tab === 'issues' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setTab('issues')}
+              onClick={() => handleTabChange('issues')}
               style={{ borderRadius: 0, borderRight: 'none' }}
             >
               <BookOpen size={16} />
@@ -41,7 +59,7 @@ export function WantedPage() {
             </button>
             <button 
               className={`btn ${tab === 'collections' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setTab('collections')}
+              onClick={() => handleTabChange('collections')}
               style={{ borderRadius: 0 }}
             >
               <Library size={16} />

@@ -1,9 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   ArrowLeft, ExternalLink, RefreshCw, Calendar, BookOpen, HardDrive, 
-  Check, X, Clock, Grid, List, Filter, SortAsc, SortDesc, Star, Zap
+  Check, X, Clock, Grid, List, Filter, SortAsc, SortDesc, Star, Zap, Trash2
 } from 'lucide-react';
 import { api } from '../api/client';
 import type { Issue, IssueStatus } from '../api/client';
@@ -17,6 +17,7 @@ export function SeriesDetailPage() {
   const { id } = useParams<{ id: string }>();
   const seriesId = parseInt(id ?? '0', 10);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Load UI settings for view preference
   const { data: uiSettings } = useQuery({
@@ -109,6 +110,22 @@ export function SeriesDetailPage() {
 
   const handleRefreshMetadata = () => {
     refreshMetadata.mutate();
+  };
+
+  // Delete series mutation
+  const deleteSeries = useMutation({
+    mutationFn: () => api.deleteSeries(seriesId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['series'] });
+      await queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      navigate('/series');
+    },
+  });
+
+  const handleDeleteSeries = () => {
+    if (confirm(`Delete "${series?.title}"? This will remove the series and all its issues from your library. This cannot be undone.`)) {
+      deleteSeries.mutate();
+    }
   };
 
   const { data: series, isLoading: isLoadingSeries } = useQuery({
@@ -212,6 +229,14 @@ export function SeriesDetailPage() {
             disabled={refreshMetadata.isPending}
           >
             <RefreshCw size={18} className={refreshMetadata.isPending ? 'spinning' : ''} />
+          </button>
+          <button 
+            className="btn btn-icon btn-danger" 
+            title="Delete Series"
+            onClick={handleDeleteSeries}
+            disabled={deleteSeries.isPending}
+          >
+            <Trash2 size={18} />
           </button>
         </div>
       </header>
