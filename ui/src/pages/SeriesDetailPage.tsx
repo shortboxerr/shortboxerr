@@ -62,6 +62,10 @@ export function SeriesDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['series', seriesId, 'issues'] });
       queryClient.invalidateQueries({ queryKey: ['series', seriesId] });
+      // Also invalidate dashboard/pulllist stats so counts update immediately
+      queryClient.invalidateQueries({ queryKey: ['pulllist', 'stats'] });
+      queryClient.invalidateQueries({ queryKey: ['pulllist', 'week'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       setSelectedIssues(new Set());
     },
   });
