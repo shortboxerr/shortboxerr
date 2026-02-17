@@ -2306,7 +2306,35 @@ Fix Applied:
   - AC: Select multiple issues, apply status change to all ✅
   - AC: "Mark Selected as Wanted" / "Skip Selected" buttons ✅
 
-### 15.8 Pull List Data Accuracy (Mylar3 Parity Investigation)
+### 15.8 Annual Handling Settings (Mylar3 Parity) ✅ COMPLETED
+
+Comprehensive annual/special issue configuration with documentation similar to Mylar3.
+
+**Implemented:**
+
+- [x] **Settings -> Annual Handling tab**
+  - AC: Dedicated settings tab for annual configuration ✅
+  - AC: "About Annual Issues" info section explaining what annuals are ✅
+  - AC: Detection method documentation (ComicVine metadata, issue number text) ✅
+  - AC: Include Annuals toggle with full description ✅
+  - AC: Include Specials toggle with examples (Giant-Size, One-Shot, etc.) ✅
+  - AC: Skip Variant Covers toggle with explanation ✅
+  - AC: Per-Series Overrides documentation section ✅
+
+- [x] **Per-series override settings**
+  - AC: Settings button (gear icon) on series detail page header ✅
+  - AC: Modal with tri-state checkboxes (use global / enable / disable) ✅
+  - AC: Include Annuals override ✅
+  - AC: Include Specials override ✅
+  - AC: Skip Variant Covers override ✅
+  - AC: Clear feedback showing current state vs global default ✅
+
+- [x] **Series detail page annuals filter**
+  - AC: "Annuals (N)" toggle in issues toolbar ✅
+  - AC: Filters annual issues from view when unchecked ✅
+  - AC: Shows count of annual issues ✅
+
+### 15.9 Pull List Data Accuracy (Mylar3 Parity Investigation)
 Pull list data doesn't match Mylar3's for the same week.
 
 - [ ] **Investigate Mylar3 pull list source**
