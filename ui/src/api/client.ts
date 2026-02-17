@@ -117,16 +117,20 @@ export interface SeriesFilterOptions {
 
 // Map API series to UI series
 function toSeries(api: ApiSeries): Series {
+  // Handle both string (new JSON serialization) and number (legacy) status values
   const statusMap: Record<number, string> = {
     0: 'Continuing',
     1: 'Ended',
   };
+  const status = typeof api.status === 'string' 
+    ? api.status 
+    : (statusMap[api.status] ?? 'Unknown');
   return {
     id: api.id,
     title: api.title,
     year: api.startYear,
     publisher: api.publisher,
-    status: statusMap[api.status] ?? 'Unknown',
+    status,
     issueCount: api.issueCount,
     filesCount: api.issueFileCount,
     coverImageUrl: api.coverImageUrl,
@@ -184,13 +188,17 @@ export interface SeriesDetail {
 
 // Map API series detail to UI series detail
 function toSeriesDetail(api: ApiSeriesDetail): SeriesDetail {
+  // Handle both string (new JSON serialization) and number (legacy) status values
   const statusMap: Record<number, string> = {
     0: 'Continuing',
     1: 'Ended',
   };
+  const status = typeof api.status === 'string' 
+    ? api.status 
+    : (statusMap[api.status] ?? 'Unknown');
   return {
     ...api,
-    status: statusMap[api.status] ?? 'Unknown',
+    status,
   };
 }
 
