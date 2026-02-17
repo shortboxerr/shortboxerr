@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shortboxerr.Core.ComicVine;
@@ -17,6 +18,16 @@ public class SeriesMetadataService : ISeriesMetadataService
     private readonly ISettingsService _settingsService;
     private readonly ILogger<SeriesMetadataService> _logger;
     private readonly SeriesStatusDeterminer _statusDeterminer;
+    
+    // Pattern for detecting annual issues or series
+    private static readonly Regex AnnualPattern = new(
+        @"(?:^|\s)Annual(?:\s+#?(\d+))?(?:\s|$)",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    
+    // Pattern for detecting special issues
+    private static readonly Regex SpecialPattern = new(
+        @"(?:^|\s)(Special|One[- ]?Shot|Giant[- ]?Size|King[- ]?Size|80[- ]?Page Giant|100[- ]?Page|Preview|Prologue|Epilogue|Finale|Zero Hour|Infinity|Secret Files|Sourcebook|Handbook|Who'?s Who|Directory|Index)(?:\s|$)",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     public SeriesMetadataService(
         IComicVineClient comicVineClient,
@@ -681,13 +692,13 @@ public class SeriesMetadataService : ISeriesMetadataService
                 if (issue != null)
                 {
                     // Update existing issue
-                    UpdateIssueFromComicVine(issue, cvIssue);
+                    UpdateIssueFromComicVine(issue, cvIssue, series.Title);
                     issuesUpdated++;
                 }
                 else
                 {
                     // Create new issue
-                    issue = CreateIssueFromComicVine(series.Id, cvIssue);
+                    issue = CreateIssueFromComicVine(series.Id, cvIssue, series.Title);
                     
                     // Set monitoring based on mode
                     if (monitoringMode == SeriesMonitoringMode.Manual)
@@ -841,9 +852,12 @@ public class SeriesMetadataService : ISeriesMetadataService
         series.UpdatedAt = DateTime.UtcNow;
     }
 
-    private Issue CreateIssueFromComicVine(int seriesId, ComicVineIssue cvIssue)
+    private Issue CreateIssueFromComicVine(int seriesId, ComicVineIssue cvIssue, string? seriesTitle = null)
     {
         TryParseIssueNumber(cvIssue.IssueNumber, out var issueNumber);
+        
+        // Detect special issue types
+        var (isAnnual, isSpecial, specialType) = DetectSpecialIssueType(cvIssue.IssueNumber, cvIssue.Name, seriesTitle);
 
         return new Issue
         {
@@ -861,13 +875,19 @@ public class SeriesMetadataService : ISeriesMetadataService
             ComicVineUrl = cvIssue.SiteDetailUrl,
             CoverImageUrl = cvIssue.Image?.MediumUrl ?? cvIssue.Image?.SmallUrl,
             MetadataLastRefreshed = DateTime.UtcNow,
-            Monitored = true
+            Monitored = true,
+            IsAnnual = isAnnual,
+            IsSpecial = isSpecial,
+            SpecialType = specialType
         };
     }
 
-    private void UpdateIssueFromComicVine(Issue issue, ComicVineIssue cvIssue)
+    private void UpdateIssueFromComicVine(Issue issue, ComicVineIssue cvIssue, string? seriesTitle = null)
     {
         TryParseIssueNumber(cvIssue.IssueNumber, out var issueNumber);
+        
+        // Detect special issue types
+        var (isAnnual, isSpecial, specialType) = DetectSpecialIssueType(cvIssue.IssueNumber, cvIssue.Name, seriesTitle);
 
         issue.IssueNumber = issueNumber;
         issue.IssueNumberText = cvIssue.IssueNumber;
@@ -883,6 +903,9 @@ public class SeriesMetadataService : ISeriesMetadataService
         issue.CoverImageUrl = cvIssue.Image?.MediumUrl ?? cvIssue.Image?.SmallUrl;
         issue.MetadataLastRefreshed = DateTime.UtcNow;
         issue.UpdatedAt = DateTime.UtcNow;
+        issue.IsAnnual = isAnnual;
+        issue.IsSpecial = isSpecial;
+        issue.SpecialType = specialType;
     }
 
     private static bool TryParseIssueNumber(string? issueNumberText, out decimal issueNumber)
@@ -904,13 +927,72 @@ public class SeriesMetadataService : ISeriesMetadataService
             return true;
 
         // Handle formats like "1a", "1b", etc.
-        var match = System.Text.RegularExpressions.Regex.Match(
-            issueNumberText, @"^(\d+(?:\.\d+)?)", System.Text.RegularExpressions.RegexOptions.None);
+        var match = Regex.Match(
+            issueNumberText, @"^(\d+(?:\.\d+)?)", RegexOptions.None);
         
         if (match.Success && decimal.TryParse(match.Groups[1].Value, out issueNumber))
             return true;
 
         return false;
+    }
+    
+    /// <summary>
+    /// Detects if an issue is an annual or special issue based on its number, title, and series title.
+    /// </summary>
+    private static (bool IsAnnual, bool IsSpecial, string? SpecialType) DetectSpecialIssueType(
+        string? issueNumber, 
+        string? title,
+        string? seriesTitle = null)
+    {
+        var textToCheck = $"{issueNumber} {title}".Trim();
+        
+        // Check for annual - first check the issue text, then the series title
+        if (AnnualPattern.IsMatch(textToCheck))
+        {
+            return (true, false, null);
+        }
+        
+        // If the series itself is an annual series (e.g., "Batman Annual", "Absolute Batman Annual")
+        // mark all its issues as annuals
+        if (!string.IsNullOrEmpty(seriesTitle) && AnnualPattern.IsMatch(seriesTitle))
+        {
+            return (true, false, null);
+        }
+
+        // Check for other special types
+        var specialMatch = SpecialPattern.Match(textToCheck);
+        if (specialMatch.Success)
+        {
+            var specialType = specialMatch.Groups[1].Value.Trim();
+            return (false, true, NormalizeSpecialType(specialType));
+        }
+
+        // Check for negative issue numbers (often specials)
+        if (decimal.TryParse(issueNumber, out var num) && num < 0)
+        {
+            return (false, true, "Preview");
+        }
+
+        return (false, false, null);
+    }
+    
+    private static string NormalizeSpecialType(string type)
+    {
+        return type.ToLowerInvariant() switch
+        {
+            "special" => "Special",
+            "one-shot" or "oneshot" => "One-Shot",
+            "giant-size" or "giantsize" or "giant size" => "Giant-Size",
+            "king-size" or "kingsize" or "king size" => "King-Size",
+            "80-page giant" or "80 page giant" => "80-Page Giant",
+            "100-page" or "100 page" => "100-Page",
+            "preview" => "Preview",
+            "prologue" => "Prologue",
+            "epilogue" => "Epilogue",
+            "finale" => "Finale",
+            "infinity" => "Infinity",
+            _ => type
+        };
     }
 
     /// <summary>

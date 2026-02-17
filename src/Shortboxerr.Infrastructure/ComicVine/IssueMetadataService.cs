@@ -177,6 +177,13 @@ public class IssueMetadataService : IIssueMetadataService
 
             // Detect special issue types
             var (isAnnual, isSpecial, specialType) = DetectSpecialIssueType(cvIssue.IssueNumber, cvIssue.Name);
+            
+            // Also check if the series is an annual series (e.g., "Batman Annual", "Absolute Batman Annual")
+            if (!isAnnual && issue.Series != null && AnnualPattern.IsMatch(issue.Series.Title ?? ""))
+            {
+                isAnnual = true;
+            }
+            
             if (isAnnual != issue.IsAnnual)
             {
                 issue.IsAnnual = isAnnual;
@@ -386,10 +393,19 @@ public class IssueMetadataService : IIssueMetadataService
         var annualsDetected = 0;
         var specialsDetected = 0;
 
+        // Check if the series itself is an annual series (e.g., "Batman Annual", "Absolute Batman Annual")
+        var seriesIsAnnual = AnnualPattern.IsMatch(series.Title ?? "");
+
         foreach (var issue in series.Issues)
         {
             var issueNumberText = issue.IssueNumberText ?? issue.IssueNumber.ToString();
             var (isAnnual, isSpecial, specialType) = DetectSpecialIssueType(issueNumberText, issue.Title);
+            
+            // If the series is an annual series, mark all issues as annuals
+            if (seriesIsAnnual && !isAnnual)
+            {
+                isAnnual = true;
+            }
 
             var changed = false;
             if (isAnnual != issue.IsAnnual)
