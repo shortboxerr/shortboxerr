@@ -1,5 +1,40 @@
 # Worklog
 
+## Iteration 098 (2026-02-17)
+**EPIC 15: P3 Feature Parity - Verification & Documentation**
+
+### Summary
+Verified that EPIC 15.3 (Forthcoming Releases View) was already fully implemented in prior iterations. Updated documentation to reflect completion status.
+
+### Findings
+The following features were already implemented:
+- **GET /api/v1/pulllist/upcoming** - Returns upcoming weeks with releases
+- **Pull List UI** - "Upcoming (4 weeks)" view mode, week navigation arrows
+- **Week sections** - Shows release day, issue count, wanted/owned stats
+- **Mark future issues** - Can mark Wanted/Skip from any week
+- **Past releases** - Also implemented with same functionality
+- **Tests** - PullListServiceTests covers GetUpcomingReleasesAsync
+
+### Bug Fix: Test Updates for JsonStringEnumConverter
+- Fixed `PullListCacheTierTests.cs` assertions that expected integer enum values
+- Tests now check for string enum values ("Active", "Historical") due to Iteration 097's `JsonStringEnumConverter`
+
+### Documentation Updates
+- Marked 15.3 Forthcoming Releases View as COMPLETED in BACKLOG.md
+- Updated P3 priority section to show completion status
+- Calendar view enhancement deferred as separate page feature
+
+### Pre-existing Test Failures
+Identified 4 pre-existing DDL search test failures unrelated to this iteration (filtering logic issues).
+
+### EPIC 15 Status
+- **P1 - Critical (Data Accuracy)**: ✅ COMPLETED
+- **P2 - High (Usability)**: ✅ COMPLETED
+- **P3 - Medium (Feature Parity)**: ✅ COMPLETED
+- **15.8 Investigation**: Deferred (non-blocking research task)
+
+---
+
 ## Iteration 097 (2026-02-17)
 **EPIC 15: UI Bug Fixes - P2 Usability Items + Issue Status Fix**
 

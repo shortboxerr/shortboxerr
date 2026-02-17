@@ -67,8 +67,8 @@ public class PullListCacheTierTests : IClassFixture<CustomWebApplicationFactory>
         Assert.True(cacheMetadata.TryGetProperty("tier", out var tier), 
             "CacheMetadata should include tier");
         
-        // Current week should be Active tier (0 as enum value)
-        Assert.Equal(0, tier.GetInt32()); // CacheTier.Active = 0
+        // Current week should be Active tier
+        Assert.Equal("Active", tier.GetString());
     }
 
     [Fact]
@@ -90,8 +90,8 @@ public class PullListCacheTierTests : IClassFixture<CustomWebApplicationFactory>
         Assert.True(doc.RootElement.TryGetProperty("cacheMetadata", out var cacheMetadata));
         Assert.True(cacheMetadata.TryGetProperty("tier", out var tier));
         
-        // Past weeks (beyond buffer) should be Historical tier (1 as enum value)
-        Assert.Equal(1, tier.GetInt32()); // CacheTier.Historical = 1
+        // Past weeks (beyond buffer) should be Historical tier
+        Assert.Equal("Historical", tier.GetString());
     }
 
     [Fact]

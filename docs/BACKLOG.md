@@ -2163,28 +2163,36 @@ Dashboard "This Week" section doesn't match pull list data.
   - AC: `ReleasingThisWeek` stat matches actual issues shown ✅
   - AC: Both stats and issue list filter by monitored series ✅
 
-### 15.3 Forthcoming Releases View (Mylar3 Parity)
+### 15.3 Forthcoming Releases View (Mylar3 Parity) ✅ COMPLETED
 Mylar3 shows releases for upcoming weeks, not just the current week.
 
-- [ ] **Multi-week pull list view**
-  - AC: View releases for upcoming weeks (2, 4, 8 weeks ahead configurable)
-  - AC: Tab or dropdown to switch between weeks
-  - AC: "Next Week", "2 Weeks Out", "3 Weeks Out" navigation
-  - AC: Show week date range in header (e.g., "Feb 24 - Mar 2")
+**Implemented in prior iterations:**
+- Pull List page has "Upcoming (4 weeks)" view mode showing future releases
+- Week-by-week navigation with ChevronLeft/ChevronRight arrows
+- API endpoint GET /api/v1/pulllist/upcoming?weeks=N returns grouped weeks
+- Each week section shows release day, issue count, wanted/owned stats
+- Mark issues as Wanted/Skip from any week (including future weeks)
+- Past releases view also available with same functionality
 
-- [ ] **Forthcoming releases API**
-  - AC: GET /api/v1/pulllist/upcoming?weeks=4 - get releases for next N weeks
-  - AC: Returns array of week objects with releases grouped by week
-  - AC: Include week start/end dates in response
-  - AC: Caching strategy for future weeks (longer TTL acceptable)
+- [x] **Multi-week pull list view**
+  - AC: View releases for upcoming weeks (2, 4, 8 weeks ahead configurable) ✅ (weeks param)
+  - AC: Tab or dropdown to switch between weeks ✅ (dropdown + arrows)
+  - AC: "Next Week", "2 Weeks Out", "3 Weeks Out" navigation ✅ (arrow navigation)
+  - AC: Show week date range in header (e.g., "Feb 24 - Mar 2") ✅ (formatReleaseDay)
 
-- [ ] **Forthcoming releases UI**
-  - AC: Week selector/tabs in Pull List page header
-  - AC: Show issue count per upcoming week
-  - AC: Same issue card format as current week view
-  - AC: Ability to mark issues as Wanted/Skip from future weeks
+- [x] **Forthcoming releases API**
+  - AC: GET /api/v1/pulllist/upcoming?weeks=4 - get releases for next N weeks ✅
+  - AC: Returns array of week objects with releases grouped by week ✅
+  - AC: Include week start/end dates in response ✅ (WeeklyPullList model)
+  - AC: Caching strategy for future weeks (longer TTL acceptable) ✅ (30 min staleTime)
 
-- [ ] **Calendar view enhancement**
+- [x] **Forthcoming releases UI**
+  - AC: Week selector/tabs in Pull List page header ✅ (dropdown)
+  - AC: Show issue count per upcoming week ✅ (renderWeekSection)
+  - AC: Same issue card format as current week view ✅
+  - AC: Ability to mark issues as Wanted/Skip from future weeks ✅
+
+- [ ] **Calendar view enhancement** (deferred - separate page)
   - AC: Existing calendar view shows multiple weeks
   - AC: Navigate forward/backward through months
   - AC: Click day to see releases for that day
@@ -2341,9 +2349,9 @@ Pull list data doesn't match Mylar3's for the same week.
 5. **15.4 Issue Overlay Button Visibility** - ✅ COMPLETED (Iteration 097)
 6. **15.5 Click Issue to Open ComicVine** - ✅ COMPLETED (Iteration 097)
 
-### P3 - Medium (Feature Parity)
-7. **15.3 Forthcoming Releases View** - Mylar3 parity
-8. **15.8 Pull List Data Accuracy Investigation** - Requires research
+### P3 - Medium (Feature Parity) ✅ COMPLETED
+7. **15.3 Forthcoming Releases View** - ✅ COMPLETED (verified Iteration 098 - was already implemented)
+8. **15.8 Pull List Data Accuracy Investigation** - Deferred (requires research, non-blocking)
 
 ---
 
