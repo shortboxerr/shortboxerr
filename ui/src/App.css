@@ -785,6 +785,10 @@ body {
   gap: 8px;
 }
 
+.series-search-results.compact {
+  gap: 4px;
+}
+
 .series-search-result {
   display: flex;
   gap: 16px;
@@ -810,6 +814,17 @@ body {
   width: 70px;
   height: 105px;
   object-fit: cover;
+}
+
+/* Compact mode */
+.series-search-result.compact {
+  padding: 8px;
+  gap: 12px;
+}
+
+.series-search-result.compact .series-search-result-cover {
+  width: 40px;
+  height: 60px;
   border-radius: var(--radius-sm);
   background: var(--bg-primary);
   flex-shrink: 0;
@@ -840,10 +855,19 @@ body {
   color: var(--accent-primary);
 }
 
+.series-search-result-meta .series-search-result-publisher {
+  margin: 0;
+}
+
+.series-search-result-meta .series-search-result-issues {
+  color: var(--text-muted);
+}
+
 .series-search-result-meta {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
   font-size: 12px;
   color: var(--text-muted);
 }
@@ -865,6 +889,20 @@ body {
   font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.4;
+}
+
+/* Compact mode text */
+.series-search-result.compact .series-search-result-info {
+  gap: 2px;
+}
+
+.series-search-result.compact .series-search-result-title {
+  font-size: 14px;
+}
+
+.series-search-result.compact .series-search-result-meta {
+  font-size: 12px;
+  gap: 8px;
   margin-top: 4px;
 }
 

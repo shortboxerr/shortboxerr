@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Plus, RefreshCw, Trash2, Edit, BookOpen, Search, X, Loader2, AlertCircle, ExternalLink, Filter, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, RefreshCw, Trash2, Edit, BookOpen, Search, X, Loader2, AlertCircle, ExternalLink, Filter, ArrowUpDown, ArrowUp, ArrowDown, Grid, List } from 'lucide-react';
 import { api } from '../api/client';
 import type { SeriesMatchCandidate } from '../api/client';
 
@@ -384,12 +384,16 @@ interface AddSeriesModalProps {
   onAdded: () => Promise<void>;
 }
 
+type SortOption = 'relevance' | 'popularity' | 'year-desc' | 'year-asc' | 'name';
+
 function AddSeriesModal({ onClose, onAdded }: AddSeriesModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedSeries, setSelectedSeries] = useState<SeriesMatchCandidate | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('popularity');
+  const [compactView, setCompactView] = useState(true);
 
   // Debounce search query
   useEffect(() => {
@@ -401,10 +405,35 @@ function AddSeriesModal({ onClose, onAdded }: AddSeriesModalProps) {
 
   const { data: searchResults, isLoading: isSearching, error: searchError } = useQuery({
     queryKey: ['comicvine-search', debouncedQuery],
-    queryFn: () => api.searchSeriesFromComicVine(debouncedQuery, { limit: 20 }),
+    queryFn: () => api.searchSeriesFromComicVine(debouncedQuery, { limit: 50 }),
     enabled: debouncedQuery.length >= 2,
     staleTime: 60000,
   });
+  
+  // Sort results based on selected option
+  const sortedResults = useMemo(() => {
+    const results = searchResults?.results ?? [];
+    if (results.length === 0) return results;
+    
+    const sorted = [...results];
+    switch (sortBy) {
+      case 'popularity':
+        // Sort by issue count (more issues = more popular/established)
+        return sorted.sort((a, b) => (b.issueCount || 0) - (a.issueCount || 0));
+      case 'year-desc':
+        // Newest first
+        return sorted.sort((a, b) => (b.startYear || 0) - (a.startYear || 0));
+      case 'year-asc':
+        // Oldest first
+        return sorted.sort((a, b) => (a.startYear || 0) - (b.startYear || 0));
+      case 'name':
+        return sorted.sort((a, b) => a.title.localeCompare(b.title));
+      case 'relevance':
+      default:
+        // Keep original order (by confidence score)
+        return sorted;
+    }
+  }, [searchResults?.results, sortBy]);
 
   const addSeriesMutation = useMutation({
     mutationFn: (comicVineId: number) => api.addSeriesFromComicVine(comicVineId, {
@@ -449,8 +478,7 @@ function AddSeriesModal({ onClose, onAdded }: AddSeriesModalProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const results = searchResults?.results ?? [];
-  const hasResults = results.length > 0;
+  const hasResults = sortedResults.length > 0;
   const showNoResults = debouncedQuery.length >= 2 && !isSearching && !hasResults && !searchError;
   const showApiKeyWarning = searchResults && !searchResults.success && searchResults.error?.toLowerCase().includes('api key');
 
@@ -501,6 +529,42 @@ function AddSeriesModal({ onClose, onAdded }: AddSeriesModalProps) {
             </div>
           )}
 
+          {/* Sort & View Controls */}
+          {hasResults && (
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              padding: '8px 0',
+              borderBottom: '1px solid var(--border-color)',
+              fontSize: '13px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ color: 'var(--text-muted)' }}>{sortedResults.length} results</span>
+                <select 
+                  value={sortBy} 
+                  onChange={(e) => setSortBy(e.target.value as SortOption)}
+                  className="input"
+                  style={{ padding: '4px 8px', fontSize: '12px', width: 'auto' }}
+                >
+                  <option value="popularity">Most Issues</option>
+                  <option value="relevance">Best Match</option>
+                  <option value="year-desc">Newest First</option>
+                  <option value="year-asc">Oldest First</option>
+                  <option value="name">Name A-Z</option>
+                </select>
+              </div>
+              <button 
+                className="btn btn-sm btn-icon"
+                onClick={() => setCompactView(!compactView)}
+                title={compactView ? 'Show larger covers' : 'Compact view'}
+                style={{ padding: '4px 8px' }}
+              >
+                {compactView ? <Grid size={14} /> : <List size={14} />}
+              </button>
+            </div>
+          )}
+
           {/* Search Results */}
           <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
             {showNoResults && (
@@ -514,13 +578,14 @@ function AddSeriesModal({ onClose, onAdded }: AddSeriesModalProps) {
             )}
 
             {hasResults && (
-              <div className="series-search-results">
-                {results.map((candidate) => (
+              <div className={`series-search-results ${compactView ? 'compact' : ''}`}>
+                {sortedResults.map((candidate) => (
                   <SeriesSearchResult
                     key={candidate.comicVineId}
                     candidate={candidate}
                     isSelected={selectedSeries?.comicVineId === candidate.comicVineId}
                     onSelect={() => setSelectedSeries(candidate)}
+                    compact={compactView}
                   />
                 ))}
               </div>
@@ -588,14 +653,15 @@ interface SeriesSearchResultProps {
   candidate: SeriesMatchCandidate;
   isSelected: boolean;
   onSelect: () => void;
+  compact?: boolean;
 }
 
-function SeriesSearchResult({ candidate, isSelected, onSelect }: SeriesSearchResultProps) {
+function SeriesSearchResult({ candidate, isSelected, onSelect, compact = false }: SeriesSearchResultProps) {
   const placeholderCover = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="150" viewBox="0 0 100 150"%3E%3Crect fill="%232a2d35" width="100" height="150"/%3E%3Ctext fill="%236b7280" font-family="sans-serif" font-size="10" x="50" y="75" text-anchor="middle"%3ENo Cover%3C/text%3E%3C/svg%3E';
   
   return (
     <div
-      className={`series-search-result ${isSelected ? 'selected' : ''}`}
+      className={`series-search-result ${isSelected ? 'selected' : ''} ${compact ? 'compact' : ''}`}
       onClick={onSelect}
     >
       <img
@@ -611,11 +677,11 @@ function SeriesSearchResult({ candidate, isSelected, onSelect }: SeriesSearchRes
           {candidate.title}
           {candidate.startYear && <span className="series-search-result-year">({candidate.startYear})</span>}
         </div>
-        {candidate.publisher && (
-          <div className="series-search-result-publisher">{candidate.publisher}</div>
-        )}
         <div className="series-search-result-meta">
-          <span>{candidate.issueCount} issues</span>
+          {candidate.publisher && (
+            <span className="series-search-result-publisher">{candidate.publisher}</span>
+          )}
+          <span className="series-search-result-issues">{candidate.issueCount} issues</span>
           {candidate.siteDetailUrl && (
             <a
               href={candidate.siteDetailUrl}
@@ -625,14 +691,14 @@ function SeriesSearchResult({ candidate, isSelected, onSelect }: SeriesSearchRes
               className="series-search-result-link"
             >
               <ExternalLink size={12} />
-              ComicVine
+              CV
             </a>
           )}
         </div>
-        {candidate.description && (
+        {!compact && candidate.description && (
           <div className="series-search-result-description">
-            {stripHtml(candidate.description).slice(0, 200)}
-            {candidate.description.length > 200 && '...'}
+            {stripHtml(candidate.description).slice(0, 150)}
+            {candidate.description.length > 150 && '...'}
           </div>
         )}
       </div>
