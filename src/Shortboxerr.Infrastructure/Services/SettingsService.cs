@@ -25,6 +25,8 @@ public class SettingsService : ISettingsService
     private const string UiPageSizeKey = "ui.pageSize";
     private const string UiShowFileSizesKey = "ui.showFileSizes";
     private const string UiRelativeTimestampsKey = "ui.relativeTimestamps";
+    private const string UiIssueViewModeKey = "ui.issueViewMode";
+    private const string UiPullListDisplayModeKey = "ui.pullListDisplayMode";
     private const string GeneralSeriesFolderFormatKey = "general.seriesFolderFormat";
     private const string GeneralIssueFileFormatKey = "general.issueFileFormat";
     private const string GeneralCollectionFileFormatKey = "general.collectionFileFormat";
@@ -148,7 +150,9 @@ public class SettingsService : ISettingsService
             Theme = await GetAsync(UiThemeKey, cancellationToken) ?? defaults.Theme,
             PageSize = await GetAsync<int>(UiPageSizeKey, defaults.PageSize, cancellationToken),
             ShowFileSizes = await GetAsync<bool>(UiShowFileSizesKey, defaults.ShowFileSizes, cancellationToken),
-            RelativeTimestamps = await GetAsync<bool>(UiRelativeTimestampsKey, defaults.RelativeTimestamps, cancellationToken)
+            RelativeTimestamps = await GetAsync<bool>(UiRelativeTimestampsKey, defaults.RelativeTimestamps, cancellationToken),
+            IssueViewMode = await GetAsync(UiIssueViewModeKey, cancellationToken) ?? defaults.IssueViewMode,
+            PullListDisplayMode = await GetAsync(UiPullListDisplayModeKey, cancellationToken) ?? defaults.PullListDisplayMode
         };
     }
 
@@ -158,6 +162,8 @@ public class SettingsService : ISettingsService
         await SetAsync<int>(UiPageSizeKey, settings.PageSize, cancellationToken);
         await SetAsync<bool>(UiShowFileSizesKey, settings.ShowFileSizes, cancellationToken);
         await SetAsync<bool>(UiRelativeTimestampsKey, settings.RelativeTimestamps, cancellationToken);
+        await SetAsync(UiIssueViewModeKey, settings.IssueViewMode, cancellationToken);
+        await SetAsync(UiPullListDisplayModeKey, settings.PullListDisplayMode, cancellationToken);
     }
 
     public async Task<GeneralSettings> GetGeneralSettingsAsync(CancellationToken cancellationToken = default)
