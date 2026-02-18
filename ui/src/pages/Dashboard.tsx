@@ -82,7 +82,7 @@ export function Dashboard() {
         </div>
         
         <div style={{ marginTop: '24px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px', color: 'var(--text-primary)' }}>
+          <h2 className="dashboard-section-title" style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px', color: 'var(--text-primary)' }}>
             System Status
           </h2>
           <div className="card-grid">
@@ -115,7 +115,7 @@ export function Dashboard() {
         </div>
         
         <div style={{ marginTop: '24px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px', color: 'var(--text-primary)' }}>
+          <h2 className="dashboard-section-title" style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px', color: 'var(--text-primary)' }}>
             Recent Activity
           </h2>
           <RecentActivityList />

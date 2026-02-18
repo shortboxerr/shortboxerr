@@ -1505,6 +1505,7 @@ function PullListSettingsTab() {
     skipVariantCovers: true,
     upcomingWeeksToShow: 4,
     pastWeeksToShow: 4,
+    enableSeriesAnnualIntegration: true,
     // Export settings
     exportWeeklyPullList: false,
     weeklyExportDirectory: null,
@@ -1769,6 +1770,7 @@ function AnnualHandlingSettingsTab() {
     skipVariantCovers: true,
     upcomingWeeksToShow: 4,
     pastWeeksToShow: 4,
+    enableSeriesAnnualIntegration: true,
     exportWeeklyPullList: false,
     weeklyExportDirectory: null,
     weeklyExportFormat: 'Json' as const,
@@ -1811,6 +1813,29 @@ function AnnualHandlingSettingsTab() {
             with the parent series and can be searched/downloaded together.
           </p>
         </div>
+      </SettingsSection>
+
+      <SettingsSection title="Series-Annual Integration">
+        <SettingsField label="Enable Integration" description="Merge annual series with their parent series (Mylar3 Parity)">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={currentSettings.enableSeriesAnnualIntegration ?? true}
+              onChange={(e) => handleUpdate('enableSeriesAnnualIntegration', e.target.checked)}
+              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+            />
+            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+              Hide linked annual series from main series list
+            </span>
+          </label>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px', marginLeft: '26px', lineHeight: '1.5' }}>
+            <strong>When enabled:</strong> Annual series (e.g., "Batman Annual") will not appear as separate entries 
+            in your series list. Instead, their issues will appear in the parent series' "Annuals" section.
+            <br /><br />
+            <strong>When disabled:</strong> Annual series will appear as separate entries in your series list, 
+            just like any other series. This is useful if you prefer to manage annuals independently.
+          </div>
+        </SettingsField>
       </SettingsSection>
 
       <SettingsSection title="Include Annuals in Pull List">
@@ -1890,6 +1915,12 @@ function AnnualHandlingSettingsTab() {
         </SettingsField>
       </SettingsSection>
 
+      {(currentSettings.enableSeriesAnnualIntegration ?? true) && (
+        <SettingsSection title="Link Existing Annual Series">
+          <AnnualLinkingSection />
+        </SettingsSection>
+      )}
+
       <SettingsSection title="Per-Series Overrides">
         <div style={{ 
           background: 'var(--bg-secondary)', 
@@ -1918,6 +1949,146 @@ function AnnualHandlingSettingsTab() {
         </div>
       </SettingsSection>
     </>
+  );
+}
+
+// Annual Linking Section Component - links existing annual series to parents
+function AnnualLinkingSection() {
+  const [isLinking, setIsLinking] = useState(false);
+  const [result, setResult] = useState<{
+    success: boolean;
+    linkedCount: number;
+    totalScanned: number;
+    links: { annualSeriesTitle: string; parentSeriesTitle: string }[];
+    unlinkedAnnuals: { title: string; expectedParentName: string }[];
+  } | null>(null);
+  const queryClient = useQueryClient();
+
+  const handleLinkAnnuals = async () => {
+    setIsLinking(true);
+    setResult(null);
+    try {
+      const response = await api.linkExistingAnnualSeries();
+      setResult({
+        success: response.success,
+        linkedCount: response.linkedCount,
+        totalScanned: response.totalScanned,
+        links: response.links,
+        unlinkedAnnuals: response.unlinkedAnnuals,
+      });
+      // Invalidate series queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['series'] });
+      queryClient.invalidateQueries({ queryKey: ['seriesDetail'] });
+    } catch {
+      setResult({
+        success: false,
+        linkedCount: 0,
+        totalScanned: 0,
+        links: [],
+        unlinkedAnnuals: [],
+      });
+    } finally {
+      setIsLinking(false);
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ 
+        background: 'var(--bg-tertiary)', 
+        padding: '16px 20px', 
+        borderRadius: 'var(--radius-md)', 
+        fontSize: '13px',
+        color: 'var(--text-secondary)',
+        lineHeight: '1.6'
+      }}>
+        <strong style={{ color: 'var(--text-primary)', fontSize: '14px' }}>Update Existing Library</strong>
+        <p style={{ margin: '10px 0 0 0' }}>
+          If you have series in your library that were added before the annual linking feature, you can scan
+          and link them now. This will:
+        </p>
+        <ul style={{ margin: '8px 0 0 20px', padding: 0 }}>
+          <li>Scan all series with "Annual" in their title</li>
+          <li>Automatically link them to their parent series (e.g., "Batman Annual" &rarr; "Batman")</li>
+          <li>Display the linked annuals in the parent series' detail page</li>
+        </ul>
+        <p style={{ margin: '12px 0 0 0', fontStyle: 'italic' }}>
+          This process is safe to run multiple times - it will only link series that aren't already linked.
+        </p>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <button
+          onClick={handleLinkAnnuals}
+          disabled={isLinking}
+          style={{
+            padding: '10px 20px',
+            background: isLinking ? 'var(--bg-tertiary)' : 'var(--accent-primary)',
+            color: isLinking ? 'var(--text-muted)' : '#fff',
+            border: 'none',
+            borderRadius: 'var(--radius-md)',
+            cursor: isLinking ? 'not-allowed' : 'pointer',
+            fontSize: '14px',
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          {isLinking && <span className="spinner" style={{ width: '16px', height: '16px' }} />}
+          {isLinking ? 'Scanning Library...' : 'Link Existing Annual Series'}
+        </button>
+      </div>
+
+      {result && (
+        <div style={{
+          background: result.success ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+          border: `1px solid ${result.success ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+          borderRadius: 'var(--radius-md)',
+          padding: '16px 20px',
+        }}>
+          <div style={{ 
+            fontSize: '14px', 
+            fontWeight: 600, 
+            color: result.success ? 'var(--accent-success)' : 'var(--accent-danger)',
+            marginBottom: result.linkedCount > 0 || result.unlinkedAnnuals.length > 0 ? '12px' : 0,
+          }}>
+            {result.success 
+              ? `Scanned ${result.totalScanned} series, linked ${result.linkedCount} annual series`
+              : 'Failed to link annual series'}
+          </div>
+          
+          {result.links.length > 0 && (
+            <div style={{ marginBottom: result.unlinkedAnnuals.length > 0 ? '12px' : 0 }}>
+              <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '8px' }}>
+                Successfully Linked:
+              </div>
+              <ul style={{ margin: 0, padding: '0 0 0 20px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                {result.links.map((link, i) => (
+                  <li key={i}>{link.annualSeriesTitle} &rarr; {link.parentSeriesTitle}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          {result.unlinkedAnnuals.length > 0 && (
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '8px' }}>
+                Unlinked (parent series not in library):
+              </div>
+              <ul style={{ margin: 0, padding: '0 0 0 20px', fontSize: '13px', color: 'var(--text-muted)' }}>
+                {result.unlinkedAnnuals.slice(0, 10).map((annual, i) => (
+                  <li key={i}>{annual.title} (expected parent: {annual.expectedParentName})</li>
+                ))}
+                {result.unlinkedAnnuals.length > 10 && (
+                  <li style={{ fontStyle: 'italic' }}>...and {result.unlinkedAnnuals.length - 10} more</li>
+                )}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

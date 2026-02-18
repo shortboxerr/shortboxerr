@@ -135,6 +135,10 @@ body {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  transition: width 0.2s ease;
+  position: relative;
+  z-index: 50;
+  overflow: hidden;
 }
 
 .sidebar-header {
@@ -143,11 +147,27 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: opacity 0.15s ease;
+}
+
+.sidebar-brand:hover {
+  opacity: 0.8;
 }
 
 .sidebar-logo {
   width: 32px;
   height: 32px;
+  min-width: 32px;
+  min-height: 32px;
   background: linear-gradient(135deg, var(--accent-primary), #7c5ce7);
   border-radius: var(--radius-md);
   display: flex;
@@ -155,6 +175,7 @@ body {
   justify-content: center;
   font-weight: 700;
   font-size: 16px;
+  flex-shrink: 0;
 }
 
 .sidebar-title {
@@ -215,8 +236,382 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 
+/* Mobile Header - hidden on desktop */
+.mobile-header {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.mobile-header-logo {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--accent-primary), #7c5ce7);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.mobile-header-logo:hover {
+  opacity: 0.8;
+}
+
+.mobile-menu-btn {
+  padding: 8px;
+}
+
+/* Sidebar close button - hidden on desktop, shown on mobile only */
+.sidebar-close-btn {
+  display: none !important;
+  margin-left: auto;
+}
+
+/* Sidebar overlay for mobile */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 199;
+}
+
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .app-layout {
+    display: block;
+  }
+
+  .mobile-header {
+    display: flex;
+  }
+
+  /* Show mobile close button */
+  .sidebar-close-btn {
+    display: flex !important;
+  }
+
+  .sidebar-overlay {
+    display: block;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: -100%;
+    top: 0;
+    bottom: 0;
+    z-index: 200;
+    transition: left 0.3s ease;
+    width: 280px !important; /* Override collapsed state */
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+
+  /* Reset collapsed styles for mobile */
+  .sidebar.collapsed .sidebar-title,
+  .sidebar.collapsed .nav-section-title,
+  .sidebar.collapsed .nav-item span {
+    display: block;
+  }
+
+  .sidebar.collapsed .nav-item {
+    justify-content: flex-start;
+    padding: 10px 20px;
+  }
+
+  .main-content {
+    width: 100%;
+    height: calc(100vh - 56px);
+    overflow: auto;
+  }
+
+  /* Adjust page content for mobile */
+  .page-header {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .page-title {
+    font-size: 18px;
+  }
+
+  .page-content {
+    padding: 16px;
+  }
+
+  /* Series detail adjustments */
+  .series-detail-header {
+    flex-direction: row;
+    gap: 12px;
+    padding: 12px;
+    margin-bottom: 16px;
+  }
+
+  .series-detail-cover {
+    width: 100px;
+    height: 150px;
+  }
+
+  .series-detail-info {
+    gap: 8px;
+  }
+
+  .series-detail-info h1 {
+    font-size: 16px;
+  }
+
+  .series-detail-meta {
+    gap: 6px;
+  }
+
+  .series-detail-publisher,
+  .series-detail-year {
+    font-size: 12px;
+  }
+
+  .series-detail-overview {
+    font-size: 12px;
+    max-height: 60px;
+    line-height: 1.4;
+  }
+
+  .series-detail-stats {
+    gap: 12px;
+  }
+
+  .series-detail-stat {
+    font-size: 12px;
+    gap: 4px;
+  }
+
+  .series-detail-stat svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .series-detail-link {
+    font-size: 11px;
+  }
+
+  .series-detail-refreshed {
+    font-size: 10px;
+  }
+
+  /* Issues toolbar adjustments */
+  .issues-toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Pagination adjustments */
+  .pagination-controls {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .pagination-pages .btn {
+    min-width: 28px;
+    padding: 4px 6px;
+    font-size: 12px;
+  }
+
+  /* Card grid adjustments - 4 columns on tablet */
+  .issues-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 4px;
+  }
+
+  .series-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 4px;
+  }
+
+  /* Table mobile - horizontal scroll */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table {
+    min-width: 600px;
+  }
+
+  .table th,
+  .table td {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .table th {
+    font-size: 10px;
+  }
+
+  /* Issue card mobile adjustments */
+  .issue-card-info {
+    padding: 6px 8px;
+  }
+
+  .issue-card-number {
+    font-size: 12px;
+  }
+
+  .issue-card-title {
+    font-size: 11px;
+  }
+
+  .issue-card-date {
+    font-size: 10px;
+  }
+
+  .issue-card-status {
+    width: 20px;
+    height: 20px;
+    top: 4px;
+    right: 4px;
+  }
+
+  .issue-card-status svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* Pull list card mobile adjustments */
+  .pull-list-card-info {
+    padding: 8px;
+  }
+
+  .pull-list-card-series {
+    font-size: 11px;
+  }
+
+  .pull-list-card-issue {
+    font-size: 10px;
+  }
+
+  .pull-list-card-publisher {
+    font-size: 10px;
+  }
+
+  .pull-list-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 4px;
+  }
+}
+
+/* Small mobile adjustments - 3 column grid */
+@media (max-width: 480px) {
+  .issues-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 2px;
+  }
+
+  .series-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 2px;
+  }
+
+  .pagination-pages {
+    display: none;
+  }
+
+  /* Even more compact cards on small screens */
+  .issue-card-info {
+    padding: 4px 6px;
+  }
+
+  .issue-card-number {
+    font-size: 11px;
+  }
+
+  .issue-card-title {
+    display: none;
+  }
+
+  .issue-card-date {
+    display: none;
+  }
+
+  .pull-list-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 2px;
+  }
+
+  .pull-list-card-info {
+    padding: 6px;
+  }
+
+  .pull-list-card-series {
+    font-size: 10px;
+  }
+
+  .pull-list-card-issue,
+  .pull-list-card-publisher {
+    display: none;
+  }
+
+  /* Table even more compact */
+  .table {
+    min-width: 500px;
+  }
+
+  .table th,
+  .table td {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+
+  /* Series detail even more compact */
+  .series-detail-header {
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .series-detail-cover {
+    width: 80px;
+    height: 120px;
+  }
+
+  .series-detail-info h1 {
+    font-size: 14px;
+  }
+
+  .series-detail-overview {
+    display: none;
+  }
+
+  .series-detail-stats {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .series-detail-stat {
+    font-size: 11px;
+  }
+
+  .badge {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+}
 .page-header {
   padding: 16px 24px;
   background: var(--bg-secondary);
@@ -1029,8 +1424,9 @@ body {
 /* Issues Grid */
 .issues-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(120px, 170px));
   gap: 16px;
+  justify-content: center;
 }
 
 .issue-card {
@@ -1259,7 +1655,8 @@ body {
 }
 
 .filter-select,
-.sort-select {
+.sort-select,
+.pagesize-select {
   padding: 6px 10px;
   font-size: 13px;
   background: var(--bg-tertiary);
@@ -1271,8 +1668,16 @@ body {
 }
 
 .filter-select:focus,
-.sort-select:focus {
+.sort-select:focus,
+.pagesize-select:focus {
   border-color: var(--accent-primary);
+}
+
+/* Page Size Dropdown */
+.pagesize-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Dropdown Menu */
@@ -1350,6 +1755,46 @@ body {
   padding: 6px 12px;
   background: rgba(93, 156, 236, 0.1);
   border-radius: var(--radius-md);
+}
+
+/* Pagination Controls (Mylar3 parity) */
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.pagination-info {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 4px;
+}
+
+.pagination-pages .btn {
+  min-width: 32px;
+  padding: 4px 8px;
+  font-size: 13px;
+}
+
+.pagination-ellipsis {
+  padding: 4px 8px;
+  color: var(--text-muted);
+  font-size: 13px;
 }
 
 .selection-count {
@@ -1600,6 +2045,12 @@ body {
   gap: 4px;
   padding: 8px;
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.issue-card-actions.show {
+  opacity: 1;
 }
 
 .issue-card-actions .btn-action {
@@ -1940,8 +2391,9 @@ body {
 
 .pull-list-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 220px));
   gap: 16px;
+  justify-content: center;
 }
 
 .pull-list-card {
@@ -2515,4 +2967,307 @@ tr.selected {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+/* ===========================================
+   Logs Page Styles
+   =========================================== */
+
+/* Desktop log layout */
+.log-line-desktop {
+  display: grid;
+  grid-template-columns: 20px 160px 45px 180px 1fr;
+  gap: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  border-bottom: 1px solid rgba(75, 85, 99, 0.3);
+  align-items: start;
+}
+
+.log-line-mobile {
+  display: none;
+}
+
+.log-header-row {
+  display: grid;
+  grid-template-columns: 20px 160px 45px 180px 1fr;
+  gap: 8px;
+  padding: 8px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6b7280;
+  border-bottom: 1px solid rgba(75, 85, 99, 0.5);
+  background-color: rgba(31, 41, 55, 0.5);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.log-lines {
+  padding-top: 4px;
+}
+
+.log-timestamp {
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.log-level {
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.log-category {
+  color: #a78bfa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.log-message {
+  color: #6b7280;
+  word-break: break-word;
+}
+
+/* Mobile log layout */
+@media (max-width: 768px) {
+  .log-line-desktop {
+    display: none;
+  }
+
+  .log-line-mobile {
+    display: block;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    border-bottom: 1px solid rgba(75, 85, 99, 0.3);
+  }
+
+  .log-mobile-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .log-mobile-header .log-level {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+
+  .log-mobile-header .log-timestamp {
+    font-size: 10px;
+  }
+
+  .log-mobile-header .log-category {
+    font-size: 10px;
+    word-break: break-all;
+  }
+
+  .log-line-mobile .log-message {
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .log-header-row {
+    display: none;
+  }
+
+  /* Logs toolbar mobile */
+  .logs-page .input {
+    width: 100% !important;
+    min-width: unset !important;
+  }
+
+  .logs-page .flex-wrap {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .logs-page .flex-wrap > * {
+    width: 100%;
+  }
+
+  .logs-page .flex-wrap .relative {
+    max-width: none !important;
+  }
+
+  /* Log files list mobile */
+  .logs-page .flex-wrap.gap-2 {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+/* ===========================================
+   Mobile Edge-to-Edge Layout
+   =========================================== */
+@media (max-width: 768px) {
+  /* Remove page content padding on mobile */
+  .page-content {
+    padding: 0 !important;
+  }
+
+  /* Edge-to-edge grids */
+  .issues-grid,
+  .series-grid,
+  .pull-list-grid {
+    gap: 2px !important;
+    padding: 0 !important;
+    padding-bottom: 70px !important; /* Space for sticky bulk actions bar */
+  }
+
+  /* Cards fill space with minimal gaps */
+  .issue-card,
+  .pull-list-card {
+    border-radius: 0 !important;
+    border-width: 0 !important;
+    border-bottom: 1px solid var(--border-color) !important;
+  }
+
+  /* Series detail header edge-to-edge */
+  .series-detail-header {
+    border-radius: 0 !important;
+    margin: 0 !important;
+    margin-bottom: 2px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* Tables edge-to-edge */
+  .table-container {
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+  }
+
+  /* Page header - keep horizontal padding for text */
+  .page-header {
+    padding: 12px 16px !important;
+  }
+
+  /* Toolbar - keep horizontal padding for text/controls */
+  .toolbar,
+  .issues-toolbar {
+    padding: 8px 12px !important;
+    margin: 0 !important;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  /* Section headers - add horizontal padding */
+  .series-detail-section-header,
+  .edition-detail-section-header {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* Cards section styling */
+  .card {
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+  }
+
+  /* Dashboard cards keep some padding for text */
+  .card-title,
+  .stat-label,
+  .stat-value {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  /* Widget headers need padding */
+  .widget-header {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* Empty state text needs padding */
+  .empty-state {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* Dashboard section headers */
+  .dashboard-section-title {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* Card grid needs horizontal padding for the title row */
+  .card-grid {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* Cards themselves have internal padding, but titles at page level need edge padding */
+  .card .card-title {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* Mobile: Always show checkbox (for tap-to-select), hide hover actions */
+  .issue-card-checkbox {
+    opacity: 1 !important;
+  }
+
+  /* Hide card-level actions on mobile - use bulk actions toolbar instead */
+  .issue-card-actions {
+    display: none !important;
+  }
+
+  /* Mobile: Sticky bulk actions bar at bottom when items selected */
+  .bulk-actions {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 12px 16px;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-color);
+    border-radius: 0;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    justify-content: center;
+  }
+
+  .bulk-actions .selection-count {
+    font-weight: 600;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Even tighter on small screens */
+  .issues-grid,
+  .series-grid {
+    gap: 1px !important;
+  }
+
+  .page-header {
+    padding: 10px 12px !important;
+  }
+
+  .toolbar,
+  .issues-toolbar {
+    padding: 6px 10px !important;
+  }
+
+  /* Slightly less padding on very small screens */
+  .series-detail-header,
+  .series-detail-section-header,
+  .edition-detail-section-header,
+  .widget-header {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
 }

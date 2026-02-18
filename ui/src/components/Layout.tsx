@@ -1,4 +1,5 @@
-import { Outlet, NavLink } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Outlet, NavLink, Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   BookOpen,
@@ -11,6 +12,8 @@ import {
   Settings,
   Zap,
   ScrollText,
+  Menu,
+  X,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -28,14 +31,56 @@ const navItems = [
 ];
 
 export function Layout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false); // For mobile slide-out only
+  const location = useLocation();
+
+  // Close mobile sidebar when route changes
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
+
+  // Close sidebar when clicking outside (mobile)
+  const handleOverlayClick = () => {
+    setSidebarOpen(false);
+  };
+
   return (
-    <div className="app-layout">
-      <aside className="sidebar">
+    <div className={clsx('app-layout', sidebarOpen && 'sidebar-open')}>
+      {/* Mobile header with hamburger menu */}
+      <header className="mobile-header">
+        <Link to="/" className="mobile-header-logo">
+          <Zap size={22} />
+        </Link>
+        <button 
+          className="btn btn-icon mobile-menu-btn" 
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
+        >
+          <Menu size={24} />
+        </button>
+      </header>
+
+      {/* Overlay for mobile when sidebar is open */}
+      {sidebarOpen && (
+        <div className="sidebar-overlay" onClick={handleOverlayClick} />
+      )}
+
+      <aside className={clsx('sidebar', sidebarOpen && 'open')}>
         <div className="sidebar-header">
-          <div className="sidebar-logo">
-            <Zap size={18} />
-          </div>
-          <span className="sidebar-title">Shortboxerr</span>
+          <Link to="/" className="sidebar-brand">
+            <div className="sidebar-logo">
+              <Zap size={18} />
+            </div>
+            <span className="sidebar-title">Shortboxerr</span>
+          </Link>
+          {/* Mobile close button only */}
+          <button 
+            className="btn btn-icon sidebar-close-btn" 
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close menu"
+          >
+            <X size={20} />
+          </button>
         </div>
         
         <nav className="sidebar-nav">

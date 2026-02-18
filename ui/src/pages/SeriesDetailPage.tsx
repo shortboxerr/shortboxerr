@@ -3,7 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   ArrowLeft, ExternalLink, RefreshCw, Calendar, BookOpen, HardDrive, 
-  Check, X, Clock, Grid, List, Filter, SortAsc, SortDesc, Star, Zap, Trash2, Settings
+  Check, X, Clock, Grid, List, Filter, SortAsc, SortDesc, Star, Zap, Trash2, Settings,
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
 } from 'lucide-react';
 import { api } from '../api/client';
 import type { Issue, IssueStatus, SeriesPullListSettingsDto } from '../api/client';
@@ -12,6 +13,7 @@ type ViewMode = 'cover' | 'list';
 type SortKey = 'issueNumber' | 'releaseDate' | 'status' | 'title';
 type SortDir = 'asc' | 'desc';
 type StatusFilter = 'all' | 'owned' | 'wanted' | 'missing' | 'skipped';
+type PageSize = 9 | 12 | 24 | 48 | 96 | 192;
 
 export function SeriesDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,11 +30,15 @@ export function SeriesDetailPage() {
   // View state - initialize from settings
   const [viewMode, setViewMode] = useState<ViewMode>('cover');
   const [sortKey, setSortKey] = useState<SortKey>('issueNumber');
-  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedIssues, setSelectedIssues] = useState<Set<number>>(new Set());
   const [showAnnuals, setShowAnnuals] = useState(true);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState<PageSize>(12);
   
   // Fetch series-specific pull list settings
   const { data: seriesSettings } = useQuery({
@@ -78,9 +84,13 @@ export function SeriesDetailPage() {
     mutationFn: async ({ issueIds, status }: { issueIds: number[]; status: IssueStatus }) => {
       return api.bulkUpdateIssueStatus(issueIds, status);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['series', seriesId, 'issues'] });
-      queryClient.invalidateQueries({ queryKey: ['series', seriesId] });
+    onSuccess: async () => {
+      // Use the refetch functions directly from the query hooks
+      await Promise.all([
+        refetchIssues(),
+        refetchAnnuals(),
+        refetchSeries(),
+      ]);
       // Also invalidate dashboard/pulllist stats so counts update immediately
       queryClient.invalidateQueries({ queryKey: ['pulllist', 'stats'] });
       queryClient.invalidateQueries({ queryKey: ['pulllist', 'week'] });
@@ -146,41 +156,57 @@ export function SeriesDetailPage() {
     }
   };
 
-  const { data: series, isLoading: isLoadingSeries } = useQuery({
+  const { data: series, isLoading: isLoadingSeries, refetch: refetchSeries } = useQuery({
     queryKey: ['series', seriesId],
     queryFn: () => api.getSeriesById(seriesId),
     enabled: seriesId > 0,
   });
 
-  const { data: issuesData, isLoading: isLoadingIssues } = useQuery({
+  const { data: issuesData, isLoading: isLoadingIssues, refetch: refetchIssues } = useQuery({
     queryKey: ['series', seriesId, 'issues', sortKey, sortDir],
     queryFn: () => api.getSeriesIssues(seriesId, { pageSize: 500, sortKey, sortDir }),
     enabled: seriesId > 0,
   });
 
-  const allIssues = issuesData?.items ?? [];
+  // Fetch annuals from the dedicated endpoint (includes linked annual series - Mylar3 parity)
+  const { data: annualsData, refetch: refetchAnnuals } = useQuery({
+    queryKey: ['series', seriesId, 'annuals'],
+    queryFn: () => api.getSeriesAnnuals(seriesId),
+    enabled: seriesId > 0,
+  });
 
-  // Separate regular issues from annuals
+  const allIssues = issuesData?.items ?? [];
+  const allAnnuals = annualsData?.annuals ?? [];
+  const linkedAnnualSeriesCount = annualsData?.linkedAnnualSeriesCount ?? 0;
+
+  // Separate regular issues from annuals (regular issues exclude those marked as annual)
   const { regularIssues, annualIssues } = useMemo(() => {
-    const regular: Issue[] = [];
-    const annuals: Issue[] = [];
-    
-    allIssues.forEach(issue => {
+    // Filter regular issues (excluding annuals from the main issues list)
+    const regular = allIssues.filter(issue => {
+      // Exclude annuals from regular view (they're shown in the Annuals section)
+      if (issue.isAnnual) return false;
+      
       // Filter by status
       if (statusFilter !== 'all') {
         const status = getIssueStatus(issue);
-        if (status !== statusFilter) return;
+        if (status !== statusFilter) return false;
       }
       
-      if (issue.isAnnual) {
-        annuals.push(issue);
-      } else {
-        regular.push(issue);
+      return true;
+    });
+    
+    // Filter annuals from the annuals endpoint
+    const annuals = allAnnuals.filter(issue => {
+      // Filter by status
+      if (statusFilter !== 'all') {
+        const status = getIssueStatus(issue);
+        if (status !== statusFilter) return false;
       }
+      return true;
     });
     
     return { regularIssues: regular, annualIssues: annuals };
-  }, [allIssues, statusFilter]);
+  }, [allIssues, allAnnuals, statusFilter]);
 
   // Combined filtered issues (for selection purposes)
   const filteredIssues = useMemo(() => {
@@ -189,6 +215,35 @@ export function SeriesDetailPage() {
 
   // Count annuals for display
   const annualCount = annualIssues.length;
+
+  // Pagination calculations for regular issues
+  const totalRegularIssues = regularIssues.length;
+  const totalPages = Math.ceil(totalRegularIssues / pageSize);
+  const paginatedRegularIssues = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return regularIssues.slice(startIndex, startIndex + pageSize);
+  }, [regularIssues, currentPage, pageSize]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, sortKey, sortDir, pageSize]);
+
+  // Page navigation handlers
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  const goToFirstPage = () => goToPage(1);
+  const goToPreviousPage = () => goToPage(currentPage - 1);
+  const goToNextPage = () => goToPage(currentPage + 1);
+  const goToLastPage = () => goToPage(totalPages);
+
+  // Handle page size change
+  const handlePageSizeChange = (newSize: PageSize) => {
+    setPageSize(newSize);
+    setCurrentPage(1); // Reset to first page
+  };
 
   // Counts for stats
   const ownedCount = allIssues.filter(i => i.hasFile).length;
@@ -448,6 +503,23 @@ export function SeriesDetailPage() {
               </button>
             </div>
 
+            {/* Page Size Dropdown (Mylar3 parity) */}
+            <div className="pagesize-dropdown">
+              <select 
+                value={pageSize} 
+                onChange={(e) => handlePageSizeChange(Number(e.target.value) as PageSize)}
+                className="pagesize-select"
+                title="Issues per page"
+              >
+                <option value={9}>9 per page</option>
+                <option value={12}>12 per page</option>
+                <option value={24}>24 per page</option>
+                <option value={48}>48 per page</option>
+                <option value={96}>96 per page</option>
+                <option value={192}>192 per page</option>
+              </select>
+            </div>
+
             {/* Select All Button (useful for cover view) */}
             {viewMode === 'cover' && filteredIssues.length > 0 && (
               <button 
@@ -508,7 +580,7 @@ export function SeriesDetailPage() {
                 <>
                   {viewMode === 'cover' ? (
                     <div className="issues-grid">
-                      {regularIssues.map((issue) => (
+                      {paginatedRegularIssues.map((issue) => (
                         <IssueCoverCard 
                           key={issue.id} 
                           issue={issue} 
@@ -522,7 +594,7 @@ export function SeriesDetailPage() {
                     </div>
                   ) : (
                     <IssueListView 
-                      issues={regularIssues}
+                      issues={paginatedRegularIssues}
                       selectedIds={selectedIssues}
                       onSelect={toggleIssueSelection}
                       onToggleSelectAll={toggleSelectAllIssues}
@@ -535,6 +607,67 @@ export function SeriesDetailPage() {
                       onMarkSkipped={handleMarkAsSkipped}
                       isUpdating={updateIssueStatus.isPending}
                     />
+                  )}
+
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="pagination-controls">
+                      <div className="pagination-info">
+                        Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, totalRegularIssues)} of {totalRegularIssues} issues
+                      </div>
+                      <div className="pagination-buttons">
+                        <button 
+                          className="btn btn-icon btn-sm" 
+                          onClick={goToFirstPage}
+                          disabled={currentPage === 1}
+                          title="First page"
+                        >
+                          <ChevronsLeft size={16} />
+                        </button>
+                        <button 
+                          className="btn btn-icon btn-sm" 
+                          onClick={goToPreviousPage}
+                          disabled={currentPage === 1}
+                          title="Previous page"
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        
+                        {/* Page number buttons */}
+                        <div className="pagination-pages">
+                          {getPageNumbers(currentPage, totalPages).map((page, idx) => (
+                            page === '...' ? (
+                              <span key={`ellipsis-${idx}`} className="pagination-ellipsis">...</span>
+                            ) : (
+                              <button
+                                key={page}
+                                className={`btn btn-sm ${currentPage === page ? 'btn-primary' : ''}`}
+                                onClick={() => goToPage(page as number)}
+                              >
+                                {page}
+                              </button>
+                            )
+                          ))}
+                        </div>
+                        
+                        <button 
+                          className="btn btn-icon btn-sm" 
+                          onClick={goToNextPage}
+                          disabled={currentPage === totalPages}
+                          title="Next page"
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+                        <button 
+                          className="btn btn-icon btn-sm" 
+                          onClick={goToLastPage}
+                          disabled={currentPage === totalPages}
+                          title="Last page"
+                        >
+                          <ChevronsRight size={16} />
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </>
               )}
@@ -566,6 +699,18 @@ export function SeriesDetailPage() {
                     }}>
                       ({annualIssues.length})
                     </span>
+                    {linkedAnnualSeriesCount > 0 && (
+                      <span style={{ 
+                        fontSize: '11px', 
+                        color: 'var(--text-muted)',
+                        background: 'var(--bg-secondary)',
+                        padding: '2px 8px',
+                        borderRadius: '10px',
+                        marginLeft: '8px'
+                      }}>
+                        from {linkedAnnualSeriesCount} linked series
+                      </span>
+                    )}
                   </div>
                   
                   {viewMode === 'cover' ? (
@@ -890,9 +1035,8 @@ function IssueCoverCard({ issue, selected, onSelect, onMarkWanted, onMarkSkipped
           </div>
         )}
 
-        {/* Hover Actions Overlay */}
-        {showActions && (
-          <div className="issue-card-actions" onClick={(e) => e.stopPropagation()}>
+        {/* Actions Overlay - shown on hover (desktop) or always (mobile via CSS) */}
+        <div className={`issue-card-actions ${showActions ? 'show' : ''}`} onClick={(e) => e.stopPropagation()}>
             {issue.comicVineUrl && (
               <button 
                 className="btn btn-icon btn-sm btn-action btn-action-link" 
@@ -907,7 +1051,7 @@ function IssueCoverCard({ issue, selected, onSelect, onMarkWanted, onMarkSkipped
             {status !== 'wanted' && (
               <button 
                 className="btn btn-icon btn-sm btn-action" 
-                onClick={onMarkWanted}
+                onClick={(e) => { e.stopPropagation(); onMarkWanted(); }}
                 disabled={isUpdating}
                 title={status === 'owned' ? "Re-search for this issue" : "Mark as Wanted"}
               >
@@ -917,19 +1061,32 @@ function IssueCoverCard({ issue, selected, onSelect, onMarkWanted, onMarkSkipped
             {status !== 'skipped' && (
               <button 
                 className="btn btn-icon btn-sm btn-action" 
-                onClick={onMarkSkipped}
+                onClick={(e) => { e.stopPropagation(); onMarkSkipped(); }}
                 disabled={isUpdating}
                 title="Skip this issue"
               >
                 <X size={14} />
               </button>
             )}
-          </div>
-        )}
+        </div>
       </div>
       <div className="issue-card-info">
         <div className="issue-card-number">{issue.displayNumber}</div>
         {issue.title && <div className="issue-card-title" title={issue.title}>{issue.title}</div>}
+        {/* Linked Annual Series indicator */}
+        {issue.linkedAnnualSeriesTitle && (
+          <div className="issue-card-linked-series" style={{ 
+            fontSize: '10px', 
+            color: 'var(--accent-primary)',
+            opacity: 0.8,
+            marginTop: '2px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }} title={`From: ${issue.linkedAnnualSeriesTitle}`}>
+            {issue.linkedAnnualSeriesTitle}
+          </div>
+        )}
         {(issue.releaseDate || issue.storeDate) && (
           <div className="issue-card-date">
             <Calendar size={10} />
@@ -1120,7 +1277,7 @@ function IssueListRow({ issue, selected, onSelect, onMarkWanted, onMarkSkipped, 
           {status !== 'wanted' && (
             <button 
               className="btn btn-icon btn-sm" 
-              onClick={onMarkWanted}
+              onClick={(e) => { e.stopPropagation(); onMarkWanted(); }}
               disabled={isUpdating}
               title={status === 'owned' ? "Re-search" : "Mark as Wanted"}
             >
@@ -1130,7 +1287,7 @@ function IssueListRow({ issue, selected, onSelect, onMarkWanted, onMarkSkipped, 
           {status !== 'skipped' && (
             <button 
               className="btn btn-icon btn-sm" 
-              onClick={onMarkSkipped}
+              onClick={(e) => { e.stopPropagation(); onMarkSkipped(); }}
               disabled={isUpdating}
               title="Skip"
             >
@@ -1166,4 +1323,39 @@ function formatDate(dateStr: string | null): string {
   if (!dateStr) return '';
   const date = new Date(dateStr);
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// Generate page numbers with ellipsis for large page counts
+function getPageNumbers(current: number, total: number): (number | '...')[] {
+  const pages: (number | '...')[] = [];
+  const delta = 2; // Number of pages to show on each side of current
+  
+  // Always show first page
+  pages.push(1);
+  
+  // Calculate range around current page
+  const rangeStart = Math.max(2, current - delta);
+  const rangeEnd = Math.min(total - 1, current + delta);
+  
+  // Add ellipsis if there's a gap after first page
+  if (rangeStart > 2) {
+    pages.push('...');
+  }
+  
+  // Add pages in range
+  for (let i = rangeStart; i <= rangeEnd; i++) {
+    pages.push(i);
+  }
+  
+  // Add ellipsis if there's a gap before last page
+  if (rangeEnd < total - 1) {
+    pages.push('...');
+  }
+  
+  // Always show last page (if more than 1 page)
+  if (total > 1) {
+    pages.push(total);
+  }
+  
+  return pages;
 }

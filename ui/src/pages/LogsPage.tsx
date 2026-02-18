@@ -14,24 +14,6 @@ const LOG_LEVELS = [
   { value: 'FTL', label: 'Fatal' },
 ];
 
-function getLevelColor(level?: string): string {
-  switch (level?.toUpperCase()) {
-    case 'VRB':
-      return 'text-gray-400';
-    case 'DBG':
-      return 'text-blue-400';
-    case 'INF':
-      return 'text-green-400';
-    case 'WRN':
-      return 'text-yellow-400';
-    case 'ERR':
-      return 'text-red-400';
-    case 'FTL':
-      return 'text-red-600 font-bold';
-    default:
-      return 'text-gray-300';
-  }
-}
 
 function getLevelIcon(level?: string) {
   switch (level?.toUpperCase()) {
@@ -62,23 +44,87 @@ function LogLineComponent({ line, searchTerm }: { line: LogLine; searchTerm: str
     );
   };
 
+  // Format timestamp - shorter for mobile
+  const formatTimestamp = (ts?: string) => {
+    if (!ts) return '';
+    const date = new Date(ts);
+    return date.toLocaleString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+  };
+
+  const formatTimestampFull = (ts?: string) => {
+    if (!ts) return '';
+    const date = new Date(ts);
+    return date.toLocaleString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+  };
+
   return (
-    <div className="log-line flex gap-2 py-0.5 px-2 hover:bg-gray-800/50 font-mono text-xs border-b border-gray-800/30">
-      <span className="flex-shrink-0">{getLevelIcon(line.level)}</span>
-      <span className="flex-shrink-0 text-gray-500 w-[180px]">
-        {line.timestamp ? new Date(line.timestamp).toLocaleString() : ''}
-      </span>
-      <span className={`flex-shrink-0 w-[40px] ${getLevelColor(line.level)}`}>
-        {line.level || ''}
-      </span>
-      <span className="flex-shrink-0 text-purple-400 w-[200px] truncate" title={line.category}>
-        {line.category || ''}
-      </span>
-      <span className="flex-grow text-gray-200 break-all">
-        {highlightSearch(line.message || line.raw)}
-      </span>
+    <div className="log-line">
+      {/* Desktop layout */}
+      <div className="log-line-desktop">
+        <span className="log-icon">{getLevelIcon(line.level)}</span>
+        <span className="log-timestamp">{formatTimestampFull(line.timestamp)}</span>
+        <span className="log-level" style={{
+          backgroundColor: getLevelBgColor(line.level),
+          color: getLevelTextColor(line.level),
+        }}>
+          {line.level || '-'}
+        </span>
+        <span className="log-category" title={line.category}>{line.category || ''}</span>
+        <span className="log-message">{highlightSearch(line.message || line.raw)}</span>
+      </div>
+      {/* Mobile layout */}
+      <div className="log-line-mobile">
+        <div className="log-mobile-header">
+          <span className="log-level" style={{
+            backgroundColor: getLevelBgColor(line.level),
+            color: getLevelTextColor(line.level),
+          }}>
+            {line.level || '-'}
+          </span>
+          <span className="log-timestamp">{formatTimestamp(line.timestamp)}</span>
+          {line.category && <span className="log-category">{line.category}</span>}
+        </div>
+        <div className="log-message">{highlightSearch(line.message || line.raw)}</div>
+      </div>
     </div>
   );
+}
+
+function getLevelBgColor(level?: string): string {
+  switch (level?.toUpperCase()) {
+    case 'VRB': return 'rgba(156, 163, 175, 0.2)';
+    case 'DBG': return 'rgba(96, 165, 250, 0.2)';
+    case 'INF': return 'rgba(74, 222, 128, 0.2)';
+    case 'WRN': return 'rgba(250, 204, 21, 0.2)';
+    case 'ERR': return 'rgba(248, 113, 113, 0.2)';
+    case 'FTL': return 'rgba(239, 68, 68, 0.4)';
+    default: return 'rgba(107, 114, 128, 0.2)';
+  }
+}
+
+function getLevelTextColor(level?: string): string {
+  switch (level?.toUpperCase()) {
+    case 'VRB': return '#9ca3af';
+    case 'DBG': return '#60a5fa';
+    case 'INF': return '#4ade80';
+    case 'WRN': return '#facc15';
+    case 'ERR': return '#f87171';
+    case 'FTL': return '#ef4444';
+    default: return '#9ca3af';
+  }
 }
 
 export default function LogsPage() {
@@ -229,7 +275,9 @@ export default function LogsPage() {
       <div
         ref={logContainerRef}
         className="flex-grow overflow-auto bg-gray-900"
-        style={{ fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace' }}
+        style={{ 
+          fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace'
+        }}
       >
         {contentLoading && !logContent ? (
           <div className="flex items-center justify-center h-32 text-gray-400">
@@ -245,10 +293,23 @@ export default function LogsPage() {
             )}
           </div>
         ) : (
-          <div className="py-1">
-            {logContent?.lines.map((line, i) => (
-              <LogLineComponent key={i} line={line} searchTerm={searchTerm} />
-            ))}
+          <div className="log-content">
+            {/* Header row - desktop only */}
+            <div className="log-header-row">
+              <span></span>
+              <span>Timestamp</span>
+              <span>Level</span>
+              <span>Source</span>
+              <span>Message</span>
+            </div>
+            {/* Log lines */}
+            <div className="log-lines">
+              {logContent?.lines.map((line, i) => (
+                <LogLineComponent key={i} line={line} searchTerm={searchTerm} />
+              ))}
+            </div>
+            {/* Bottom spacer for scroll padding */}
+            <div style={{ height: '80px' }} />
           </div>
         )}
       </div>
