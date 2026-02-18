@@ -1014,10 +1014,15 @@ Track upcoming comic releases and automate wanted list management. Must achieve 
     - POST /api/v1/pulllist/releaseday/process
     - GET /api/v1/pulllist/releaseday/status
   - Note: ComicVine discovery refresh already implemented in `ComicVineRefreshBackgroundService` ✅
-- [ ] **Auto-search on release** (deferred)
-  - AC: Trigger search when issue is added to wanted list
-  - AC: Respect rate limits and search intervals
-  - Note: Requires DDL/NZB integration from EPICs 8/10
+- [x] **Auto-search on release** ✅ IMPLEMENTED
+  - AC: Trigger search when issue is added to wanted list ✅
+  - AC: Respect rate limits and search intervals ✅
+  - AC: AutoSearchBackgroundService runs periodically (configurable interval) ✅
+  - AC: IAutoSearchService with search per issue, series, or all wanted ✅
+  - AC: Tracks LastSearchedAt and SearchAttempts per issue ✅
+  - AC: Re-searches stale issues based on StaleSearchThresholdDays ✅
+  - AC: API endpoints for status, history, manual trigger ✅
+  - Note: 8 unit tests added
 
 ### 11.4 Pull List Notifications (PARTIAL)
 In-app notification system implemented. External notification channels (email, webhooks) deferred.
@@ -1727,7 +1732,7 @@ Track and prioritize completion of deferred items across all EPICs.
 | ~~3~~ | ~~RAR/7z unpacking support~~ | 10 | S | M | ✅ Completed |
 | ~~4~~ | ~~Site availability checks~~ | 8 | M | H | ✅ Completed |
 | **P2 - High Value, Medium Effort** |||||
-| 5 | Auto-search on release | 11 | M | H | None |
+| ~~5~~ | ~~Auto-search on release~~ | 11 | M | H | ✅ Completed |
 | 6 | Mylar3 NZB settings import | 10 | M | H | Config parser |
 | 7 | Indexer health monitoring | 10 | M | H | None |
 | 8 | Download client failover | 10 | M | H | None |
@@ -1780,10 +1785,10 @@ Track and prioritize completion of deferred items across all EPICs.
    - Auto-disable failing adapters
    - Note: ISiteHealthService + 10 API endpoints + 53 tests
 
-5. **Auto-search on release** (EPIC 11)
+5. ~~**Auto-search on release** (EPIC 11)~~ ✅ COMPLETED
    - Automatic searching when new issues release
-   - Webhook/polling for release detection
-   - Medium effort, high user value
+   - AutoSearchBackgroundService + IAutoSearchService
+   - Note: AutoSearchService + 8 tests
 
 ### 14.2 NZBGet Integration (Sonarr/Radarr/Mylar3 Parity) ✅ COMPLETED
 Full NZBGet support as an alternative to SABnzbd.

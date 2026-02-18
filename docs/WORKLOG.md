@@ -1,5 +1,73 @@
 # Worklog
 
+## Iteration 099 (2026-02-18)
+**EPIC 11.3: Auto-Search on Release**
+
+### Summary
+Implemented automatic searching for wanted issues. This feature triggers searches when issues are added to the wanted list and periodically re-searches stale issues.
+
+### Commits
+1. `feat: implement auto-search on release (EPIC 11.3)`
+
+### Deliverables
+
+#### IAutoSearchService - Core Service Interface
+- `SearchIssueAsync(issueId)` - Search for a specific issue
+- `SearchSeriesWantedAsync(seriesId)` - Search all wanted issues in a series
+- `SearchAllWantedAsync(maxIssues?)` - Search all wanted issues in library
+- `GetSearchableIssuesAsync(limit?)` - Get issues due for searching
+- `GetStatusAsync()` - Get auto-search status and statistics
+- `GetHistoryAsync(limit)` - Get recent search history
+
+#### AutoSearchBackgroundService
+- Runs periodically based on `AutoSearchIntervalHours` setting (default: 24 hours)
+- Checks every 15 minutes if a search run is due
+- Respects `AutoSearchEnabled` setting
+- Sends notifications when issues are found
+
+#### Issue Entity Updates
+- Added `LastSearchedAt` (DateTime?) - When issue was last searched
+- Added `SearchAttempts` (int) - Number of search attempts
+- Added `LastSearchError` (string?) - Last error message
+- Database migration created
+
+#### API Endpoints
+- `GET /api/v1/search/auto/status` - Get auto-search status
+- `GET /api/v1/search/auto/searchable` - Get issues available for searching
+- `GET /api/v1/search/auto/history` - Get recent search history
+- `POST /api/v1/search/auto/trigger` - Manually trigger auto-search
+- `POST /api/v1/search/auto/issue/{id}` - Search for specific issue
+- `POST /api/v1/search/auto/series/{id}` - Search wanted issues in series
+
+#### Unit Tests (8 tests)
+- SearchIssueAsync_WhenIssueNotFound_ReturnsFailedResult
+- SearchIssueAsync_WhenCandidatesFound_ReturnsSuccessResult
+- SearchIssueAsync_WhenNoCandidatesFound_ReturnsNotFoundResult
+- SearchIssueAsync_UpdatesLastSearchedAtAndAttempts
+- GetSearchableIssuesAsync_ReturnsOnlyWantedMonitoredIssues
+- GetSearchableIssuesAsync_IncludesStaleSearchedIssues
+- GetStatusAsync_ReturnsCorrectCounts
+- SearchAllWantedAsync_SearchesMultipleIssues
+
+### Settings Integration
+Uses existing `SearchSettings`:
+- `AutoSearchEnabled` - Enable/disable automatic searching
+- `AutoSearchIntervalHours` - Hours between auto-search runs
+- `StaleSearchThresholdDays` - Re-search after this many days
+- `SearchDelaySeconds` - Delay between individual searches
+
+### Files Changed
+- `src/Shortboxerr.Core/Entities/Issue.cs` - Added search tracking fields
+- `src/Shortboxerr.Core/Search/IAutoSearchService.cs` - New interface
+- `src/Shortboxerr.Infrastructure/Search/AutoSearchService.cs` - New service
+- `src/Shortboxerr.Infrastructure/BackgroundServices/AutoSearchBackgroundService.cs` - New background service
+- `src/Shortboxerr.Api/Endpoints/AutoSearchEndpoints.cs` - New API endpoints
+- `src/Shortboxerr.Infrastructure/DependencyInjection.cs` - DI registration
+- `src/Shortboxerr.Api/Program.cs` - Endpoint mapping
+- `tests/Shortboxerr.Tests/AutoSearchServiceTests.cs` - 8 tests
+
+---
+
 ## Iteration 098 (2026-02-17)
 **EPIC 15: P3 Feature Parity - Verification & Documentation**
 
