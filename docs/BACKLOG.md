@@ -2334,6 +2334,66 @@ Comprehensive annual/special issue configuration with documentation similar to M
   - AC: Filters annual issues from view when unchecked ✅
   - AC: Shows count of annual issues ✅
 
+### 15.10 Series-Annual Integration (Mylar3 Parity) ✅ COMPLETED
+
+Full Mylar3-style Series-Annual Integration where annual series (e.g., "Batman Annual") can be linked to their parent series (e.g., "Batman") and all annual issues appear in the parent's Annuals section.
+
+**Implemented:**
+
+- [x] **Database schema for series linking**
+  - AC: `SeriesType` enum (Regular, Annual, Special, GiantSize) ✅
+  - AC: `ParentSeriesId` foreign key for annual series ✅
+  - AC: `LinkedAnnualSeries` navigation collection for parent series ✅
+  - AC: Self-referencing relationship configured in DbContext ✅
+
+- [x] **Automatic annual series detection and linking**
+  - AC: Pattern detection for annual series titles (e.g., "Batman Annual") ✅
+  - AC: When adding annual series, auto-link to parent series if exists ✅
+  - AC: When adding parent series, auto-link existing annual series ✅
+  - AC: When adding parent series, auto-search ComicVine and add annual series ✅ (seamless)
+  - AC: Extraction of parent name from annual title (regex pattern) ✅
+
+- [x] **API endpoints for annual series management**
+  - AC: `GET /api/v1/series/{id}/annuals` - returns all annuals (inline + linked) ✅
+  - AC: `GET /api/v1/series/{id}/annuals/search` - search ComicVine for related annuals ✅
+  - AC: `POST /api/v1/series/{id}/annuals/{volumeId}` - add and link annual series ✅
+  - AC: `POST /api/v1/series/link-annuals` - link all existing annual series to parents ✅
+  - AC: `POST /api/v1/series/{id}/link-annual` - link single series to parent ✅
+  - AC: Series detail includes `linkedAnnualSeries` in response ✅
+
+- [x] **Frontend integration**
+  - AC: Annuals section fetches from dedicated `/annuals` endpoint ✅
+  - AC: Displays count of linked annual series in header ✅
+  - AC: Issue cards show source series for linked annuals ✅
+  - AC: Works with existing annual filters and status controls ✅
+
+- [x] **Hide linked annual series from main list**
+  - AC: Series list excludes series with `ParentSeriesId` set ✅
+  - AC: System status count excludes linked annual series ✅
+  - AC: Filter options count excludes linked annual series ✅
+  - AC: Annual series only visible through parent's Annuals section ✅
+
+- [x] **Update existing library**
+  - AC: Settings > Annual Handling has "Link Existing Annual Series" button ✅
+  - AC: Scans all series with "Annual" in title ✅
+  - AC: Auto-links to parent series by title matching ✅
+  - AC: Shows results (linked count, unlinked with reasons) ✅
+  - AC: Safe to run multiple times (only links unlinked series) ✅
+
+**How it works:**
+
+1. When you add "Batman (2016)" to your library, the system **automatically**:
+   - Searches ComicVine for "Batman Annual"
+   - Adds the "Batman Annual" series if found (same publisher, within 2 years)
+   - Links it to the parent series
+   - All happens seamlessly in one operation
+2. When you add "Batman Annual (2016)" directly, the system detects it's an annual series and links it to "Batman (2016)".
+3. On the Batman series detail page, the Annuals section shows:
+   - Issues from Batman with `isAnnual=true` (inline annuals)
+   - All issues from linked "Batman Annual" series
+4. Linked annual issues display which series they came from.
+5. For existing libraries: Settings > Annual Handling > "Link Existing Annual Series" scans and links series added before this feature.
+
 ### 15.9 Pull List Data Accuracy (Mylar3 Parity Investigation)
 Pull list data doesn't match Mylar3's for the same week.
 
@@ -2383,6 +2443,64 @@ Pull list data doesn't match Mylar3's for the same week.
 
 ---
 
+## EPIC 16: End-to-End Testing Infrastructure
+
+Comprehensive E2E test suite to exercise all user workflows, background automation, and integration points.
+
+### 16.1 Test Framework Setup
+- [ ] **E2E test project setup**
+  - AC: New test project `tests/Shortboxerr.E2E` with Playwright or similar
+  - AC: Test fixtures for database seeding (known series, issues, settings)
+  - AC: Docker-compose for isolated test environment
+  - AC: CI integration with test reports
+
+### 16.2 User Workflow Tests
+- [ ] **Series management workflows**
+  - AC: Add series from search → verify in library
+  - AC: Configure series settings (annual handling, monitoring)
+  - AC: Remove series → verify cleanup
+- [ ] **Issue management workflows**
+  - AC: Mark issue as wanted/skipped → verify status update
+  - AC: Bulk operations on issues
+  - AC: Filter/sort/paginate in cover and list views
+- [ ] **Pull list workflows**
+  - AC: View weekly pull list
+  - AC: Forthcoming releases calendar
+  - AC: Wanted issues across all series
+
+### 16.3 Background Automation Tests
+- [ ] **Scheduled job tests**
+  - AC: RSS sync triggers and completes
+  - AC: Metadata refresh updates series/issues
+  - AC: Missing issue search executes
+- [ ] **Download pipeline tests**
+  - AC: Search → candidate selection → download initiation
+  - AC: Download completion → import handoff
+  - AC: Failed download retry/quarantine
+
+### 16.4 API Integration Tests
+- [ ] **ComicVine API integration**
+  - AC: Series search returns valid results
+  - AC: Issue sync populates data correctly
+  - AC: Rate limiting respected
+- [ ] **Download client integration**
+  - AC: NZB submission to SABnzbd/NZBGet
+  - AC: Torrent submission to qBittorrent
+  - AC: Status polling and completion detection
+
+### 16.5 UI Smoke Tests
+- [ ] **Critical path coverage**
+  - AC: Dashboard loads with statistics
+  - AC: Series list/detail pages render
+  - AC: Settings pages save correctly
+  - AC: Mobile responsive layouts work
+- [ ] **Error state handling**
+  - AC: Network errors show appropriate messages
+  - AC: Invalid inputs show validation errors
+  - AC: Empty states display correctly
+
+---
+
 ## Story Ordering Notes
 
 **EPIC 4 Implementation Order:**
@@ -2414,3 +2532,4 @@ Pull list data doesn't match Mylar3's for the same week.
 - EPIC 11.5 depends on EPIC 5 (UI shell) for calendar and list views
 - EPIC 11.6 depends on EPIC 7 (Mylar3 Migration) for config import patterns
 - EPIC 12 has no hard dependencies; can be implemented incrementally alongside other work
+- EPIC 16 depends on most other EPICs being functional (tests exercise complete workflows)
