@@ -138,6 +138,12 @@ public static class DependencyInjection
         services.AddScoped<INzbImportService, NzbImportService>();
         services.AddHostedService<BackgroundServices.NzbImportBackgroundService>();
 
+        // Auto-search services
+        services.AddScoped<IAutoSearchService, AutoSearchService>();
+        services.AddSingleton<BackgroundServices.AutoSearchBackgroundService>();
+        services.AddHostedService(provider => 
+            provider.GetRequiredService<BackgroundServices.AutoSearchBackgroundService>());
+
         // Notification services
         services.AddScoped<INotificationService, NotificationService>();
         services.AddHttpClient<INotificationProvider, WebhookNotificationProvider>();

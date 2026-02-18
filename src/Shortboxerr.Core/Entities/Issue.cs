@@ -119,6 +119,25 @@ public class Issue
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
     
+    #region Auto-Search Tracking
+    
+    /// <summary>
+    /// When this issue was last searched for automatically.
+    /// </summary>
+    public DateTime? LastSearchedAt { get; set; }
+    
+    /// <summary>
+    /// Number of search attempts for this issue.
+    /// </summary>
+    public int SearchAttempts { get; set; }
+    
+    /// <summary>
+    /// Last error encountered during search (if any).
+    /// </summary>
+    public string? LastSearchError { get; set; }
+    
+    #endregion
+    
     // Navigation properties
     public Series? Series { get; set; }
     public FileAsset? File { get; set; }
