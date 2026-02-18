@@ -681,8 +681,58 @@ public class PullListService : IPullListService
     {
         try
         {
+            // Get current settings to detect changes
+            var currentSettings = await GetSettingsAsync(cancellationToken);
+            var oldIntegrationEnabled = currentSettings.EnableSeriesAnnualIntegration ?? true;
+            var newIntegrationEnabled = settings.EnableSeriesAnnualIntegration ?? true;
+            
+            // Save the new settings
             await _settingsService.SetAsync(PullListSettingsKey, settings, cancellationToken);
             _logger.LogInformation("Updated pull list settings");
+            
+            // Check if series-annual integration setting changed
+            if (oldIntegrationEnabled != newIntegrationEnabled)
+            {
+                _logger.LogInformation("Series-annual integration changed from {Old} to {New}", 
+                    oldIntegrationEnabled, newIntegrationEnabled);
+                
+                if (newIntegrationEnabled)
+                {
+                    // Integration was enabled - link all annual series
+                    _logger.LogInformation("Enabling series-annual integration: linking annual series to parents");
+                    var linkResult = await _seriesMetadataService.LinkExistingAnnualSeriesAsync(cancellationToken);
+                    
+                    if (linkResult.Success)
+                    {
+                        _logger.LogInformation("Automatically linked {Count} annual series", linkResult.LinkedCount);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Failed to auto-link annual series: {Error}", linkResult.Error);
+                    }
+                }
+                else
+                {
+                    // Integration was disabled - unlink all annual series
+                    _logger.LogInformation("Disabling series-annual integration: unlinking annual series from parents");
+                    var unlinkResult = await _seriesMetadataService.UnlinkAllAnnualSeriesAsync(cancellationToken);
+                    
+                    if (unlinkResult.Success)
+                    {
+                        _logger.LogInformation("Automatically unlinked {Count} annual series", unlinkResult.UnlinkedCount);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Failed to auto-unlink annual series: {Error}", unlinkResult.Error);
+                    }
+                }
+                
+                // Invalidate all series-related caches since the parent links have changed
+                _cacheService.RemoveByPrefix(CacheKeys.Series);
+                _cacheService.RemoveByPrefix(CacheKeys.DashboardStats);
+                _logger.LogDebug("Series cache invalidated due to annual integration setting change");
+            }
+            
             return new PullListActionResult { Success = true };
         }
         catch (Exception ex)

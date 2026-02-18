@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Core.Entities;
+using Shortboxerr.Core.PullList;
 using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.Persistence;
 
@@ -19,9 +20,18 @@ public class SeriesMetadataService : ISeriesMetadataService
     private readonly ILogger<SeriesMetadataService> _logger;
     private readonly SeriesStatusDeterminer _statusDeterminer;
     
+    // Settings key for pull list (same as PullListService)
+    private const string PullListSettingsKey = "pulllist";
+    
     // Pattern for detecting annual issues or series
     private static readonly Regex AnnualPattern = new(
         @"(?:^|\s)Annual(?:\s+#?(\d+))?(?:\s|$)",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    
+    // Pattern for extracting parent series name from an annual series title
+    // E.g., "Batman Annual" -> "Batman", "Amazing Spider-Man Annual" -> "Amazing Spider-Man"
+    private static readonly Regex AnnualSeriesPattern = new(
+        @"^(.+?)\s+Annual$",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
     
     // Pattern for detecting special issues
@@ -40,6 +50,17 @@ public class SeriesMetadataService : ISeriesMetadataService
         _settingsService = settingsService;
         _logger = logger;
         _statusDeterminer = new SeriesStatusDeterminer(logger as ILogger<SeriesStatusDeterminer>);
+    }
+    
+    /// <summary>
+    /// Gets pull list settings directly from settings service (avoids circular dependency with PullListService).
+    /// </summary>
+    private async Task<PullListSettings> GetPullListSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _settingsService.GetAsync<PullListSettings>(
+            PullListSettingsKey, 
+            null,
+            cancellationToken) ?? new PullListSettings();
     }
 
     /// <inheritdoc />
@@ -574,14 +595,495 @@ public class SeriesMetadataService : ISeriesMetadataService
         _logger.LogInformation("Added series {SeriesId} ({Title}) from ComicVine volume {ComicVineId} with {IssueCount} issues",
             series.Id, series.Title, volumeId, syncResult.IssuesAdded);
 
+        // Detect and link annual series (Mylar3 parity)
+        var linkedAnnualSeriesIds = new List<int>();
+        
+        // Check if this series is an annual series (e.g., "Batman Annual")
+        var annualMatch = AnnualSeriesPattern.Match(series.Title);
+        if (annualMatch.Success)
+        {
+            // This is an annual series - try to find and link to parent
+            var parentName = annualMatch.Groups[1].Value.Trim();
+            series.SeriesType = SeriesType.Annual;
+            
+            var parentSeries = await _dbContext.Series
+                .Where(s => s.Title == parentName && s.StartYear == series.StartYear && s.Publisher == series.Publisher)
+                .FirstOrDefaultAsync(cancellationToken);
+            
+            if (parentSeries == null)
+            {
+                // Try without exact year match
+                parentSeries = await _dbContext.Series
+                    .Where(s => s.Title == parentName && s.Publisher == series.Publisher)
+                    .OrderByDescending(s => s.StartYear.HasValue && series.StartYear.HasValue && 
+                                            Math.Abs(s.StartYear.Value - series.StartYear.Value) <= 2)
+                    .FirstOrDefaultAsync(cancellationToken);
+            }
+            
+            if (parentSeries != null)
+            {
+                series.ParentSeriesId = parentSeries.Id;
+                _logger.LogInformation("Linked annual series {AnnualTitle} to parent series {ParentTitle}",
+                    series.Title, parentSeries.Title);
+            }
+            else
+            {
+                _logger.LogInformation("Annual series {Title} added, but no parent series found in library", series.Title);
+            }
+            
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        else
+        {
+            // Check if series-annual integration is enabled (defaults to true)
+            var pullListSettings = await GetPullListSettingsAsync(cancellationToken);
+            if (pullListSettings.EnableSeriesAnnualIntegration ?? true)
+            {
+                // This is a regular series - link existing annual series and auto-add from ComicVine
+                linkedAnnualSeriesIds = await TryLinkExistingAnnualSeriesAsync(series, cancellationToken);
+                
+                // Also search ComicVine for annual series and automatically add them (Mylar3 parity)
+                var autoAddedIds = await AutoAddAnnualSeriesFromComicVineAsync(series, rootFolder, monitored, monitoringMode, cancellationToken);
+                linkedAnnualSeriesIds.AddRange(autoAddedIds);
+            }
+            else
+            {
+                _logger.LogDebug("Series-annual integration is disabled, skipping automatic annual linking for {Title}", series.Title);
+            }
+        }
+
         return new SeriesAddResult
         {
             Success = true,
             SeriesId = series.Id,
             ComicVineId = volumeId,
             Title = series.Title,
-            IssuesCreated = syncResult.IssuesAdded
+            IssuesCreated = syncResult.IssuesAdded,
+            LinkedAnnualSeriesIds = linkedAnnualSeriesIds
         };
+    }
+    
+    /// <summary>
+    /// Searches for and links existing annual series to a parent series.
+    /// </summary>
+    private async Task<List<int>> TryLinkExistingAnnualSeriesAsync(Series parentSeries, CancellationToken cancellationToken)
+    {
+        var linkedIds = new List<int>();
+        
+        // Look for annual series that match this parent (e.g., "Batman" -> find "Batman Annual")
+        var annualSearchName = $"{parentSeries.Title} Annual";
+        
+        var existingAnnuals = await _dbContext.Series
+            .Where(s => s.Title.Contains(parentSeries.Title) && 
+                       s.Title.Contains("Annual") &&
+                       s.ParentSeriesId == null &&
+                       s.Publisher == parentSeries.Publisher)
+            .ToListAsync(cancellationToken);
+        
+        foreach (var annual in existingAnnuals)
+        {
+            // Verify this is actually an annual for this parent
+            var match = AnnualSeriesPattern.Match(annual.Title);
+            if (match.Success && match.Groups[1].Value.Trim().Equals(parentSeries.Title, StringComparison.OrdinalIgnoreCase))
+            {
+                annual.ParentSeriesId = parentSeries.Id;
+                annual.SeriesType = SeriesType.Annual;
+                linkedIds.Add(annual.Id);
+                
+                _logger.LogInformation("Linked existing annual series {AnnualTitle} to parent series {ParentTitle}",
+                    annual.Title, parentSeries.Title);
+            }
+        }
+        
+        if (linkedIds.Any())
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        
+        return linkedIds;
+    }
+    
+    /// <summary>
+    /// Automatically searches ComicVine for annual series related to a parent series and adds them.
+    /// This provides seamless Mylar3 parity where adding "Batman" also adds "Batman Annual".
+    /// </summary>
+    private async Task<List<int>> AutoAddAnnualSeriesFromComicVineAsync(
+        Series parentSeries,
+        string? rootFolder,
+        bool monitored,
+        SeriesMonitoringMode monitoringMode,
+        CancellationToken cancellationToken)
+    {
+        var addedIds = new List<int>();
+        
+        try
+        {
+            // Search ComicVine for "{Title} Annual"
+            var searchQuery = $"{parentSeries.Title} Annual";
+            var searchResult = await _comicVineClient.SearchVolumesAsync(searchQuery, 1, 10, cancellationToken);
+            
+            if (!searchResult.Success || !searchResult.Results.Any())
+            {
+                _logger.LogDebug("No annual series found on ComicVine for {ParentTitle}", parentSeries.Title);
+                return addedIds;
+            }
+            
+            // Find volumes that match the pattern "{ParentTitle} Annual" with same publisher
+            foreach (var volume in searchResult.Results)
+            {
+                // Skip if already in library
+                var exists = await _dbContext.Series.AnyAsync(s => s.ComicVineId == volume.Id, cancellationToken);
+                if (exists) continue;
+                
+                // Check if this is actually an annual series for our parent
+                var match = AnnualSeriesPattern.Match(volume.Name);
+                if (!match.Success) continue;
+                
+                var extractedParentName = match.Groups[1].Value.Trim();
+                if (!extractedParentName.Equals(parentSeries.Title, StringComparison.OrdinalIgnoreCase)) continue;
+                
+                // Check publisher match (if available)
+                if (volume.Publisher?.Name != null && parentSeries.Publisher != null &&
+                    !volume.Publisher.Name.Equals(parentSeries.Publisher, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+                
+                // Check year proximity (annual series should be within 2 years of parent)
+                if (volume.StartYear.HasValue && parentSeries.StartYear.HasValue &&
+                    Math.Abs(volume.StartYear.Value - parentSeries.StartYear.Value) > 2)
+                {
+                    continue;
+                }
+                
+                _logger.LogInformation("Auto-adding annual series {AnnualTitle} for parent {ParentTitle}",
+                    volume.Name, parentSeries.Title);
+                
+                // Add the annual series
+                var annualSeries = new Series
+                {
+                    Title = volume.Name,
+                    SortTitle = GenerateSortTitle(volume.Name),
+                    Publisher = volume.Publisher?.Name,
+                    StartYear = volume.StartYear,
+                    Overview = volume.Description,
+                    ComicVineId = volume.Id,
+                    ExternalId = volume.Id.ToString(),
+                    ExternalSource = "ComicVine",
+                    ComicVineUrl = volume.SiteDetailUrl,
+                    ComicVinePublisherId = volume.Publisher?.Id,
+                    CoverImageUrl = volume.Image?.MediumUrl ?? volume.Image?.SmallUrl,
+                    TotalIssueCount = volume.IssueCount,
+                    Aliases = volume.Aliases.Any() ? string.Join("\n", volume.Aliases) : null,
+                    MetadataLastRefreshed = DateTime.UtcNow,
+                    Monitored = monitored,
+                    Status = SeriesStatus.Continuing,
+                    StatusSource = StatusSource.ComicVine,
+                    Path = rootFolder != null ? System.IO.Path.Combine(rootFolder, SanitizeFolderName(volume.Name)) : null,
+                    // Link to parent
+                    SeriesType = SeriesType.Annual,
+                    ParentSeriesId = parentSeries.Id
+                };
+                
+                _dbContext.Series.Add(annualSeries);
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                
+                // Sync issues for the annual series
+                var syncResult = await SyncIssuesFromComicVineInternalAsync(annualSeries, cancellationToken, monitoringMode);
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                
+                addedIds.Add(annualSeries.Id);
+                
+                _logger.LogInformation("Added annual series {SeriesId} ({Title}) with {IssueCount} issues, linked to parent {ParentTitle}",
+                    annualSeries.Id, annualSeries.Title, syncResult.IssuesAdded, parentSeries.Title);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error auto-adding annual series for {ParentTitle}. Manual addition may be required.",
+                parentSeries.Title);
+        }
+        
+        return addedIds;
+    }
+    
+    /// <summary>
+    /// Searches ComicVine for annual series related to a parent series.
+    /// Returns candidates that can be added to the library.
+    /// </summary>
+    public async Task<List<SeriesMatchCandidate>> SearchForAnnualSeriesAsync(
+        int parentSeriesId,
+        CancellationToken cancellationToken = default)
+    {
+        var parentSeries = await _dbContext.Series.FindAsync(new object[] { parentSeriesId }, cancellationToken);
+        if (parentSeries == null)
+        {
+            return new List<SeriesMatchCandidate>();
+        }
+        
+        var candidates = new List<SeriesMatchCandidate>();
+        
+        // Search for "[Title] Annual" on ComicVine
+        var searchQuery = $"{parentSeries.Title} Annual";
+        var searchResult = await SearchSeriesAsync(searchQuery, parentSeries.Publisher, parentSeries.StartYear, null, 1, 20, cancellationToken);
+        
+        if (searchResult.Success)
+        {
+            foreach (var candidate in searchResult.Results)
+            {
+                // Filter to only include actual annual series
+                var match = AnnualSeriesPattern.Match(candidate.Title);
+                if (match.Success)
+                {
+                    var parentName = match.Groups[1].Value.Trim();
+                    
+                    // Check if it matches our parent series
+                    if (parentName.Equals(parentSeries.Title, StringComparison.OrdinalIgnoreCase) ||
+                        NormalizeTitle(parentName).Equals(NormalizeTitle(parentSeries.Title), StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Check if not already in library
+                        var exists = await _dbContext.Series.AnyAsync(s => s.ComicVineId == candidate.ComicVineId, cancellationToken);
+                        if (!exists)
+                        {
+                            candidates.Add(candidate);
+                        }
+                    }
+                }
+            }
+        }
+        
+        return candidates;
+    }
+    
+    /// <summary>
+    /// Adds annual series from ComicVine and links them to the parent series.
+    /// </summary>
+    public async Task<SeriesAddResult> AddAnnualSeriesAsync(
+        int parentSeriesId,
+        int annualVolumeId,
+        CancellationToken cancellationToken = default)
+    {
+        var parentSeries = await _dbContext.Series.FindAsync(new object[] { parentSeriesId }, cancellationToken);
+        if (parentSeries == null)
+        {
+            return new SeriesAddResult
+            {
+                Success = false,
+                Error = $"Parent series with ID {parentSeriesId} not found"
+            };
+        }
+        
+        // Add the annual series
+        var result = await AddSeriesByComicVineIdAsync(
+            annualVolumeId,
+            parentSeries.Path, // Use same root folder as parent
+            parentSeries.Monitored,
+            parentSeries.MonitoringMode,
+            cancellationToken);
+        
+        if (result.Success && result.SeriesId.HasValue)
+        {
+            // Force link to parent (in case auto-detection failed)
+            var annualSeries = await _dbContext.Series.FindAsync(new object[] { result.SeriesId.Value }, cancellationToken);
+            if (annualSeries != null && annualSeries.ParentSeriesId != parentSeriesId)
+            {
+                annualSeries.ParentSeriesId = parentSeriesId;
+                annualSeries.SeriesType = SeriesType.Annual;
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+        }
+        
+        return result;
+    }
+    
+    /// <summary>
+    /// Scans all existing series in the library and links annual series to their parents.
+    /// Call this to update existing series that were added before the annual linking feature.
+    /// </summary>
+    public async Task<AnnualLinkingResult> LinkExistingAnnualSeriesAsync(CancellationToken cancellationToken = default)
+    {
+        var result = new AnnualLinkingResult();
+        
+        // Get all series that might be annuals (contain "Annual" in title)
+        var allSeries = await _dbContext.Series.ToListAsync(cancellationToken);
+        
+        var potentialAnnuals = allSeries
+            .Where(s => AnnualSeriesPattern.IsMatch(s.Title) && s.ParentSeriesId == null)
+            .ToList();
+        
+        var regularSeries = allSeries
+            .Where(s => !AnnualSeriesPattern.IsMatch(s.Title))
+            .ToList();
+        
+        _logger.LogInformation("Scanning {AnnualCount} potential annual series for linking", potentialAnnuals.Count);
+        
+        foreach (var annual in potentialAnnuals)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            
+            var match = AnnualSeriesPattern.Match(annual.Title);
+            if (!match.Success) continue;
+            
+            var parentName = match.Groups[1].Value.Trim();
+            
+            // Try to find exact match first
+            var parent = regularSeries.FirstOrDefault(s => 
+                s.Title.Equals(parentName, StringComparison.OrdinalIgnoreCase) &&
+                s.Publisher == annual.Publisher);
+            
+            // If no exact match, try fuzzy match with year
+            if (parent == null && annual.StartYear.HasValue)
+            {
+                parent = regularSeries.FirstOrDefault(s =>
+                    s.Title.Equals(parentName, StringComparison.OrdinalIgnoreCase) &&
+                    s.StartYear.HasValue &&
+                    Math.Abs(s.StartYear.Value - annual.StartYear.Value) <= 2);
+            }
+            
+            // Last resort: just match by name
+            if (parent == null)
+            {
+                parent = regularSeries.FirstOrDefault(s =>
+                    s.Title.Equals(parentName, StringComparison.OrdinalIgnoreCase));
+            }
+            
+            if (parent != null)
+            {
+                annual.ParentSeriesId = parent.Id;
+                annual.SeriesType = SeriesType.Annual;
+                result.LinkedCount++;
+                result.Links.Add(new AnnualLink
+                {
+                    AnnualSeriesId = annual.Id,
+                    AnnualSeriesTitle = annual.Title,
+                    ParentSeriesId = parent.Id,
+                    ParentSeriesTitle = parent.Title
+                });
+                
+                _logger.LogInformation("Linked annual series '{AnnualTitle}' to parent '{ParentTitle}'",
+                    annual.Title, parent.Title);
+            }
+            else
+            {
+                result.UnlinkedAnnuals.Add(new UnlinkedAnnual
+                {
+                    SeriesId = annual.Id,
+                    Title = annual.Title,
+                    ExpectedParentName = parentName
+                });
+                
+                _logger.LogDebug("Could not find parent for annual series '{AnnualTitle}' (expected: '{ParentName}')",
+                    annual.Title, parentName);
+            }
+        }
+        
+        if (result.LinkedCount > 0)
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        
+        result.Success = true;
+        result.TotalScanned = potentialAnnuals.Count;
+        
+        _logger.LogInformation("Annual linking complete: {Linked}/{Total} series linked",
+            result.LinkedCount, result.TotalScanned);
+        
+        return result;
+    }
+    
+    /// <summary>
+    /// Unlinks all annual series from their parents.
+    /// Called when series-annual integration is disabled.
+    /// </summary>
+    public async Task<AnnualUnlinkingResult> UnlinkAllAnnualSeriesAsync(CancellationToken cancellationToken = default)
+    {
+        var result = new AnnualUnlinkingResult();
+        
+        try
+        {
+            // Find all series that are currently linked to a parent
+            var linkedAnnuals = await _dbContext.Series
+                .Include(s => s.ParentSeries)
+                .Where(s => s.ParentSeriesId != null)
+                .ToListAsync(cancellationToken);
+            
+            _logger.LogInformation("Found {Count} linked annual series to unlink", linkedAnnuals.Count);
+            
+            foreach (var annual in linkedAnnuals)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                result.UnlinkedSeries.Add(new UnlinkedSeriesInfo
+                {
+                    SeriesId = annual.Id,
+                    Title = annual.Title,
+                    FormerParentSeriesId = annual.ParentSeriesId,
+                    FormerParentTitle = annual.ParentSeries?.Title ?? ""
+                });
+                
+                _logger.LogInformation("Unlinking annual series '{AnnualTitle}' from parent '{ParentTitle}'",
+                    annual.Title, annual.ParentSeries?.Title ?? "unknown");
+                
+                // Clear the parent link but keep the SeriesType as Annual for reference
+                annual.ParentSeriesId = null;
+            }
+            
+            if (linkedAnnuals.Count > 0)
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+            
+            result.Success = true;
+            result.UnlinkedCount = linkedAnnuals.Count;
+            
+            _logger.LogInformation("Annual unlinking complete: {Count} series unlinked", result.UnlinkedCount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to unlink annual series");
+            result.Success = false;
+            result.Error = ex.Message;
+        }
+        
+        return result;
+    }
+    
+    /// <summary>
+    /// For a specific series, detect if it's an annual and try to link it.
+    /// </summary>
+    public async Task<bool> TryLinkSingleSeriesAsync(int seriesId, CancellationToken cancellationToken = default)
+    {
+        var series = await _dbContext.Series.FindAsync(new object[] { seriesId }, cancellationToken);
+        if (series == null) return false;
+        
+        var match = AnnualSeriesPattern.Match(series.Title);
+        if (!match.Success) return false;
+        
+        var parentName = match.Groups[1].Value.Trim();
+        
+        var parent = await _dbContext.Series
+            .Where(s => s.Title == parentName && s.Publisher == series.Publisher && s.Id != seriesId)
+            .FirstOrDefaultAsync(cancellationToken);
+        
+        if (parent == null)
+        {
+            parent = await _dbContext.Series
+                .Where(s => s.Title == parentName && s.Id != seriesId)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+        
+        if (parent != null)
+        {
+            series.ParentSeriesId = parent.Id;
+            series.SeriesType = SeriesType.Annual;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            
+            _logger.LogInformation("Linked series '{Title}' to parent '{ParentTitle}'",
+                series.Title, parent.Title);
+            return true;
+        }
+        
+        return false;
     }
 
     /// <inheritdoc />

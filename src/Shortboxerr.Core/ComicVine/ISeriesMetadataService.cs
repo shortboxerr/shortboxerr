@@ -84,6 +84,39 @@ public interface ISeriesMetadataService
     Task<IssueSyncResult> SyncIssuesFromComicVineAsync(
         int seriesId,
         CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Searches ComicVine for annual series related to a parent series.
+    /// Returns candidates that can be added to the library.
+    /// </summary>
+    Task<List<SeriesMatchCandidate>> SearchForAnnualSeriesAsync(
+        int parentSeriesId,
+        CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Adds an annual series from ComicVine and links it to the parent series.
+    /// </summary>
+    Task<SeriesAddResult> AddAnnualSeriesAsync(
+        int parentSeriesId,
+        int annualVolumeId,
+        CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Scans all existing series in the library and links annual series to their parents.
+    /// Call this to update existing series that were added before the annual linking feature.
+    /// </summary>
+    Task<AnnualLinkingResult> LinkExistingAnnualSeriesAsync(CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Unlinks all annual series from their parents.
+    /// Called when series-annual integration is disabled.
+    /// </summary>
+    Task<AnnualUnlinkingResult> UnlinkAllAnnualSeriesAsync(CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// For a specific series, detect if it's an annual and try to link it.
+    /// </summary>
+    Task<bool> TryLinkSingleSeriesAsync(int seriesId, CancellationToken cancellationToken = default);
 }
 
 #region Result Types
@@ -235,6 +268,11 @@ public class SeriesAddResult
     public int IssuesCreated { get; set; }
     public bool AlreadyExists { get; set; }
     public int? ExistingSeriesId { get; set; }
+    
+    /// <summary>
+    /// IDs of annual series that were automatically linked to this parent series.
+    /// </summary>
+    public List<int> LinkedAnnualSeriesIds { get; set; } = new();
 }
 
 /// <summary>
@@ -248,6 +286,86 @@ public class IssueSyncResult
     public int IssuesAdded { get; set; }
     public int IssuesUpdated { get; set; }
     public int TotalIssues { get; set; }
+}
+
+/// <summary>
+/// Result of linking existing annual series to their parents.
+/// </summary>
+public class AnnualLinkingResult
+{
+    public bool Success { get; set; }
+    public string? Error { get; set; }
+    
+    /// <summary>
+    /// Total number of potential annual series scanned.
+    /// </summary>
+    public int TotalScanned { get; set; }
+    
+    /// <summary>
+    /// Number of series successfully linked to parents.
+    /// </summary>
+    public int LinkedCount { get; set; }
+    
+    /// <summary>
+    /// Details of each linked series.
+    /// </summary>
+    public List<AnnualLink> Links { get; set; } = new();
+    
+    /// <summary>
+    /// Annual series that couldn't find a parent.
+    /// </summary>
+    public List<UnlinkedAnnual> UnlinkedAnnuals { get; set; } = new();
+}
+
+/// <summary>
+/// Information about a linked annual series.
+/// </summary>
+public class AnnualLink
+{
+    public int AnnualSeriesId { get; set; }
+    public string AnnualSeriesTitle { get; set; } = "";
+    public int ParentSeriesId { get; set; }
+    public string ParentSeriesTitle { get; set; } = "";
+}
+
+/// <summary>
+/// Result of unlinking all annual series from their parents.
+/// </summary>
+public class AnnualUnlinkingResult
+{
+    public bool Success { get; set; }
+    public string? Error { get; set; }
+    
+    /// <summary>
+    /// Number of series that were unlinked.
+    /// </summary>
+    public int UnlinkedCount { get; set; }
+    
+    /// <summary>
+    /// Details of each unlinked series.
+    /// </summary>
+    public List<UnlinkedSeriesInfo> UnlinkedSeries { get; set; } = new();
+}
+
+/// <summary>
+/// Information about an unlinked annual series.
+/// </summary>
+public class UnlinkedSeriesInfo
+{
+    public int SeriesId { get; set; }
+    public string Title { get; set; } = "";
+    public int? FormerParentSeriesId { get; set; }
+    public string FormerParentTitle { get; set; } = "";
+}
+
+/// <summary>
+/// Information about an annual series that couldn't be linked.
+/// </summary>
+public class UnlinkedAnnual
+{
+    public int SeriesId { get; set; }
+    public string Title { get; set; } = "";
+    public string ExpectedParentName { get; set; } = "";
 }
 
 #endregion

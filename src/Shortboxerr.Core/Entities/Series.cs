@@ -74,6 +74,31 @@ public class Series
     /// </summary>
     public SeriesMonitoringMode MonitoringMode { get; set; } = SeriesMonitoringMode.AllIssues;
     
+    #region Annual/Special Series Integration
+    
+    /// <summary>
+    /// Type of series (regular, annual, special, etc.).
+    /// </summary>
+    public SeriesType SeriesType { get; set; } = SeriesType.Regular;
+    
+    /// <summary>
+    /// ID of the parent series if this is an annual/special series.
+    /// When set, this series' issues appear in the parent's Annuals section.
+    /// </summary>
+    public int? ParentSeriesId { get; set; }
+    
+    /// <summary>
+    /// Navigation property for the parent series.
+    /// </summary>
+    public Series? ParentSeries { get; set; }
+    
+    /// <summary>
+    /// Child annual/special series linked to this parent.
+    /// </summary>
+    public ICollection<Series> LinkedAnnualSeries { get; set; } = new List<Series>();
+    
+    #endregion
+    
     #region ComicVine Metadata
     
     /// <summary>
@@ -152,4 +177,31 @@ public enum StatusSource
     /// Status was manually set by the user.
     /// </summary>
     Manual = 2
+}
+
+/// <summary>
+/// Type of series for categorization and linking purposes.
+/// </summary>
+public enum SeriesType
+{
+    /// <summary>
+    /// Regular ongoing or limited series.
+    /// </summary>
+    Regular = 0,
+    
+    /// <summary>
+    /// Annual series (e.g., "Batman Annual").
+    /// When linked to a parent, issues appear in the parent's Annuals section.
+    /// </summary>
+    Annual = 1,
+    
+    /// <summary>
+    /// Special or one-shot series.
+    /// </summary>
+    Special = 2,
+    
+    /// <summary>
+    /// Giant-size special issues.
+    /// </summary>
+    GiantSize = 3
 }

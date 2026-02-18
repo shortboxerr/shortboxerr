@@ -29,6 +29,22 @@ public record SeriesDto
     public string? ComicVineUrl { get; init; }
     public int? TotalIssueCount { get; init; }
     public DateTime? MetadataLastRefreshed { get; init; }
+    
+    // Series-Annual Integration (Mylar3 parity)
+    /// <summary>
+    /// Type of series (Regular, Annual, Special, etc.).
+    /// </summary>
+    public SeriesType SeriesType { get; init; }
+    
+    /// <summary>
+    /// If this is an annual series, the ID of the parent series.
+    /// </summary>
+    public int? ParentSeriesId { get; init; }
+    
+    /// <summary>
+    /// For parent series, the list of linked annual series.
+    /// </summary>
+    public List<LinkedAnnualSeriesDto> LinkedAnnualSeries { get; init; } = new();
 
     public static SeriesDto FromEntity(Series series) => new()
     {
@@ -55,8 +71,33 @@ public record SeriesDto
         CoverImageUrl = series.CoverImageUrl,
         ComicVineUrl = series.ComicVineUrl,
         TotalIssueCount = series.TotalIssueCount,
-        MetadataLastRefreshed = series.MetadataLastRefreshed
+        MetadataLastRefreshed = series.MetadataLastRefreshed,
+        // Series-Annual Integration
+        SeriesType = series.SeriesType,
+        ParentSeriesId = series.ParentSeriesId,
+        LinkedAnnualSeries = series.LinkedAnnualSeries?
+            .Select(a => new LinkedAnnualSeriesDto
+            {
+                Id = a.Id,
+                Title = a.Title,
+                StartYear = a.StartYear,
+                IssueCount = a.Issues?.Count ?? 0,
+                CoverImageUrl = a.CoverImageUrl
+            })
+            .ToList() ?? new()
     };
+}
+
+/// <summary>
+/// Summary information about a linked annual series.
+/// </summary>
+public record LinkedAnnualSeriesDto
+{
+    public int Id { get; init; }
+    public required string Title { get; init; }
+    public int? StartYear { get; init; }
+    public int IssueCount { get; init; }
+    public string? CoverImageUrl { get; init; }
 }
 
 public record CreateSeriesRequest

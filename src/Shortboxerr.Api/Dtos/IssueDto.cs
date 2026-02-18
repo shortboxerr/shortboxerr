@@ -36,6 +36,12 @@ public record IssueDto
     public bool IsSpecial { get; init; }
     public string? SpecialType { get; init; }
     
+    /// <summary>
+    /// If this issue comes from a linked annual series, the title of that series.
+    /// Used in the Annuals section to show the source of the annual.
+    /// </summary>
+    public string? LinkedAnnualSeriesTitle { get; init; }
+    
     // Story arcs
     public List<string> StoryArcs { get; init; } = new();
     

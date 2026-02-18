@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Shortboxerr.Core.PullList;
 
 /// <summary>
@@ -444,6 +446,20 @@ public class PullListSettings
     /// Whether to include special issues in auto-add.
     /// </summary>
     public bool IncludeSpecialsInAutoAdd { get; set; } = false;
+    
+    /// <summary>
+    /// Whether to enable series-annual integration (Mylar3 parity).
+    /// When true: Annual series (e.g., "Batman Annual") are hidden from the main series list
+    /// and their issues appear in the parent series' Annuals section.
+    /// When false: Annual series appear as separate entries in the series list.
+    /// Default: true (for Mylar3 parity).
+    /// </summary>
+    /// <remarks>
+    /// Nullable to distinguish between "not set" (null, defaults to true) and "explicitly set to false".
+    /// Use GetEffectiveEnableSeriesAnnualIntegration() or ?? true to get the effective value.
+    /// </remarks>
+    [JsonPropertyName("enableSeriesAnnualIntegration")]
+    public bool? EnableSeriesAnnualIntegration { get; set; }
 
     /// <summary>
     /// Whether to skip variant covers (issues with letters like "1A", "1B").

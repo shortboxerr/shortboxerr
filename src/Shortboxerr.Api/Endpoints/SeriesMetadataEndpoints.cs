@@ -72,6 +72,35 @@ public static class SeriesMetadataEndpoints
             .WithName("MatchAllUnmatchedSeries")
             .WithOpenApi()
             .Produces<BulkMatchResult>(200);
+
+        // Search for annual series related to a parent series (Mylar3 parity)
+        group.MapGet("/{seriesId:int}/annuals/search", SearchAnnualSeries)
+            .WithName("SearchAnnualSeries")
+            .WithOpenApi()
+            .Produces<List<SeriesMatchCandidate>>(200)
+            .Produces(404);
+
+        // Add annual series and link to parent (Mylar3 parity)
+        group.MapPost("/{seriesId:int}/annuals/{volumeId:int}", AddAnnualSeries)
+            .WithName("AddAnnualSeries")
+            .WithOpenApi()
+            .Produces<SeriesAddResult>(201)
+            .Produces(404);
+        
+        // Link all existing annual series in library to their parents
+        group.MapPost("/link-annuals", LinkExistingAnnualSeries)
+            .WithName("LinkExistingAnnualSeries")
+            .WithOpenApi()
+            .WithDescription("Scans all existing series and links annual series to their parent series. Use this to update series added before the annual linking feature.")
+            .Produces<AnnualLinkingResult>(200);
+        
+        // Link a single series to its parent (if it's an annual)
+        group.MapPost("/{seriesId:int}/link-annual", LinkSingleSeries)
+            .WithName("LinkSingleSeriesAsAnnual")
+            .WithOpenApi()
+            .WithDescription("Attempts to link a single series to its parent if it's detected as an annual series.")
+            .Produces(200)
+            .Produces(404);
     }
 
     private static async Task<IResult> SearchComicVine(
@@ -239,6 +268,64 @@ public static class SeriesMetadataEndpoints
     {
         var result = await metadataService.AutoMatchAllSeriesAsync(confidenceThreshold, cancellationToken);
         return Results.Ok(result);
+    }
+
+    private static async Task<IResult> SearchAnnualSeries(
+        int seriesId,
+        ISeriesMetadataService metadataService,
+        CancellationToken cancellationToken)
+    {
+        var result = await metadataService.SearchForAnnualSeriesAsync(seriesId, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> AddAnnualSeries(
+        int seriesId,
+        int volumeId,
+        ISeriesMetadataService metadataService,
+        CancellationToken cancellationToken)
+    {
+        var result = await metadataService.AddAnnualSeriesAsync(seriesId, volumeId, cancellationToken);
+
+        if (!result.Success)
+        {
+            if (result.Error?.Contains("not found") == true)
+            {
+                return Results.NotFound(new { error = result.Error });
+            }
+            if (result.AlreadyExists)
+            {
+                return Results.Conflict(result);
+            }
+            return Results.BadRequest(new { error = result.Error });
+        }
+
+        return Results.Created($"/api/v1/series/{result.SeriesId}", result);
+    }
+    
+    private static async Task<IResult> LinkExistingAnnualSeries(
+        ISeriesMetadataService metadataService,
+        CancellationToken cancellationToken)
+    {
+        var result = await metadataService.LinkExistingAnnualSeriesAsync(cancellationToken);
+        return Results.Ok(result);
+    }
+    
+    private static async Task<IResult> LinkSingleSeries(
+        int seriesId,
+        ISeriesMetadataService metadataService,
+        CancellationToken cancellationToken)
+    {
+        var linked = await metadataService.TryLinkSingleSeriesAsync(seriesId, cancellationToken);
+        
+        if (linked)
+        {
+            return Results.Ok(new { message = "Series linked to parent", seriesId });
+        }
+        else
+        {
+            return Results.Ok(new { message = "Series not identified as an annual or no parent found", seriesId });
+        }
     }
 }
 

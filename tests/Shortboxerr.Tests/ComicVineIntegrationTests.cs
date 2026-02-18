@@ -3,6 +3,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Shortboxerr.Core.ComicVine;
+using Shortboxerr.Core.PullList;
 using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.ComicVine;
 using Shortboxerr.Infrastructure.Persistence;
@@ -45,6 +46,11 @@ public class ComicVineIntegrationTests : IDisposable
 
         // Default settings
         SetupDefaultSettings();
+        
+        // Pull list settings for annual integration
+        _mockSettingsService.Setup(x => x.GetAsync<PullListSettings>(
+            "pulllist", It.IsAny<PullListSettings?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PullListSettings { EnableSeriesAnnualIntegration = true });
 
         // Create services
         _seriesMetadataService = new SeriesMetadataService(

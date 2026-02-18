@@ -57,6 +57,12 @@ public class ShortboxerrDbContext : DbContext
             entity.HasIndex(e => e.Title);
             entity.HasIndex(e => new { e.ExternalSource, e.ExternalId });
             entity.HasIndex(e => e.ComicVineId);
+            entity.HasIndex(e => e.ParentSeriesId);
+            // Self-referencing relationship for annual/special series linking
+            entity.HasOne(e => e.ParentSeries)
+                .WithMany(p => p.LinkedAnnualSeries)
+                .HasForeignKey(e => e.ParentSeriesId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // Issue

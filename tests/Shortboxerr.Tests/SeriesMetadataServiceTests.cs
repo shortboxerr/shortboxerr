@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Core.Entities;
+using Shortboxerr.Core.PullList;
 using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.ComicVine;
 using Shortboxerr.Infrastructure.Persistence;
@@ -30,6 +31,11 @@ public class SeriesMetadataServiceTests : IDisposable
         _mockSettingsService.Setup(x => x.GetAsync<ComicVineSettings>(
             It.IsAny<string>(), It.IsAny<ComicVineSettings>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ComicVineSettings { AutoMatchThreshold = 85 });
+        
+        // Pull list settings for annual integration
+        _mockSettingsService.Setup(x => x.GetAsync<PullListSettings>(
+            "pulllist", It.IsAny<PullListSettings?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PullListSettings { EnableSeriesAnnualIntegration = true });
 
         _service = new SeriesMetadataService(
             _mockComicVineClient.Object,

@@ -63,7 +63,13 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173")
+        policy.WithOrigins(
+                "http://localhost:3000", 
+                "http://localhost:5173",
+                "http://localhost:8585",
+                "http://172.16.11.63:8585",
+                "http://172.16.11.63:5000"
+            )
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -77,11 +83,13 @@ var connectionString = Environment.GetEnvironmentVariable("SHORTBOXERR_DB")
     ?? $"Data Source={dbPath}";
 builder.Services.AddInfrastructure(connectionString, enableDebugMode: isDebug);
 
-// Configure JSON serialization to use string enums
+// Configure JSON serialization to use string enums and include null values
 builder.Services.Configure<JsonOptions>(options =>
 {
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
     options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    // Include null values in JSON output (important for nullable settings like EnableSeriesAnnualIntegration)
+    options.SerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never;
 });
 
 // Add HttpContextAccessor for correlation ID enrichment

@@ -137,6 +137,15 @@ function toSeries(api: ApiSeries): Series {
   };
 }
 
+// Linked annual series summary
+export interface LinkedAnnualSeries {
+  id: number;
+  title: string;
+  startYear: number | null;
+  issueCount: number;
+  coverImageUrl: string | null;
+}
+
 // API response format for detailed series
 interface ApiSeriesDetail {
   id: number;
@@ -159,6 +168,10 @@ interface ApiSeriesDetail {
   comicVineUrl: string | null;
   totalIssueCount: number | null;
   metadataLastRefreshed: string | null;
+  // Series-Annual Integration (Mylar3 parity)
+  seriesType: number; // 0=Regular, 1=Annual, 2=Special, 3=GiantSize
+  parentSeriesId: number | null;
+  linkedAnnualSeries: LinkedAnnualSeries[];
 }
 
 // UI-friendly format for detailed series
@@ -184,6 +197,10 @@ export interface SeriesDetail {
   comicVineUrl: string | null;
   totalIssueCount: number | null;
   metadataLastRefreshed: string | null;
+  // Series-Annual Integration (Mylar3 parity)
+  seriesType: 'Regular' | 'Annual' | 'Special' | 'GiantSize';
+  parentSeriesId: number | null;
+  linkedAnnualSeries: LinkedAnnualSeries[];
 }
 
 // Map API series detail to UI series detail
@@ -196,9 +213,23 @@ function toSeriesDetail(api: ApiSeriesDetail): SeriesDetail {
   const status = typeof api.status === 'string' 
     ? api.status 
     : (statusMap[api.status] ?? 'Unknown');
+  
+  // Map series type
+  const seriesTypeMap: Record<number, SeriesDetail['seriesType']> = {
+    0: 'Regular',
+    1: 'Annual',
+    2: 'Special',
+    3: 'GiantSize',
+  };
+  const seriesType = typeof api.seriesType === 'string'
+    ? api.seriesType as SeriesDetail['seriesType']
+    : (seriesTypeMap[api.seriesType] ?? 'Regular');
+  
   return {
     ...api,
     status,
+    seriesType,
+    linkedAnnualSeries: api.linkedAnnualSeries ?? [],
   };
 }
 
@@ -230,6 +261,8 @@ export interface Issue {
   storyArcs: string[];
   // Computed
   displayNumber: string;
+  // Linked annual series (Mylar3 parity)
+  linkedAnnualSeriesTitle?: string | null;
 }
 
 // Pull List types
@@ -342,6 +375,9 @@ export interface PullListSettingsDto {
   skipVariantCovers: boolean;
   upcomingWeeksToShow: number;
   pastWeeksToShow: number;
+  // Series-Annual Integration (Mylar3 Parity)
+  // Nullable: null means "not set, defaults to true"
+  enableSeriesAnnualIntegration: boolean | null;
   // Weekly Export Settings (Mylar3 Parity)
   exportWeeklyPullList: boolean;
   weeklyExportDirectory?: string | null;
@@ -972,6 +1008,40 @@ export interface SeriesAddResult {
   issuesCreated: number;
   alreadyExists: boolean;
   existingSeriesId: number | null;
+  // Linked annual series (Mylar3 parity)
+  linkedAnnualSeriesIds?: number[];
+}
+
+// Response from the series annuals endpoint (Mylar3 parity)
+export interface SeriesAnnualsResponse {
+  seriesId: number;
+  seriesTitle: string;
+  totalAnnuals: number;
+  linkedAnnualSeriesCount: number;
+  annuals: Issue[];
+}
+
+// Result from linking existing annual series to parents
+export interface AnnualLinkingResult {
+  success: boolean;
+  error?: string | null;
+  totalScanned: number;
+  linkedCount: number;
+  links: AnnualLink[];
+  unlinkedAnnuals: UnlinkedAnnual[];
+}
+
+export interface AnnualLink {
+  annualSeriesId: number;
+  annualSeriesTitle: string;
+  parentSeriesId: number;
+  parentSeriesTitle: string;
+}
+
+export interface UnlinkedAnnual {
+  seriesId: number;
+  title: string;
+  expectedParentName: string;
 }
 
 export interface AddSeriesFromComicVineRequest {
@@ -1160,6 +1230,78 @@ export const api = {
     } catch (error) {
       console.error('Failed to fetch series issues:', error);
       return { items: [], page: 1, pageSize: 100, totalCount: 0, totalPages: 0 };
+    }
+  },
+
+  // Get all annuals for a series (includes linked annual series - Mylar3 parity)
+  getSeriesAnnuals: async (seriesId: number): Promise<SeriesAnnualsResponse> => {
+    try {
+      return await fetchApi<SeriesAnnualsResponse>(`/api/v1/series/${seriesId}/annuals`);
+    } catch (error) {
+      console.error('Failed to fetch series annuals:', error);
+      return { seriesId, seriesTitle: '', totalAnnuals: 0, linkedAnnualSeriesCount: 0, annuals: [] };
+    }
+  },
+  
+  // Search for available annual series to link (Mylar3 parity)
+  searchAnnualSeries: async (parentSeriesId: number): Promise<SeriesMatchCandidate[]> => {
+    try {
+      return await fetchApi<SeriesMatchCandidate[]>(`/api/v1/series/${parentSeriesId}/annuals/search`);
+    } catch (error) {
+      console.error('Failed to search for annual series:', error);
+      return [];
+    }
+  },
+  
+  // Add and link an annual series to a parent series (Mylar3 parity)
+  addAnnualSeries: async (parentSeriesId: number, volumeId: number): Promise<SeriesAddResult> => {
+    try {
+      return await fetchApi<SeriesAddResult>(`/api/v1/series/${parentSeriesId}/annuals/${volumeId}`, {
+        method: 'POST',
+      });
+    } catch (error) {
+      console.error('Failed to add annual series:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to add annual series',
+        seriesId: null,
+        comicVineId: null,
+        title: null,
+        issuesCreated: 0,
+        alreadyExists: false,
+        existingSeriesId: null,
+      };
+    }
+  },
+  
+  // Link all existing annual series in library to their parent series
+  linkExistingAnnualSeries: async (): Promise<AnnualLinkingResult> => {
+    try {
+      return await fetchApi<AnnualLinkingResult>('/api/v1/series/link-annuals', {
+        method: 'POST',
+      });
+    } catch (error) {
+      console.error('Failed to link existing annual series:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to link annual series',
+        totalScanned: 0,
+        linkedCount: 0,
+        links: [],
+        unlinkedAnnuals: [],
+      };
+    }
+  },
+  
+  // Link a single series to its parent (if it's an annual)
+  linkSingleSeriesAsAnnual: async (seriesId: number): Promise<{ message: string; seriesId: number }> => {
+    try {
+      return await fetchApi<{ message: string; seriesId: number }>(`/api/v1/series/${seriesId}/link-annual`, {
+        method: 'POST',
+      });
+    } catch (error) {
+      console.error('Failed to link series:', error);
+      throw error;
     }
   },
 

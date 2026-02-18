@@ -3,6 +3,7 @@ using Shortboxerr.Api.Caching;
 using Shortboxerr.Api.Dtos;
 using Shortboxerr.Core.Caching;
 using Shortboxerr.Core.Entities;
+using Shortboxerr.Core.PullList;
 using Shortboxerr.Infrastructure.Persistence;
 
 namespace Shortboxerr.Api.Endpoints;
@@ -19,6 +20,7 @@ public static class SeriesEndpoints
         group.MapGet("/", async (
             ShortboxerrDbContext db,
             ICacheService cacheService,
+            IPullListService pullListService,
             int page = 1,
             int pageSize = 20,
             string? sortKey = "title",
@@ -27,6 +29,10 @@ public static class SeriesEndpoints
             string? publisher = null,
             bool? monitored = null) =>
         {
+            // Check if series-annual integration is enabled (defaults to true)
+            var settings = await pullListService.GetSettingsAsync();
+            var hideLinkedAnnuals = settings.EnableSeriesAnnualIntegration ?? true;
+            
             // Generate cache key including query parameters
             var cacheKey = cacheService.GenerateKey(
                 CacheKeys.SeriesList,
@@ -36,7 +42,8 @@ public static class SeriesEndpoints
                 sortDir ?? "asc",
                 status ?? "all",
                 publisher ?? "all",
-                monitored?.ToString() ?? "all");
+                monitored?.ToString() ?? "all",
+                hideLinkedAnnuals.ToString());
 
             // Cache for 2 minutes
             var result = await cacheService.GetOrCreateAsync(cacheKey, async () =>
@@ -45,6 +52,13 @@ public static class SeriesEndpoints
                     .Include(s => s.Issues)
                     .Include(s => s.Editions)
                     .AsQueryable();
+
+                // If series-annual integration is enabled, exclude linked annual series
+                // They appear through their parent series' Annuals section instead
+                if (hideLinkedAnnuals)
+                {
+                    query = query.Where(s => !s.ParentSeriesId.HasValue);
+                }
 
                 // Apply status filter
                 if (!string.IsNullOrEmpty(status) && status.ToLowerInvariant() != "all")
@@ -109,14 +123,24 @@ public static class SeriesEndpoints
         // GET filter options for series list
         group.MapGet("/filter-options", async (
             ShortboxerrDbContext db,
-            ICacheService cacheService) =>
+            ICacheService cacheService,
+            IPullListService pullListService) =>
         {
-            var cacheKey = cacheService.GenerateKey(CacheKeys.SeriesList, "filter-options");
+            // Check if series-annual integration is enabled (defaults to true)
+            var settings = await pullListService.GetSettingsAsync();
+            var hideLinkedAnnuals = settings.EnableSeriesAnnualIntegration ?? true;
+            
+            var cacheKey = cacheService.GenerateKey(CacheKeys.SeriesList, "filter-options", hideLinkedAnnuals.ToString());
 
             var options = await cacheService.GetOrCreateAsync(cacheKey, async () =>
             {
+                // If series-annual integration is enabled, exclude linked annual series
+                var baseQuery = hideLinkedAnnuals 
+                    ? db.Series.Where(s => !s.ParentSeriesId.HasValue)
+                    : db.Series.AsQueryable();
+                
                 // Get distinct publishers
-                var publishers = await db.Series
+                var publishers = await baseQuery
                     .Where(s => s.Publisher != null)
                     .Select(s => s.Publisher!)
                     .Distinct()
@@ -124,7 +148,7 @@ public static class SeriesEndpoints
                     .ToListAsync();
 
                 // Get status counts
-                var statusCounts = await db.Series
+                var statusCounts = await baseQuery
                     .GroupBy(s => s.Status)
                     .Select(g => new { Status = g.Key, Count = g.Count() })
                     .ToListAsync();
@@ -154,7 +178,7 @@ public static class SeriesEndpoints
                         new() { Value = "publisher", Label = "Publisher" },
                         new() { Value = "issuecount", Label = "Issue Count" }
                     },
-                    TotalSeries = await db.Series.CountAsync()
+                    TotalSeries = await baseQuery.CountAsync()
                 };
             }, TimeSpan.FromMinutes(5));
 
@@ -180,6 +204,8 @@ public static class SeriesEndpoints
                 return await db.Series
                     .Include(s => s.Issues)
                     .Include(s => s.Editions)
+                    .Include(s => s.LinkedAnnualSeries) // Include linked annual series
+                        .ThenInclude(a => a.Issues)
                     .FirstOrDefaultAsync(s => s.Id == id);
             }, TimeSpan.FromMinutes(5));
 
@@ -205,6 +231,64 @@ public static class SeriesEndpoints
         })
         .WithName("GetSeriesById")
         .WithHttpCache(300); // 5 minutes HTTP cache for detail view
+
+        // GET all annuals for a series (includes issues from linked annual series - Mylar3 parity)
+        group.MapGet("/{id:int}/annuals", async (
+            ShortboxerrDbContext db,
+            ICacheService cacheService,
+            int id) =>
+        {
+            var series = await db.Series
+                .Include(s => s.Issues)
+                .Include(s => s.LinkedAnnualSeries)
+                    .ThenInclude(a => a.Issues)
+                .FirstOrDefaultAsync(s => s.Id == id);
+                
+            if (series is null)
+                return Results.NotFound(new { message = $"Series {id} not found" });
+
+            // Collect all annual issues:
+            // 1. Issues from the main series marked as annuals
+            var annualIssues = series.Issues?
+                .Where(i => i.IsAnnual)
+                .Select(IssueDto.FromEntity)
+                .ToList() ?? new List<IssueDto>();
+            
+            // 2. All issues from linked annual series
+            if (series.LinkedAnnualSeries != null)
+            {
+                foreach (var annualSeries in series.LinkedAnnualSeries)
+                {
+                    var linkedIssues = annualSeries.Issues?
+                        .Select(i => 
+                        {
+                            var dto = IssueDto.FromEntity(i);
+                            // Mark these issues as coming from linked series for UI clarity
+                            return dto with { LinkedAnnualSeriesTitle = annualSeries.Title };
+                        })
+                        .ToList() ?? new List<IssueDto>();
+                    
+                    annualIssues.AddRange(linkedIssues);
+                }
+            }
+            
+            // Sort by release date, then issue number
+            annualIssues = annualIssues
+                .OrderBy(i => i.ReleaseDate ?? i.CoverDate)
+                .ThenBy(i => i.IssueNumber)
+                .ToList();
+            
+            return Results.Ok(new SeriesAnnualsResponse
+            {
+                SeriesId = id,
+                SeriesTitle = series.Title,
+                TotalAnnuals = annualIssues.Count,
+                LinkedAnnualSeriesCount = series.LinkedAnnualSeries?.Count ?? 0,
+                Annuals = annualIssues
+            });
+        })
+        .WithName("GetSeriesAnnuals")
+        .WithHttpCache(120);
 
         // GET issues for a series (with server-side caching)
         group.MapGet("/{id:int}/issues", async (
@@ -467,4 +551,16 @@ public record SortOption
 {
     public string Value { get; init; } = "";
     public string Label { get; init; } = "";
+}
+
+/// <summary>
+/// Response containing all annual issues for a series (including linked annual series).
+/// </summary>
+public record SeriesAnnualsResponse
+{
+    public int SeriesId { get; init; }
+    public string SeriesTitle { get; init; } = "";
+    public int TotalAnnuals { get; init; }
+    public int LinkedAnnualSeriesCount { get; init; }
+    public List<IssueDto> Annuals { get; init; } = new();
 }
