@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Shortboxerr.Core.PullList;
 using Shortboxerr.Infrastructure.Persistence;
 
 namespace Shortboxerr.Api.Endpoints;
@@ -303,14 +304,22 @@ public static class SystemEndpoints
         ShortboxerrDbContext dbContext,
         [FromServices] Shortboxerr.Core.Providers.IProviderManager providerManager,
         [FromServices] Shortboxerr.Core.Ddl.IDdlSiteAdapterFactory ddlFactory,
-        [FromServices] Shortboxerr.Core.Nzb.INzbIndexerProvider nzbIndexerProvider)
+        [FromServices] Shortboxerr.Core.Nzb.INzbIndexerProvider nzbIndexerProvider,
+        [FromServices] IPullListService pullListService)
     {
         var process = Process.GetCurrentProcess();
         var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
         var version = assembly.GetName().Version?.ToString() ?? "0.1.0";
 
+        // Check if series-annual integration is enabled (defaults to true)
+        var settings = await pullListService.GetSettingsAsync();
+        var hideLinkedAnnuals = settings.EnableSeriesAnnualIntegration ?? true;
+
         // Query actual statistics from database
-        var seriesCount = await dbContext.Series.CountAsync();
+        // If series-annual integration is enabled, exclude linked annual series
+        var seriesCount = hideLinkedAnnuals
+            ? await dbContext.Series.Where(s => !s.ParentSeriesId.HasValue).CountAsync()
+            : await dbContext.Series.CountAsync();
         var issuesCount = await dbContext.Issues.CountAsync();
         var collectionsCount = await dbContext.EditionTitles.CountAsync();
         var filesCount = await dbContext.FileAssets.CountAsync();

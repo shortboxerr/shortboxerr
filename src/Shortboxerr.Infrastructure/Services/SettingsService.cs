@@ -17,7 +17,9 @@ public class SettingsService : ISettingsService
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
-        WriteIndented = false
+        WriteIndented = false,
+        // Include null values in serialization (important for nullable settings like EnableSeriesAnnualIntegration)
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never
     };
 
     // Setting key prefixes/names
