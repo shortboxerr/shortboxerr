@@ -787,6 +787,40 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
 - 14 unit tests covering all scenarios
 - Migration for `StatusSource` column
 
+### 9.13 Cover Cache Size Limits & Eviction
+- [ ] **Cache size management** (deferred)
+  - AC: Configurable maximum cache size (default: 500MB)
+  - AC: LRU (Least Recently Used) eviction when limit exceeded
+  - AC: Enforce `RetentionDays` setting via background cleanup
+  - AC: Background service for periodic cache cleanup
+  - AC: API endpoint to trigger manual cleanup: POST /api/v1/covers/cleanup
+  - AC: Settings UI for cache size limit configuration
+
+- [ ] **Cache warming** (deferred)
+  - AC: Optionally pre-fetch covers when series added
+  - AC: Configurable: download all sizes vs. on-demand
+  - AC: Priority queue for cover downloads (visible items first)
+  - AC: Respect ComicVine rate limits during bulk download
+
+- [ ] **Efficient revalidation** (deferred)
+  - AC: Store ETag/Last-Modified from ComicVine responses
+  - AC: Use If-None-Match/If-Modified-Since for revalidation
+  - AC: Only re-download if remote cover changed
+  - AC: Track last validated timestamp per cover
+
+- [ ] **Cache statistics enhancements** (deferred)
+  - AC: Breakdown by size (thumb/small/medium/large)
+  - AC: Cache hit/miss ratio tracking
+  - AC: Estimated space savings vs. fetching every time
+  - AC: API endpoint: GET /api/v1/covers/stats/detailed
+
+**Design Notes:**
+- Current ICoverService already caches to disk with size variants
+- Gap: No max size limit, no eviction, no cleanup job
+- Recommendation: Add background service for cleanup + LRU tracking
+- Storage estimate: ~50KB per medium cover × 10,000 issues = ~500MB
+- Thumb-only mode could reduce to ~5KB × 10,000 = ~50MB
+
 ---
 
 ## EPIC 10: NZB/Usenet Support (Mylar3/Sonarr/Radarr Parity)
@@ -1760,6 +1794,7 @@ Track and prioritize completion of deferred items across all EPICs.
 | 18 | Mega.nz resolver | 8 | L | M | Encryption |
 | 19 | Rapidgator/Uploaded resolver | 8 | M | L | Premium accounts |
 | 20 | Torrent → Import handoff | 14 | M | M | Torrent clients |
+| 29 | Cover cache size limits & eviction | 9 | M | M | None |
 | **P5 - Low Priority / Deferred** |||||
 | 21 | Request batching (ComicVine) | 12 | M | L | Performance only |
 | 22 | Rate limit awareness | 12 | M | L | Performance only |
