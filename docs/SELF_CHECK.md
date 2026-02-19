@@ -1,3 +1,79 @@
+# Self Check - Iteration 101
+
+## EPIC 8: Host Blacklisting for Download Hosts
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Frontend compiles | ✅ | No frontend changes |
+| Backend compiles | ✅ | `dotnet build` |
+| Tests pass | ✅ | 1753 total (32 new tests) |
+| Git commits | ✅ | 1 commit |
+
+### Acceptance Criteria Status
+
+| AC | Status |
+|----|--------|
+| Blacklist consistently failing hosts temporarily | ✅ |
+| Auto-blacklist after configurable threshold | ✅ |
+| Escalating durations for repeat offenders | ✅ |
+| Immediate blacklist for critical failures | ✅ |
+| Skip transient failures (timeout, network) | ✅ |
+| Integration with DdlDownloadService | ✅ |
+| API endpoints for management | ✅ |
+
+### API Endpoints (12)
+
+| Endpoint | Status |
+|----------|--------|
+| GET /api/v1/ddl/hosts/blacklist | ✅ |
+| GET /api/v1/ddl/hosts/blacklist/{hostId} | ✅ |
+| POST /api/v1/ddl/hosts/blacklist/{hostId} | ✅ |
+| DELETE /api/v1/ddl/hosts/blacklist/{hostId} | ✅ |
+| GET /api/v1/ddl/hosts/blacklist/stats | ✅ |
+| GET /api/v1/ddl/hosts/blacklist/stats/{hostId} | ✅ |
+| DELETE /api/v1/ddl/hosts/blacklist | ✅ |
+| DELETE /api/v1/ddl/hosts/blacklist/stats/{hostId} | ✅ |
+| GET /api/v1/ddl/hosts/blacklist/settings | ✅ |
+| PUT /api/v1/ddl/hosts/blacklist/settings | ✅ |
+| POST /api/v1/ddl/hosts/blacklist/purge | ✅ |
+| GET /api/v1/ddl/hosts/blacklist/check/{hostId} | ✅ |
+
+### Unit Tests (32 tests)
+
+| Test Category | Count | Status |
+|---------------|-------|--------|
+| HostBlacklistServiceTests | 32 | ✅ |
+
+### Files Changed
+
+| File | Status |
+|------|--------|
+| `src/Shortboxerr.Core/Ddl/IHostBlacklistService.cs` | ✅ New |
+| `src/Shortboxerr.Infrastructure/Ddl/HostBlacklistService.cs` | ✅ New |
+| `src/Shortboxerr.Infrastructure/Ddl/DdlDownloadService.cs` | ✅ Modified |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | ✅ Modified |
+| `src/Shortboxerr.Api/Endpoints/HostBlacklistEndpoints.cs` | ✅ New |
+| `src/Shortboxerr.Api/Program.cs` | ✅ Modified |
+| `tests/Shortboxerr.Tests/HostBlacklistServiceTests.cs` | ✅ New (32 tests) |
+| `tests/Shortboxerr.Tests/DdlEndToEndIntegrationTests.cs` | ✅ Modified |
+| `docs/BACKLOG.md` | ✅ Updated |
+| `docs/WORKLOG.md` | ✅ Updated |
+| `docs/SELF_CHECK.md` | ✅ Updated |
+
+### EPIC 8 Status
+
+| Item | Status |
+|------|--------|
+| 8.1 DDL Site Indexers | ✅ COMPLETED |
+| 8.2 Download Host Resolvers | ✅ PARTIAL (Mega.nz deferred) |
+| 8.3 Download Host Priority & Fallback | ✅ COMPLETED |
+| 8.4 DDL Site Health Monitoring | ✅ COMPLETED |
+| 8.5 DDL Adapter Tests | ✅ COMPLETED |
+
+---
+
 # Self Check - Iteration 100
 
 ## EPIC 10: Indexer Health Monitoring & Download Client Failover

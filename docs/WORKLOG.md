@@ -1,5 +1,111 @@
 # Worklog
 
+## Iteration 101 (2026-02-19)
+**EPIC 8: Host Blacklisting for Download Hosts**
+
+### Summary
+Implemented temporary blacklisting for download hosts that consistently fail. Hosts are automatically blacklisted after reaching a configurable failure threshold, with escalating durations for repeat offenders.
+
+### Commits
+1. `feat: add host blacklisting service (EPIC 8)`
+
+### Deliverables
+
+#### IHostBlacklistService - Core Service Interface
+- `IsBlacklisted(hostId)` - Check if host is blacklisted
+- `IsUrlBlacklisted(url)` - Check if URL's host is blacklisted
+- `Blacklist(hostId, reason, duration?)` - Manually blacklist a host
+- `RemoveFromBlacklist(hostId)` - Remove host from blacklist
+- `RecordFailure(hostId, reason, errorMessage?)` - Record failure (may trigger auto-blacklist)
+- `RecordSuccess(hostId)` - Record success (resets consecutive failures)
+- `GetBlacklist()` - Get all blacklisted hosts
+- `GetBlacklistEntry(hostId)` - Get specific blacklist entry
+- `GetFailureStatistics()` - Get failure stats for all hosts
+- `GetHostFailureStats(hostId)` - Get stats for specific host
+- `ClearAll()` - Clear all entries and stats
+- `ClearHostStats(hostId)` - Clear stats for specific host
+- `GetSettings()` / `UpdateSettings(settings)` - Manage blacklist settings
+- `PurgeExpiredEntries()` - Remove expired blacklist entries
+
+#### HostBlacklistService Implementation
+- Thread-safe with ConcurrentDictionary for blacklist and stats
+- Automatic blacklisting after configurable threshold (default: 3 failures)
+- Escalating durations for repeat offenders (configurable multiplier)
+- Immediate blacklist for critical failures (HostUnavailable, AuthenticationRequired)
+- Non-blacklistable reasons for transient issues (Timeout, NetworkError)
+- Case-insensitive host ID matching
+- URL-to-host extraction with resolver factory integration
+
+#### DdlDownloadService Integration
+- Filter out blacklisted hosts from download link list
+- Record success/failure for blacklist tracking
+- Map DdlDownloadFailureReason to HostResolverFailureReason
+
+#### API Endpoints (11 endpoints)
+- `GET /api/v1/ddl/hosts/blacklist` - Get all blacklisted hosts
+- `GET /api/v1/ddl/hosts/blacklist/{hostId}` - Get specific entry
+- `POST /api/v1/ddl/hosts/blacklist/{hostId}` - Manually blacklist host
+- `DELETE /api/v1/ddl/hosts/blacklist/{hostId}` - Remove from blacklist
+- `GET /api/v1/ddl/hosts/blacklist/stats` - Get all failure statistics
+- `GET /api/v1/ddl/hosts/blacklist/stats/{hostId}` - Get specific host stats
+- `DELETE /api/v1/ddl/hosts/blacklist` - Clear all entries and stats
+- `DELETE /api/v1/ddl/hosts/blacklist/stats/{hostId}` - Clear specific host stats
+- `GET /api/v1/ddl/hosts/blacklist/settings` - Get blacklist settings
+- `PUT /api/v1/ddl/hosts/blacklist/settings` - Update settings
+- `POST /api/v1/ddl/hosts/blacklist/purge` - Purge expired entries
+- `GET /api/v1/ddl/hosts/blacklist/check/{hostId}` - Check if host is blacklisted
+
+#### Unit Tests (32 tests)
+- IsBlacklisted_NewHost_ReturnsFalse
+- IsBlacklisted_BlacklistedHost_ReturnsTrue
+- IsBlacklisted_ExpiredEntry_ReturnsFalse
+- IsBlacklisted_NullOrEmpty_ReturnsFalse
+- IsBlacklisted_CaseInsensitive
+- IsUrlBlacklisted_NullOrEmpty_ReturnsFalse
+- IsUrlBlacklisted_InvalidUrl_ReturnsFalse
+- Blacklist_AddsEntry
+- Blacklist_WithNullDuration_UsesDefault
+- Blacklist_EscalatesDuration_ForRepeatOffenders
+- RemoveFromBlacklist_ExistingEntry_ReturnsTrue
+- RemoveFromBlacklist_NonExistentEntry_ReturnsFalse
+- RecordFailure_TracksFailureCount
+- RecordFailure_TracksLastError
+- RecordFailure_AutoBlacklists_AfterThreshold
+- RecordFailure_ImmediateBlacklist_ForCriticalReasons
+- RecordFailure_SkipsNonBlacklistableReasons
+- RecordFailure_TracksFailuresByReason
+- RecordSuccess_TracksSuccessCount
+- RecordSuccess_ResetsConsecutiveFailures
+- GetBlacklist_ReturnsAllEntries
+- GetBlacklist_ExcludesExpiredEntries
+- GetFailureStatistics_ReturnsAllTrackedHosts
+- GetFailureStatistics_CalculatesSuccessRate
+- ClearAll_RemovesAllEntriesAndStats
+- ClearHostStats_RemovesSpecificHost
+- GetSettings_ReturnsCurrentSettings
+- UpdateSettings_AppliesNewSettings
+- PurgeExpiredEntries_RemovesExpired
+- PurgeExpiredEntries_ReturnsZero_WhenNoneExpired
+- BlacklistEntry_TimeRemaining_CalculatedCorrectly
+- HostFailureStats_IncludesBlacklistStatus
+
+### Files Changed
+- `src/Shortboxerr.Core/Ddl/IHostBlacklistService.cs` (new)
+- `src/Shortboxerr.Infrastructure/Ddl/HostBlacklistService.cs` (new)
+- `src/Shortboxerr.Infrastructure/Ddl/DdlDownloadService.cs` (modified)
+- `src/Shortboxerr.Infrastructure/DependencyInjection.cs` (modified)
+- `src/Shortboxerr.Api/Endpoints/HostBlacklistEndpoints.cs` (new)
+- `src/Shortboxerr.Api/Program.cs` (modified)
+- `tests/Shortboxerr.Tests/HostBlacklistServiceTests.cs` (new)
+- `tests/Shortboxerr.Tests/DdlEndToEndIntegrationTests.cs` (modified)
+
+### Test Coverage
+- Tests before: 1721
+- Tests after: 1753
+- New tests: 32
+
+---
+
 ## Iteration 100 (2026-02-18)
 **EPIC 10: Indexer Health Monitoring & Download Client Failover**
 

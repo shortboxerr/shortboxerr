@@ -402,7 +402,7 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
 - [x] **Automatic fallback** ✅
   - AC: Try next host on failure ✅ (DdlDownloadService fallback loop)
   - AC: Track host reliability per DDL site (deferred - statistics tracking)
-  - AC: Blacklist consistently failing hosts temporarily (deferred)
+  - AC: Blacklist consistently failing hosts temporarily ✅ (IHostBlacklistService)
 
 ### 8.4 DDL Site Health Monitoring ✅ COMPLETED
 - [x] **Site availability checks** ✅
@@ -1750,7 +1750,7 @@ Track and prioritize completion of deferred items across all EPICs.
 | **P3 - Medium Value, Medium Effort** |||||
 | 10 | Variant cover detection | 9 | M | M | None |
 | 11 | Host reliability tracking | 8 | M | M | Statistics DB |
-| 12 | Host blacklisting | 8 | S | M | None |
+| ~~12~~ | ~~Host blacklisting~~ | 8 | S | M | ✅ Completed |
 | 13 | First-time user experience | 11 | M | M | None |
 | 14 | Publisher filter dropdown | 11 | S | M | ComicVine API |
 | **P4 - Lower Priority / Complex** |||||
