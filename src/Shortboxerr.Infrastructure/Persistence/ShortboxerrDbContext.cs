@@ -23,6 +23,7 @@ public class ShortboxerrDbContext : DbContext
     public DbSet<MetadataRefreshEvent> MetadataRefreshEvents => Set<MetadataRefreshEvent>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<CachedDiscoveryWeek> CachedDiscoveryWeeks => Set<CachedDiscoveryWeek>();
+    public DbSet<VariantCoverEntity> VariantCovers => Set<VariantCoverEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -241,6 +242,24 @@ public class ShortboxerrDbContext : DbContext
             entity.Property(e => e.IssuesJson).IsRequired();
             entity.HasIndex(e => e.WeekStart).IsUnique();
             entity.HasIndex(e => e.ExpiresAt);
+        });
+
+        // VariantCoverEntity
+        modelBuilder.Entity<VariantCoverEntity>(entity =>
+        {
+            entity.ToTable("VariantCovers");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ImageUrl).IsRequired().HasMaxLength(1024);
+            entity.Property(e => e.Caption).HasMaxLength(512);
+            entity.Property(e => e.ImageTags).HasMaxLength(512);
+            entity.Property(e => e.VariantType).HasMaxLength(128);
+            entity.HasIndex(e => e.IssueId);
+            entity.HasIndex(e => e.ComicVineImageId);
+            entity.HasIndex(e => new { e.IssueId, e.IsPreferred });
+            entity.HasOne(e => e.Issue)
+                .WithMany(i => i.VariantCovers)
+                .HasForeignKey(e => e.IssueId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

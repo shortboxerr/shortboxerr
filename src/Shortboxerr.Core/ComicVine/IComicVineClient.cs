@@ -314,6 +314,47 @@ public class ComicVineIssue
     /// Story arcs this issue is part of.
     /// </summary>
     public List<ComicVineStoryArcRef> StoryArcs { get; set; } = new();
+
+    /// <summary>
+    /// Associated images (variant covers, promotional images, etc.).
+    /// </summary>
+    public List<ComicVineAssociatedImage> AssociatedImages { get; set; } = new();
+}
+
+/// <summary>
+/// Associated image from ComicVine (variant covers, promotional images, etc.)
+/// </summary>
+public class ComicVineAssociatedImage
+{
+    /// <summary>
+    /// ComicVine image ID.
+    /// </summary>
+    public int Id { get; set; }
+
+    /// <summary>
+    /// Original image URL.
+    /// </summary>
+    public string? OriginalUrl { get; set; }
+
+    /// <summary>
+    /// Caption/description of the image.
+    /// </summary>
+    public string? Caption { get; set; }
+
+    /// <summary>
+    /// Tags associated with the image.
+    /// </summary>
+    public string? ImageTags { get; set; }
+
+    /// <summary>
+    /// Whether this image appears to be a variant cover.
+    /// </summary>
+    public bool IsVariantCover { get; set; }
+
+    /// <summary>
+    /// Detected variant type (e.g., "variant", "incentive", "virgin", "sketch").
+    /// </summary>
+    public string? VariantType { get; set; }
 }
 
 /// <summary>

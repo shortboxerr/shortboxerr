@@ -111,6 +111,7 @@ public static class DependencyInjection
         services.AddScoped<IAutoMatchService, AutoMatchService>();
         services.AddScoped<IMetadataRefreshService, MetadataRefreshService>();
         services.AddScoped<IMylar3ComicVineImporter, Mylar3ComicVineImporter>();
+        services.AddScoped<IVariantCoverService, VariantCoverService>();
 
         // Migration services
         services.AddScoped<IMylar3MigrationService, Mylar3MigrationService>();

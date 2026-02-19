@@ -142,6 +142,7 @@ public class Issue
     public Series? Series { get; set; }
     public FileAsset? File { get; set; }
     public ICollection<IssueStoryArc> StoryArcs { get; set; } = new List<IssueStoryArc>();
+    public ICollection<VariantCoverEntity> VariantCovers { get; set; } = new List<VariantCoverEntity>();
 }
 
 /// <summary>

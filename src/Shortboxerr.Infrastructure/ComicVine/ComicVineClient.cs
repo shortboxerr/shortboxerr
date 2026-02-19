@@ -789,8 +789,81 @@ public class ComicVineClient : IComicVineClient
                 Id = sa.Id,
                 Name = sa.Name ?? "",
                 ApiDetailUrl = sa.ApiDetailUrl
-            }).ToList() ?? new()
+            }).ToList() ?? new(),
+            AssociatedImages = api.AssociatedImages?.Select(MapAssociatedImage).ToList() ?? new()
         };
+    }
+
+    private static ComicVineAssociatedImage MapAssociatedImage(ComicVineApiAssociatedImage api)
+    {
+        var (isVariant, variantType) = DetectVariantCover(api.Caption, api.ImageTags);
+        return new ComicVineAssociatedImage
+        {
+            Id = api.Id,
+            OriginalUrl = api.OriginalUrl,
+            Caption = api.Caption,
+            ImageTags = api.ImageTags,
+            IsVariantCover = isVariant,
+            VariantType = variantType
+        };
+    }
+
+    private static (bool IsVariant, string? VariantType) DetectVariantCover(string? caption, string? imageTags)
+    {
+        var text = $"{caption ?? ""} {imageTags ?? ""}".ToLowerInvariant();
+        
+        if (string.IsNullOrWhiteSpace(text))
+            return (false, null);
+
+        // Common variant cover indicators (use specific patterns to avoid false positives)
+        var variantPatterns = new Dictionary<string, string>
+        {
+            { "variant cover", "Variant" },
+            { "variant edition", "Variant" },
+            { "cover variant", "Variant" },
+            { "cover b", "Variant B" },
+            { "cover c", "Variant C" },
+            { "cover d", "Variant D" },
+            { "incentive cover", "Incentive" },
+            { "incentive variant", "Incentive" },
+            { "1:10", "1:10 Incentive" },
+            { "1:25", "1:25 Incentive" },
+            { "1:50", "1:50 Incentive" },
+            { "1:100", "1:100 Incentive" },
+            { "virgin cover", "Virgin" },
+            { "virgin variant", "Virgin" },
+            { "sketch cover", "Sketch" },
+            { "sketch variant", "Sketch" },
+            { "blank cover", "Blank" },
+            { "blank variant", "Blank" },
+            { "exclusive cover", "Exclusive" },
+            { "exclusive variant", "Exclusive" },
+            { "foil cover", "Foil" },
+            { "foil variant", "Foil" },
+            { "glow in the dark", "Glow in the Dark" },
+            { "chromium", "Chromium" },
+            { "lenticular", "Lenticular" },
+            { "wraparound", "Wraparound" },
+            { "connecting cover", "Connecting" },
+            { "connecting variant", "Connecting" },
+            { "homage cover", "Homage" },
+            { "homage variant", "Homage" },
+            { "retailer exclusive", "Retailer Exclusive" },
+            { "retailer variant", "Retailer Exclusive" },
+            { "convention exclusive", "Convention Exclusive" },
+            { "sdcc exclusive", "SDCC Exclusive" },
+            { "sdcc variant", "SDCC Exclusive" },
+            { "nycc exclusive", "NYCC Exclusive" },
+            { "nycc variant", "NYCC Exclusive" }
+        };
+
+        foreach (var (pattern, type) in variantPatterns)
+        {
+            if (text.Contains(pattern))
+                return (true, type);
+        }
+
+        return (false, null);
     }
 
     private static ComicVinePublisher MapPublisher(ComicVineApiPublisher api)
@@ -965,6 +1038,24 @@ internal class ComicVineApiIssue
 
     [JsonPropertyName("story_arc_credits")]
     public List<ComicVineApiStoryArcRef>? StoryArcCredits { get; set; }
+
+    [JsonPropertyName("associated_images")]
+    public List<ComicVineApiAssociatedImage>? AssociatedImages { get; set; }
+}
+
+internal class ComicVineApiAssociatedImage
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("original_url")]
+    public string? OriginalUrl { get; set; }
+
+    [JsonPropertyName("caption")]
+    public string? Caption { get; set; }
+
+    [JsonPropertyName("image_tags")]
+    public string? ImageTags { get; set; }
 }
 
 internal class ComicVineApiPublisher
