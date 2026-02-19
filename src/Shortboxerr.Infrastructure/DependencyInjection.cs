@@ -64,6 +64,7 @@ public static class DependencyInjection
         services.AddScoped<IStagingService, StagingService>();
         services.AddSingleton<IDecisionEngine, DecisionEngine>();
         services.AddScoped<ISettingsService, SettingsService>();
+        services.AddScoped<ISetupStatusService, SetupStatusService>();
         services.AddScoped<ISearchSettingsService, SearchSettingsService>();
         services.AddScoped<ISearchResultScorer, SearchResultScorer>();
         services.AddScoped<IActivityService, ActivityService>();

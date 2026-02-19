@@ -266,6 +266,7 @@ app.MapIndexerHealthEndpoints();
 app.MapDownloadClientHealthEndpoints();
 app.MapHostBlacklistEndpoints();
 app.MapVariantCoverEndpoints();
+app.MapSetupEndpoints();
 
 // SPA fallback - serve index.html for client-side routes
 app.MapFallbackToFile("index.html");
