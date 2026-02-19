@@ -1,6 +1,6 @@
-# Self Check - Iteration 101
+# Self Check - Iteration 102
 
-## EPIC 8: Host Blacklisting for Download Hosts
+## EPIC 9: Variant Cover Detection (ComicVine Integration)
 
 ### Checklist
 
@@ -8,299 +8,79 @@
 |------|--------|-------|
 | Frontend compiles | ✅ | No frontend changes |
 | Backend compiles | ✅ | `dotnet build` |
-| Tests pass | ✅ | 1753 total (32 new tests) |
+| Tests pass | ✅ | 1795 total (42 new tests) |
 | Git commits | ✅ | 1 commit |
 
 ### Acceptance Criteria Status
 
 | AC | Status |
 |----|--------|
-| Blacklist consistently failing hosts temporarily | ✅ |
-| Auto-blacklist after configurable threshold | ✅ |
-| Escalating durations for repeat offenders | ✅ |
-| Immediate blacklist for critical failures | ✅ |
-| Skip transient failures (timeout, network) | ✅ |
-| Integration with DdlDownloadService | ✅ |
+| Variant cover detection from ComicVine | ✅ |
+| Pattern-based variant type detection | ✅ |
+| Support for incentive ratios (1:10, 1:25, etc.) | ✅ |
+| Support for exclusive editions (SDCC, NYCC, etc.) | ✅ |
+| Database persistence for variant covers | ✅ |
+| User-selectable preferred cover per issue | ✅ |
+| Variant statistics per series | ✅ |
 | API endpoints for management | ✅ |
 
-### API Endpoints (12)
+### API Endpoints (7)
 
 | Endpoint | Status |
 |----------|--------|
-| GET /api/v1/ddl/hosts/blacklist | ✅ |
-| GET /api/v1/ddl/hosts/blacklist/{hostId} | ✅ |
-| POST /api/v1/ddl/hosts/blacklist/{hostId} | ✅ |
-| DELETE /api/v1/ddl/hosts/blacklist/{hostId} | ✅ |
-| GET /api/v1/ddl/hosts/blacklist/stats | ✅ |
-| GET /api/v1/ddl/hosts/blacklist/stats/{hostId} | ✅ |
-| DELETE /api/v1/ddl/hosts/blacklist | ✅ |
-| DELETE /api/v1/ddl/hosts/blacklist/stats/{hostId} | ✅ |
-| GET /api/v1/ddl/hosts/blacklist/settings | ✅ |
-| PUT /api/v1/ddl/hosts/blacklist/settings | ✅ |
-| POST /api/v1/ddl/hosts/blacklist/purge | ✅ |
-| GET /api/v1/ddl/hosts/blacklist/check/{hostId} | ✅ |
+| GET /api/v1/variants/issues/{id} | ✅ |
+| POST /api/v1/variants/issues/{id}/fetch | ✅ |
+| POST /api/v1/variants/series/{id}/fetch | ✅ |
+| GET /api/v1/variants/series/{id}/issues | ✅ |
+| GET /api/v1/variants/series/{id}/stats | ✅ |
+| PUT /api/v1/variants/issues/{id}/preferred | ✅ |
+| POST /api/v1/variants/detect | ✅ |
 
-### Unit Tests (32 tests)
+### Unit Tests (42 tests)
 
 | Test Category | Count | Status |
 |---------------|-------|--------|
-| HostBlacklistServiceTests | 32 | ✅ |
+| VariantCoverServiceTests | 42 | ✅ |
+
+### Test Breakdown
+
+| Test Name | Status |
+|-----------|--------|
+| DetectVariant_RecognizesVariantPatterns (16 cases) | ✅ |
+| DetectVariant_DoesNotMismatchNonVariants (7 cases) | ✅ |
+| DetectVariant_CombinesMultipleSources | ✅ |
+| DetectVariant_HigherConfidenceForRarierVariants | ✅ |
+| DetectVariant_MatchesMultiplePatterns | ✅ |
+| GetVariantCoversAsync_ReturnsEmptyForNoCovers | ✅ |
+| GetVariantCoversAsync_ReturnsCoversInCorrectOrder | ✅ |
+| FetchVariantCoversAsync_ReturnsFailure_WhenIssueNotFound | ✅ |
+| FetchVariantCoversAsync_ReturnsFailure_WhenNoComicVineId | ✅ |
+| FetchVariantCoversAsync_ReturnsFailure_WhenComicVineFails | ✅ |
+| FetchVariantCoversAsync_CreatesMainCover | ✅ |
+| FetchVariantCoversAsync_DetectsVariantsFromAssociatedImages | ✅ |
+| FetchVariantCoversAsync_UpdatesExistingCovers | ✅ |
+| GetIssuesWithVariantsAsync_ReturnsOnlyIssuesWithVariants | ✅ |
+| GetIssuesWithVariantsAsync_IncludesVariantCount | ✅ |
+| SetPreferredCoverAsync_SetsVariantAsPreferred | ✅ |
+| SetPreferredCoverAsync_ResetsToMainCover_WhenNullPassed | ✅ |
+| GetSeriesStatsAsync_ReturnsCorrectStatistics | ✅ |
+| GetSeriesStatsAsync_HandlesEmptySeries | ✅ |
+| FetchSeriesVariantCoversAsync_ReturnsFailure_WhenNoIssues | ✅ |
+| FetchSeriesVariantCoversAsync_ProcessesAllIssues | ✅ |
 
 ### Files Changed
 
-| File | Status |
-|------|--------|
-| `src/Shortboxerr.Core/Ddl/IHostBlacklistService.cs` | ✅ New |
-| `src/Shortboxerr.Infrastructure/Ddl/HostBlacklistService.cs` | ✅ New |
-| `src/Shortboxerr.Infrastructure/Ddl/DdlDownloadService.cs` | ✅ Modified |
-| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | ✅ Modified |
-| `src/Shortboxerr.Api/Endpoints/HostBlacklistEndpoints.cs` | ✅ New |
-| `src/Shortboxerr.Api/Program.cs` | ✅ Modified |
-| `tests/Shortboxerr.Tests/HostBlacklistServiceTests.cs` | ✅ New (32 tests) |
-| `tests/Shortboxerr.Tests/DdlEndToEndIntegrationTests.cs` | ✅ Modified |
-| `docs/BACKLOG.md` | ✅ Updated |
-| `docs/WORKLOG.md` | ✅ Updated |
-| `docs/SELF_CHECK.md` | ✅ Updated |
-
-### EPIC 8 Status
-
-| Item | Status |
-|------|--------|
-| 8.1 DDL Site Indexers | ✅ COMPLETED |
-| 8.2 Download Host Resolvers | ✅ PARTIAL (Mega.nz deferred) |
-| 8.3 Download Host Priority & Fallback | ✅ COMPLETED |
-| 8.4 DDL Site Health Monitoring | ✅ COMPLETED |
-| 8.5 DDL Adapter Tests | ✅ COMPLETED |
-
----
-
-# Self Check - Iteration 100
-
-## EPIC 10: Indexer Health Monitoring & Download Client Failover
-
-### Checklist
-
-| Item | Status | Notes |
-|------|--------|-------|
-| Frontend compiles | ✅ | No frontend changes |
-| Backend compiles | ✅ | `dotnet build` |
-| Tests pass | ✅ | 1721 total (42 new tests) |
-| Git commits | ✅ | 2 commits |
-
-### Acceptance Criteria Status
-
-#### Indexer Health Monitoring
-
-| AC | Status |
-|----|--------|
-| Track indexer response times | ✅ |
-| Detect and handle rate limiting | ✅ |
-| Automatic failover to backup indexers | ✅ |
-| Background health check service | ✅ |
-| API endpoints for health status | ✅ |
-
-#### Download Client Failover
-
-| AC | Status |
-|----|--------|
-| Track download client success/failure rates | ✅ |
-| Track average download times | ✅ |
-| Automatic health state determination | ✅ |
-| DownloadWithFailoverAsync for automatic failover | ✅ |
-| API endpoints for health status | ✅ |
-
-### API Endpoints (Indexer Health - 7)
-
-| Endpoint | Status |
-|----------|--------|
-| GET /api/v1/indexers/health | ✅ |
-| GET /api/v1/indexers/health/summary | ✅ |
-| GET /api/v1/indexers/health/{id} | ✅ |
-| POST /api/v1/indexers/health/check | ✅ |
-| POST /api/v1/indexers/health/check/{id} | ✅ |
-| POST /api/v1/indexers/health/reset/{id} | ✅ |
-| GET /api/v1/indexers/health/healthy | ✅ |
-
-### API Endpoints (Download Client Health - 7)
-
-| Endpoint | Status |
-|----------|--------|
-| GET /api/v1/downloadclients/health | ✅ |
-| GET /api/v1/downloadclients/health/summary | ✅ |
-| GET /api/v1/downloadclients/health/{id} | ✅ |
-| POST /api/v1/downloadclients/health/check | ✅ |
-| POST /api/v1/downloadclients/health/check/{id} | ✅ |
-| POST /api/v1/downloadclients/health/reset/{id} | ✅ |
-| GET /api/v1/downloadclients/health/healthy | ✅ |
-
-### Unit Tests (42 new tests)
-
-| Test Category | Count | Status |
-|---------------|-------|--------|
-| IndexerHealthServiceTests | 22 | ✅ |
-| DownloadClientHealthServiceTests | 20 | ✅ |
-
-### Files Changed
-
-| File | Status |
-|------|--------|
-| `src/Shortboxerr.Core/Nzb/IIndexerHealthService.cs` | ✅ New |
-| `src/Shortboxerr.Infrastructure/Nzb/IndexerHealthService.cs` | ✅ New |
-| `src/Shortboxerr.Infrastructure/BackgroundServices/IndexerHealthBackgroundService.cs` | ✅ New |
-| `src/Shortboxerr.Api/Endpoints/IndexerHealthEndpoints.cs` | ✅ New |
-| `src/Shortboxerr.Core/Providers/IDownloadClientHealthService.cs` | ✅ New |
-| `src/Shortboxerr.Infrastructure/Providers/DownloadClientHealthService.cs` | ✅ New |
-| `src/Shortboxerr.Api/Endpoints/DownloadClientHealthEndpoints.cs` | ✅ New |
-| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | ✅ Modified |
-| `src/Shortboxerr.Api/Program.cs` | ✅ Modified |
-| `tests/Shortboxerr.Tests/IndexerHealthServiceTests.cs` | ✅ New (22 tests) |
-| `tests/Shortboxerr.Tests/DownloadClientHealthServiceTests.cs` | ✅ New (20 tests) |
-| `docs/BACKLOG.md` | ✅ Updated |
-| `docs/WORKLOG.md` | ✅ Updated |
-| `docs/SELF_CHECK.md` | ✅ Updated |
-
-### EPIC 10 Status
-
-| Item | Status |
-|------|--------|
-| 10.1 NZB Indexer Integration | ✅ COMPLETED |
-| 10.2 NZB Download Client Integration | ✅ COMPLETED |
-| 10.3 NZB Candidate Processing | ✅ COMPLETED |
-| 10.4 NZB → Import Handoff | ✅ COMPLETED |
-| 10.5 NZB Conformance Tests | ✅ COMPLETED |
-| Indexer Health Monitoring | ✅ COMPLETED |
-| Download Client Failover | ✅ COMPLETED |
-
----
-
-# Self Check - Iteration 099
-
-## EPIC 11.3: Auto-Search on Release
-
-### Checklist
-
-| Item | Status | Notes |
-|------|--------|-------|
-| Frontend compiles | ✅ | No frontend changes |
-| Backend compiles | ✅ | `dotnet build` |
-| Tests pass | ✅ | 8 new tests passing |
-| Git commits | ✅ | 1 commit |
-
-### Acceptance Criteria Status
-
-| AC | Status |
-|----|--------|
-| Trigger search when issue is added to wanted list | ✅ |
-| Respect rate limits and search intervals | ✅ |
-| AutoSearchBackgroundService runs periodically | ✅ |
-| IAutoSearchService interface | ✅ |
-| Track LastSearchedAt per issue | ✅ |
-| Track SearchAttempts per issue | ✅ |
-| Re-search stale issues based on threshold | ✅ |
-| API endpoints for status, history, trigger | ✅ |
-
-### API Endpoints (6)
-
-| Endpoint | Status |
-|----------|--------|
-| GET /api/v1/search/auto/status | ✅ |
-| GET /api/v1/search/auto/searchable | ✅ |
-| GET /api/v1/search/auto/history | ✅ |
-| POST /api/v1/search/auto/trigger | ✅ |
-| POST /api/v1/search/auto/issue/{id} | ✅ |
-| POST /api/v1/search/auto/series/{id} | ✅ |
-
-### Unit Tests (8 tests)
-
-| Test | Status |
-|------|--------|
-| SearchIssueAsync_WhenIssueNotFound_ReturnsFailedResult | ✅ |
-| SearchIssueAsync_WhenCandidatesFound_ReturnsSuccessResult | ✅ |
-| SearchIssueAsync_WhenNoCandidatesFound_ReturnsNotFoundResult | ✅ |
-| SearchIssueAsync_UpdatesLastSearchedAtAndAttempts | ✅ |
-| GetSearchableIssuesAsync_ReturnsOnlyWantedMonitoredIssues | ✅ |
-| GetSearchableIssuesAsync_IncludesStaleSearchedIssues | ✅ |
-| GetStatusAsync_ReturnsCorrectCounts | ✅ |
-| SearchAllWantedAsync_SearchesMultipleIssues | ✅ |
-
-### Database Changes
-
-| Change | Status |
-|--------|--------|
-| Issue.LastSearchedAt (DateTime?) | ✅ |
-| Issue.SearchAttempts (int) | ✅ |
-| Issue.LastSearchError (string?) | ✅ |
-| Migration: AddIssueAutoSearchTracking | ✅ |
-
-### Settings Integration
-
-| Setting | Status |
-|---------|--------|
-| AutoSearchEnabled | ✅ |
-| AutoSearchIntervalHours | ✅ |
-| StaleSearchThresholdDays | ✅ |
-| SearchDelaySeconds | ✅ |
-
-### Files Changed
-
-| File | Status |
-|------|--------|
-| `src/Shortboxerr.Core/Entities/Issue.cs` | ✅ Modified |
-| `src/Shortboxerr.Core/Search/IAutoSearchService.cs` | ✅ New |
-| `src/Shortboxerr.Infrastructure/Search/AutoSearchService.cs` | ✅ New |
-| `src/Shortboxerr.Infrastructure/BackgroundServices/AutoSearchBackgroundService.cs` | ✅ New |
-| `src/Shortboxerr.Api/Endpoints/AutoSearchEndpoints.cs` | ✅ New |
-| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | ✅ Modified |
-| `src/Shortboxerr.Api/Program.cs` | ✅ Modified |
-| `src/Shortboxerr.Infrastructure/Persistence/Migrations/*` | ✅ New migration |
-| `tests/Shortboxerr.Tests/AutoSearchServiceTests.cs` | ✅ New (8 tests) |
-| `docs/BACKLOG.md` | ✅ Updated |
-| `docs/WORKLOG.md` | ✅ Updated |
-| `docs/SELF_CHECK.md` | ✅ Updated |
-
-### EPIC 11 Status
-
-| Item | Status |
-|------|--------|
-| 11.1 Pull List Calendar View | ✅ COMPLETED |
-| 11.2 Upcoming/Past Releases | ✅ COMPLETED |
-| 11.3 Wanted List Automation | ✅ COMPLETED |
-| 11.4 Pull List Notifications | ✅ PARTIAL |
-| 11.5 New Releases Discovery | ✅ COMPLETED |
-| 11.6 Pull List Configuration | ✅ COMPLETED |
-
----
-
-# Self Check - Iteration 098
-
-## EPIC 15: P3 Feature Parity Verification
-
-### Checklist
-
-| Item | Status | Notes |
-|------|--------|-------|
-| Frontend compiles | ✅ | No changes needed |
-| Backend compiles | ✅ | No changes needed |
-| Tests pass | ✅ | Existing tests verified |
-| Git commits | ⏳ | Pending (docs only) |
-
-### Items Verified
-
-| Item | Status |
-|------|--------|
-| 15.3 Forthcoming Releases View | ✅ ALREADY IMPLEMENTED |
-
-### EPIC 15 Status - COMPLETE
-
-| Priority | Status |
-|----------|--------|
-| **P1 - Critical (Data Accuracy)** | ✅ ALL COMPLETED (Iteration 096) |
-| **P2 - High (Usability)** | ✅ ALL COMPLETED (Iteration 097) |
-| **P3 - Medium (Feature Parity)** | ✅ ALL COMPLETED (Iteration 098) |
-| **15.8 Investigation** | ⏸️ Deferred (non-blocking research) |
-
----
-
-## Previous Iterations
-
-See WORKLOG.md for complete iteration history.
+| File | Type |
+|------|------|
+| src/Shortboxerr.Core/ComicVine/IComicVineClient.cs | Modified |
+| src/Shortboxerr.Core/ComicVine/IVariantCoverService.cs | New |
+| src/Shortboxerr.Core/Entities/Issue.cs | Modified |
+| src/Shortboxerr.Core/Entities/VariantCover.cs | New |
+| src/Shortboxerr.Infrastructure/ComicVine/ComicVineClient.cs | Modified |
+| src/Shortboxerr.Infrastructure/ComicVine/VariantCoverService.cs | New |
+| src/Shortboxerr.Infrastructure/DependencyInjection.cs | Modified |
+| src/Shortboxerr.Infrastructure/Persistence/ShortboxerrDbContext.cs | Modified |
+| src/Shortboxerr.Infrastructure/Persistence/Migrations/AddVariantCovers.cs | New |
+| src/Shortboxerr.Api/Endpoints/VariantCoverEndpoints.cs | New |
+| src/Shortboxerr.Api/Program.cs | Modified |
+| tests/Shortboxerr.Tests/VariantCoverServiceTests.cs | New |

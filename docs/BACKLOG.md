@@ -539,7 +539,7 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: Annuals linked to parent series
   - AC: One-shots handling
   - AC: Issue #0, negative issues, decimal issues (1.5, etc.)
-  - AC: Variant cover detection (optional) - DEFERRED
+  - AC: Variant cover detection (optional) ✅ (IVariantCoverService)
 - [x] **Entity enhancements**
   - AC: IssueStoryArc entity for story arc associations
   - AC: Issue entity: IsAnnual, IsSpecial, SpecialType fields
@@ -1748,7 +1748,7 @@ Track and prioritize completion of deferred items across all EPICs.
 | ~~8~~ | ~~Download client failover~~ | 10 | M | H | ✅ Completed |
 | 9 | Transmission integration | 14 | M | M | qBittorrent complete |
 | **P3 - Medium Value, Medium Effort** |||||
-| 10 | Variant cover detection | 9 | M | M | None |
+| ~~10~~ | ~~Variant cover detection~~ | 9 | M | M | ✅ Completed |
 | 11 | Host reliability tracking | 8 | M | M | Statistics DB |
 | ~~12~~ | ~~Host blacklisting~~ | 8 | S | M | ✅ Completed |
 | 13 | First-time user experience | 11 | M | M | None |

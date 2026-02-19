@@ -1,5 +1,101 @@
 # Worklog
 
+## Iteration 102 (2026-02-19)
+**EPIC 9: Variant Cover Detection (ComicVine Integration)**
+
+### Summary
+Implemented automatic detection and management of variant covers for comic issues using ComicVine's associated_images field. The system detects common variant types (incentive ratios, exclusive editions, virgin covers, etc.) and allows users to select their preferred cover for display.
+
+### Commits
+1. `feat(comicvine): add variant cover detection and management`
+
+### Deliverables
+
+#### IVariantCoverService - Core Service Interface
+- `GetVariantCoversAsync(issueId)` - Get all variant covers for an issue
+- `FetchVariantCoversAsync(issueId)` - Fetch variants from ComicVine
+- `FetchSeriesVariantCoversAsync(seriesId)` - Fetch for all issues in series
+- `DetectVariant(caption, imageTags, filename)` - Detect variant from text
+- `GetIssuesWithVariantsAsync(seriesId)` - Get issues with variant covers
+- `SetPreferredCoverAsync(issueId, variantCoverId)` - Set preferred cover
+- `GetSeriesStatsAsync(seriesId)` - Get variant statistics for series
+
+#### VariantCoverService Implementation
+- Pattern-based variant detection with confidence scoring
+- Support for 40+ variant type patterns:
+  - Incentive ratios: 1:10, 1:25, 1:50, 1:100, 1:200
+  - Cover variants: Cover B, Cover C, Cover D, Cover E
+  - Special editions: Virgin, Sketch, Blank, Foil
+  - Exclusive editions: SDCC, NYCC, C2E2, WonderCon, Retailer
+  - Other types: Lenticular, Chromium, Wraparound, Connecting, Homage
+  - Printings: Second, Third, 2nd, 3rd
+- Thread-safe database persistence with EF Core
+- Updates existing covers on re-fetch
+- Tracks preferred cover per issue
+
+#### ComicVine Integration
+- Added associated_images field to ComicVineApiIssue
+- Added ComicVineAssociatedImage model
+- Extended ComicVineIssue with AssociatedImages property
+- Variant detection in ComicVineClient mapping
+
+#### Database Entity & Migration
+- VariantCoverEntity with IssueId FK
+- Properties: ComicVineImageId, ImageUrl, Caption, ImageTags, VariantType
+- Flags: IsPrimaryCover, IsPreferred
+- Timestamps: DetectedAt, UpdatedAt
+- Migration: AddVariantCovers
+
+#### API Endpoints (7 endpoints)
+- `GET /api/v1/variants/issues/{id}` - Get variant covers for issue
+- `POST /api/v1/variants/issues/{id}/fetch` - Fetch from ComicVine
+- `POST /api/v1/variants/series/{id}/fetch` - Fetch for all issues
+- `GET /api/v1/variants/series/{id}/issues` - Issues with variants
+- `GET /api/v1/variants/series/{id}/stats` - Variant statistics
+- `PUT /api/v1/variants/issues/{id}/preferred` - Set preferred cover
+- `POST /api/v1/variants/detect` - Detection utility endpoint
+
+#### Unit Tests (42 tests)
+- DetectVariant_RecognizesVariantPatterns (16 test cases)
+- DetectVariant_DoesNotMismatchNonVariants (7 test cases)
+- DetectVariant_CombinesMultipleSources
+- DetectVariant_HigherConfidenceForRarierVariants
+- DetectVariant_MatchesMultiplePatterns
+- GetVariantCoversAsync_ReturnsEmptyForNoCovers
+- GetVariantCoversAsync_ReturnsCoversInCorrectOrder
+- FetchVariantCoversAsync_ReturnsFailure_WhenIssueNotFound
+- FetchVariantCoversAsync_ReturnsFailure_WhenNoComicVineId
+- FetchVariantCoversAsync_ReturnsFailure_WhenComicVineFails
+- FetchVariantCoversAsync_CreatesMainCover
+- FetchVariantCoversAsync_DetectsVariantsFromAssociatedImages
+- FetchVariantCoversAsync_UpdatesExistingCovers
+- GetIssuesWithVariantsAsync_ReturnsOnlyIssuesWithVariants
+- GetIssuesWithVariantsAsync_IncludesVariantCount
+- SetPreferredCoverAsync_SetsVariantAsPreferred
+- SetPreferredCoverAsync_ResetsToMainCover_WhenNullPassed
+- GetSeriesStatsAsync_ReturnsCorrectStatistics
+- GetSeriesStatsAsync_HandlesEmptySeries
+- FetchSeriesVariantCoversAsync_ReturnsFailure_WhenNoIssues
+- FetchSeriesVariantCoversAsync_ProcessesAllIssues
+
+### Files Changed
+- src/Shortboxerr.Core/ComicVine/IComicVineClient.cs (modified)
+- src/Shortboxerr.Core/ComicVine/IVariantCoverService.cs (new)
+- src/Shortboxerr.Core/Entities/Issue.cs (modified)
+- src/Shortboxerr.Core/Entities/VariantCover.cs (new)
+- src/Shortboxerr.Infrastructure/ComicVine/ComicVineClient.cs (modified)
+- src/Shortboxerr.Infrastructure/ComicVine/VariantCoverService.cs (new)
+- src/Shortboxerr.Infrastructure/DependencyInjection.cs (modified)
+- src/Shortboxerr.Infrastructure/Persistence/ShortboxerrDbContext.cs (modified)
+- src/Shortboxerr.Infrastructure/Persistence/Migrations/AddVariantCovers.cs (new)
+- src/Shortboxerr.Api/Endpoints/VariantCoverEndpoints.cs (new)
+- src/Shortboxerr.Api/Program.cs (modified)
+- tests/Shortboxerr.Tests/VariantCoverServiceTests.cs (new)
+
+### Total Tests: 1795 passing
+
+---
+
 ## Iteration 101 (2026-02-19)
 **EPIC 8: Host Blacklisting for Download Hosts**
 
