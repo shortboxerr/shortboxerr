@@ -94,6 +94,7 @@ public static class DependencyInjection
         // Provider system
         services.AddSingleton<IProviderFactory, ProviderFactory>();
         services.AddScoped<IProviderManager, ProviderManager>();
+        services.AddScoped<IDownloadClientHealthService, DownloadClientHealthService>();
 
         // Memory cache and cache service
         services.AddMemoryCache();

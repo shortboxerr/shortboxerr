@@ -263,6 +263,7 @@ app.MapSystemEndpoints();
 app.MapNzbEndpoints();
 app.MapAutoSearchEndpoints();
 app.MapIndexerHealthEndpoints();
+app.MapDownloadClientHealthEndpoints();
 
 // SPA fallback - serve index.html for client-side routes
 app.MapFallbackToFile("index.html");
