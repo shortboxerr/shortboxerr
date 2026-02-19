@@ -81,12 +81,14 @@ public static class DependencyInjection
         services.AddSingleton<ISiteHealthService>(sp => sp.GetRequiredService<SiteHealthService>());
         services.AddHostedService(sp => sp.GetRequiredService<SiteHealthService>());
         services.AddSingleton<IDownloadHostResolverFactory, DownloadHostResolverFactory>();
+        services.AddSingleton<IHostBlacklistService, HostBlacklistService>();
         services.AddHttpClient<IRssFeedService, RssFeedService>();
         services.AddSingleton<IDdlDownloadService>(sp =>
         {
             var resolverFactory = sp.GetRequiredService<IDownloadHostResolverFactory>();
+            var blacklistService = sp.GetRequiredService<IHostBlacklistService>();
             var logger = sp.GetService<ILogger<DdlDownloadService>>();
-            return new DdlDownloadService(resolverFactory, logger);
+            return new DdlDownloadService(resolverFactory, blacklistService, logger);
         });
         services.AddScoped<IDdlImportService, DdlImportService>();
         services.AddScoped<IMylar3ConfigImporter, Mylar3ConfigImporter>();

@@ -14,6 +14,7 @@ public class DdlDownloadService : IDdlDownloadService
 {
     private readonly ILogger<DdlDownloadService>? _logger;
     private readonly IDownloadHostResolverFactory? _resolverFactory;
+    private readonly IHostBlacklistService? _blacklistService;
     private readonly ConcurrentDictionary<string, DdlDownloadStatus> _activeDownloads = new();
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _cancellationTokens = new();
     private readonly List<DdlDownloadHistoryEntry> _downloadHistory = new();
@@ -31,9 +32,13 @@ public class DdlDownloadService : IDdlDownloadService
     private static readonly byte[] PdfMagic = { 0x25, 0x50, 0x44, 0x46 }; // %PDF
     private static readonly byte[] SevenZipMagic = { 0x37, 0x7A, 0xBC, 0xAF }; // 7z
     
-    public DdlDownloadService(IDownloadHostResolverFactory? resolverFactory = null, ILogger<DdlDownloadService>? logger = null)
+    public DdlDownloadService(
+        IDownloadHostResolverFactory? resolverFactory = null, 
+        IHostBlacklistService? blacklistService = null,
+        ILogger<DdlDownloadService>? logger = null)
     {
         _resolverFactory = resolverFactory;
+        _blacklistService = blacklistService;
         _logger = logger;
     }
 
@@ -55,10 +60,23 @@ public class DdlDownloadService : IDdlDownloadService
         }
         
         // Sort links by priority (Direct links first, then by configured priority)
+        // Filter out blacklisted hosts
         var sortedLinks = candidate.DownloadLinks
+            .Where(l => !IsLinkBlacklisted(l))
             .OrderBy(l => l.LinkType == DdlLinkType.Direct ? 0 : 1)
             .ThenBy(l => l.Priority)
             .ToList();
+        
+        if (sortedLinks.Count == 0 && candidate.DownloadLinks.Count > 0)
+        {
+            _logger?.LogWarning("All {Count} download links are blacklisted for {Title}", 
+                candidate.DownloadLinks.Count, candidate.ReleaseTitle);
+            return DdlDownloadResult.Failed(
+                Guid.NewGuid().ToString(),
+                DdlDownloadFailureReason.NoValidLinks,
+                "All download links are from blacklisted hosts"
+            );
+        }
         
         // Determine filename from first link (may be updated by resolver)
         var baseFilename = options.CustomFilename ?? DeriveFilename(candidate, sortedLinks[0].Url);
@@ -94,6 +112,10 @@ public class DdlDownloadService : IDdlDownloadService
                 {
                     _logger?.LogWarning("Failed to resolve {Host} link: {Error}", 
                         currentLink.HostName, resolveResult.ErrorMessage);
+                    
+                    // Record failure for blacklist tracking
+                    RecordHostFailure(currentLink.HostName, resolveResult.FailureReason, resolveResult.ErrorMessage);
+                    
                     lastResult = DdlDownloadResult.Failed(
                         Guid.NewGuid().ToString(),
                         DdlDownloadFailureReason.LinkResolutionFailed,
@@ -121,8 +143,14 @@ public class DdlDownloadService : IDdlDownloadService
             
             if (lastResult.Success)
             {
+                // Record success for blacklist tracking
+                RecordHostSuccess(currentLink.HostName);
                 break; // Success - no need to try more links
             }
+            
+            // Record failure for blacklist tracking
+            var failureReason = MapToHostFailureReason(lastResult.FailureReason);
+            RecordHostFailure(currentLink.HostName, failureReason, lastResult.ErrorMessage);
             
             _logger?.LogWarning("Download attempt failed for {Host}: {Reason}", 
                 currentLink.HostName ?? "direct", lastResult.FailureReason);
@@ -769,6 +797,59 @@ public class DdlDownloadService : IDdlDownloadService
                 _downloadHistory.RemoveAt(0);
             }
         }
+    }
+
+    private bool IsLinkBlacklisted(DdlDownloadLink link)
+    {
+        if (_blacklistService == null)
+            return false;
+
+        // Check by host name
+        if (!string.IsNullOrEmpty(link.HostName) && _blacklistService.IsBlacklisted(link.HostName))
+        {
+            _logger?.LogDebug("Link skipped - host {Host} is blacklisted", link.HostName);
+            return true;
+        }
+
+        // Check by URL
+        if (_blacklistService.IsUrlBlacklisted(link.Url))
+        {
+            _logger?.LogDebug("Link skipped - URL host is blacklisted: {Url}", link.Url);
+            return true;
+        }
+
+        return false;
+    }
+
+    private void RecordHostSuccess(string? hostName)
+    {
+        if (_blacklistService == null || string.IsNullOrEmpty(hostName))
+            return;
+
+        _blacklistService.RecordSuccess(hostName);
+    }
+
+    private void RecordHostFailure(string? hostName, HostResolverFailureReason reason, string? errorMessage)
+    {
+        if (_blacklistService == null || string.IsNullOrEmpty(hostName))
+            return;
+
+        _blacklistService.RecordFailure(hostName, reason, errorMessage);
+    }
+
+    private static HostResolverFailureReason MapToHostFailureReason(DdlDownloadFailureReason reason)
+    {
+        return reason switch
+        {
+            DdlDownloadFailureReason.NotFound => HostResolverFailureReason.FileNotFound,
+            DdlDownloadFailureReason.Unauthorized => HostResolverFailureReason.AuthenticationRequired,
+            DdlDownloadFailureReason.RateLimited => HostResolverFailureReason.RateLimited,
+            DdlDownloadFailureReason.Timeout => HostResolverFailureReason.Timeout,
+            DdlDownloadFailureReason.ConnectionFailed or DdlDownloadFailureReason.DnsFailure => HostResolverFailureReason.NetworkError,
+            DdlDownloadFailureReason.ServerError => HostResolverFailureReason.HostUnavailable,
+            DdlDownloadFailureReason.LinkResolutionFailed => HostResolverFailureReason.ParseError,
+            _ => HostResolverFailureReason.Unknown
+        };
     }
 }
 

@@ -404,7 +404,7 @@ public class DdlEndToEndIntegrationTests : IDisposable
         new Random().NextBytes(fileContent);
         
         var mockResolverFactory = new Mock<IDownloadHostResolverFactory>();
-        var downloadService = new DdlDownloadService(mockResolverFactory.Object, _mockDownloadLogger.Object);
+        var downloadService = new DdlDownloadService(mockResolverFactory.Object, null, _mockDownloadLogger.Object);
         var destPath = Path.Combine(_tempDownloadPath, "test_download.cbz");
 
         // The download service uses internal HTTP client, so we need to test the public interface
@@ -420,7 +420,7 @@ public class DdlEndToEndIntegrationTests : IDisposable
     {
         // Arrange
         var mockResolverFactory = new Mock<IDownloadHostResolverFactory>();
-        var downloadService = new DdlDownloadService(mockResolverFactory.Object, _mockDownloadLogger.Object);
+        var downloadService = new DdlDownloadService(mockResolverFactory.Object, null, _mockDownloadLogger.Object);
 
         // Act
         var activeDownloads = downloadService.GetActiveDownloads();
