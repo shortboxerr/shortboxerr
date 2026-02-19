@@ -1,6 +1,6 @@
-# Self Check - Iteration 102
+# Self Check - Iteration 103
 
-## EPIC 9: Variant Cover Detection (ComicVine Integration)
+## EPIC 11: First-Time User Experience (Setup Status Backend)
 
 ### Checklist
 
@@ -8,79 +8,86 @@
 |------|--------|-------|
 | Frontend compiles | ✅ | No frontend changes |
 | Backend compiles | ✅ | `dotnet build` |
-| Tests pass | ✅ | 1795 total (42 new tests) |
+| Tests pass | ✅ | 1823 total (28 new tests) |
 | Git commits | ✅ | 1 commit |
 
 ### Acceptance Criteria Status
 
 | AC | Status |
 |----|--------|
-| Variant cover detection from ComicVine | ✅ |
-| Pattern-based variant type detection | ✅ |
-| Support for incentive ratios (1:10, 1:25, etc.) | ✅ |
-| Support for exclusive editions (SDCC, NYCC, etc.) | ✅ |
-| Database persistence for variant covers | ✅ |
-| User-selectable preferred cover per issue | ✅ |
-| Variant statistics per series | ✅ |
-| API endpoints for management | ✅ |
+| Guided onboarding when Pull List first visited with no data | ✅ |
+| Step-by-step: Configure API key, Add series, View releases | ✅ |
+| "Skip" option to dismiss onboarding | ✅ |
+| Reset option to show onboarding again | ✅ |
+| Track completion of setup steps | ✅ |
+| API endpoints for frontend | ✅ |
 
-### API Endpoints (7)
+### Setup Steps Tracked
+
+| Step | Required | Description |
+|------|----------|-------------|
+| ConfigureComicVine | Yes | ComicVine API key for metadata |
+| ConfigureRootFolder | Yes | Comic library root folder |
+| AddSeries | Yes | At least one monitored series |
+| ConfigureDownloadClient | No | SABnzbd/NZBGet/qBittorrent |
+| ConfigureIndexer | No | Newznab/DDL indexer |
+
+### API Endpoints (5)
 
 | Endpoint | Status |
 |----------|--------|
-| GET /api/v1/variants/issues/{id} | ✅ |
-| POST /api/v1/variants/issues/{id}/fetch | ✅ |
-| POST /api/v1/variants/series/{id}/fetch | ✅ |
-| GET /api/v1/variants/series/{id}/issues | ✅ |
-| GET /api/v1/variants/series/{id}/stats | ✅ |
-| PUT /api/v1/variants/issues/{id}/preferred | ✅ |
-| POST /api/v1/variants/detect | ✅ |
+| GET /api/v1/setup/status | ✅ |
+| GET /api/v1/setup/should-onboard | ✅ |
+| POST /api/v1/setup/dismiss | ✅ |
+| POST /api/v1/setup/reset | ✅ |
+| POST /api/v1/setup/steps/{step}/complete | ✅ |
 
-### Unit Tests (42 tests)
+### Unit Tests (28 tests)
 
 | Test Category | Count | Status |
 |---------------|-------|--------|
-| VariantCoverServiceTests | 42 | ✅ |
+| SetupStatusServiceTests | 28 | ✅ |
 
 ### Test Breakdown
 
 | Test Name | Status |
 |-----------|--------|
-| DetectVariant_RecognizesVariantPatterns (16 cases) | ✅ |
-| DetectVariant_DoesNotMismatchNonVariants (7 cases) | ✅ |
-| DetectVariant_CombinesMultipleSources | ✅ |
-| DetectVariant_HigherConfidenceForRarierVariants | ✅ |
-| DetectVariant_MatchesMultiplePatterns | ✅ |
-| GetVariantCoversAsync_ReturnsEmptyForNoCovers | ✅ |
-| GetVariantCoversAsync_ReturnsCoversInCorrectOrder | ✅ |
-| FetchVariantCoversAsync_ReturnsFailure_WhenIssueNotFound | ✅ |
-| FetchVariantCoversAsync_ReturnsFailure_WhenNoComicVineId | ✅ |
-| FetchVariantCoversAsync_ReturnsFailure_WhenComicVineFails | ✅ |
-| FetchVariantCoversAsync_CreatesMainCover | ✅ |
-| FetchVariantCoversAsync_DetectsVariantsFromAssociatedImages | ✅ |
-| FetchVariantCoversAsync_UpdatesExistingCovers | ✅ |
-| GetIssuesWithVariantsAsync_ReturnsOnlyIssuesWithVariants | ✅ |
-| GetIssuesWithVariantsAsync_IncludesVariantCount | ✅ |
-| SetPreferredCoverAsync_SetsVariantAsPreferred | ✅ |
-| SetPreferredCoverAsync_ResetsToMainCover_WhenNullPassed | ✅ |
-| GetSeriesStatsAsync_ReturnsCorrectStatistics | ✅ |
-| GetSeriesStatsAsync_HandlesEmptySeries | ✅ |
-| FetchSeriesVariantCoversAsync_ReturnsFailure_WhenNoIssues | ✅ |
-| FetchSeriesVariantCoversAsync_ProcessesAllIssues | ✅ |
+| GetStatusAsync_NothingConfigured_ReturnsIncomplete | ✅ |
+| GetStatusAsync_ReturnsAllSteps | ✅ |
+| GetStatusAsync_StepsInCorrectOrder | ✅ |
+| GetStatusAsync_RequiredStepsMarked | ✅ |
+| GetStatusAsync_ComicVineConfigured_StepComplete | ✅ |
+| GetStatusAsync_RootFolderConfigured_StepComplete | ✅ |
+| GetStatusAsync_DefaultRootFolder_NotComplete | ✅ |
+| GetStatusAsync_SeriesAdded_StepComplete | ✅ |
+| GetStatusAsync_MultipleSeriesAdded_ShowsCount | ✅ |
+| GetStatusAsync_UnmonitoredSeriesOnly_NotComplete | ✅ |
+| GetStatusAsync_DownloadClientConfigured_StepComplete | ✅ |
+| GetStatusAsync_DisabledDownloadClient_NotComplete | ✅ |
+| GetStatusAsync_IndexerConfigured_StepComplete | ✅ |
+| GetStatusAsync_AllRequiredComplete_IsComplete | ✅ |
+| GetStatusAsync_CalculatesCompletionPercentage | ✅ |
+| GetStatusAsync_Dismissed_ShouldNotShowOnboarding | ✅ |
+| GetStatusAsync_ManuallyCompletedStep_MarksComplete | ✅ |
+| DismissOnboardingAsync_SetsFlag | ✅ |
+| ResetOnboardingAsync_ClearsFlag | ✅ |
+| CompleteStepAsync_SetsStepFlag | ✅ |
+| GetStatusAsync_NoSeries_ShowsNoSeriesAdded | ✅ |
+| GetStatusAsync_NoDownloadClients_ShowsNoneConfigured | ✅ |
+| GetStatusAsync_MultipleDownloadClients_ShowsCount | ✅ |
+| GetStatusAsync_NoIndexers_ShowsNoneConfigured | ✅ |
+| GetStatusAsync_MultipleIndexers_ShowsCount | ✅ |
+| GetStatusAsync_ComicVineNotConfigured_ShowsNoApiKey | ✅ |
+| GetStatusAsync_EmptyRootFolder_ShowsNotConfigured | ✅ |
+| GetStatusAsync_AllStepsHaveSettingsPaths | ✅ |
 
 ### Files Changed
 
 | File | Type |
 |------|------|
-| src/Shortboxerr.Core/ComicVine/IComicVineClient.cs | Modified |
-| src/Shortboxerr.Core/ComicVine/IVariantCoverService.cs | New |
-| src/Shortboxerr.Core/Entities/Issue.cs | Modified |
-| src/Shortboxerr.Core/Entities/VariantCover.cs | New |
-| src/Shortboxerr.Infrastructure/ComicVine/ComicVineClient.cs | Modified |
-| src/Shortboxerr.Infrastructure/ComicVine/VariantCoverService.cs | New |
+| src/Shortboxerr.Core/Services/ISetupStatusService.cs | New |
+| src/Shortboxerr.Infrastructure/Services/SetupStatusService.cs | New |
 | src/Shortboxerr.Infrastructure/DependencyInjection.cs | Modified |
-| src/Shortboxerr.Infrastructure/Persistence/ShortboxerrDbContext.cs | Modified |
-| src/Shortboxerr.Infrastructure/Persistence/Migrations/AddVariantCovers.cs | New |
-| src/Shortboxerr.Api/Endpoints/VariantCoverEndpoints.cs | New |
+| src/Shortboxerr.Api/Endpoints/SetupEndpoints.cs | New |
 | src/Shortboxerr.Api/Program.cs | Modified |
-| tests/Shortboxerr.Tests/VariantCoverServiceTests.cs | New |
+| tests/Shortboxerr.Tests/SetupStatusServiceTests.cs | New |

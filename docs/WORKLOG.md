@@ -1,5 +1,84 @@
 # Worklog
 
+## Iteration 103 (2026-02-19)
+**EPIC 11: First-Time User Experience (Setup Status Backend)**
+
+### Summary
+Implemented backend support for first-time user onboarding. The SetupStatusService tracks completion of essential setup steps and provides API endpoints for the frontend to show guided onboarding.
+
+### Commits
+1. `feat(setup): add setup status service for first-time user onboarding`
+
+### Deliverables
+
+#### ISetupStatusService - Core Service Interface
+- `GetStatusAsync()` - Get full setup status with all steps
+- `DismissOnboardingAsync()` - Dismiss onboarding wizard (skip)
+- `ResetOnboardingAsync()` - Reset dismissal to show wizard again
+- `CompleteStepAsync(step)` - Manually mark step as complete
+
+#### SetupStatusService Implementation
+- 5 setup steps tracked:
+  1. **ConfigureComicVine** (required) - ComicVine API key for metadata
+  2. **ConfigureRootFolder** (required) - Comic library root path
+  3. **AddSeries** (required) - At least one monitored series
+  4. **ConfigureDownloadClient** (optional) - SABnzbd/NZBGet/qBittorrent
+  5. **ConfigureIndexer** (optional) - Newznab/DDL indexer
+- Automatic detection from existing configuration
+- Manual completion override via settings persistence
+- Completion percentage calculation
+- Current/next step indicator
+- Dismissable onboarding with reset option
+
+#### API Endpoints (5 endpoints)
+- `GET /api/v1/setup/status` - Full setup status with all steps
+- `GET /api/v1/setup/should-onboard` - Quick check if wizard should show
+- `POST /api/v1/setup/dismiss` - Dismiss onboarding wizard
+- `POST /api/v1/setup/reset` - Reset dismissal
+- `POST /api/v1/setup/steps/{step}/complete` - Manual completion
+
+#### Unit Tests (28 tests)
+- GetStatusAsync_NothingConfigured_ReturnsIncomplete
+- GetStatusAsync_ReturnsAllSteps
+- GetStatusAsync_StepsInCorrectOrder
+- GetStatusAsync_RequiredStepsMarked
+- GetStatusAsync_ComicVineConfigured_StepComplete
+- GetStatusAsync_RootFolderConfigured_StepComplete
+- GetStatusAsync_DefaultRootFolder_NotComplete
+- GetStatusAsync_SeriesAdded_StepComplete
+- GetStatusAsync_MultipleSeriesAdded_ShowsCount
+- GetStatusAsync_UnmonitoredSeriesOnly_NotComplete
+- GetStatusAsync_DownloadClientConfigured_StepComplete
+- GetStatusAsync_DisabledDownloadClient_NotComplete
+- GetStatusAsync_IndexerConfigured_StepComplete
+- GetStatusAsync_AllRequiredComplete_IsComplete
+- GetStatusAsync_CalculatesCompletionPercentage
+- GetStatusAsync_Dismissed_ShouldNotShowOnboarding
+- GetStatusAsync_ManuallyCompletedStep_MarksComplete
+- DismissOnboardingAsync_SetsFlag
+- ResetOnboardingAsync_ClearsFlag
+- CompleteStepAsync_SetsStepFlag
+- GetStatusAsync_NoSeries_ShowsNoSeriesAdded
+- GetStatusAsync_NoDownloadClients_ShowsNoneConfigured
+- GetStatusAsync_MultipleDownloadClients_ShowsCount
+- GetStatusAsync_NoIndexers_ShowsNoneConfigured
+- GetStatusAsync_MultipleIndexers_ShowsCount
+- GetStatusAsync_ComicVineNotConfigured_ShowsNoApiKey
+- GetStatusAsync_EmptyRootFolder_ShowsNotConfigured
+- GetStatusAsync_AllStepsHaveSettingsPaths
+
+### Files Changed
+- src/Shortboxerr.Core/Services/ISetupStatusService.cs (new)
+- src/Shortboxerr.Infrastructure/Services/SetupStatusService.cs (new)
+- src/Shortboxerr.Infrastructure/DependencyInjection.cs (modified)
+- src/Shortboxerr.Api/Endpoints/SetupEndpoints.cs (new)
+- src/Shortboxerr.Api/Program.cs (modified)
+- tests/Shortboxerr.Tests/SetupStatusServiceTests.cs (new)
+
+### Total Tests: 1823 passing
+
+---
+
 ## Iteration 102 (2026-02-19)
 **EPIC 9: Variant Cover Detection (ComicVine Integration)**
 

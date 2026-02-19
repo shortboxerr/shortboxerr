@@ -1125,11 +1125,11 @@ In-app notification system implemented. External notification channels (email, w
   - AC: Warning banner at top of Pull List if API key missing ✅
   - AC: Quick link to Settings → ComicVine page ✅
   
-- [ ] **First-time user experience** (deferred)
-  - AC: Guided onboarding when Pull List first visited with no data
-  - AC: Step-by-step: 1) Configure API key, 2) Add series, 3) View releases
-  - AC: "Skip" option to dismiss onboarding
-  - Note: Empty states with actionable buttons provide sufficient guidance; full wizard deferred
+- [x] **First-time user experience** ✅
+  - AC: Guided onboarding when Pull List first visited with no data ✅
+  - AC: Step-by-step: 1) Configure API key, 2) Add series, 3) View releases ✅
+  - AC: "Skip" option to dismiss onboarding ✅
+  - Note: Backend ISetupStatusService tracks setup steps + API endpoints for UI
 
 ### 11.5 Pull List UI ✅ COMPLETED
 - [x] **List view**
@@ -1751,7 +1751,7 @@ Track and prioritize completion of deferred items across all EPICs.
 | ~~10~~ | ~~Variant cover detection~~ | 9 | M | M | ✅ Completed |
 | 11 | Host reliability tracking | 8 | M | M | Statistics DB |
 | ~~12~~ | ~~Host blacklisting~~ | 8 | S | M | ✅ Completed |
-| 13 | First-time user experience | 11 | M | M | None |
+| ~~13~~ | ~~First-time user experience~~ | 11 | M | M | ✅ Completed |
 | 14 | Publisher filter dropdown | 11 | S | M | ComicVine API |
 | **P4 - Lower Priority / Complex** |||||
 | 15 | NZBHydra2 support | 10 | L | M | None |
