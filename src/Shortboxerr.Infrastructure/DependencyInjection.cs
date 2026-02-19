@@ -138,6 +138,12 @@ public static class DependencyInjection
         services.AddScoped<INzbImportService, NzbImportService>();
         services.AddHostedService<BackgroundServices.NzbImportBackgroundService>();
 
+        // Indexer health monitoring
+        services.AddScoped<IIndexerHealthService, IndexerHealthService>();
+        services.AddSingleton<BackgroundServices.IndexerHealthBackgroundService>();
+        services.AddHostedService(provider =>
+            provider.GetRequiredService<BackgroundServices.IndexerHealthBackgroundService>());
+
         // Auto-search services
         services.AddScoped<IAutoSearchService, AutoSearchService>();
         services.AddSingleton<BackgroundServices.AutoSearchBackgroundService>();

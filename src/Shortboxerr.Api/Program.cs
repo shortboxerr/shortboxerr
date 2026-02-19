@@ -262,6 +262,7 @@ app.MapComicVineEndpoints();
 app.MapSystemEndpoints();
 app.MapNzbEndpoints();
 app.MapAutoSearchEndpoints();
+app.MapIndexerHealthEndpoints();
 
 // SPA fallback - serve index.html for client-side routes
 app.MapFallbackToFile("index.html");
