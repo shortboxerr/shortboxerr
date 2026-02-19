@@ -807,10 +807,13 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: Pre-configured settings for popular NZB indexers ✅
   - AC: NZBgeek, DrunkenSlug, NZBFinder, etc. ✅
   - AC: Easy setup with just API key ✅
-- [ ] **Indexer health monitoring** (deferred)
-  - AC: Track indexer response times
-  - AC: Detect and handle rate limiting
-  - AC: Automatic failover to backup indexers
+- [x] **Indexer health monitoring** ✅
+  - AC: Track indexer response times ✅
+  - AC: Detect and handle rate limiting ✅ (429 status, rate limit message detection)
+  - AC: Automatic failover to backup indexers ✅ (GetHealthyIndexersAsync)
+  - AC: Background health check service (15-min interval) ✅
+  - AC: API endpoints for health status and manual checks ✅
+  - Note: 22 unit tests covering health monitoring scenarios
 
 ### 10.2 NZB Download Client Integration - PARTIAL ✅
 - [x] **SABnzbd integration** ✅
@@ -829,6 +832,13 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: Verify connectivity on startup ✅ (TestConnectionAsync)
   - AC: Monitor disk space warnings ✅ (GetDiskSpaceAsync)
   - AC: Handle client unavailability gracefully ✅
+- [x] **Download client failover** ✅
+  - AC: Track download client success/failure rates ✅
+  - AC: Track average download times ✅
+  - AC: Automatic health state determination ✅ (Healthy/Degraded/Unavailable/Offline)
+  - AC: DownloadWithFailoverAsync for automatic client failover ✅
+  - AC: API endpoints for health status and manual checks ✅
+  - Note: 20 unit tests covering health monitoring and failover scenarios
 
 ### 10.3 NZB Candidate Processing ✅ COMPLETED
 - [x] **NZB release parsing** ✅
@@ -1734,8 +1744,8 @@ Track and prioritize completion of deferred items across all EPICs.
 | **P2 - High Value, Medium Effort** |||||
 | ~~5~~ | ~~Auto-search on release~~ | 11 | M | H | ✅ Completed |
 | 6 | Mylar3 NZB settings import | 10 | M | H | Config parser |
-| 7 | Indexer health monitoring | 10 | M | H | None |
-| 8 | Download client failover | 10 | M | H | None |
+| ~~7~~ | ~~Indexer health monitoring~~ | 10 | M | H | ✅ Completed |
+| ~~8~~ | ~~Download client failover~~ | 10 | M | H | ✅ Completed |
 | 9 | Transmission integration | 14 | M | M | qBittorrent complete |
 | **P3 - Medium Value, Medium Effort** |||||
 | 10 | Variant cover detection | 9 | M | M | None |

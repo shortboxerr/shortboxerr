@@ -1,3 +1,102 @@
+# Self Check - Iteration 100
+
+## EPIC 10: Indexer Health Monitoring & Download Client Failover
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Frontend compiles | ✅ | No frontend changes |
+| Backend compiles | ✅ | `dotnet build` |
+| Tests pass | ✅ | 1721 total (42 new tests) |
+| Git commits | ✅ | 2 commits |
+
+### Acceptance Criteria Status
+
+#### Indexer Health Monitoring
+
+| AC | Status |
+|----|--------|
+| Track indexer response times | ✅ |
+| Detect and handle rate limiting | ✅ |
+| Automatic failover to backup indexers | ✅ |
+| Background health check service | ✅ |
+| API endpoints for health status | ✅ |
+
+#### Download Client Failover
+
+| AC | Status |
+|----|--------|
+| Track download client success/failure rates | ✅ |
+| Track average download times | ✅ |
+| Automatic health state determination | ✅ |
+| DownloadWithFailoverAsync for automatic failover | ✅ |
+| API endpoints for health status | ✅ |
+
+### API Endpoints (Indexer Health - 7)
+
+| Endpoint | Status |
+|----------|--------|
+| GET /api/v1/indexers/health | ✅ |
+| GET /api/v1/indexers/health/summary | ✅ |
+| GET /api/v1/indexers/health/{id} | ✅ |
+| POST /api/v1/indexers/health/check | ✅ |
+| POST /api/v1/indexers/health/check/{id} | ✅ |
+| POST /api/v1/indexers/health/reset/{id} | ✅ |
+| GET /api/v1/indexers/health/healthy | ✅ |
+
+### API Endpoints (Download Client Health - 7)
+
+| Endpoint | Status |
+|----------|--------|
+| GET /api/v1/downloadclients/health | ✅ |
+| GET /api/v1/downloadclients/health/summary | ✅ |
+| GET /api/v1/downloadclients/health/{id} | ✅ |
+| POST /api/v1/downloadclients/health/check | ✅ |
+| POST /api/v1/downloadclients/health/check/{id} | ✅ |
+| POST /api/v1/downloadclients/health/reset/{id} | ✅ |
+| GET /api/v1/downloadclients/health/healthy | ✅ |
+
+### Unit Tests (42 new tests)
+
+| Test Category | Count | Status |
+|---------------|-------|--------|
+| IndexerHealthServiceTests | 22 | ✅ |
+| DownloadClientHealthServiceTests | 20 | ✅ |
+
+### Files Changed
+
+| File | Status |
+|------|--------|
+| `src/Shortboxerr.Core/Nzb/IIndexerHealthService.cs` | ✅ New |
+| `src/Shortboxerr.Infrastructure/Nzb/IndexerHealthService.cs` | ✅ New |
+| `src/Shortboxerr.Infrastructure/BackgroundServices/IndexerHealthBackgroundService.cs` | ✅ New |
+| `src/Shortboxerr.Api/Endpoints/IndexerHealthEndpoints.cs` | ✅ New |
+| `src/Shortboxerr.Core/Providers/IDownloadClientHealthService.cs` | ✅ New |
+| `src/Shortboxerr.Infrastructure/Providers/DownloadClientHealthService.cs` | ✅ New |
+| `src/Shortboxerr.Api/Endpoints/DownloadClientHealthEndpoints.cs` | ✅ New |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | ✅ Modified |
+| `src/Shortboxerr.Api/Program.cs` | ✅ Modified |
+| `tests/Shortboxerr.Tests/IndexerHealthServiceTests.cs` | ✅ New (22 tests) |
+| `tests/Shortboxerr.Tests/DownloadClientHealthServiceTests.cs` | ✅ New (20 tests) |
+| `docs/BACKLOG.md` | ✅ Updated |
+| `docs/WORKLOG.md` | ✅ Updated |
+| `docs/SELF_CHECK.md` | ✅ Updated |
+
+### EPIC 10 Status
+
+| Item | Status |
+|------|--------|
+| 10.1 NZB Indexer Integration | ✅ COMPLETED |
+| 10.2 NZB Download Client Integration | ✅ COMPLETED |
+| 10.3 NZB Candidate Processing | ✅ COMPLETED |
+| 10.4 NZB → Import Handoff | ✅ COMPLETED |
+| 10.5 NZB Conformance Tests | ✅ COMPLETED |
+| Indexer Health Monitoring | ✅ COMPLETED |
+| Download Client Failover | ✅ COMPLETED |
+
+---
+
 # Self Check - Iteration 099
 
 ## EPIC 11.3: Auto-Search on Release

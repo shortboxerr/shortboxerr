@@ -1,5 +1,133 @@
 # Worklog
 
+## Iteration 100 (2026-02-18)
+**EPIC 10: Indexer Health Monitoring & Download Client Failover**
+
+### Summary
+Implemented health monitoring for both NZB indexers and download clients, with automatic failover support. These features enable the system to track provider health, detect failures, handle rate limiting, and automatically route requests to healthy providers.
+
+### Commits
+1. `feat: implement indexer health monitoring (EPIC 10)`
+2. `feat: implement download client health and failover (EPIC 10)`
+
+### Deliverables
+
+#### Indexer Health Monitoring
+
+##### IIndexerHealthService - Core Service Interface
+- `GetHealthAsync(indexerId)` - Get health status for specific indexer
+- `GetAllHealthAsync()` - Get health status for all indexers
+- `RecordSuccessAsync(indexerId, responseTime)` - Record successful request
+- `RecordFailureAsync(indexerId, error, isRateLimited)` - Record failed request
+- `GetHealthyIndexersAsync()` - Get indexers available for searching
+- `IsRateLimitedAsync(indexerId)` - Check if indexer is rate limited
+- `CheckHealthAsync(indexerId)` - Perform health check on specific indexer
+- `CheckAllHealthAsync()` - Perform health checks on all indexers
+- `ResetHealthAsync(indexerId)` - Reset health data
+- `GetHealthSummaryAsync()` - Get aggregated health summary
+
+##### IndexerHealthBackgroundService
+- Runs health checks every 15 minutes
+- Logs unhealthy indexers and warning details
+- Provides manual trigger capability
+
+##### API Endpoints (Indexer Health)
+- `GET /api/v1/indexers/health` - Get all indexer health
+- `GET /api/v1/indexers/health/summary` - Get aggregated summary
+- `GET /api/v1/indexers/health/{id}` - Get specific indexer health
+- `POST /api/v1/indexers/health/check` - Trigger health check on all
+- `POST /api/v1/indexers/health/check/{id}` - Check specific indexer
+- `POST /api/v1/indexers/health/reset/{id}` - Reset health data
+- `GET /api/v1/indexers/health/healthy` - Get healthy indexers list
+
+##### Unit Tests (22 tests)
+- GetHealthAsync returns status for existing indexer
+- GetHealthAsync throws for nonexistent indexer
+- RecordSuccessAsync updates health status
+- RecordFailureAsync updates health status
+- RecordFailureAsync sets rate limited when flagged
+- IsRateLimitedAsync returns correct values
+- ConsecutiveFailures triggers offline state
+- SuccessResetsConsecutiveFailures
+- GetAllHealthAsync returns status for all indexers
+- GetHealthyIndexersAsync excludes rate limited/offline
+- ResetHealthAsync clears health data
+- CheckHealthAsync records success/failure
+- CheckHealthAsync detects rate limiting from status code
+- CheckHealthAsync returns not found for nonexistent
+- GetHealthSummaryAsync returns correct counts
+- SuccessRate calculates correctly
+- DegradedState triggered by slow response time
+- DegradedState triggered by low success rate
+- AverageResponseTime calculates correctly
+
+#### Download Client Health & Failover
+
+##### IDownloadClientHealthService - Core Service Interface
+- `GetHealthAsync(providerId)` - Get health status for specific client
+- `GetAllHealthAsync()` - Get health status for all clients
+- `RecordSuccessAsync(providerId, duration)` - Record successful download
+- `RecordFailureAsync(providerId, error, isTransient)` - Record failure
+- `GetHealthyClientsAsync(type?)` - Get healthy clients for failover
+- `IsAvailableAsync(providerId)` - Check if client is available
+- `CheckHealthAsync(providerId)` - Perform health check
+- `CheckAllHealthAsync()` - Health check all clients
+- `ResetHealthAsync(providerId)` - Reset health data
+- `GetHealthSummaryAsync()` - Get aggregated summary
+- `DownloadWithFailoverAsync(candidate, type?)` - Download with automatic failover
+
+##### API Endpoints (Download Client Health)
+- `GET /api/v1/downloadclients/health` - Get all client health
+- `GET /api/v1/downloadclients/health/summary` - Get aggregated summary
+- `GET /api/v1/downloadclients/health/{id}` - Get specific client health
+- `POST /api/v1/downloadclients/health/check` - Trigger health check on all
+- `POST /api/v1/downloadclients/health/check/{id}` - Check specific client
+- `POST /api/v1/downloadclients/health/reset/{id}` - Reset health data
+- `GET /api/v1/downloadclients/health/healthy` - Get healthy clients list
+
+##### Unit Tests (20 tests)
+- GetHealthAsync returns status for existing client
+- GetHealthAsync throws for nonexistent client
+- RecordSuccessAsync updates health status
+- RecordFailureAsync updates health status
+- ConsecutiveFailures triggers offline state
+- SuccessResetsConsecutiveFailures
+- GetAllHealthAsync returns status for all clients
+- GetHealthyClientsAsync excludes offline clients
+- GetHealthyClientsAsync filters by type
+- IsAvailableAsync returns correct values
+- ResetHealthAsync clears health data
+- GetHealthSummaryAsync returns correct counts
+- SuccessRate calculates correctly
+- DegradedState triggered by slow download time
+- AverageDownloadTime calculates correctly
+- DownloadWithFailoverAsync returns no clients when none available
+- DownloadWithFailoverAsync succeeds on first client
+- DownloadWithFailoverAsync fails over to next client
+- DownloadWithFailoverAsync all clients fail
+
+### Settings Integration
+- Uses existing SearchSettings for auto-search configuration
+- Health state thresholds: 
+  - Degraded: >5s response (indexer), >300s download (client)
+  - Offline: 5+ consecutive failures (indexer), 3+ failures (client)
+  - Rate limit: 15 minute backoff
+
+### Files Changed
+- `src/Shortboxerr.Core/Nzb/IIndexerHealthService.cs` (new)
+- `src/Shortboxerr.Infrastructure/Nzb/IndexerHealthService.cs` (new)
+- `src/Shortboxerr.Infrastructure/BackgroundServices/IndexerHealthBackgroundService.cs` (new)
+- `src/Shortboxerr.Api/Endpoints/IndexerHealthEndpoints.cs` (new)
+- `src/Shortboxerr.Core/Providers/IDownloadClientHealthService.cs` (new)
+- `src/Shortboxerr.Infrastructure/Providers/DownloadClientHealthService.cs` (new)
+- `src/Shortboxerr.Api/Endpoints/DownloadClientHealthEndpoints.cs` (new)
+- `src/Shortboxerr.Infrastructure/DependencyInjection.cs` (modified)
+- `src/Shortboxerr.Api/Program.cs` (modified)
+- `tests/Shortboxerr.Tests/IndexerHealthServiceTests.cs` (new)
+- `tests/Shortboxerr.Tests/DownloadClientHealthServiceTests.cs` (new)
+
+---
+
 ## Iteration 099 (2026-02-18)
 **EPIC 11.3: Auto-Search on Release**
 
