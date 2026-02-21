@@ -1225,7 +1225,7 @@ In-app notification system implemented. External notification channels (email, w
   - AC: "NEW" badge for series not in library ✅
   - AC: Quick-add buttons in cover view and list view ✅
   - AC: Confirmation modal for adding series with monitoring mode selection ✅
-  - Note: Publisher filter dropdown deferred - requires additional API work to fetch publishers from ComicVine releases
+  - Note: Publisher filter dropdown now available via GET /api/v1/pulllist/discover/publishers ✅
 
 ### 11.6 Pull List Configuration ✅ COMPLETED
 - [x] **Settings**
@@ -1786,7 +1786,7 @@ Track and prioritize completion of deferred items across all EPICs.
 | 11 | Host reliability tracking | 8 | M | M | Statistics DB |
 | ~~12~~ | ~~Host blacklisting~~ | 8 | S | M | ✅ Completed |
 | ~~13~~ | ~~First-time user experience~~ | 11 | M | M | ✅ Completed |
-| 14 | Publisher filter dropdown | 11 | S | M | ComicVine API |
+| ~~14~~ | ~~Publisher filter dropdown~~ | 11 | S | M | ✅ Completed |
 | **P4 - Lower Priority / Complex** |||||
 | 15 | NZBHydra2 support | 10 | L | M | None |
 | 16 | Deluge integration | 14 | M | L | Transmission first |

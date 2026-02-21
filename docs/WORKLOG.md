@@ -1,5 +1,56 @@
 # Worklog
 
+## Iteration 104 (2026-02-17)
+**EPIC 11: Publisher Filter Dropdown for Discovery**
+
+### Summary
+Implemented backend support for the publisher filter dropdown in the discovery/release list. The endpoint retrieves available publishers from cached discovery data, enabling the UI to populate a filter dropdown.
+
+### Commits
+1. `feat(pulllist): add publisher filter dropdown endpoint for discovery`
+
+### Deliverables
+
+#### IPullListService Extension
+- `GetDiscoveryPublishersAsync(weekOf, includeComicVineLookup)` - Get publishers for filter dropdown
+
+#### DiscoveryPublishersResult & DiscoveryPublisher Models
+- `LibraryPublishers` - Publishers from local library series with releases this week
+- `ComicVinePublishers` - Publishers from ComicVine for unmatched volumes (optional)
+- `AllPublishers` - Merged and deduplicated list sorted alphabetically
+- `TotalIssueCount` - Total issues in discovery for the week
+- Per-publisher stats: `Name`, `IssueCount`, `SeriesCount`, `HasLibrarySeries`
+
+#### Implementation Details
+- Leverages existing discovery cache (memory → database → ComicVine)
+- Groups issues by volume to count series/issues per publisher
+- Matches local series by ComicVine volume ID to get publisher info
+- Optional ComicVine lookup for unmatched volumes (rate-limited, max 50)
+- Case-insensitive publisher name merging
+- Alphabetical sorting of results
+
+#### API Endpoint
+- `GET /api/v1/pulllist/discover/publishers` - Get publishers for filter
+  - Query params: `weekOf` (optional, default today), `includeComicVineLookup` (optional, default false)
+  - Returns: `DiscoveryPublishersResult` with publisher lists and stats
+
+#### Unit Tests (7 tests)
+- GetDiscoveryPublishersAsync_ReturnsLibraryPublishers
+- GetDiscoveryPublishersAsync_WithoutComicVineLookup_ReturnsOnlyLibraryPublishers
+- GetDiscoveryPublishersAsync_WithComicVineLookup_FetchesUnmatchedPublishers
+- GetDiscoveryPublishersAsync_MergesPublishersCorrectly
+- GetDiscoveryPublishersAsync_SortsPublishersAlphabetically
+- GetDiscoveryPublishersAsync_ReturnsEmptyForNoReleases
+- GetDiscoveryPublishersAsync_UsesCorrectWeekBoundaries
+
+### Files Changed
+- `src/Shortboxerr.Core/PullList/IPullListService.cs` (interface + models)
+- `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` (implementation)
+- `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` (endpoint)
+- `tests/Shortboxerr.Tests/PullListServiceTests.cs` (7 tests)
+
+---
+
 ## Iteration 103 (2026-02-19)
 **EPIC 11: First-Time User Experience (Setup Status Backend)**
 
