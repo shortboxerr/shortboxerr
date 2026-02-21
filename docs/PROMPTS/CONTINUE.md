@@ -12,7 +12,7 @@ IMPORTANT: Vite auto-increments port if its configured port is busy (8585 → 85
 Always verify ports are FREE before starting servers.
 
 ```bash
-# 1. STOP - Kill app servers only
+# 1. STOP - Kill app servers only 
 pkill -9 -f "Shortboxerr.Api" 2>/dev/null || true
 pkill -9 -f "vite" 2>/dev/null || true
 

@@ -96,6 +96,33 @@ public class NewznabIndexer
     /// Additional query parameters to append to requests.
     /// </summary>
     public Dictionary<string, string> AdditionalParameters { get; set; } = new();
+
+    /// <summary>
+    /// Whether this indexer is an NZBHydra2 aggregator.
+    /// When true, results include backend indexer metadata.
+    /// </summary>
+    public bool IsHydra { get; set; } = false;
+
+    /// <summary>
+    /// Indexer type for display/categorization purposes.
+    /// </summary>
+    public NewznabIndexerType IndexerType { get; set; } = NewznabIndexerType.Standard;
+}
+
+/// <summary>
+/// Type of Newznab indexer.
+/// </summary>
+public enum NewznabIndexerType
+{
+    /// <summary>
+    /// Standard Newznab indexer (NZBgeek, DrunkenSlug, etc.)
+    /// </summary>
+    Standard = 0,
+
+    /// <summary>
+    /// NZBHydra2 aggregator (aggregates multiple backend indexers)
+    /// </summary>
+    NzbHydra2 = 1
 }
 
 /// <summary>
@@ -268,12 +295,12 @@ public record NewznabRelease
     public List<string> CategoryNames { get; init; } = new();
 
     /// <summary>
-    /// Indexer name/identifier.
+    /// Indexer name/identifier (the configured indexer that returned this result).
     /// </summary>
     public string? IndexerName { get; init; }
 
     /// <summary>
-    /// Indexer ID.
+    /// Indexer ID (the configured indexer that returned this result).
     /// </summary>
     public string? IndexerId { get; init; }
 
@@ -316,6 +343,45 @@ public record NewznabRelease
     /// Additional attributes from the indexer.
     /// </summary>
     public Dictionary<string, string> Attributes { get; init; } = new();
+
+    #region NZBHydra2-specific Properties
+
+    /// <summary>
+    /// Whether this result came from an NZBHydra2 aggregator.
+    /// </summary>
+    public bool IsFromHydra { get; init; }
+
+    /// <summary>
+    /// The backend indexer name (from NZBHydra2's hydraIndexerName attribute).
+    /// Only populated when IsFromHydra is true.
+    /// </summary>
+    public string? HydraIndexerName { get; init; }
+
+    /// <summary>
+    /// The backend indexer's internal ID in NZBHydra2.
+    /// Only populated when IsFromHydra is true.
+    /// </summary>
+    public string? HydraIndexerId { get; init; }
+
+    /// <summary>
+    /// The original GUID from the backend indexer (before NZBHydra2 wrapping).
+    /// Only populated when IsFromHydra is true.
+    /// </summary>
+    public string? HydraOriginalGuid { get; init; }
+
+    /// <summary>
+    /// Score/priority assigned by NZBHydra2 for this result.
+    /// Higher scores indicate better priority. Only populated when IsFromHydra is true.
+    /// </summary>
+    public int? HydraScore { get; init; }
+
+    /// <summary>
+    /// The backend indexer host (from NZBHydra2's hydraIndexerHost attribute).
+    /// Only populated when IsFromHydra is true.
+    /// </summary>
+    public string? HydraIndexerHost { get; init; }
+
+    #endregion
 }
 
 /// <summary>
@@ -401,7 +467,7 @@ public class NewznabCategory
 /// <summary>
 /// Result of testing an indexer connection.
 /// </summary>
-public class NewznabTestResult
+public record NewznabTestResult
 {
     /// <summary>
     /// Whether the test was successful.
@@ -427,6 +493,11 @@ public class NewznabTestResult
     /// HTTP status code.
     /// </summary>
     public int? StatusCode { get; init; }
+
+    /// <summary>
+    /// Whether the indexer was detected as an NZBHydra2 aggregator.
+    /// </summary>
+    public bool IsHydra { get; init; }
 
     public static NewznabTestResult Ok(string message, NewznabCapabilities? capabilities = null, long responseTimeMs = 0)
     {

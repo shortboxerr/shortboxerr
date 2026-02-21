@@ -18,6 +18,9 @@ public class NewznabClient : INewznabClient
     // Newznab standard namespaces
     private static readonly XNamespace AtomNs = "http://www.w3.org/2005/Atom";
     private static readonly XNamespace NewznabNs = "http://www.newznab.com/DTD/2010/feeds/attributes/";
+    
+    // NZBHydra2-specific namespace for extended attributes
+    private static readonly XNamespace HydraNs = "https://github.com/theotherp/nzbhydra2/attributes/";
 
     public NewznabClient(HttpClient httpClient, ILogger<NewznabClient>? logger = null)
     {
@@ -153,11 +156,16 @@ public class NewznabClient : INewznabClient
                 }
             }
 
-            return NewznabTestResult.Ok(
-                $"Connected successfully to {indexer.Name}",
-                caps,
-                stopwatch.ElapsedMilliseconds
-            );
+            // Detect if this is an NZBHydra2 instance
+            var isHydra = IsNzbHydra2(caps);
+            var message = isHydra
+                ? $"Connected successfully to {indexer.Name} (NZBHydra2 detected)"
+                : $"Connected successfully to {indexer.Name}";
+
+            var result = NewznabTestResult.Ok(message, caps, stopwatch.ElapsedMilliseconds);
+            
+            // Return with Hydra detection flag
+            return result with { IsHydra = isHydra };
         }
         catch (HttpRequestException ex)
         {
@@ -169,6 +177,26 @@ public class NewznabClient : INewznabClient
             _logger?.LogError(ex, "Unexpected error testing {IndexerName}", indexer.Name);
             return NewznabTestResult.Failed($"Test failed: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Detects if the indexer is an NZBHydra2 instance based on capabilities.
+    /// </summary>
+    public static bool IsNzbHydra2(NewznabCapabilities caps)
+    {
+        if (caps.Server == null)
+            return false;
+
+        // NZBHydra2 identifies itself in the server info
+        var title = caps.Server.Title?.ToLowerInvariant() ?? "";
+        var version = caps.Server.Version?.ToLowerInvariant() ?? "";
+        var strapline = caps.Server.Strapline?.ToLowerInvariant() ?? "";
+
+        return title.Contains("nzbhydra") ||
+               title.Contains("hydra") ||
+               version.Contains("nzbhydra") ||
+               strapline.Contains("nzbhydra") ||
+               strapline.Contains("hydra2");
     }
 
     public async Task<byte[]> DownloadNzbAsync(NewznabIndexer indexer, string nzbUrl, CancellationToken cancellationToken = default)
@@ -371,7 +399,8 @@ public class NewznabClient : INewznabClient
                 NzbUrl = link ?? BuildNzbDownloadUrl(indexer, guid),
                 IndexerName = indexer.Name,
                 IndexerId = indexer.Id,
-                InfoUrl = item.Element("comments")?.Value
+                InfoUrl = item.Element("comments")?.Value,
+                IsFromHydra = indexer.IsHydra
             };
 
             // Parse enclosure for size
@@ -452,6 +481,12 @@ public class NewznabClient : INewznabClient
 
             release = release with { Attributes = attributes };
 
+            // Parse NZBHydra2-specific attributes if this is from a Hydra indexer
+            if (indexer.IsHydra)
+            {
+                release = ParseHydraAttributes(item, release, attributes);
+            }
+
             return release;
         }
         catch (Exception ex)
@@ -459,6 +494,94 @@ public class NewznabClient : INewznabClient
             _logger?.LogWarning(ex, "Error parsing Newznab item");
             return null;
         }
+    }
+
+    /// <summary>
+    /// Parses NZBHydra2-specific attributes from a search result item.
+    /// NZBHydra2 adds metadata about the backend indexer that provided each result.
+    /// </summary>
+    private NewznabRelease ParseHydraAttributes(XElement item, NewznabRelease release, Dictionary<string, string> attributes)
+    {
+        // NZBHydra2 can expose backend indexer info in multiple ways:
+        // 1. Via newznab:attr with hydra-prefixed names
+        // 2. Via dedicated hydra namespace attributes
+        // 3. Via standard attributes with indexer info
+        
+        string? hydraIndexerName = null;
+        string? hydraIndexerId = null;
+        string? hydraOriginalGuid = null;
+        string? hydraIndexerHost = null;
+        int? hydraScore = null;
+
+        // Check for hydra attributes in the newznab namespace (common pattern)
+        if (attributes.TryGetValue("hydraIndexerName", out var indexerName))
+        {
+            hydraIndexerName = indexerName;
+        }
+        if (attributes.TryGetValue("hydraIndexerId", out var indexerId))
+        {
+            hydraIndexerId = indexerId;
+        }
+        if (attributes.TryGetValue("hydraIndexerGuid", out var originalGuid))
+        {
+            hydraOriginalGuid = originalGuid;
+        }
+        if (attributes.TryGetValue("hydraIndexerHost", out var indexerHost))
+        {
+            hydraIndexerHost = indexerHost;
+        }
+        if (attributes.TryGetValue("hydraIndexerScore", out var scoreStr) && int.TryParse(scoreStr, out var score))
+        {
+            hydraScore = score;
+        }
+
+        // Also check for snake_case variants (some versions use this)
+        if (hydraIndexerName == null && attributes.TryGetValue("indexer", out var indexerAlt))
+        {
+            hydraIndexerName = indexerAlt;
+        }
+        if (hydraScore == null && attributes.TryGetValue("indexerscore", out var scoreAlt) && int.TryParse(scoreAlt, out var scoreAltInt))
+        {
+            hydraScore = scoreAltInt;
+        }
+
+        // Parse Hydra namespace attributes if present
+        foreach (var attr in item.Elements(HydraNs + "attr"))
+        {
+            var name = attr.Attribute("name")?.Value;
+            var value = attr.Attribute("value")?.Value;
+
+            if (string.IsNullOrEmpty(name) || value == null)
+                continue;
+
+            switch (name.ToLowerInvariant())
+            {
+                case "indexername":
+                    hydraIndexerName ??= value;
+                    break;
+                case "indexerid":
+                    hydraIndexerId ??= value;
+                    break;
+                case "indexerguid" or "originalguid":
+                    hydraOriginalGuid ??= value;
+                    break;
+                case "indexerhost":
+                    hydraIndexerHost ??= value;
+                    break;
+                case "indexerscore" or "score" when int.TryParse(value, out var s):
+                    hydraScore ??= s;
+                    break;
+            }
+        }
+
+        return release with
+        {
+            HydraIndexerName = hydraIndexerName,
+            HydraIndexerId = hydraIndexerId,
+            HydraOriginalGuid = hydraOriginalGuid,
+            HydraIndexerHost = hydraIndexerHost,
+            HydraScore = hydraScore
+        };
     }
 
     private NewznabCapabilities ParseCapabilitiesResponse(string content)

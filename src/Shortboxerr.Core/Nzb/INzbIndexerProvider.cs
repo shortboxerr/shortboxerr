@@ -139,7 +139,8 @@ public static class NzbIndexerPresets
                 BaseUrl = "https://api.nzbgeek.info",
                 ApiKey = apiKey,
                 Categories = new List<int> { 7030, 7000 },
-                Priority = 25
+                Priority = 25,
+                IndexerType = NewznabIndexerType.Standard
             },
             "drunkenslug" => new NewznabIndexer
             {
@@ -147,7 +148,8 @@ public static class NzbIndexerPresets
                 BaseUrl = "https://api.drunkenslug.com",
                 ApiKey = apiKey,
                 Categories = new List<int> { 7030, 7000 },
-                Priority = 25
+                Priority = 25,
+                IndexerType = NewznabIndexerType.Standard
             },
             "nzbfinder" => new NewznabIndexer
             {
@@ -155,7 +157,8 @@ public static class NzbIndexerPresets
                 BaseUrl = "https://nzbfinder.ws",
                 ApiKey = apiKey,
                 Categories = new List<int> { 7030, 7000 },
-                Priority = 30
+                Priority = 30,
+                IndexerType = NewznabIndexerType.Standard
             },
             "nzbplanet" => new NewznabIndexer
             {
@@ -163,7 +166,8 @@ public static class NzbIndexerPresets
                 BaseUrl = "https://api.nzbplanet.net",
                 ApiKey = apiKey,
                 Categories = new List<int> { 7030, 7000 },
-                Priority = 30
+                Priority = 30,
+                IndexerType = NewznabIndexerType.Standard
             },
             "abnzb" => new NewznabIndexer
             {
@@ -171,7 +175,8 @@ public static class NzbIndexerPresets
                 BaseUrl = "https://abnzb.com",
                 ApiKey = apiKey,
                 Categories = new List<int> { 7030, 7000 },
-                Priority = 35
+                Priority = 35,
+                IndexerType = NewznabIndexerType.Standard
             },
             "althub" => new NewznabIndexer
             {
@@ -179,9 +184,32 @@ public static class NzbIndexerPresets
                 BaseUrl = "https://api.althub.co.za",
                 ApiKey = apiKey,
                 Categories = new List<int> { 7030, 7000 },
-                Priority = 35
+                Priority = 35,
+                IndexerType = NewznabIndexerType.Standard
             },
             _ => null
+        };
+    }
+
+    /// <summary>
+    /// Creates an NZBHydra2 aggregator indexer configuration.
+    /// NZBHydra2 is self-hosted, so the user provides their own URL.
+    /// </summary>
+    /// <param name="baseUrl">NZBHydra2 base URL (e.g., http://localhost:5076)</param>
+    /// <param name="apiKey">NZBHydra2 API key</param>
+    /// <param name="name">Optional custom name (defaults to "NZBHydra2")</param>
+    /// <returns>Configured NZBHydra2 indexer</returns>
+    public static NewznabIndexer CreateNzbHydra2(string baseUrl, string apiKey, string name = "NZBHydra2")
+    {
+        return new NewznabIndexer
+        {
+            Name = name,
+            BaseUrl = baseUrl.TrimEnd('/'),
+            ApiKey = apiKey,
+            Categories = new List<int> { 7030, 7000 },
+            Priority = 10, // High priority since it aggregates multiple indexers
+            IsHydra = true,
+            IndexerType = NewznabIndexerType.NzbHydra2
         };
     }
 
@@ -197,6 +225,16 @@ public static class NzbIndexerPresets
         "abnzb",
         "althub"
     };
+
+    /// <summary>
+    /// Gets preset names grouped by type.
+    /// </summary>
+    public static IReadOnlyDictionary<NewznabIndexerType, IReadOnlyList<string>> GetPresetsByType() =>
+        new Dictionary<NewznabIndexerType, IReadOnlyList<string>>
+        {
+            [NewznabIndexerType.Standard] = new[] { "nzbgeek", "drunkenslug", "nzbfinder", "nzbplanet", "abnzb", "althub" },
+            [NewznabIndexerType.NzbHydra2] = Array.Empty<string>() // NZBHydra2 is self-hosted, no preset URL
+        };
 
     /// <summary>
     /// Common NZB categories for comics.
