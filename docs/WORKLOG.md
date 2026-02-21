@@ -1,5 +1,63 @@
 # Worklog
 
+## Iteration 106 (2026-02-17)
+**EPIC 10: NZBHydra2 Aggregator Support**
+
+### Summary
+Added NZBHydra2 support to the NZB indexer infrastructure. NZBHydra2 is a meta-indexer that aggregates searches across multiple backend NZB indexers, providing a single endpoint for Shortboxerr to query.
+
+### Commits
+1. `feat(nzb): add NZBHydra2 aggregator support`
+
+### Deliverables
+
+#### NewznabIndexer Extensions
+- `IsHydra` - Whether this indexer is an NZBHydra2 aggregator
+- `IndexerType` - Enum value (Standard or NzbHydra2)
+
+#### NewznabIndexerType Enum
+- `Standard` - Regular Newznab indexer (NZBgeek, DrunkenSlug, etc.)
+- `NzbHydra2` - NZBHydra2 aggregator instance
+
+#### NewznabRelease Hydra Properties
+- `IsFromHydra` - Whether result came from NZBHydra2
+- `HydraIndexerName` - Backend indexer name
+- `HydraIndexerId` - Backend indexer ID
+- `HydraOriginalGuid` - Original GUID before Hydra wrapping
+- `HydraScore` - Priority score from NZBHydra2
+- `HydraIndexerHost` - Backend indexer hostname
+
+#### NZBHydra2 Detection
+- `NewznabClient.IsNzbHydra2(caps)` - Detects NZBHydra2 from capabilities
+- Checks server title, version, strapline for "nzbhydra" or "hydra2"
+- Auto-sets `IsHydra` flag on test connection
+
+#### Preset Helpers
+- `NzbIndexerPresets.CreateNzbHydra2(url, apiKey, name)` - Creates Hydra config
+- `NzbIndexerPresets.GetPresetsByType()` - Groups presets by indexer type
+
+#### Hydra Attribute Parsing
+- Parses `hydraIndexerName`, `hydraIndexerId`, `hydraIndexerGuid`
+- Parses `hydraIndexerHost`, `hydraIndexerScore`
+- Supports both camelCase and snake_case variants
+- Supports dedicated hydra XML namespace attributes
+
+#### Unit Tests (24 tests)
+- NewznabIndexer configuration tests
+- NzbIndexerPresets tests (standard + Hydra)
+- NewznabRelease Hydra properties tests
+- NewznabTestResult IsHydra tests
+- IsNzbHydra2 detection tests
+- IndexerType enum tests
+
+### Files Changed
+- `src/Shortboxerr.Core/Nzb/INewznabClient.cs` (interface + models)
+- `src/Shortboxerr.Core/Nzb/INzbIndexerProvider.cs` (presets)
+- `src/Shortboxerr.Infrastructure/Nzb/NewznabClient.cs` (implementation)
+- `tests/Shortboxerr.Tests/NzbHydra2Tests.cs` (24 tests)
+
+---
+
 ## Iteration 105 (2026-02-17)
 **EPIC 9: Cover Cache Size Limits & LRU Eviction**
 

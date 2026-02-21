@@ -833,10 +833,11 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: Search by series name, issue number, year ✅
   - AC: Category filtering (comics category IDs) ✅
   - AC: Parse NZB search results into candidates ✅
-- [ ] **NZBHydra2 support** (deferred)
-  - AC: Aggregate searches across multiple indexers
-  - AC: Single API endpoint for multiple backends
-  - AC: Respect indexer priorities from NZBHydra
+- [x] **NZBHydra2 support** ✅
+  - AC: Aggregate searches across multiple indexers ✅
+  - AC: Single API endpoint for multiple backends ✅
+  - AC: Respect indexer priorities from NZBHydra ✅
+  - Note: Auto-detects NZBHydra2, parses backend indexer metadata from results
 - [x] **Built-in indexer presets** ✅
   - AC: Pre-configured settings for popular NZB indexers ✅
   - AC: NZBgeek, DrunkenSlug, NZBFinder, etc. ✅
@@ -1788,7 +1789,7 @@ Track and prioritize completion of deferred items across all EPICs.
 | ~~13~~ | ~~First-time user experience~~ | 11 | M | M | ✅ Completed |
 | ~~14~~ | ~~Publisher filter dropdown~~ | 11 | S | M | ✅ Completed |
 | **P4 - Lower Priority / Complex** |||||
-| 15 | NZBHydra2 support | 10 | L | M | None |
+| ~~15~~ | ~~NZBHydra2 support~~ | 10 | L | M | ✅ Completed |
 | 16 | Deluge integration | 14 | M | L | Transmission first |
 | 17 | Cloudflare challenge handling | 8 | L | M | Complex |
 | 18 | Mega.nz resolver | 8 | L | M | Encryption |
