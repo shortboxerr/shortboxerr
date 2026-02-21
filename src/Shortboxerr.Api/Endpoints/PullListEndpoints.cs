@@ -163,6 +163,23 @@ public static class PullListEndpoints
         .WithDescription("Gets all ComicVine releases for a specific week (discovery mode).")
         .Produces<WeeklyDiscoveryList>(200);
 
+        // GET /api/v1/pulllist/discover/publishers - get available publishers for filter
+        group.MapGet("/discover/publishers", async (
+            [FromServices] IPullListService pullListService,
+            [FromQuery] DateTime? weekOf,
+            [FromQuery] bool? includeComicVineLookup,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await pullListService.GetDiscoveryPublishersAsync(
+                weekOf ?? DateTime.Today,
+                includeComicVineLookup ?? false,
+                cancellationToken);
+            return Results.Ok(result);
+        })
+        .WithName("GetDiscoveryPublishers")
+        .WithDescription("Gets available publishers for discovery filter dropdown.")
+        .Produces<DiscoveryPublishersResult>(200);
+
         // POST /api/v1/pulllist/discover/add-issue - add one-off issue
         group.MapPost("/discover/add-issue", async (
             [FromBody] AddOneOffRequest request,

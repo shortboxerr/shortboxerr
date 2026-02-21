@@ -58,6 +58,16 @@ public interface IPullListService
         DiscoveryFilter? filter = null,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Gets available publishers for discovery filtering for a specific week.
+    /// Returns publishers from library series that have releases this week,
+    /// plus optionally fetches publisher info from ComicVine for new series.
+    /// </summary>
+    Task<DiscoveryPublishersResult> GetDiscoveryPublishersAsync(
+        DateTime weekOf,
+        bool includeComicVineLookup = false,
+        CancellationToken cancellationToken = default);
+
     #endregion
 
     #region Discovery & One-Off Additions
@@ -705,6 +715,74 @@ public class DiscoveryFilter
     public bool? NewOnly { get; set; }
     public bool IncludeAnnuals { get; set; } = true;
     public bool IncludeSpecials { get; set; } = true;
+}
+
+/// <summary>
+/// Result of fetching discovery publishers for filter dropdown.
+/// </summary>
+public class DiscoveryPublishersResult
+{
+    /// <summary>
+    /// Publishers from series in the local library that have releases this week.
+    /// </summary>
+    public List<DiscoveryPublisher> LibraryPublishers { get; set; } = new();
+    
+    /// <summary>
+    /// Publishers from ComicVine for series not in the local library.
+    /// Only populated if includeComicVineLookup is true.
+    /// </summary>
+    public List<DiscoveryPublisher> ComicVinePublishers { get; set; } = new();
+    
+    /// <summary>
+    /// All unique publishers merged, sorted alphabetically.
+    /// </summary>
+    public List<DiscoveryPublisher> AllPublishers { get; set; } = new();
+    
+    /// <summary>
+    /// Week this data is for.
+    /// </summary>
+    public DateTime WeekOf { get; set; }
+    
+    /// <summary>
+    /// Total issue count for this week.
+    /// </summary>
+    public int TotalIssueCount { get; set; }
+    
+    /// <summary>
+    /// Whether ComicVine lookup was performed.
+    /// </summary>
+    public bool IncludedComicVineLookup { get; set; }
+}
+
+/// <summary>
+/// Publisher info for discovery filter dropdown.
+/// </summary>
+public class DiscoveryPublisher
+{
+    /// <summary>
+    /// Publisher name.
+    /// </summary>
+    public string Name { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Number of issues releasing this week from this publisher.
+    /// </summary>
+    public int IssueCount { get; set; }
+    
+    /// <summary>
+    /// Number of series releasing this week from this publisher.
+    /// </summary>
+    public int SeriesCount { get; set; }
+    
+    /// <summary>
+    /// Whether any of these series are in the local library.
+    /// </summary>
+    public bool HasLibrarySeries { get; set; }
+    
+    /// <summary>
+    /// ComicVine publisher ID (if available).
+    /// </summary>
+    public int? ComicVinePublisherId { get; set; }
 }
 
 /// <summary>

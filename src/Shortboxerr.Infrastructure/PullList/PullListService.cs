@@ -1199,6 +1199,191 @@ public class PullListService : IPullListService
         }
     }
 
+    public async Task<DiscoveryPublishersResult> GetDiscoveryPublishersAsync(
+        DateTime weekOf,
+        bool includeComicVineLookup = false,
+        CancellationToken cancellationToken = default)
+    {
+        var (weekStart, weekEnd) = GetWeekBoundaries(weekOf);
+        var memoryCacheKey = _cacheService.GenerateKey(CacheKeys.PullListDiscovery, weekStart.ToString("yyyy-MM-dd"));
+        
+        // Get cached discovery data or fetch from ComicVine
+        List<ComicVineIssue> allIssues;
+        var memoryCachedIssues = _cacheService.Get<List<ComicVineIssue>>(memoryCacheKey);
+        
+        if (memoryCachedIssues != null)
+        {
+            allIssues = memoryCachedIssues;
+        }
+        else
+        {
+            // Check database cache
+            var dbCacheEntry = await _dbContext.CachedDiscoveryWeeks
+                .FirstOrDefaultAsync(c => c.WeekStart == weekStart.Date, cancellationToken);
+            
+            if (dbCacheEntry != null && dbCacheEntry.ExpiresAt > DateTime.UtcNow)
+            {
+                allIssues = JsonSerializer.Deserialize<List<ComicVineIssue>>(dbCacheEntry.IssuesJson) ?? new List<ComicVineIssue>();
+            }
+            else
+            {
+                // Need to fetch - call GetWeeklyDiscoveryAsync to populate cache
+                var discovery = await GetWeeklyDiscoveryAsync(weekOf, null, cancellationToken);
+                // Re-fetch from cache after population
+                memoryCachedIssues = _cacheService.Get<List<ComicVineIssue>>(memoryCacheKey);
+                allIssues = memoryCachedIssues ?? new List<ComicVineIssue>();
+            }
+        }
+
+        var result = new DiscoveryPublishersResult
+        {
+            WeekOf = weekStart,
+            TotalIssueCount = allIssues.Count,
+            IncludedComicVineLookup = includeComicVineLookup
+        };
+
+        // Get all local series with ComicVine IDs and their publishers
+        var localSeriesLookup = await _dbContext.Series
+            .Where(s => s.ComicVineId != null && !string.IsNullOrEmpty(s.Publisher))
+            .ToDictionaryAsync(s => s.ComicVineId!.Value, s => s.Publisher!, cancellationToken);
+
+        // Group issues by volume to count series/issues per publisher
+        var volumeGroups = allIssues
+            .Where(i => i.Volume?.Id > 0)
+            .GroupBy(i => i.Volume!.Id)
+            .ToList();
+
+        // Track publishers from library
+        var libraryPublisherStats = new Dictionary<string, (int issues, int series, HashSet<int> volumeIds)>(StringComparer.OrdinalIgnoreCase);
+        var unmatchedVolumeIds = new HashSet<int>();
+
+        foreach (var volumeGroup in volumeGroups)
+        {
+            var volumeId = volumeGroup.Key;
+            var issueCount = volumeGroup.Count();
+            
+            if (localSeriesLookup.TryGetValue(volumeId, out var publisher) && !string.IsNullOrWhiteSpace(publisher))
+            {
+                if (!libraryPublisherStats.TryGetValue(publisher, out var stats))
+                {
+                    stats = (0, 0, new HashSet<int>());
+                }
+                stats.issues += issueCount;
+                stats.volumeIds.Add(volumeId);
+                libraryPublisherStats[publisher] = (stats.issues, stats.volumeIds.Count, stats.volumeIds);
+            }
+            else
+            {
+                unmatchedVolumeIds.Add(volumeId);
+            }
+        }
+
+        // Add library publishers to result
+        result.LibraryPublishers = libraryPublisherStats
+            .Select(kvp => new DiscoveryPublisher
+            {
+                Name = kvp.Key,
+                IssueCount = kvp.Value.issues,
+                SeriesCount = kvp.Value.series,
+                HasLibrarySeries = true
+            })
+            .OrderBy(p => p.Name)
+            .ToList();
+
+        // Optionally fetch publishers from ComicVine for unmatched volumes
+        if (includeComicVineLookup && unmatchedVolumeIds.Count > 0)
+        {
+            var comicVinePublisherStats = new Dictionary<string, (int issues, int series, HashSet<int> volumeIds, int? publisherId)>(StringComparer.OrdinalIgnoreCase);
+            
+            // Limit lookup to avoid excessive API calls (batch first 50 unmatched)
+            var volumesToLookup = unmatchedVolumeIds.Take(50).ToList();
+            
+            foreach (var volumeId in volumesToLookup)
+            {
+                try
+                {
+                    var volumeResult = await _comicVineClient.GetVolumeAsync(volumeId, cancellationToken);
+                    if (volumeResult.Success && volumeResult.Data?.Publisher != null)
+                    {
+                        var publisherName = volumeResult.Data.Publisher.Name ?? "Unknown";
+                        var publisherId = volumeResult.Data.Publisher.Id;
+                        var issueCount = volumeGroups.FirstOrDefault(g => g.Key == volumeId)?.Count() ?? 0;
+                        
+                        if (!comicVinePublisherStats.TryGetValue(publisherName, out var stats))
+                        {
+                            stats = (0, 0, new HashSet<int>(), publisherId);
+                        }
+                        stats.issues += issueCount;
+                        stats.volumeIds.Add(volumeId);
+                        comicVinePublisherStats[publisherName] = (stats.issues, stats.volumeIds.Count, stats.volumeIds, publisherId);
+                    }
+                    
+                    // Rate limit protection
+                    await Task.Delay(100, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to fetch publisher for volume {VolumeId}", volumeId);
+                }
+            }
+
+            result.ComicVinePublishers = comicVinePublisherStats
+                .Select(kvp => new DiscoveryPublisher
+                {
+                    Name = kvp.Key,
+                    IssueCount = kvp.Value.issues,
+                    SeriesCount = kvp.Value.series,
+                    HasLibrarySeries = false,
+                    ComicVinePublisherId = kvp.Value.publisherId
+                })
+                .OrderBy(p => p.Name)
+                .ToList();
+        }
+
+        // Merge all publishers for the combined list
+        var allPublishers = new Dictionary<string, DiscoveryPublisher>(StringComparer.OrdinalIgnoreCase);
+        
+        foreach (var pub in result.LibraryPublishers)
+        {
+            allPublishers[pub.Name] = pub;
+        }
+        
+        foreach (var pub in result.ComicVinePublishers)
+        {
+            if (allPublishers.TryGetValue(pub.Name, out var existing))
+            {
+                // Merge counts
+                existing.IssueCount += pub.IssueCount;
+                existing.SeriesCount += pub.SeriesCount;
+                if (pub.ComicVinePublisherId.HasValue && !existing.ComicVinePublisherId.HasValue)
+                {
+                    existing.ComicVinePublisherId = pub.ComicVinePublisherId;
+                }
+            }
+            else
+            {
+                allPublishers[pub.Name] = new DiscoveryPublisher
+                {
+                    Name = pub.Name,
+                    IssueCount = pub.IssueCount,
+                    SeriesCount = pub.SeriesCount,
+                    HasLibrarySeries = pub.HasLibrarySeries,
+                    ComicVinePublisherId = pub.ComicVinePublisherId
+                };
+            }
+        }
+
+        result.AllPublishers = allPublishers.Values
+            .OrderBy(p => p.Name)
+            .ToList();
+
+        _logger.LogDebug(
+            "Retrieved {LibraryCount} library publishers and {ComicVineCount} ComicVine publishers for week of {WeekStart}",
+            result.LibraryPublishers.Count, result.ComicVinePublishers.Count, weekStart);
+
+        return result;
+    }
+
     private async Task<WeeklyDiscoveryList> BuildDiscoveryListAsync(
         List<ComicVineIssue> comicVineIssues,
         DateTime weekStart,

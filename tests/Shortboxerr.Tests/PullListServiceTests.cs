@@ -1019,4 +1019,398 @@ public class PullListServiceTests : IDisposable
     }
 
     #endregion
+
+    #region Discovery Publishers Tests
+
+    [Fact]
+    public async Task GetDiscoveryPublishersAsync_ReturnsLibraryPublishers()
+    {
+        // Arrange
+        var weekOf = new DateTime(2026, 2, 4);
+        
+        // Add series with publishers
+        var marvelSeries = new Series 
+        { 
+            Title = "Spider-Man", 
+            Publisher = "Marvel", 
+            ComicVineId = 1001, 
+            Monitored = true 
+        };
+        var dcSeries = new Series 
+        { 
+            Title = "Batman", 
+            Publisher = "DC Comics", 
+            ComicVineId = 1002, 
+            Monitored = true 
+        };
+        _dbContext.Series.AddRange(marvelSeries, dcSeries);
+        await _dbContext.SaveChangesAsync();
+        
+        // Mock ComicVine to return issues for these volumes
+        var mockResult = new ComicVineSearchResult<ComicVineIssue>
+        {
+            Success = true,
+            Results = new List<ComicVineIssue>
+            {
+                new ComicVineIssue
+                {
+                    Id = 2001,
+                    Name = "Spider-Man Issue",
+                    IssueNumber = "1",
+                    StoreDate = new DateTime(2026, 2, 4),
+                    Volume = new ComicVineVolumeRef { Id = 1001, Name = "Spider-Man" }
+                },
+                new ComicVineIssue
+                {
+                    Id = 2002,
+                    Name = "Spider-Man Issue 2",
+                    IssueNumber = "2",
+                    StoreDate = new DateTime(2026, 2, 4),
+                    Volume = new ComicVineVolumeRef { Id = 1001, Name = "Spider-Man" }
+                },
+                new ComicVineIssue
+                {
+                    Id = 2003,
+                    Name = "Batman Issue",
+                    IssueNumber = "1",
+                    StoreDate = new DateTime(2026, 2, 4),
+                    Volume = new ComicVineVolumeRef { Id = 1002, Name = "Batman" }
+                }
+            },
+            TotalResults = 3
+        };
+        
+        _mockComicVineClient
+            .Setup(c => c.GetIssuesByStoreDateAsync(
+                It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(mockResult);
+
+        // Act
+        var result = await _service.GetDiscoveryPublishersAsync(weekOf);
+
+        // Assert
+        Assert.Equal(3, result.TotalIssueCount);
+        Assert.Equal(2, result.LibraryPublishers.Count);
+        Assert.Contains(result.LibraryPublishers, p => p.Name == "Marvel" && p.IssueCount == 2);
+        Assert.Contains(result.LibraryPublishers, p => p.Name == "DC Comics" && p.IssueCount == 1);
+        Assert.All(result.LibraryPublishers, p => Assert.True(p.HasLibrarySeries));
+    }
+
+    [Fact]
+    public async Task GetDiscoveryPublishersAsync_WithoutComicVineLookup_ReturnsOnlyLibraryPublishers()
+    {
+        // Arrange
+        var weekOf = new DateTime(2026, 2, 4);
+        
+        var series = new Series 
+        { 
+            Title = "Batman", 
+            Publisher = "DC Comics", 
+            ComicVineId = 1001, 
+            Monitored = true 
+        };
+        _dbContext.Series.Add(series);
+        await _dbContext.SaveChangesAsync();
+        
+        var mockResult = new ComicVineSearchResult<ComicVineIssue>
+        {
+            Success = true,
+            Results = new List<ComicVineIssue>
+            {
+                new ComicVineIssue
+                {
+                    Id = 2001,
+                    Name = "Batman Issue",
+                    IssueNumber = "1",
+                    StoreDate = new DateTime(2026, 2, 4),
+                    Volume = new ComicVineVolumeRef { Id = 1001, Name = "Batman" }
+                },
+                new ComicVineIssue
+                {
+                    Id = 2002,
+                    Name = "Unknown Series Issue",
+                    IssueNumber = "1",
+                    StoreDate = new DateTime(2026, 2, 4),
+                    Volume = new ComicVineVolumeRef { Id = 9999, Name = "Unknown" }
+                }
+            },
+            TotalResults = 2
+        };
+        
+        _mockComicVineClient
+            .Setup(c => c.GetIssuesByStoreDateAsync(
+                It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(mockResult);
+
+        // Act - without ComicVine lookup
+        var result = await _service.GetDiscoveryPublishersAsync(weekOf, includeComicVineLookup: false);
+
+        // Assert
+        Assert.Single(result.LibraryPublishers);
+        Assert.Empty(result.ComicVinePublishers);
+        Assert.False(result.IncludedComicVineLookup);
+    }
+
+    [Fact]
+    public async Task GetDiscoveryPublishersAsync_WithComicVineLookup_FetchesUnmatchedPublishers()
+    {
+        // Arrange
+        var weekOf = new DateTime(2026, 2, 4);
+        
+        var series = new Series 
+        { 
+            Title = "Batman", 
+            Publisher = "DC Comics", 
+            ComicVineId = 1001, 
+            Monitored = true 
+        };
+        _dbContext.Series.Add(series);
+        await _dbContext.SaveChangesAsync();
+        
+        var mockResult = new ComicVineSearchResult<ComicVineIssue>
+        {
+            Success = true,
+            Results = new List<ComicVineIssue>
+            {
+                new ComicVineIssue
+                {
+                    Id = 2001,
+                    Name = "Batman Issue",
+                    IssueNumber = "1",
+                    StoreDate = new DateTime(2026, 2, 4),
+                    Volume = new ComicVineVolumeRef { Id = 1001, Name = "Batman" }
+                },
+                new ComicVineIssue
+                {
+                    Id = 2002,
+                    Name = "Spider-Man Issue",
+                    IssueNumber = "1",
+                    StoreDate = new DateTime(2026, 2, 4),
+                    Volume = new ComicVineVolumeRef { Id = 9999, Name = "Spider-Man" }
+                }
+            },
+            TotalResults = 2
+        };
+        
+        _mockComicVineClient
+            .Setup(c => c.GetIssuesByStoreDateAsync(
+                It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(mockResult);
+
+        // Mock volume lookup for unmatched series
+        _mockComicVineClient
+            .Setup(c => c.GetVolumeAsync(9999, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ComicVineResult<ComicVineVolume>
+            {
+                Success = true,
+                Data = new ComicVineVolume
+                {
+                    Id = 9999,
+                    Name = "Spider-Man",
+                    Publisher = new ComicVinePublisherRef { Id = 31, Name = "Marvel" }
+                }
+            });
+
+        // Act - with ComicVine lookup
+        var result = await _service.GetDiscoveryPublishersAsync(weekOf, includeComicVineLookup: true);
+
+        // Assert
+        Assert.Single(result.LibraryPublishers);
+        Assert.Single(result.ComicVinePublishers);
+        Assert.True(result.IncludedComicVineLookup);
+        Assert.Contains(result.ComicVinePublishers, p => p.Name == "Marvel");
+        Assert.Equal(2, result.AllPublishers.Count);
+    }
+
+    [Fact]
+    public async Task GetDiscoveryPublishersAsync_MergesPublishersCorrectly()
+    {
+        // Arrange
+        var weekOf = new DateTime(2026, 2, 4);
+        
+        // Both DC series in library
+        var dcSeries = new Series 
+        { 
+            Title = "Batman", 
+            Publisher = "DC Comics", 
+            ComicVineId = 1001, 
+            Monitored = true 
+        };
+        _dbContext.Series.Add(dcSeries);
+        await _dbContext.SaveChangesAsync();
+        
+        var mockResult = new ComicVineSearchResult<ComicVineIssue>
+        {
+            Success = true,
+            Results = new List<ComicVineIssue>
+            {
+                new ComicVineIssue
+                {
+                    Id = 2001,
+                    Name = "Batman Issue",
+                    IssueNumber = "1",
+                    StoreDate = new DateTime(2026, 2, 4),
+                    Volume = new ComicVineVolumeRef { Id = 1001, Name = "Batman" }
+                },
+                new ComicVineIssue
+                {
+                    Id = 2002,
+                    Name = "Superman Issue",
+                    IssueNumber = "1",
+                    StoreDate = new DateTime(2026, 2, 4),
+                    Volume = new ComicVineVolumeRef { Id = 9999, Name = "Superman" }
+                }
+            },
+            TotalResults = 2
+        };
+        
+        _mockComicVineClient
+            .Setup(c => c.GetIssuesByStoreDateAsync(
+                It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(mockResult);
+
+        // Superman is also DC but not in library
+        _mockComicVineClient
+            .Setup(c => c.GetVolumeAsync(9999, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ComicVineResult<ComicVineVolume>
+            {
+                Success = true,
+                Data = new ComicVineVolume
+                {
+                    Id = 9999,
+                    Name = "Superman",
+                    Publisher = new ComicVinePublisherRef { Id = 10, Name = "DC Comics" }
+                }
+            });
+
+        // Act
+        var result = await _service.GetDiscoveryPublishersAsync(weekOf, includeComicVineLookup: true);
+
+        // Assert - DC Comics should be merged
+        Assert.Single(result.AllPublishers);
+        var dcPublisher = result.AllPublishers.First();
+        Assert.Equal("DC Comics", dcPublisher.Name);
+        Assert.Equal(2, dcPublisher.IssueCount); // 1 from library + 1 from ComicVine
+        Assert.True(dcPublisher.HasLibrarySeries);
+    }
+
+    [Fact]
+    public async Task GetDiscoveryPublishersAsync_SortsPublishersAlphabetically()
+    {
+        // Arrange
+        var weekOf = new DateTime(2026, 2, 4);
+        
+        var marvelSeries = new Series 
+        { 
+            Title = "X-Men", 
+            Publisher = "Marvel", 
+            ComicVineId = 1001, 
+            Monitored = true 
+        };
+        var dcSeries = new Series 
+        { 
+            Title = "Batman", 
+            Publisher = "DC Comics", 
+            ComicVineId = 1002, 
+            Monitored = true 
+        };
+        var imageSeries = new Series 
+        { 
+            Title = "Spawn", 
+            Publisher = "Image", 
+            ComicVineId = 1003, 
+            Monitored = true 
+        };
+        _dbContext.Series.AddRange(marvelSeries, dcSeries, imageSeries);
+        await _dbContext.SaveChangesAsync();
+        
+        var mockResult = new ComicVineSearchResult<ComicVineIssue>
+        {
+            Success = true,
+            Results = new List<ComicVineIssue>
+            {
+                new ComicVineIssue
+                {
+                    Id = 2001, IssueNumber = "1", StoreDate = new DateTime(2026, 2, 4),
+                    Volume = new ComicVineVolumeRef { Id = 1001, Name = "X-Men" }
+                },
+                new ComicVineIssue
+                {
+                    Id = 2002, IssueNumber = "1", StoreDate = new DateTime(2026, 2, 4),
+                    Volume = new ComicVineVolumeRef { Id = 1002, Name = "Batman" }
+                },
+                new ComicVineIssue
+                {
+                    Id = 2003, IssueNumber = "1", StoreDate = new DateTime(2026, 2, 4),
+                    Volume = new ComicVineVolumeRef { Id = 1003, Name = "Spawn" }
+                }
+            },
+            TotalResults = 3
+        };
+        
+        _mockComicVineClient
+            .Setup(c => c.GetIssuesByStoreDateAsync(
+                It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(mockResult);
+
+        // Act
+        var result = await _service.GetDiscoveryPublishersAsync(weekOf);
+
+        // Assert - should be sorted alphabetically
+        Assert.Equal(3, result.AllPublishers.Count);
+        Assert.Equal("DC Comics", result.AllPublishers[0].Name);
+        Assert.Equal("Image", result.AllPublishers[1].Name);
+        Assert.Equal("Marvel", result.AllPublishers[2].Name);
+    }
+
+    [Fact]
+    public async Task GetDiscoveryPublishersAsync_ReturnsEmptyForNoReleases()
+    {
+        // Arrange
+        var weekOf = new DateTime(2026, 2, 4);
+        
+        _mockComicVineClient
+            .Setup(c => c.GetIssuesByStoreDateAsync(
+                It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ComicVineSearchResult<ComicVineIssue>
+            {
+                Success = true,
+                Results = new List<ComicVineIssue>(),
+                TotalResults = 0
+            });
+
+        // Act
+        var result = await _service.GetDiscoveryPublishersAsync(weekOf);
+
+        // Assert
+        Assert.Empty(result.LibraryPublishers);
+        Assert.Empty(result.ComicVinePublishers);
+        Assert.Empty(result.AllPublishers);
+        Assert.Equal(0, result.TotalIssueCount);
+    }
+
+    [Fact]
+    public async Task GetDiscoveryPublishersAsync_UsesCorrectWeekBoundaries()
+    {
+        // Arrange
+        var weekOf = new DateTime(2026, 2, 4); // A Wednesday
+        
+        _mockComicVineClient
+            .Setup(c => c.GetIssuesByStoreDateAsync(
+                It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ComicVineSearchResult<ComicVineIssue>
+            {
+                Success = true,
+                Results = new List<ComicVineIssue>(),
+                TotalResults = 0
+            });
+
+        // Act
+        var result = await _service.GetDiscoveryPublishersAsync(weekOf);
+
+        // Assert - WeekOf should be set to week start (Sunday)
+        Assert.Equal(DayOfWeek.Sunday, result.WeekOf.DayOfWeek);
+    }
+
+    #endregion
 }
