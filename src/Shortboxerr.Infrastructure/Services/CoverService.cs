@@ -50,6 +50,8 @@ public class CoverService : ICoverService
         var cachedPath = GetCachePath(settings.CacheDirectory, CoverType.Series, seriesId, size);
         if (File.Exists(cachedPath))
         {
+            // Update last access time for LRU tracking
+            TouchFile(cachedPath);
             return CreateCoverResult(cachedPath, CoverType.Series, seriesId, size, series.CoverImageUrl);
         }
 
@@ -83,6 +85,8 @@ public class CoverService : ICoverService
         var cachedPath = GetCachePath(settings.CacheDirectory, CoverType.Issue, issueId, size);
         if (File.Exists(cachedPath))
         {
+            // Update last access time for LRU tracking
+            TouchFile(cachedPath);
             return CreateCoverResult(cachedPath, CoverType.Issue, issueId, size, issue.CoverImageUrl);
         }
 
@@ -107,6 +111,8 @@ public class CoverService : ICoverService
             // Check if series cover is cached
             if (File.Exists(seriesCoverPath))
             {
+                // Update last access time for LRU tracking
+                TouchFile(seriesCoverPath);
                 var fallbackResult = CreateCoverResult(seriesCoverPath, CoverType.Issue, issueId, size, issue.Series.CoverImageUrl);
                 fallbackResult.IsFallback = true;
                 return fallbackResult;
@@ -180,6 +186,22 @@ public class CoverService : ICoverService
 
             _logger.LogInformation("Downloaded cover for {Type} {Id} ({Size}): {Path}", 
                 type, entityId, size, cachePath);
+
+            // Trigger auto-cleanup if enabled and might be over limit
+            if (settings.AutoCleanupEnabled && settings.MaxCacheSizeBytes > 0)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await EnforceCacheLimitAsync(CancellationToken.None);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Background cache limit enforcement failed");
+                    }
+                });
+            }
 
             return CreateCoverResult(cachePath, type, entityId, size, url);
         }
@@ -283,6 +305,267 @@ public class CoverService : ICoverService
         }
     }
 
+    public async Task<DetailedCoverCacheStats> GetDetailedCacheStatsAsync(CancellationToken cancellationToken = default)
+    {
+        var settings = await GetSettingsAsync(cancellationToken);
+        var stats = new DetailedCoverCacheStats
+        {
+            MaxCacheSizeBytes = settings.MaxCacheSizeBytes
+        };
+
+        if (!Directory.Exists(settings.CacheDirectory))
+        {
+            return stats;
+        }
+
+        var files = Directory.GetFiles(settings.CacheDirectory, "*.*", SearchOption.AllDirectories)
+            .Where(f => !f.EndsWith(PlaceholderFileName))
+            .Select(f => new FileInfo(f))
+            .ToList();
+
+        stats.TotalCovers = files.Count;
+        stats.TotalSizeBytes = files.Sum(f => f.Length);
+
+        // Count by type
+        var seriesDir = Path.Combine(settings.CacheDirectory, "series");
+        if (Directory.Exists(seriesDir))
+        {
+            stats.SeriesCovers = Directory.GetFiles(seriesDir, "*.*", SearchOption.AllDirectories).Length;
+        }
+
+        var issuesDir = Path.Combine(settings.CacheDirectory, "issues");
+        if (Directory.Exists(issuesDir))
+        {
+            stats.IssueCovers = Directory.GetFiles(issuesDir, "*.*", SearchOption.AllDirectories).Length;
+        }
+
+        var editionsDir = Path.Combine(settings.CacheDirectory, "editions");
+        if (Directory.Exists(editionsDir))
+        {
+            stats.EditionCovers = Directory.GetFiles(editionsDir, "*.*", SearchOption.AllDirectories).Length;
+        }
+
+        if (files.Count > 0)
+        {
+            stats.OldestCover = files.Min(f => f.CreationTimeUtc);
+            stats.NewestCover = files.Max(f => f.CreationTimeUtc);
+        }
+
+        // Breakdown by size
+        stats.BySize = new Dictionary<CoverSize, CoverSizeStats>
+        {
+            [CoverSize.Thumb] = GetSizeStats(files, "thumb"),
+            [CoverSize.Small] = GetSizeStats(files, "small"),
+            [CoverSize.Medium] = GetSizeStats(files, "medium"),
+            [CoverSize.Large] = GetSizeStats(files, "large")
+        };
+
+        // Calculate pending eviction count if over limit
+        if (stats.IsOverLimit)
+        {
+            var targetSize = (long)(settings.MaxCacheSizeBytes * settings.CleanupTargetPercent / 100.0);
+            var bytesToFree = stats.TotalSizeBytes - targetSize;
+            
+            var sortedByAccess = files.OrderBy(f => f.LastAccessTimeUtc).ToList();
+            long accumulated = 0;
+            int evictionCount = 0;
+            
+            foreach (var file in sortedByAccess)
+            {
+                accumulated += file.Length;
+                evictionCount++;
+                if (accumulated >= bytesToFree)
+                    break;
+            }
+            
+            stats.PendingEvictionCount = evictionCount;
+        }
+
+        // Get last cleanup info from settings
+        stats.LastCleanupAt = await _settingsService.GetAsync<DateTime?>("covers_last_cleanup", null, cancellationToken);
+        stats.LastCleanupEvictedCount = await _settingsService.GetAsync<int>("covers_last_cleanup_count", 0, cancellationToken);
+
+        return stats;
+    }
+
+    private static CoverSizeStats GetSizeStats(List<FileInfo> files, string sizeDirName)
+    {
+        var sizeFiles = files.Where(f => f.DirectoryName?.Contains(Path.DirectorySeparatorChar + sizeDirName + Path.DirectorySeparatorChar) == true 
+                                        || f.Name.StartsWith(sizeDirName + ".", StringComparison.OrdinalIgnoreCase)).ToList();
+        
+        return new CoverSizeStats
+        {
+            Size = sizeDirName switch
+            {
+                "thumb" => CoverSize.Thumb,
+                "small" => CoverSize.Small,
+                "medium" => CoverSize.Medium,
+                "large" => CoverSize.Large,
+                _ => CoverSize.Medium
+            },
+            Count = sizeFiles.Count,
+            TotalBytes = sizeFiles.Sum(f => f.Length)
+        };
+    }
+
+    public async Task<CoverCleanupResult> CleanupCacheAsync(CancellationToken cancellationToken = default)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = new CoverCleanupResult { Success = true };
+        
+        try
+        {
+            var settings = await GetSettingsAsync(cancellationToken);
+            
+            if (!Directory.Exists(settings.CacheDirectory))
+            {
+                return result;
+            }
+
+            var files = Directory.GetFiles(settings.CacheDirectory, "*.*", SearchOption.AllDirectories)
+                .Where(f => !f.EndsWith(PlaceholderFileName))
+                .Select(f => new FileInfo(f))
+                .ToList();
+
+            result.SizeBefore = files.Sum(f => f.Length);
+
+            // Step 1: Remove expired covers (retention policy)
+            if (settings.RetentionDays > 0)
+            {
+                var expirationDate = DateTime.UtcNow.AddDays(-settings.RetentionDays);
+                var expiredFiles = files.Where(f => f.CreationTimeUtc < expirationDate).ToList();
+                
+                foreach (var file in expiredFiles)
+                {
+                    try
+                    {
+                        file.Delete();
+                        result.EvictedByRetention++;
+                        result.BytesFreed += file.Length;
+                        _logger.LogDebug("Evicted expired cover: {Path}", file.FullName);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to delete expired cover: {Path}", file.FullName);
+                    }
+                }
+
+                // Update file list after retention cleanup
+                files = files.Where(f => f.Exists).ToList();
+            }
+
+            // Step 2: Enforce size limit via LRU eviction
+            var lruResult = await EnforceCacheLimitInternalAsync(settings, files, cancellationToken);
+            result.EvictedByLru = lruResult.EvictedByLru;
+            result.BytesFreed += lruResult.BytesFreed;
+
+            result.SizeAfter = result.SizeBefore - result.BytesFreed;
+            stopwatch.Stop();
+            result.Duration = stopwatch.Elapsed;
+
+            // Store cleanup info
+            await _settingsService.SetAsync("covers_last_cleanup", DateTime.UtcNow, cancellationToken);
+            await _settingsService.SetAsync("covers_last_cleanup_count", result.TotalEvicted, cancellationToken);
+
+            _logger.LogInformation(
+                "Cover cache cleanup completed: evicted {Total} covers ({ByRetention} expired, {ByLru} LRU), freed {Bytes} bytes in {Duration}ms",
+                result.TotalEvicted, result.EvictedByRetention, result.EvictedByLru, 
+                result.BytesFreed, result.Duration.TotalMilliseconds);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Cover cache cleanup failed");
+            stopwatch.Stop();
+            result.Success = false;
+            result.Error = ex.Message;
+            result.Duration = stopwatch.Elapsed;
+            return result;
+        }
+    }
+
+    public async Task<CoverCleanupResult> EnforceCacheLimitAsync(CancellationToken cancellationToken = default)
+    {
+        var settings = await GetSettingsAsync(cancellationToken);
+        
+        if (!Directory.Exists(settings.CacheDirectory))
+        {
+            return new CoverCleanupResult { Success = true };
+        }
+
+        var files = Directory.GetFiles(settings.CacheDirectory, "*.*", SearchOption.AllDirectories)
+            .Where(f => !f.EndsWith(PlaceholderFileName))
+            .Select(f => new FileInfo(f))
+            .ToList();
+
+        return await EnforceCacheLimitInternalAsync(settings, files, cancellationToken);
+    }
+
+    private async Task<CoverCleanupResult> EnforceCacheLimitInternalAsync(
+        CoverSettings settings, 
+        List<FileInfo> files, 
+        CancellationToken cancellationToken)
+    {
+        var result = new CoverCleanupResult { Success = true };
+
+        if (settings.MaxCacheSizeBytes <= 0)
+        {
+            return result; // No limit configured
+        }
+
+        var currentSize = files.Sum(f => f.Length);
+        result.SizeBefore = currentSize;
+
+        if (currentSize <= settings.MaxCacheSizeBytes)
+        {
+            result.SizeAfter = currentSize;
+            return result; // Under limit
+        }
+
+        // Calculate target size (cleanup to target percent of max)
+        var targetSize = (long)(settings.MaxCacheSizeBytes * settings.CleanupTargetPercent / 100.0);
+        var bytesToFree = currentSize - targetSize;
+
+        _logger.LogInformation(
+            "Cache over limit: {Current} bytes > {Max} bytes. Evicting to reach {Target} bytes",
+            currentSize, settings.MaxCacheSizeBytes, targetSize);
+
+        // Sort by last access time (LRU - least recently used first)
+        var sortedByAccess = files.OrderBy(f => f.LastAccessTimeUtc).ToList();
+
+        long freedBytes = 0;
+        foreach (var file in sortedByAccess)
+        {
+            if (freedBytes >= bytesToFree)
+                break;
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
+            {
+                var fileSize = file.Length;
+                file.Delete();
+                freedBytes += fileSize;
+                result.EvictedByLru++;
+                _logger.LogDebug("LRU evicted: {Path} (last access: {LastAccess})", 
+                    file.FullName, file.LastAccessTimeUtc);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete cover during LRU eviction: {Path}", file.FullName);
+            }
+        }
+
+        result.BytesFreed = freedBytes;
+        result.SizeAfter = currentSize - freedBytes;
+
+        _logger.LogInformation("LRU eviction completed: evicted {Count} covers, freed {Bytes} bytes", 
+            result.EvictedByLru, freedBytes);
+
+        return result;
+    }
+
     public string GetPlaceholderPath()
     {
         // Return a path in the cache directory, will be created on first access
@@ -290,6 +573,18 @@ public class CoverService : ICoverService
     }
 
     #region Private Methods
+
+    private static void TouchFile(string path)
+    {
+        try
+        {
+            File.SetLastAccessTimeUtc(path, DateTime.UtcNow);
+        }
+        catch
+        {
+            // Ignore errors updating access time - not critical
+        }
+    }
 
     private async Task<CoverSettings> GetSettingsAsync(CancellationToken cancellationToken)
     {

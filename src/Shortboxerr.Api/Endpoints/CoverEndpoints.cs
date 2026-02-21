@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Shortboxerr.Api.Caching;
 using Shortboxerr.Core.Services;
+using Shortboxerr.Infrastructure.BackgroundServices;
 
 namespace Shortboxerr.Api.Endpoints;
 
@@ -47,6 +48,20 @@ public static class CoverEndpoints
             .WithName("GetCoverCacheStats")
             .WithOpenApi()
             .Produces<CoverCacheStats>(200);
+
+        // Get detailed cache statistics with size breakdown
+        group.MapGet("/cache/stats/detailed", GetDetailedCacheStats)
+            .WithName("GetDetailedCoverCacheStats")
+            .WithDescription("Gets detailed cache statistics including breakdown by size and limit info.")
+            .WithOpenApi()
+            .Produces<DetailedCoverCacheStats>(200);
+
+        // Trigger cache cleanup (LRU eviction + retention policy)
+        group.MapPost("/cleanup", TriggerCleanup)
+            .WithName("TriggerCoverCacheCleanup")
+            .WithDescription("Triggers cache cleanup: removes expired covers and enforces size limit via LRU eviction.")
+            .WithOpenApi()
+            .Produces<CoverCleanupResult>(200);
 
         // Clear all cache
         group.MapDelete("/cache", ClearAllCache)
@@ -170,6 +185,22 @@ public static class CoverEndpoints
     {
         var stats = await coverService.GetCacheStatsAsync(cancellationToken);
         return Results.Ok(stats);
+    }
+
+    private static async Task<IResult> GetDetailedCacheStats(
+        ICoverService coverService,
+        CancellationToken cancellationToken)
+    {
+        var stats = await coverService.GetDetailedCacheStatsAsync(cancellationToken);
+        return Results.Ok(stats);
+    }
+
+    private static async Task<IResult> TriggerCleanup(
+        ICoverService coverService,
+        CancellationToken cancellationToken)
+    {
+        var result = await coverService.CleanupCacheAsync(cancellationToken);
+        return Results.Ok(result);
     }
 
     private static async Task<IResult> ClearAllCache(

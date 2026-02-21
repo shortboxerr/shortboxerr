@@ -155,6 +155,11 @@ public static class DependencyInjection
         services.AddHostedService(provider => 
             provider.GetRequiredService<BackgroundServices.AutoSearchBackgroundService>());
 
+        // Cover cache cleanup background service
+        services.AddSingleton<BackgroundServices.CoverCacheCleanupBackgroundService>();
+        services.AddHostedService(provider =>
+            provider.GetRequiredService<BackgroundServices.CoverCacheCleanupBackgroundService>());
+
         // Notification services
         services.AddScoped<INotificationService, NotificationService>();
         services.AddHttpClient<INotificationProvider, WebhookNotificationProvider>();

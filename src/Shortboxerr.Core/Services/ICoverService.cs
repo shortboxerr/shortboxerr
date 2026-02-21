@@ -37,9 +37,24 @@ public interface ICoverService
     Task<CoverCacheStats> GetCacheStatsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets detailed cache statistics including breakdown by size.
+    /// </summary>
+    Task<DetailedCoverCacheStats> GetDetailedCacheStatsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Clears all cached covers.
     /// </summary>
     Task ClearAllCacheAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Performs cache cleanup: removes expired covers and enforces size limit via LRU eviction.
+    /// </summary>
+    Task<CoverCleanupResult> CleanupCacheAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Enforces cache size limit using LRU eviction.
+    /// </summary>
+    Task<CoverCleanupResult> EnforceCacheLimitAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the path to the placeholder image.
@@ -171,6 +186,114 @@ public class CoverCacheStats
 }
 
 /// <summary>
+/// Detailed cover cache statistics with breakdown by size.
+/// </summary>
+public class DetailedCoverCacheStats : CoverCacheStats
+{
+    /// <summary>
+    /// Breakdown by cover size.
+    /// </summary>
+    public Dictionary<CoverSize, CoverSizeStats> BySize { get; set; } = new();
+
+    /// <summary>
+    /// Maximum configured cache size in bytes.
+    /// </summary>
+    public long MaxCacheSizeBytes { get; set; }
+
+    /// <summary>
+    /// Cache usage percentage (0-100).
+    /// </summary>
+    public double UsagePercent => MaxCacheSizeBytes > 0 
+        ? Math.Round((double)TotalSizeBytes / MaxCacheSizeBytes * 100, 2) 
+        : 0;
+
+    /// <summary>
+    /// Whether cache is over the configured limit.
+    /// </summary>
+    public bool IsOverLimit => MaxCacheSizeBytes > 0 && TotalSizeBytes > MaxCacheSizeBytes;
+
+    /// <summary>
+    /// Bytes over the limit (0 if under limit).
+    /// </summary>
+    public long BytesOverLimit => IsOverLimit ? TotalSizeBytes - MaxCacheSizeBytes : 0;
+
+    /// <summary>
+    /// Number of covers that would be evicted if cleanup runs now.
+    /// </summary>
+    public int PendingEvictionCount { get; set; }
+
+    /// <summary>
+    /// Timestamp of the last cleanup run.
+    /// </summary>
+    public DateTime? LastCleanupAt { get; set; }
+
+    /// <summary>
+    /// Number of covers evicted in the last cleanup.
+    /// </summary>
+    public int LastCleanupEvictedCount { get; set; }
+}
+
+/// <summary>
+/// Statistics for a specific cover size.
+/// </summary>
+public class CoverSizeStats
+{
+    public CoverSize Size { get; set; }
+    public int Count { get; set; }
+    public long TotalBytes { get; set; }
+    public long AverageBytes => Count > 0 ? TotalBytes / Count : 0;
+}
+
+/// <summary>
+/// Result of a cache cleanup operation.
+/// </summary>
+public class CoverCleanupResult
+{
+    public bool Success { get; set; }
+    public string? Error { get; set; }
+
+    /// <summary>
+    /// Number of covers evicted due to LRU policy.
+    /// </summary>
+    public int EvictedByLru { get; set; }
+
+    /// <summary>
+    /// Number of covers evicted due to retention policy.
+    /// </summary>
+    public int EvictedByRetention { get; set; }
+
+    /// <summary>
+    /// Total number of covers evicted.
+    /// </summary>
+    public int TotalEvicted => EvictedByLru + EvictedByRetention;
+
+    /// <summary>
+    /// Bytes freed by cleanup.
+    /// </summary>
+    public long BytesFreed { get; set; }
+
+    /// <summary>
+    /// Cache size before cleanup.
+    /// </summary>
+    public long SizeBefore { get; set; }
+
+    /// <summary>
+    /// Cache size after cleanup.
+    /// </summary>
+    public long SizeAfter { get; set; }
+
+    /// <summary>
+    /// Duration of cleanup operation.
+    /// </summary>
+    public TimeSpan Duration { get; set; }
+
+    /// <summary>
+    /// Timestamp of cleanup.
+    /// </summary>
+    public DateTime CleanedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
 /// Settings for cover caching.
 /// </summary>
 public class CoverSettings
@@ -204,5 +327,29 @@ public class CoverSettings
     /// Timeout for cover downloads in seconds.
     /// </summary>
     public int DownloadTimeoutSeconds { get; set; } = 30;
+
+    /// <summary>
+    /// Maximum cache size in bytes (0 = unlimited).
+    /// Default: 500MB (524,288,000 bytes).
+    /// </summary>
+    public long MaxCacheSizeBytes { get; set; } = 500 * 1024 * 1024; // 500MB
+
+    /// <summary>
+    /// Target cache size after cleanup as percentage of MaxCacheSizeBytes.
+    /// When cleanup triggers, evict until reaching this percentage.
+    /// Default: 80% (evict 20% of max when over limit).
+    /// </summary>
+    public int CleanupTargetPercent { get; set; } = 80;
+
+    /// <summary>
+    /// Interval in hours for background cache cleanup (0 = disabled).
+    /// Default: 24 hours.
+    /// </summary>
+    public int CleanupIntervalHours { get; set; } = 24;
+
+    /// <summary>
+    /// Whether to enable automatic cleanup when cache exceeds limit.
+    /// </summary>
+    public bool AutoCleanupEnabled { get; set; } = true;
 }
 
