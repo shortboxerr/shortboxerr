@@ -1,6 +1,6 @@
-# Self Check - Iteration 104
+# Self Check - Iteration 105
 
-## EPIC 11: Publisher Filter Dropdown for Discovery
+## EPIC 9: Cover Cache Size Limits & LRU Eviction
 
 ### Checklist
 
@@ -8,60 +8,55 @@
 |------|--------|-------|
 | Frontend compiles | ✅ | No frontend changes |
 | Backend compiles | ✅ | `dotnet build` |
-| Tests pass | ✅ | All tests pass (7 new tests) |
+| Tests pass | ✅ | All tests pass (21 new tests) |
 | Git commits | ✅ | 1 commit |
 
 ### Acceptance Criteria Status
 
 | AC | Status |
 |----|--------|
-| Endpoint to get publishers for filter dropdown | ✅ |
-| Return publishers from library series | ✅ |
-| Optional ComicVine lookup for unmatched volumes | ✅ |
-| Publisher counts (issues, series) | ✅ |
-| Alphabetical sorting | ✅ |
-| API documentation | ✅ |
+| Configurable maximum cache size (default: 500MB) | ✅ |
+| LRU eviction when limit exceeded | ✅ |
+| Enforce RetentionDays via background cleanup | ✅ |
+| Background service for periodic cleanup | ✅ |
+| API endpoint for manual cleanup | ✅ |
+| Breakdown by size in stats | ✅ |
+| Settings UI for configuration | Deferred (frontend) |
 
-### API Endpoint (1)
+### New CoverSettings Properties
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| MaxCacheSizeBytes | 500MB | Maximum cache size (0 = unlimited) |
+| CleanupTargetPercent | 80 | Target size after cleanup |
+| CleanupIntervalHours | 24 | Background cleanup interval |
+| AutoCleanupEnabled | true | Auto-cleanup after downloads |
+
+### API Endpoints (2 new)
 
 | Endpoint | Status |
 |----------|--------|
-| GET /api/v1/pulllist/discover/publishers | ✅ |
+| GET /api/v1/covers/cache/stats/detailed | ✅ |
+| POST /api/v1/covers/cleanup | ✅ |
 
-### Response Model
+### Unit Tests (21 tests)
 
-```json
-{
-  "libraryPublishers": [
-    { "name": "DC Comics", "issueCount": 5, "seriesCount": 2, "hasLibrarySeries": true }
-  ],
-  "comicVinePublishers": [
-    { "name": "Marvel", "issueCount": 3, "seriesCount": 1, "hasLibrarySeries": false }
-  ],
-  "allPublishers": [...],
-  "weekOf": "2026-02-16T00:00:00",
-  "totalIssueCount": 50,
-  "includedComicVineLookup": true
-}
-```
-
-### Unit Tests (7 tests)
-
-| Test Name | Status |
-|-----------|--------|
-| GetDiscoveryPublishersAsync_ReturnsLibraryPublishers | ✅ |
-| GetDiscoveryPublishersAsync_WithoutComicVineLookup_ReturnsOnlyLibraryPublishers | ✅ |
-| GetDiscoveryPublishersAsync_WithComicVineLookup_FetchesUnmatchedPublishers | ✅ |
-| GetDiscoveryPublishersAsync_MergesPublishersCorrectly | ✅ |
-| GetDiscoveryPublishersAsync_SortsPublishersAlphabetically | ✅ |
-| GetDiscoveryPublishersAsync_ReturnsEmptyForNoReleases | ✅ |
-| GetDiscoveryPublishersAsync_UsesCorrectWeekBoundaries | ✅ |
+| Test Category | Count | Status |
+|---------------|-------|--------|
+| Settings Tests | 4 | ✅ |
+| Detailed Stats Tests | 4 | ✅ |
+| LRU Eviction Tests | 3 | ✅ |
+| Retention Policy Tests | 2 | ✅ |
+| Combined Cleanup Tests | 4 | ✅ |
+| CleanupResult Tests | 4 | ✅ |
 
 ### Files Changed
 
 | File | Type |
 |------|------|
-| src/Shortboxerr.Core/PullList/IPullListService.cs | Modified |
-| src/Shortboxerr.Infrastructure/PullList/PullListService.cs | Modified |
-| src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs | Modified |
-| tests/Shortboxerr.Tests/PullListServiceTests.cs | Modified |
+| src/Shortboxerr.Core/Services/ICoverService.cs | Modified |
+| src/Shortboxerr.Infrastructure/Services/CoverService.cs | Modified |
+| src/Shortboxerr.Infrastructure/BackgroundServices/CoverCacheCleanupBackgroundService.cs | New |
+| src/Shortboxerr.Infrastructure/DependencyInjection.cs | Modified |
+| src/Shortboxerr.Api/Endpoints/CoverEndpoints.cs | Modified |
+| tests/Shortboxerr.Tests/CoverCacheCleanupTests.cs | New |

@@ -1,5 +1,73 @@
 # Worklog
 
+## Iteration 105 (2026-02-17)
+**EPIC 9: Cover Cache Size Limits & LRU Eviction**
+
+### Summary
+Implemented cover cache management with configurable size limits and automatic cleanup. Prevents unbounded disk usage while maintaining frequently accessed covers.
+
+### Commits
+1. `feat(covers): add cache size limits and LRU eviction`
+
+### Deliverables
+
+#### CoverSettings Extensions
+- `MaxCacheSizeBytes` - Maximum cache size (default: 500MB)
+- `CleanupTargetPercent` - Target size after cleanup (default: 80%)
+- `CleanupIntervalHours` - Background cleanup interval (default: 24h)
+- `AutoCleanupEnabled` - Auto-cleanup after downloads (default: true)
+
+#### ICoverService Extensions
+- `GetDetailedCacheStatsAsync()` - Detailed stats with size breakdown
+- `CleanupCacheAsync()` - Combined retention + LRU cleanup
+- `EnforceCacheLimitAsync()` - LRU eviction only
+
+#### DetailedCoverCacheStats Model
+- Inherits from `CoverCacheStats`
+- `BySize` - Breakdown by cover size (thumb/small/medium/large)
+- `MaxCacheSizeBytes`, `UsagePercent`, `IsOverLimit`, `BytesOverLimit`
+- `PendingEvictionCount` - Covers to be evicted if cleanup runs
+- `LastCleanupAt`, `LastCleanupEvictedCount`
+
+#### CoverCleanupResult Model
+- `EvictedByLru`, `EvictedByRetention`, `TotalEvicted`
+- `BytesFreed`, `SizeBefore`, `SizeAfter`
+- `Duration`, `CleanedAt`
+
+#### LRU Eviction Implementation
+- Track last access time via `File.SetLastAccessTimeUtc()`
+- Touch files on cache hits
+- Evict least recently used when over limit
+- Evict until reaching target percentage
+
+#### Background Service
+- `CoverCacheCleanupBackgroundService`
+- Runs every hour, checks if cleanup interval elapsed
+- Combines retention policy + LRU eviction
+- Configurable via `CleanupIntervalHours`
+
+#### API Endpoints (2 new)
+- `GET /api/v1/covers/cache/stats/detailed` - Detailed cache stats
+- `POST /api/v1/covers/cleanup` - Trigger manual cleanup
+
+#### Unit Tests (21 tests)
+- Settings defaults tests
+- Detailed stats calculation tests
+- LRU eviction tests
+- Retention policy tests
+- Combined cleanup tests
+- Result model tests
+
+### Files Changed
+- `src/Shortboxerr.Core/Services/ICoverService.cs` (interface + models)
+- `src/Shortboxerr.Infrastructure/Services/CoverService.cs` (implementation)
+- `src/Shortboxerr.Infrastructure/BackgroundServices/CoverCacheCleanupBackgroundService.cs` (new)
+- `src/Shortboxerr.Infrastructure/DependencyInjection.cs` (registration)
+- `src/Shortboxerr.Api/Endpoints/CoverEndpoints.cs` (endpoints)
+- `tests/Shortboxerr.Tests/CoverCacheCleanupTests.cs` (21 tests)
+
+---
+
 ## Iteration 104 (2026-02-17)
 **EPIC 11: Publisher Filter Dropdown for Discovery**
 
