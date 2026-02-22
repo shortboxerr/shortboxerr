@@ -1,145 +1,155 @@
-# Self-Check: Iteration 108
+# Self-Check: Iteration 109
 
 ## Checklist
 
 - [x] Read ITERATION_PROTOCOL.md
-- [x] Pulled next READY item from BACKLOG.md (Item 16: Deluge integration)
+- [x] Pulled next READY item from BACKLOG.md (Item 20: Torrent → Import handoff)
 - [x] Implemented vertical slice with code + tests
-- [x] All tests pass (29 new tests)
+- [x] All tests pass (39 new tests)
 - [x] Build succeeds with no new errors
 - [x] Updated WORKLOG.md
-- [x] Updated BACKLOG.md (marked Item 16 complete)
+- [x] Updated BACKLOG.md (marked Item 20 complete)
 - [x] Committed after logical breakpoint
 
 ## Item Completed
 
-**Item 16: Deluge integration** (EPIC 14.3)
+**Item 20: Torrent → Import handoff** (EPIC 14.3)
 - Priority: P4 (Lower Priority / Complex)
-- Blocker: Transmission first ✅ (completed in Iteration 107)
+- Blocker: Torrent clients ✅ (all three completed in Iterations 97, 107, 108)
 
 ## Acceptance Criteria Status
 
 | AC | Status | Notes |
 |----|--------|-------|
-| Implement Deluge JSON-RPC client | ✅ | `DelugeClient.cs` |
-| Authentication: password-based | ✅ | `auth.login` method |
-| Add torrent with label support | ✅ | Label plugin integration |
-| Monitor progress and completion | ✅ | `GetStatusAsync`, `GetAllTorrentsAsync` |
+| Detect completed torrents | ✅ | `ProcessCompletedTorrentsAsync`, `TorrentStatus.IsCompleted` |
+| Handle hardlinks vs copy | ✅ | `FileTransferMode` enum, auto-fallback |
+| Respect seeding requirements | ✅ | `MinimumSeedRatio`, `MinimumSeedTimeMinutes`, OR/AND modes |
+| Support "move completed" | ✅ | `MoveCompleted`, `MoveCompletedPath` settings |
 
 ## Implementation Details
 
 ### Interface Design
-- `IDelugeClient` extends `ITorrentClient`
-- Follows exact same pattern as `IQBittorrentClient` and `ITransmissionClient`
-- Adds Deluge-specific methods for labels, session status, config
-
-### Settings Pattern
 ```csharp
-public class DelugeSettings
+public interface ITorrentImportService
 {
-    public required string Host { get; set; }
-    public int? Port { get; set; }  // Default: 8112
-    public string Password { get; set; } = "deluge";
-    public string? Label { get; set; }
-    public string? DownloadPath { get; set; }
-    public bool UseSsl { get; set; } = false;
-    public int TimeoutSeconds { get; set; } = 30;
-    public bool AddPaused { get; set; } = false;
-    public bool MoveCompleted { get; set; } = false;
-    public string? MoveCompletedPath { get; set; }
+    Task<IReadOnlyList<TorrentImportResult>> ProcessCompletedTorrentsAsync(...);
+    Task<TorrentImportResult> ProcessTorrentAsync(string hash, TorrentClientType clientType, ...);
+    Task<TorrentReadyResult> CheckTorrentReadyAsync(TorrentStatus status, TorrentImportSettings settings, ...);
+    Task<TorrentFileImportResult> ImportFilesAsync(TorrentStatus status, TorrentImportSettings settings, ...);
+    Task<bool> CleanupTorrentAsync(string hash, TorrentClientType clientType, TorrentImportSettings settings, ...);
+    Task<TorrentImportSettings> GetSettingsAsync(...);
+    Task SaveSettingsAsync(TorrentImportSettings settings, ...);
 }
 ```
 
-### JSON-RPC API Implementation
-- JSON-RPC 2.0 over HTTP POST to `/json`
-- Authentication via `auth.login(password)` - returns boolean
-- Request ID tracking with incrementing counter
-- Methods: daemon.info, core.add_torrent_*, core.get_torrents_status, core.pause_torrent, core.resume_torrent, core.remove_torrent, core.force_recheck, label.get_labels, label.set_torrent, etc.
+### Settings
+```csharp
+public class TorrentImportSettings
+{
+    public bool AutoImportEnabled { get; set; } = true;
+    public FileTransferMode TransferMode { get; set; } = FileTransferMode.HardLink;
+    public bool RemoveAfterImport { get; set; } = false;
+    public bool DeleteFilesOnRemove { get; set; } = false;
+    public double MinimumSeedRatio { get; set; } = 1.0;
+    public int MinimumSeedTimeMinutes { get; set; } = 0;
+    public bool SeedRequirementsOrMode { get; set; } = true;
+    public string? Category { get; set; }
+    public string? DestinationPath { get; set; }
+    public int ScanIntervalMinutes { get; set; } = 5;
+    public List<string> FileExtensions { get; set; } = new() { ".cbz", ".cbr", ".cb7", ".pdf" };
+    public bool ExtractArchives { get; set; } = false;
+    public bool PreserveFolderStructure { get; set; } = false;
+}
+```
 
-### State Mapping
-| Deluge State | TorrentState |
-|--------------|--------------|
-| downloading | Downloading |
-| seeding | Seeding |
-| paused | Paused |
-| checking | Checking |
-| queued | Queued |
-| error | Error |
-| moving | Moving |
-| allocating | Queued |
+### Seeding Requirements Logic
+- **OR mode** (default): Torrent is ready if EITHER ratio OR time requirement is met
+- **AND mode**: Torrent is ready only if BOTH ratio AND time requirements are met
+- Set `MinimumSeedRatio = 0` to ignore ratio requirement
+- Set `MinimumSeedTimeMinutes = 0` to ignore time requirement
 
-### Label Plugin Integration
-- Categories in Deluge are handled via the Label plugin
-- `GetLabelsAsync()` - calls `label.get_labels`
-- `SetLabelAsync(hash, label)` - calls `label.set_torrent`
-- `AddLabelAsync(label)` - calls `label.add`
-- Automatic label creation if not exists when adding torrent
+### File Transfer
+1. Try HardLink (most efficient)
+2. Fall back to Copy if HardLink fails (cross-filesystem)
+3. Move option available but incompatible with seeding
 
-## Unit Tests (29 total)
+## Unit Tests (39 total)
 
-### DelugeSettings Tests (10 tests)
-- DefaultPort_Is8112
-- CustomPort_IsUsed
-- BaseUrl_CorrectFormat
-- BaseUrl_WithSsl
-- JsonRpcUrl_CorrectFormat
-- DefaultPassword_IsDeluge
-- DefaultTimeout_Is30Seconds
-- DefaultAddPaused_IsFalse
-- DefaultMoveCompleted_IsFalse
-- DefaultUseSsl_IsFalse
+### Settings Tests (3 tests)
+- TorrentImportSettings_DefaultValues
+- TorrentImportSettings_DefaultFileExtensions
+- TorrentImportSettings_CanCustomize
 
-### Model Tests (4 tests)
-- DelugeSessionStatus_CanBeCreated
-- DelugeTorrentOptions_CanBeCreated
-- DelugeTorrentOptions_AllPropertiesNullable
-- DelugeConfig_CanBeCreated
+### FileTransferMode Tests (3 tests)
+- Copy_IsDefault (0)
+- HardLink_Value (1)
+- Move_Value (2)
 
-### Client Type Tests (1 test)
-- TorrentClientType_Deluge_HasCorrectValue
+### TorrentImportResult Tests (4 tests)
+- Imported_CreatesSuccessResult
+- Skipped_CreatesSkipResult
+- Failed_CreatesFailureResult
+- HasProcessedAt
 
-### Integration Pattern Tests (3 tests)
-- DelugeSettings_FollowsQBittorrentPattern
-- DelugeSettings_FollowsTransmissionPattern
-- DelugeSettings_HasLabel_ForCategorySupport
+### TorrentImportStatus Tests (1 test)
+- Values (0-7)
 
-### URL Construction Tests (4 tests - parameterized)
-- Various host/port/SSL combinations
+### TorrentReadyResult Tests (3 tests)
+- Ready_CreatesReadyResult
+- NotReady_WithRatioInfo
+- NotReady_WithTimeInfo
 
-### Default Values Tests (3 tests)
-- DelugeSettings_AllDefaults
-- DelugeSessionStatus_AllDefaults
-- DelugeConfig_AllDefaults
+### TorrentFileImportResult Tests (3 tests)
+- Succeeded_CreatesSuccessResult
+- NoFiles_CreatesEmptyResult
+- Error_CreatesErrorResult
 
-### Exception Tests (2 tests)
-- DelugeAuthenticationException_HasMessage
-- DelugeRpcException_HasCodeAndMessage
+### TorrentStatus IsCompleted Tests (4 tests)
+- IsCompleted_WhenStateIsCompleted
+- IsCompleted_WhenStateIsSeeding
+- IsCompleted_WhenProgressIs100
+- IsNotCompleted_WhenDownloading
 
-### Move Completed Tests (2 tests)
-- DelugeSettings_MoveCompleted_WithPath
-- DelugeTorrentOptions_MoveCompleted_Settings
+### Seeding Requirements Tests (3 tests)
+- OrMode_RatioMet
+- OrMode_TimeMet
+- AndMode_BothRequired
+
+### File Extension Filter Tests (3 tests + 7 theory)
+- DefaultFilter (parameterized)
+- EmptyListMatchesAll
+- CustomList
+
+### Category Filter Tests (3 tests)
+- NullMatchesAll
+- MatchesExact
+- CaseInsensitive
+
+### Ratio Calculation Tests (2 tests)
+- ZeroDownloaded_NoError
+- CorrectCalculation
 
 ## Files Changed
 
 | File | Action | Lines |
 |------|--------|-------|
-| `src/Shortboxerr.Core/Torrent/IDelugeClient.cs` | Added | 297 |
-| `src/Shortboxerr.Infrastructure/Torrent/DelugeClient.cs` | Added | 760 |
-| `tests/Shortboxerr.Tests/DelugeClientTests.cs` | Added | 300 |
+| `src/Shortboxerr.Core/Torrent/ITorrentImportService.cs` | Added | 320 |
+| `src/Shortboxerr.Infrastructure/Torrent/TorrentImportService.cs` | Added | 420 |
+| `tests/Shortboxerr.Tests/TorrentImportServiceTests.cs` | Added | 360 |
 | `docs/BACKLOG.md` | Updated | ~10 |
 | `docs/WORKLOG.md` | Updated | ~100 |
 
-## Torrent Client Summary
+## EPIC 14.3 Torrent Integration - Complete Summary
 
-All three major torrent clients now implemented:
+| Feature | Tests | Status |
+|---------|-------|--------|
+| ITorrentClient interface | - | ✅ Base |
+| qBittorrent client | 69 | ✅ |
+| Transmission client | 21 | ✅ |
+| Deluge client | 29 | ✅ |
+| Torrent import handoff | 39 | ✅ |
 
-| Client | Interface | Implementation | Tests | Port |
-|--------|-----------|----------------|-------|------|
-| qBittorrent | IQBittorrentClient | QBittorrentClient | 69 | 8080 |
-| Transmission | ITransmissionClient | TransmissionClient | 21 | 9091 |
-| Deluge | IDelugeClient | DelugeClient | 29 | 8112 |
-
-**Total torrent client tests: 119**
+**Total torrent-related tests: 158**
 
 ## Next Available Items
 
@@ -147,6 +157,5 @@ From BACKLOG.md Priority Table:
 1. **Item 6: Mylar3 NZB settings import** (P2, M effort, Blocker: Config parser)
 2. **Item 11: Host reliability tracking** (P3, M effort, Blocker: Statistics DB)
 3. **Item 17: Cloudflare challenge handling** (P4, L effort, Complex)
-4. **Item 20: Torrent → Import handoff** (P4, M effort, Blocker: Torrent clients ✅)
-
-**Recommendation**: Item 20 (Torrent → Import handoff) is now unblocked.
+4. **Item 18: Mega.nz resolver** (P4, L effort, Encryption)
+5. **Item 19: Rapidgator/Uploaded resolver** (P4, M effort, Premium accounts)

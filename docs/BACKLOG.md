@@ -1794,7 +1794,7 @@ Track and prioritize completion of deferred items across all EPICs.
 | 17 | Cloudflare challenge handling | 8 | L | M | Complex |
 | 18 | Mega.nz resolver | 8 | L | M | Encryption |
 | 19 | Rapidgator/Uploaded resolver | 8 | M | L | Premium accounts |
-| 20 | Torrent → Import handoff | 14 | M | M | Torrent clients |
+| ~~20~~ | ~~Torrent → Import handoff~~ | 14 | M | M | ✅ Completed |
 | ~~29~~ | ~~Cover cache size limits & eviction~~ | 9 | M | M | ✅ Completed |
 | **P5 - Low Priority / Deferred** |||||
 | 21 | Request batching (ComicVine) | 12 | M | L | Performance only |
@@ -1944,11 +1944,12 @@ Support for torrent-based downloading via popular clients.
   - AC: Monitor progress and completion ✅
   - Note: Full implementation in `DelugeClient.cs` with 29 unit tests
 
-- [ ] **Torrent → Import handoff** (deferred)
-  - AC: Detect completed torrents
-  - AC: Handle hardlinks vs copy based on configuration
-  - AC: Respect seeding requirements (don't remove until ratio met)
-  - AC: Support "move completed" scenarios
+- [x] **Torrent → Import handoff** ✅
+  - AC: Detect completed torrents ✅ (ProcessCompletedTorrentsAsync)
+  - AC: Handle hardlinks vs copy based on configuration ✅ (FileTransferMode)
+  - AC: Respect seeding requirements (don't remove until ratio met) ✅ (MinimumSeedRatio, MinimumSeedTimeMinutes)
+  - AC: Support "move completed" scenarios ✅ (MoveCompleted, MoveCompletedPath)
+  - Note: Full implementation in `TorrentImportService.cs` with 39 unit tests
 
 - [x] **Torrent UI** ✅ (qBittorrent only)
   - AC: Add qBittorrent to implementation dropdown ✅

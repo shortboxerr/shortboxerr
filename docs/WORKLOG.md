@@ -1,5 +1,98 @@
 # Worklog
 
+## Iteration 109 (2026-02-17)
+**EPIC 14.3: Torrent → Import Handoff**
+
+### Summary
+Added torrent import handoff service for post-download processing. Detects completed torrents, handles file transfer (hardlink/copy/move), respects seeding requirements, and optionally removes torrents after successful import.
+
+### Commits
+1. `feat(torrent): add torrent import handoff service`
+
+### Deliverables
+
+#### ITorrentImportService Interface
+- `ProcessCompletedTorrentsAsync` - Scan all clients for completed torrents
+- `ProcessTorrentAsync` - Process a specific torrent by hash
+- `CheckTorrentReadyAsync` - Check seeding requirements
+- `ImportFilesAsync` - Transfer files to library
+- `CleanupTorrentAsync` - Remove torrent after import
+- `GetSettingsAsync`/`SaveSettingsAsync` - Settings persistence
+
+#### TorrentImportSettings
+- `AutoImportEnabled` - Toggle automatic processing (default: true)
+- `TransferMode` - Copy, HardLink, or Move (default: HardLink)
+- `RemoveAfterImport` - Delete torrent after import (default: false)
+- `DeleteFilesOnRemove` - Also delete downloaded files (default: false)
+- `MinimumSeedRatio` - Required ratio before removal (default: 1.0)
+- `MinimumSeedTimeMinutes` - Required seeding time (default: 0)
+- `SeedRequirementsOrMode` - OR/AND mode for requirements (default: OR)
+- `Category` - Filter by category/label (default: null = all)
+- `DestinationPath` - Target library path
+- `ScanIntervalMinutes` - Polling interval (default: 5)
+- `FileExtensions` - Filter: .cbz, .cbr, .cb7, .pdf
+- `ExtractArchives` - Extract compressed files (default: false)
+- `PreserveFolderStructure` - Keep torrent folder layout (default: false)
+
+#### FileTransferMode Enum
+- `Copy` (0) - Safest, uses more disk space
+- `HardLink` (1) - Efficient, same filesystem only
+- `Move` (2) - Removes from download location
+
+#### TorrentImportResult
+- Factory methods: `Imported()`, `Skipped()`, `Failed()`
+- Tracks: Hash, Name, ClientType, Success, Status, FilesImported, BytesImported, TorrentRemoved
+
+#### TorrentImportStatus Enum
+- `Imported` - Successfully imported
+- `NotCompleted` - Still downloading
+- `SeedingRatioNotMet` - Below minimum ratio
+- `SeedingTimeNotMet` - Below minimum seed time
+- `WrongCategory` - Doesn't match category filter
+- `NoMatchingFiles` - No files match extension filter
+- `AlreadyImported` - Previously imported
+- `Failed` - Import error
+
+#### TorrentReadyResult
+- Factory methods: `Ready()`, `NotReady()`
+- Includes current/required ratio and time info
+
+#### TorrentFileImportResult
+- Factory methods: `Succeeded()`, `NoFiles()`, `Error()`
+- Tracks files imported, bytes transferred, hardlink usage
+
+#### TorrentImportService Implementation
+- Scans all configured torrent clients
+- Filters by category if specified
+- Checks completion status and seeding requirements
+- Supports OR mode (either ratio OR time) or AND mode (both required)
+- Transfers files with automatic hardlink-to-copy fallback
+- Creates destination directories as needed
+- Respects file extension filter
+- Optionally preserves folder structure
+- Removes torrent after successful import if configured
+
+#### Unit Tests (39 tests)
+- TorrentImportSettings tests (3 tests)
+- FileTransferMode tests (3 tests)
+- TorrentImportResult tests (4 tests)
+- TorrentImportStatus tests (1 test)
+- TorrentReadyResult tests (3 tests)
+- TorrentFileImportResult tests (3 tests)
+- TorrentStatus IsCompleted tests (4 tests)
+- Seeding requirements integration tests (3 tests)
+- File extension filter tests (3 tests)
+- Category filter tests (3 tests)
+- Ratio calculation tests (2 tests)
+- Theory tests for file extensions (7 parameterized)
+
+### Files Changed
+- `src/Shortboxerr.Core/Torrent/ITorrentImportService.cs` (new)
+- `src/Shortboxerr.Infrastructure/Torrent/TorrentImportService.cs` (new)
+- `tests/Shortboxerr.Tests/TorrentImportServiceTests.cs` (new)
+
+---
+
 ## Iteration 108 (2026-02-17)
 **EPIC 14.3: Deluge Integration**
 
