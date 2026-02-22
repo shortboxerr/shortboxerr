@@ -1,596 +1,742 @@
-using Microsoft.EntityFrameworkCore;
-using Moq;
-using Shortboxerr.Core.Ddl;
-using Shortboxerr.Core.Services;
-using Shortboxerr.Infrastructure.Ddl;
-using Shortboxerr.Infrastructure.Persistence;
+using Shortboxerr.Core.Import;
+using Shortboxerr.Infrastructure.Import;
+using Xunit;
 
 namespace Shortboxerr.Tests;
 
-public class Mylar3ConfigImporterTests : IDisposable
+public class Mylar3ConfigImporterTests
 {
-    private readonly ShortboxerrDbContext _context;
-    private readonly Mock<ISettingsService> _mockSettingsService;
-    private readonly Mylar3ConfigImporter _importer;
+    private readonly Mylar3ConfigImporter _importer = new();
 
-    public Mylar3ConfigImporterTests()
-    {
-        var options = new DbContextOptionsBuilder<ShortboxerrDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        _context = new ShortboxerrDbContext(options);
-        _mockSettingsService = new Mock<ISettingsService>();
-        _importer = new Mylar3ConfigImporter(_context, _mockSettingsService.Object);
-    }
+    #region ParseConfigContentAsync Tests
 
-    public void Dispose()
+    [Fact]
+    public async Task ParseConfigContentAsync_EmptyContent_ReturnsFailed()
     {
-        _context.Dispose();
-        GC.SuppressFinalize(this);
+        var result = await _importer.ParseConfigContentAsync("");
+
+        Assert.False(result.Success);
+        Assert.Contains("empty", result.Errors[0], StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void ParseConfig_WithEmptyContent_ReturnsSuccessWithNoProviders()
+    public async Task ParseConfigContentAsync_WhitespaceContent_ReturnsFailed()
     {
-        var result = _importer.ParseConfig("");
+        var result = await _importer.ParseConfigContentAsync("   \n\t  ");
+
+        Assert.False(result.Success);
+    }
+
+    [Fact]
+    public async Task ParseConfigContentAsync_ValidIni_ReturnsSuccess()
+    {
+        var content = @"
+[General]
+comic_location = /comics
+enable_nzb = true
+
+[SABnzbd]
+sab_host = localhost
+sab_port = 8080
+sab_apikey = abc123
+use_sabnzbd = true
+";
+
+        var result = await _importer.ParseConfigContentAsync(content);
 
         Assert.True(result.Success);
-        Assert.Empty(result.DdlProviders);
+        Assert.Contains("General", result.SectionsFound);
+        Assert.Contains("SABnzbd", result.SectionsFound);
     }
 
     [Fact]
-    public void ParseConfig_WithGeneralSection_ExtractsGeneralSettings()
+    public async Task ParseConfigContentAsync_ParsesComments()
     {
-        var config = """
-            [General]
-            comic_location = /data/comics
-            auto_grab = true
-            preferred_format = cbz
-            staging_folder = /data/staging
-            """;
+        var content = @"
+# This is a comment
+[General]
+; This is also a comment
+comic_location = /comics
+";
 
-        var result = _importer.ParseConfig(config);
+        var result = await _importer.ParseConfigContentAsync(content);
 
         Assert.True(result.Success);
-        Assert.NotNull(result.GeneralSettings);
-        Assert.Equal("/data/comics", result.GeneralSettings.ComicLocation);
-        Assert.True(result.GeneralSettings.AutoGrab);
-        Assert.Equal("cbz", result.GeneralSettings.PreferredFormat);
-        Assert.Equal("/data/staging", result.GeneralSettings.StagingFolder);
+        Assert.NotNull(result.General);
+        Assert.Equal("/comics", result.General.ComicLocation);
     }
 
-    [Fact]
-    public void ParseConfig_WithDdlSection_ExtractsProvider()
-    {
-        var config = """
-            [DDL-1]
-            name = My Getty Provider
-            site_type = GettyComics
-            url = https://gettycomics.example.com
-            enabled = true
-            rate_limit = 5
-            timeout = 45
-            max_retries = 5
-            """;
+    #endregion
 
-        var result = _importer.ParseConfig(config);
+    #region Indexer Parsing Tests
+
+    [Fact]
+    public async Task ParseConfigContentAsync_ParsesSingleNewznab()
+    {
+        var content = @"
+[Newznab]
+newznab_name = NZBgeek
+newznab_host = https://api.nzbgeek.info
+newznab_api = myapikey123
+newznab_enabled = true
+newznab_categories = 7030,7040
+";
+
+        var result = await _importer.ParseConfigContentAsync(content);
 
         Assert.True(result.Success);
-        Assert.Single(result.DdlProviders);
-        
-        var provider = result.DdlProviders[0];
-        Assert.Equal("My Getty Provider", provider.Name);
-        Assert.Equal("GettyComics", provider.SiteType);
-        Assert.Equal("https://gettycomics.example.com", provider.BaseUrl);
-        Assert.True(provider.IsEnabled);
-        Assert.NotNull(provider.Settings);
-        Assert.Equal(5, provider.Settings.RateLimitPerMinute);
-        Assert.Equal(45, provider.Settings.TimeoutSeconds);
-        Assert.Equal(5, provider.Settings.MaxRetries);
+        Assert.Single(result.Indexers);
+
+        var indexer = result.Indexers[0];
+        Assert.Equal("NZBgeek", indexer.Name);
+        Assert.Equal("https://api.nzbgeek.info", indexer.Host);
+        Assert.Equal("myapikey123", indexer.ApiKey);
+        Assert.True(indexer.Enabled);
+        Assert.Contains("7030", indexer.Categories);
+        Assert.Contains("7040", indexer.Categories);
     }
 
     [Fact]
-    public void ParseConfig_WithMultipleDdlSections_ExtractsAllProviders()
+    public async Task ParseConfigContentAsync_ParsesNumberedNewznab()
     {
-        var config = """
-            [DDL-1]
-            name = Provider One
-            site_type = GettyComics
-            enabled = true
-            
-            [DDL-2]
-            name = Provider Two
-            site_type = ReadComicOnline
-            enabled = false
-            
-            [GetComics]
-            name = GetComics Provider
-            enabled = true
-            """;
+        var content = @"
+[Newznab1]
+name = Indexer1
+host = https://indexer1.com
+apikey = key1
+enabled = true
 
-        var result = _importer.ParseConfig(config);
+[Newznab2]
+name = Indexer2
+host = https://indexer2.com
+apikey = key2
+enabled = false
+";
+
+        var result = await _importer.ParseConfigContentAsync(content);
 
         Assert.True(result.Success);
-        Assert.Equal(3, result.DdlProviders.Count);
-        Assert.Contains(result.DdlProviders, p => p.Name == "Provider One");
-        Assert.Contains(result.DdlProviders, p => p.Name == "Provider Two");
-        Assert.Contains(result.DdlProviders, p => p.Name == "GetComics Provider");
+        Assert.Equal(2, result.Indexers.Count);
+
+        Assert.Equal("Indexer1", result.Indexers[0].Name);
+        Assert.Equal("https://indexer1.com", result.Indexers[0].Host);
+        Assert.True(result.Indexers[0].Enabled);
+
+        Assert.Equal("Indexer2", result.Indexers[1].Name);
+        Assert.Equal("https://indexer2.com", result.Indexers[1].Host);
+        Assert.False(result.Indexers[1].Enabled);
     }
 
     [Fact]
-    public void ParseConfig_WithCredentials_ExtractsCredentials()
+    public async Task ParseConfigContentAsync_ParsesExtraNewznabs()
     {
-        var config = """
-            [DDL-1]
-            name = Authenticated Provider
-            site_type = GettyComics
-            username = testuser
-            password = testpass
-            api_key = testapikey
-            """;
+        var content = @"
+[General]
+extra_newznabs = [('NZBgeek', 'https://api.nzbgeek.info', True, 'apikey1', '', True, '7030')]
+";
 
-        var result = _importer.ParseConfig(config);
+        var result = await _importer.ParseConfigContentAsync(content);
 
         Assert.True(result.Success);
-        Assert.Single(result.DdlProviders);
-        
-        var provider = result.DdlProviders[0];
-        Assert.Equal("testuser", provider.Username);
-        Assert.Equal("testpass", provider.Password);
-        Assert.Equal("testapikey", provider.ApiKey);
+        Assert.Single(result.Indexers);
+        Assert.Equal("NZBgeek", result.Indexers[0].Name);
+        Assert.Equal("https://api.nzbgeek.info", result.Indexers[0].Host);
     }
 
-    [Fact]
-    public void ParseConfig_WithUnmappedSettings_TracksUnmapped()
-    {
-        var config = """
-            [DDL-1]
-            name = Test Provider
-            site_type = GettyComics
-            custom_setting = custom_value
-            another_unknown = value2
-            """;
+    #endregion
 
-        var result = _importer.ParseConfig(config);
+    #region SABnzbd Parsing Tests
+
+    [Fact]
+    public async Task ParseConfigContentAsync_ParsesSabnzbd()
+    {
+        var content = @"
+[SABnzbd]
+sab_host = 192.168.1.100
+sab_port = 8080
+sab_apikey = sabapikey123
+sab_category = comics
+sab_ssl = true
+use_sabnzbd = true
+sab_priority = high
+";
+
+        var result = await _importer.ParseConfigContentAsync(content);
 
         Assert.True(result.Success);
-        Assert.Contains("DDL-1", result.UnmappedSettings.Keys);
-        Assert.Contains("custom_setting", result.UnmappedSettings["DDL-1"]);
-        Assert.Contains("another_unknown", result.UnmappedSettings["DDL-1"]);
+        Assert.NotNull(result.Sabnzbd);
+        Assert.Equal("192.168.1.100", result.Sabnzbd.Host);
+        Assert.Equal(8080, result.Sabnzbd.Port);
+        Assert.Equal("sabapikey123", result.Sabnzbd.ApiKey);
+        Assert.Equal("comics", result.Sabnzbd.Category);
+        Assert.True(result.Sabnzbd.UseSsl);
+        Assert.True(result.Sabnzbd.Enabled);
+        Assert.Equal("high", result.Sabnzbd.Priority);
     }
 
     [Fact]
-    public void ParseConfig_WithUnknownSection_TracksUnmapped()
+    public async Task ParseConfigContentAsync_ParsesSabnzbdFromGeneral()
     {
-        var config = """
-            [SomeRandomSection]
-            setting = value
-            """;
+        var content = @"
+[General]
+sab_host = myserver
+sab_port = 9090
+sab_apikey = generalkey
+use_sabnzbd = true
+";
 
-        var result = _importer.ParseConfig(config);
+        var result = await _importer.ParseConfigContentAsync(content);
 
         Assert.True(result.Success);
-        Assert.Contains("SomeRandomSection", result.UnmappedSections);
+        Assert.NotNull(result.Sabnzbd);
+        Assert.Equal("myserver", result.Sabnzbd.Host);
+        Assert.Equal(9090, result.Sabnzbd.Port);
     }
 
     [Fact]
-    public void ParseConfig_InfersSiteTypeFromSectionName()
+    public async Task ParseConfigContentAsync_SabnzbdDefaultPort()
     {
-        var config = """
-            [GettyComics]
-            name = Getty Provider
-            enabled = true
-            """;
+        var content = @"
+[SABnzbd]
+sab_host = localhost
+sab_apikey = key
+use_sabnzbd = true
+";
 
-        var result = _importer.ParseConfig(config);
+        var result = await _importer.ParseConfigContentAsync(content);
+
+        Assert.NotNull(result.Sabnzbd);
+        Assert.Equal(8080, result.Sabnzbd.Port); // Default port
+    }
+
+    #endregion
+
+    #region NZBGet Parsing Tests
+
+    [Fact]
+    public async Task ParseConfigContentAsync_ParsesNzbget()
+    {
+        var content = @"
+[NZBGet]
+nzbget_host = 192.168.1.101
+nzbget_port = 6789
+nzbget_username = nzbget
+nzbget_password = tegbzn6789
+nzbget_category = comics
+nzbget_ssl = false
+use_nzbget = true
+";
+
+        var result = await _importer.ParseConfigContentAsync(content);
 
         Assert.True(result.Success);
-        Assert.Single(result.DdlProviders);
-        Assert.Equal("GettyComics", result.DdlProviders[0].SiteType);
+        Assert.NotNull(result.Nzbget);
+        Assert.Equal("192.168.1.101", result.Nzbget.Host);
+        Assert.Equal(6789, result.Nzbget.Port);
+        Assert.Equal("nzbget", result.Nzbget.Username);
+        Assert.Equal("tegbzn6789", result.Nzbget.Password);
+        Assert.Equal("comics", result.Nzbget.Category);
+        Assert.False(result.Nzbget.UseSsl);
+        Assert.True(result.Nzbget.Enabled);
     }
 
     [Fact]
-    public void ParseConfig_InfersSiteTypeFromUrl()
+    public async Task ParseConfigContentAsync_NzbgetDefaultPort()
     {
-        var config = """
-            [DDL-1]
-            name = Inferred Provider
-            url = https://gettycomics.example.com/page
-            enabled = true
-            """;
+        var content = @"
+[NZBGet]
+nzbget_host = localhost
+use_nzbget = true
+";
 
-        var result = _importer.ParseConfig(config);
+        var result = await _importer.ParseConfigContentAsync(content);
+
+        Assert.NotNull(result.Nzbget);
+        Assert.Equal(6789, result.Nzbget.Port); // Default port
+    }
+
+    #endregion
+
+    #region General Config Tests
+
+    [Fact]
+    public async Task ParseConfigContentAsync_ParsesGeneral()
+    {
+        var content = @"
+[General]
+comic_location = /media/comics
+download_dir = /downloads
+nzb_startup_search = true
+enable_torrents = false
+nzb_downloader = sabnzbd
+";
+
+        var result = await _importer.ParseConfigContentAsync(content);
 
         Assert.True(result.Success);
-        Assert.Single(result.DdlProviders);
-        Assert.Equal("GettyComics", result.DdlProviders[0].SiteType);
+        Assert.NotNull(result.General);
+        Assert.Equal("/media/comics", result.General.ComicLocation);
+        Assert.Equal("/downloads", result.General.DownloadDirectory);
+        Assert.True(result.General.NzbEnabled);
+        Assert.False(result.General.TorrentEnabled);
+        Assert.Equal("sabnzbd", result.General.PreferredNzbClient);
+    }
+
+    #endregion
+
+    #region Validation Tests
+
+    [Fact]
+    public async Task ValidateAsync_ValidConfig_ReturnsValid()
+    {
+        var parseResult = Mylar3ConfigParseResult.Parsed(
+            new List<Mylar3NewznabConfig>
+            {
+                new()
+                {
+                    Name = "Test",
+                    Host = "https://test.com",
+                    ApiKey = "key123",
+                    Enabled = true
+                }
+            },
+            new Mylar3SabnzbdConfig
+            {
+                Host = "localhost",
+                ApiKey = "sabkey",
+                Enabled = true
+            },
+            null,
+            null,
+            new List<string>(),
+            new List<string> { "Newznab", "SABnzbd" });
+
+        var report = await _importer.ValidateAsync(parseResult);
+
+        Assert.True(report.IsValid);
+        Assert.Empty(report.Errors);
     }
 
     [Fact]
-    public void ParseConfig_WithComments_IgnoresComments()
+    public async Task ValidateAsync_MissingApiKey_ReturnsError()
     {
-        var config = """
-            # This is a comment
-            ; This is also a comment
-            [DDL-1]
-            name = Test Provider
-            # inline comment above
-            site_type = GettyComics
-            """;
+        var parseResult = Mylar3ConfigParseResult.Parsed(
+            new List<Mylar3NewznabConfig>
+            {
+                new()
+                {
+                    Name = "Test",
+                    Host = "https://test.com",
+                    ApiKey = "", // Missing
+                    Enabled = true
+                }
+            },
+            null,
+            null,
+            null,
+            new List<string>(),
+            new List<string>());
 
-        var result = _importer.ParseConfig(config);
+        var report = await _importer.ValidateAsync(parseResult);
+
+        Assert.False(report.IsValid);
+        Assert.Contains(report.Errors, e => e.Field == "apikey");
+    }
+
+    [Fact]
+    public async Task ValidateAsync_MissingHost_ReturnsError()
+    {
+        var parseResult = Mylar3ConfigParseResult.Parsed(
+            new List<Mylar3NewznabConfig>
+            {
+                new()
+                {
+                    Name = "Test",
+                    Host = "", // Missing
+                    ApiKey = "key",
+                    Enabled = true
+                }
+            },
+            null,
+            null,
+            null,
+            new List<string>(),
+            new List<string>());
+
+        var report = await _importer.ValidateAsync(parseResult);
+
+        Assert.False(report.IsValid);
+        Assert.Contains(report.Errors, e => e.Field == "host");
+    }
+
+    [Fact]
+    public async Task ValidateAsync_DisabledIndexer_ReturnsInfo()
+    {
+        var parseResult = Mylar3ConfigParseResult.Parsed(
+            new List<Mylar3NewznabConfig>
+            {
+                new()
+                {
+                    Name = "Test",
+                    Host = "https://test.com",
+                    ApiKey = "key",
+                    Enabled = false // Disabled
+                }
+            },
+            null,
+            null,
+            null,
+            new List<string>(),
+            new List<string>());
+
+        var report = await _importer.ValidateAsync(parseResult);
+
+        Assert.True(report.IsValid);
+        Assert.Contains(report.Info, i => i.Message.Contains("disabled"));
+    }
+
+    [Fact]
+    public async Task ValidateAsync_Summary_IsCorrect()
+    {
+        var parseResult = Mylar3ConfigParseResult.Parsed(
+            new List<Mylar3NewznabConfig>
+            {
+                new() { Name = "A", Host = "h", ApiKey = "k", Enabled = true },
+                new() { Name = "B", Host = "h", ApiKey = "k", Enabled = true },
+                new() { Name = "C", Host = "h", ApiKey = "k", Enabled = false }
+            },
+            new Mylar3SabnzbdConfig { Host = "h", ApiKey = "k", Enabled = true },
+            new Mylar3NzbgetConfig { Host = "h", Enabled = false },
+            null,
+            new List<string>(),
+            new List<string>());
+
+        var report = await _importer.ValidateAsync(parseResult);
+
+        Assert.Equal(3, report.Summary.TotalIndexers);
+        Assert.Equal(2, report.Summary.EnabledIndexers);
+        Assert.True(report.Summary.HasSabnzbd);
+        Assert.True(report.Summary.SabnzbdEnabled);
+        Assert.True(report.Summary.HasNzbget);
+        Assert.False(report.Summary.NzbgetEnabled);
+    }
+
+    #endregion
+
+    #region Import Tests
+
+    [Fact]
+    public async Task ImportAsync_FailedParse_ReturnsError()
+    {
+        var parseResult = Mylar3ConfigParseResult.Failed("Parse error");
+
+        var result = await _importer.ImportAsync(parseResult, new Mylar3ImportOptions());
+
+        Assert.False(result.Success);
+        Assert.Contains("parsing failed", result.Errors[0], StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ImportAsync_ImportsEnabledIndexers()
+    {
+        var parseResult = Mylar3ConfigParseResult.Parsed(
+            new List<Mylar3NewznabConfig>
+            {
+                new() { Name = "A", Host = "https://a.com", ApiKey = "k1", Enabled = true },
+                new() { Name = "B", Host = "https://b.com", ApiKey = "k2", Enabled = false }
+            },
+            null,
+            null,
+            null,
+            new List<string>(),
+            new List<string>());
+
+        var result = await _importer.ImportAsync(parseResult, new Mylar3ImportOptions
+        {
+            ImportIndexers = true,
+            ImportDisabled = false
+        });
 
         Assert.True(result.Success);
-        Assert.Single(result.DdlProviders);
+        Assert.Equal(1, result.IndexersImported);
+        Assert.Equal(1, result.IndexersSkipped);
     }
 
     [Fact]
-    public void ParseConfig_WithDifferentBooleanFormats_ParsesCorrectly()
+    public async Task ImportAsync_ImportsAllIndexersWhenImportDisabled()
     {
-        var config = """
-            [DDL-1]
-            name = Provider One
-            site_type = GettyComics
-            enabled = true
-            
-            [DDL-2]
-            name = Provider Two
-            site_type = GettyComics
-            enabled = 1
-            
-            [DDL-3]
-            name = Provider Three
-            site_type = GettyComics
-            enabled = yes
-            
-            [DDL-4]
-            name = Provider Four
-            site_type = GettyComics
-            enabled = false
-            """;
+        var parseResult = Mylar3ConfigParseResult.Parsed(
+            new List<Mylar3NewznabConfig>
+            {
+                new() { Name = "A", Host = "https://a.com", ApiKey = "k1", Enabled = true },
+                new() { Name = "B", Host = "https://b.com", ApiKey = "k2", Enabled = false }
+            },
+            null,
+            null,
+            null,
+            new List<string>(),
+            new List<string>());
 
-        var result = _importer.ParseConfig(config);
+        var result = await _importer.ImportAsync(parseResult, new Mylar3ImportOptions
+        {
+            ImportIndexers = true,
+            ImportDisabled = true
+        });
 
         Assert.True(result.Success);
-        Assert.Equal(4, result.DdlProviders.Count);
-        
-        Assert.True(result.DdlProviders.First(p => p.Name == "Provider One").IsEnabled);
-        Assert.True(result.DdlProviders.First(p => p.Name == "Provider Two").IsEnabled);
-        Assert.True(result.DdlProviders.First(p => p.Name == "Provider Three").IsEnabled);
-        Assert.False(result.DdlProviders.First(p => p.Name == "Provider Four").IsEnabled);
+        Assert.Equal(2, result.IndexersImported);
+        Assert.Equal(0, result.IndexersSkipped);
     }
 
     [Fact]
-    public async Task ValidateImport_WithNoExistingProviders_ReturnsValid()
+    public async Task ImportAsync_ImportsSabnzbd()
     {
-        var config = """
-            [DDL-1]
-            name = New Provider
-            site_type = GettyComics
-            """;
+        var parseResult = Mylar3ConfigParseResult.Parsed(
+            new List<Mylar3NewznabConfig>(),
+            new Mylar3SabnzbdConfig
+            {
+                Host = "localhost",
+                Port = 8080,
+                ApiKey = "sabkey",
+                Enabled = true
+            },
+            null,
+            null,
+            new List<string>(),
+            new List<string>());
 
-        var parseResult = _importer.ParseConfig(config);
-        var validation = await _importer.ValidateImportAsync(parseResult);
+        var result = await _importer.ImportAsync(parseResult, new Mylar3ImportOptions
+        {
+            ImportSabnzbd = true
+        });
 
-        Assert.True(validation.IsValid);
-        Assert.Empty(validation.Errors);
-        Assert.Contains("New Provider", validation.ProvidersToCreate);
+        Assert.True(result.Success);
+        Assert.True(result.SabnzbdImported);
     }
 
     [Fact]
-    public async Task ExecuteImport_CreatesProviders()
+    public async Task ImportAsync_ImportsNzbget()
     {
-        var config = """
-            [DDL-1]
-            name = Created Provider
-            site_type = GettyComics
-            url = https://example.com
-            enabled = true
-            rate_limit = 15
-            """;
+        var parseResult = Mylar3ConfigParseResult.Parsed(
+            new List<Mylar3NewznabConfig>(),
+            null,
+            new Mylar3NzbgetConfig
+            {
+                Host = "localhost",
+                Port = 6789,
+                Enabled = true
+            },
+            null,
+            new List<string>(),
+            new List<string>());
 
-        var parseResult = _importer.ParseConfig(config);
+        var result = await _importer.ImportAsync(parseResult, new Mylar3ImportOptions
+        {
+            ImportNzbget = true
+        });
+
+        Assert.True(result.Success);
+        Assert.True(result.NzbgetImported);
+    }
+
+    [Fact]
+    public async Task ImportAsync_SkipsDisabledClients()
+    {
+        var parseResult = Mylar3ConfigParseResult.Parsed(
+            new List<Mylar3NewznabConfig>(),
+            new Mylar3SabnzbdConfig
+            {
+                Host = "localhost",
+                ApiKey = "key",
+                Enabled = false
+            },
+            null,
+            null,
+            new List<string>(),
+            new List<string>());
+
+        var result = await _importer.ImportAsync(parseResult, new Mylar3ImportOptions
+        {
+            ImportSabnzbd = true,
+            ImportDisabled = false
+        });
+
+        Assert.True(result.Success);
+        Assert.False(result.SabnzbdImported);
+    }
+
+    [Fact]
+    public async Task ImportAsync_ItemResults_ArePopulated()
+    {
+        var parseResult = Mylar3ConfigParseResult.Parsed(
+            new List<Mylar3NewznabConfig>
+            {
+                new() { Name = "Test", Host = "https://test.com", ApiKey = "key", Enabled = true }
+            },
+            new Mylar3SabnzbdConfig { Host = "localhost", ApiKey = "key", Enabled = true },
+            null,
+            null,
+            new List<string>(),
+            new List<string>());
+
+        var result = await _importer.ImportAsync(parseResult, new Mylar3ImportOptions());
+
+        Assert.Equal(2, result.ItemResults.Count);
+        Assert.Contains(result.ItemResults, r => r.ItemType == "Indexer");
+        Assert.Contains(result.ItemResults, r => r.ItemType == "SABnzbd");
+    }
+
+    #endregion
+
+    #region INI Parsing Edge Cases
+
+    [Fact]
+    public async Task ParseConfigContentAsync_HandlesQuotedValues()
+    {
+        var content = @"
+[General]
+comic_location = ""/path/with spaces/comics""
+download_dir = '/another/path'
+";
+
+        var result = await _importer.ParseConfigContentAsync(content);
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.General);
+        Assert.Equal("/path/with spaces/comics", result.General.ComicLocation);
+        Assert.Equal("/another/path", result.General.DownloadDirectory);
+    }
+
+    [Fact]
+    public async Task ParseConfigContentAsync_HandlesEmptyValues()
+    {
+        var content = @"
+[General]
+comic_location = 
+download_dir =
+";
+
+        var result = await _importer.ParseConfigContentAsync(content);
+
+        Assert.True(result.Success);
+    }
+
+    [Fact]
+    public async Task ParseConfigContentAsync_CaseInsensitiveKeys()
+    {
+        var content = @"
+[SABnzbd]
+SAB_HOST = localhost
+sab_PORT = 9090
+Sab_ApiKey = key123
+";
+
+        var result = await _importer.ParseConfigContentAsync(content);
+
+        Assert.NotNull(result.Sabnzbd);
+        Assert.Equal("localhost", result.Sabnzbd.Host);
+        Assert.Equal(9090, result.Sabnzbd.Port);
+        Assert.Equal("key123", result.Sabnzbd.ApiKey);
+    }
+
+    [Fact]
+    public async Task ParseConfigContentAsync_CaseInsensitiveSections()
+    {
+        var content = @"
+[general]
+comic_location = /comics
+
+[SABNZBD]
+sab_host = localhost
+";
+
+        var result = await _importer.ParseConfigContentAsync(content);
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.General);
+        Assert.NotNull(result.Sabnzbd);
+    }
+
+    [Fact]
+    public async Task ParseConfigContentAsync_ParsesBooleanValues()
+    {
+        var content = @"
+[Test1]
+enabled = true
+
+[Test2]
+enabled = True
+
+[Test3]
+enabled = 1
+
+[Test4]
+enabled = yes
+
+[Test5]
+enabled = on
+
+[Test6]
+enabled = false
+";
+
+        var result = await _importer.ParseConfigContentAsync(content);
+        Assert.True(result.Success);
+    }
+
+    #endregion
+
+    #region Mylar3ImportOptions Tests
+
+    [Fact]
+    public void Mylar3ImportOptions_DefaultValues()
+    {
         var options = new Mylar3ImportOptions();
-        var result = await _importer.ExecuteImportAsync(parseResult, options);
 
-        Assert.True(result.Success);
-        Assert.Equal(1, result.ProvidersCreated);
-        Assert.Single(result.CreatedProviderIds);
-        
-        var provider = await _context.Providers.FirstOrDefaultAsync();
-        Assert.NotNull(provider);
-        Assert.Equal("Created Provider", provider.Name);
-        Assert.Equal("https://example.com", provider.BaseUrl);
+        Assert.True(options.ImportIndexers);
+        Assert.True(options.ImportSabnzbd);
+        Assert.True(options.ImportNzbget);
+        Assert.False(options.OverwriteExisting);
+        Assert.False(options.ImportDisabled);
+        Assert.True(options.TestConnections);
+    }
+
+    #endregion
+
+    #region ImportAction Enum Tests
+
+    [Fact]
+    public void ImportAction_Values()
+    {
+        Assert.Equal(0, (int)ImportAction.Imported);
+        Assert.Equal(1, (int)ImportAction.Updated);
+        Assert.Equal(2, (int)ImportAction.Skipped);
+        Assert.Equal(3, (int)ImportAction.Failed);
+    }
+
+    #endregion
+
+    #region Factory Method Tests
+
+    [Fact]
+    public void Mylar3ConfigParseResult_Failed_CreatesFailedResult()
+    {
+        var result = Mylar3ConfigParseResult.Failed("Test error");
+
+        Assert.False(result.Success);
+        Assert.Single(result.Errors);
+        Assert.Equal("Test error", result.Errors[0]);
     }
 
     [Fact]
-    public async Task ExecuteImport_WithNamePrefix_AddsPrefixToNames()
+    public void Mylar3ImportResult_Failed_CreatesFailedResult()
     {
-        var config = """
-            [DDL-1]
-            name = Provider
-            site_type = GettyComics
-            """;
+        var result = Mylar3ImportResult.Failed("Import error");
 
-        var parseResult = _importer.ParseConfig(config);
-        var options = new Mylar3ImportOptions { NamePrefix = "[Mylar3] " };
-        var result = await _importer.ExecuteImportAsync(parseResult, options);
-
-        Assert.True(result.Success);
-        
-        var provider = await _context.Providers.FirstOrDefaultAsync();
-        Assert.NotNull(provider);
-        Assert.Equal("[Mylar3] Provider", provider.Name);
-    }
-
-    [Fact]
-    public async Task ExecuteImport_WithoutImportCredentials_OmitsCredentials()
-    {
-        var config = """
-            [DDL-1]
-            name = Secure Provider
-            site_type = GettyComics
-            username = testuser
-            password = secretpass
-            api_key = secretkey
-            """;
-
-        var parseResult = _importer.ParseConfig(config);
-        var options = new Mylar3ImportOptions { ImportCredentials = false };
-        var result = await _importer.ExecuteImportAsync(parseResult, options);
-
-        Assert.True(result.Success);
-        
-        var provider = await _context.Providers.FirstOrDefaultAsync();
-        Assert.NotNull(provider);
-        Assert.Null(provider.Username);
-        Assert.Null(provider.Password);
-        Assert.Null(provider.ApiKey);
-    }
-
-    [Fact]
-    public async Task ExecuteImport_WithExistingProvider_SkipsByDefault()
-    {
-        // Create existing provider
-        _context.Providers.Add(new Core.Entities.ProviderDefinition
-        {
-            Name = "Existing Provider",
-            Implementation = "DdlProvider",
-            Category = Core.Entities.ProviderCategory.Indexer,
-            Type = Core.Providers.ProviderType.Ddl
-        });
-        await _context.SaveChangesAsync();
-
-        var config = """
-            [DDL-1]
-            name = Existing Provider
-            site_type = GettyComics
-            """;
-
-        var parseResult = _importer.ParseConfig(config);
-        var options = new Mylar3ImportOptions { OverwriteExisting = false };
-        var result = await _importer.ExecuteImportAsync(parseResult, options);
-
-        Assert.True(result.Success);
-        Assert.Equal(0, result.ProvidersCreated);
-        Assert.Equal(1, result.ProvidersSkipped);
-    }
-
-    [Fact]
-    public async Task ExecuteImport_WithOverwriteExisting_UpdatesProvider()
-    {
-        // Create existing provider
-        _context.Providers.Add(new Core.Entities.ProviderDefinition
-        {
-            Name = "Existing Provider",
-            Implementation = "DdlProvider",
-            Category = Core.Entities.ProviderCategory.Indexer,
-            Type = Core.Providers.ProviderType.Ddl,
-            BaseUrl = "https://old.example.com"
-        });
-        await _context.SaveChangesAsync();
-
-        var config = """
-            [DDL-1]
-            name = Existing Provider
-            site_type = GettyComics
-            url = https://new.example.com
-            """;
-
-        var parseResult = _importer.ParseConfig(config);
-        var options = new Mylar3ImportOptions { OverwriteExisting = true };
-        var result = await _importer.ExecuteImportAsync(parseResult, options);
-
-        Assert.True(result.Success);
-        Assert.Equal(0, result.ProvidersCreated);
-        Assert.Equal(1, result.ProvidersUpdated);
-        
-        var provider = await _context.Providers.FirstOrDefaultAsync();
-        Assert.NotNull(provider);
-        Assert.Equal("https://new.example.com", provider.BaseUrl);
-    }
-
-    [Fact]
-    public void DdlProviderSettings_CreateMylar3Default_ReturnsCorrectDefaults()
-    {
-        var gettySettings = DdlProviderSettings.CreateMylar3Default("GettyComics");
-        var rcoSettings = DdlProviderSettings.CreateMylar3Default("ReadComicOnline");
-
-        Assert.Equal("GettyComics", gettySettings.SiteType);
-        Assert.Equal(10, gettySettings.RateLimitPerMinute);
-        Assert.Equal(30, gettySettings.TimeoutSeconds);
-        Assert.Equal(3, gettySettings.MaxRetries);
-        
-        Assert.Equal("ReadComicOnline", rcoSettings.SiteType);
-        Assert.Equal(5, rcoSettings.RateLimitPerMinute); // More restrictive
-        Assert.Equal(45, rcoSettings.TimeoutSeconds);
-    }
-
-    [Fact]
-    public void DdlProviderSettings_ToJsonAndFromJson_RoundTrips()
-    {
-        var settings = new DdlProviderSettings
-        {
-            SiteType = "TestSite",
-            RateLimitPerMinute = 20,
-            TimeoutSeconds = 60,
-            MaxRetries = 5,
-            UserAgent = "Custom/1.0",
-            AutoGrabEnabled = false,
-            BannedWords = new List<string> { "test", "banned" }
-        };
-
-        var json = settings.ToJson();
-        var restored = DdlProviderSettings.FromJson(json);
-
-        Assert.NotNull(restored);
-        Assert.Equal("TestSite", restored.SiteType);
-        Assert.Equal(20, restored.RateLimitPerMinute);
-        Assert.Equal(60, restored.TimeoutSeconds);
-        Assert.Equal(5, restored.MaxRetries);
-        Assert.Equal("Custom/1.0", restored.UserAgent);
-        Assert.False(restored.AutoGrabEnabled);
-        Assert.Equal(2, restored.BannedWords.Count);
-    }
-
-    #region Pull List Settings Parsing Tests
-
-    [Fact]
-    public void ParseConfig_WithPullListSettings_ExtractsPullListSettings()
-    {
-        var config = """
-            [General]
-            comic_location = /data/comics
-            weeklypull_folder = /data/exports/weekly
-            weeklypull_format = json
-            weeklypull_enable = true
-            default_monitoring = all
-            auto_add = true
-            include_annuals = true
-            skip_variants = true
-            search_delay = 8
-            """;
-
-        var result = _importer.ParseConfig(config);
-
-        Assert.True(result.Success);
-        Assert.NotNull(result.PullListSettings);
-        Assert.Equal("/data/exports/weekly", result.PullListSettings.WeeklyPullFolder);
-        Assert.Equal("json", result.PullListSettings.WeeklyPullFormat);
-        Assert.True(result.PullListSettings.WeeklyPullEnabled);
-        Assert.Equal("all", result.PullListSettings.DefaultMonitoringMode);
-        Assert.True(result.PullListSettings.AutoAddToWanted);
-        Assert.True(result.PullListSettings.IncludeAnnuals);
-        Assert.True(result.PullListSettings.SkipVariants);
-        Assert.Equal(8, result.PullListSettings.SearchDelayHours);
-    }
-
-    [Fact]
-    public void ParseConfig_WithWeeklyPullSection_ExtractsPullListSettings()
-    {
-        var config = """
-            [WeeklyPull]
-            pull_folder = /data/weekly
-            pull_format = csv
-            default_monitoring = future
-            auto_add_wanted = false
-            include_specials = true
-            ignore_variants = false
-            """;
-
-        var result = _importer.ParseConfig(config);
-
-        Assert.True(result.Success);
-        Assert.NotNull(result.PullListSettings);
-        Assert.Equal("/data/weekly", result.PullListSettings.WeeklyPullFolder);
-        Assert.Equal("csv", result.PullListSettings.WeeklyPullFormat);
-        Assert.Equal("future", result.PullListSettings.DefaultMonitoringMode);
-        Assert.False(result.PullListSettings.AutoAddToWanted);
-        Assert.True(result.PullListSettings.IncludeSpecials);
-        Assert.False(result.PullListSettings.SkipVariants);
-    }
-
-    [Fact]
-    public void ParseConfig_WithAlternativeKeyNames_ExtractsPullListSettings()
-    {
-        var config = """
-            [General]
-            weekly_pull_folder = /data/pulls
-            weekly_pull_format = text
-            weekly_pull_enabled = true
-            series_monitoring = manual
-            add_new_issues = true
-            annuals = false
-            """;
-
-        var result = _importer.ParseConfig(config);
-
-        Assert.True(result.Success);
-        Assert.NotNull(result.PullListSettings);
-        Assert.Equal("/data/pulls", result.PullListSettings.WeeklyPullFolder);
-        Assert.Equal("text", result.PullListSettings.WeeklyPullFormat);
-        Assert.True(result.PullListSettings.WeeklyPullEnabled);
-        Assert.Equal("manual", result.PullListSettings.DefaultMonitoringMode);
-        Assert.True(result.PullListSettings.AutoAddToWanted);
-        Assert.False(result.PullListSettings.IncludeAnnuals);
-    }
-
-    [Fact]
-    public void ParseConfig_WithWeekStartDay_ParsesCorrectly()
-    {
-        var config = """
-            [General]
-            week_start = 1
-            """;
-
-        var result = _importer.ParseConfig(config);
-
-        Assert.True(result.Success);
-        Assert.NotNull(result.PullListSettings);
-        Assert.Equal(1, result.PullListSettings.WeekStartDay);
-    }
-
-    [Fact]
-    public void ParseConfig_WithNoPullListSettings_ReturnsEmptyPullListSettings()
-    {
-        var config = """
-            [General]
-            comic_location = /data/comics
-            
-            [DDL-1]
-            name = Provider
-            site_type = GettyComics
-            """;
-
-        var result = _importer.ParseConfig(config);
-
-        Assert.True(result.Success);
-        Assert.NotNull(result.PullListSettings);
-        // All settings should be null or empty since no pull list settings were provided
-        Assert.Null(result.PullListSettings.WeeklyPullFolder);
-        Assert.Null(result.PullListSettings.DefaultMonitoringMode);
-    }
-
-    [Fact]
-    public void ParseConfig_TracksUnmappedPullListSettings()
-    {
-        var config = """
-            [General]
-            weekly_custom_setting = value
-            pull_unknown_option = test
-            """;
-
-        var result = _importer.ParseConfig(config);
-
-        Assert.True(result.Success);
-        Assert.NotNull(result.PullListSettings);
-        // Check that unmapped settings are tracked
-        Assert.Contains("weekly_custom_setting", result.PullListSettings.UnmappedSettings);
-        Assert.Contains("pull_unknown_option", result.PullListSettings.UnmappedSettings);
+        Assert.False(result.Success);
+        Assert.Single(result.Errors);
+        Assert.Equal("Import error", result.Errors[0]);
     }
 
     #endregion
 }
-
-
-
