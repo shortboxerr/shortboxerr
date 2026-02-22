@@ -1790,7 +1790,7 @@ Track and prioritize completion of deferred items across all EPICs.
 | ~~14~~ | ~~Publisher filter dropdown~~ | 11 | S | M | ✅ Completed |
 | **P4 - Lower Priority / Complex** |||||
 | ~~15~~ | ~~NZBHydra2 support~~ | 10 | L | M | ✅ Completed |
-| 16 | Deluge integration | 14 | M | L | Transmission first |
+| ~~16~~ | ~~Deluge integration~~ | 14 | M | L | ✅ Completed |
 | 17 | Cloudflare challenge handling | 8 | L | M | Complex |
 | 18 | Mega.nz resolver | 8 | L | M | Encryption |
 | 19 | Rapidgator/Uploaded resolver | 8 | M | L | Premium accounts |
@@ -1937,11 +1937,12 @@ Support for torrent-based downloading via popular clients.
   - AC: Monitor progress and completion ✅
   - Note: Full implementation in `TransmissionClient.cs` with 21 unit tests
 
-- [ ] **Deluge integration** (deferred)
-  - AC: Implement Deluge JSON-RPC client
-  - AC: Authentication: password-based
-  - AC: Add torrent with label support
-  - AC: Monitor progress and completion
+- [x] **Deluge integration** ✅
+  - AC: Implement Deluge JSON-RPC client ✅
+  - AC: Authentication: password-based (via auth.login) ✅
+  - AC: Add torrent with label support ✅ (Label plugin integration)
+  - AC: Monitor progress and completion ✅
+  - Note: Full implementation in `DelugeClient.cs` with 29 unit tests
 
 - [ ] **Torrent → Import handoff** (deferred)
   - AC: Detect completed torrents

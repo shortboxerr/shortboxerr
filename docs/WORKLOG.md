@@ -1,5 +1,101 @@
 # Worklog
 
+## Iteration 108 (2026-02-17)
+**EPIC 14.3: Deluge Integration**
+
+### Summary
+Added Deluge torrent client support as the third torrent client after qBittorrent and Transmission. Deluge uses a JSON-RPC Web UI API with password-based authentication, following the Sonarr/Radarr client patterns.
+
+### Commits
+1. `feat(torrent): add Deluge client integration`
+
+### Deliverables
+
+#### IDelugeClient Interface
+- Extends `ITorrentClient` with Deluge-specific operations
+- Version retrieval (daemon and libtorrent)
+- Session status (download/upload rates, torrent counts)
+- Label management (get/set/add labels via Label plugin)
+- Move storage and force recheck/reannounce
+- Torrent options (speed limits, ratio limits, move completed)
+- Configuration retrieval
+
+#### DelugeSettings
+- `Host` - Hostname or IP address
+- `Port` - Web UI port (default: 8112)
+- `Password` - Authentication password (default: "deluge")
+- `Label` - Default label for categorization (requires Label plugin)
+- `DownloadPath` - Default download directory
+- `UseSsl` - Enable HTTPS
+- `TimeoutSeconds` - Request timeout (default: 30s)
+- `AddPaused` - Add torrents in paused state
+- `MoveCompleted`/`MoveCompletedPath` - Auto-move completed downloads
+- `BaseUrl`/`JsonRpcUrl` - Computed URL properties
+
+#### DelugeClient Implementation
+- JSON-RPC over HTTP POST to `/json`
+- Password authentication via `auth.login` method
+- Request ID tracking for JSON-RPC calls
+- All `ITorrentClient` methods implemented:
+  - `TestConnectionAsync` - Validates connectivity, returns version
+  - `AddTorrentMagnetAsync`/`AddTorrentUrlAsync`/`AddTorrentFileAsync`
+  - `GetStatusAsync`/`GetAllTorrentsAsync`
+  - `RemoveTorrentAsync`, `PauseTorrentAsync`, `ResumeTorrentAsync`
+  - `GetCategoriesAsync` (maps to Label plugin's get_labels)
+  - `GetDiskSpaceAsync`
+- Deluge-specific methods:
+  - `GetVersionAsync`/`GetLibtorrentVersionAsync`
+  - `PauseAllAsync`/`ResumeAllAsync`
+  - `GetSessionStatusAsync`
+  - `GetLabelsAsync`, `SetLabelAsync`, `AddLabelAsync`
+  - `MoveStorageAsync`
+  - `ForceRecheckAsync`, `ForceReannounceAsync`
+  - `SetTorrentOptionsAsync`
+  - `GetFreeSpaceAsync`
+  - `GetConfigAsync`
+
+#### State Mapping
+Deluge states mapped to `TorrentState`:
+- "downloading" → `Downloading`
+- "seeding" → `Seeding`
+- "paused" → `Paused`
+- "checking" → `Checking`
+- "queued" → `Queued`
+- "error" → `Error`
+- "moving" → `Moving`
+- "allocating" → `Queued`
+
+#### Models
+- `DelugeSessionStatus` - Download/upload rates, torrent counts, DHT info
+- `DelugeTorrentOptions` - Per-torrent speed limits, ratio, move settings
+- `DelugeConfig` - Daemon configuration (download location, limits, DHT)
+
+#### Exceptions
+- `DelugeAuthenticationException` - Invalid password or session expired
+- `DelugeRpcException` - JSON-RPC method errors with error code
+
+#### Unit Tests (29 tests)
+- DelugeSettings tests (10 tests)
+  - Default port, custom port, URL formats
+  - Default password, timeout, SSL, add paused
+- DelugeSessionStatus tests (1 test)
+- DelugeTorrentOptions tests (2 tests)
+- DelugeConfig tests (1 test)
+- TorrentClientType tests (1 test)
+- Integration pattern tests (3 tests)
+  - Pattern consistency with qBittorrent and Transmission
+- URL construction tests (4 tests - parameterized)
+- Default values tests (3 tests)
+- Exception tests (2 tests)
+- Move completed settings tests (2 tests)
+
+### Files Changed
+- `src/Shortboxerr.Core/Torrent/IDelugeClient.cs` (new)
+- `src/Shortboxerr.Infrastructure/Torrent/DelugeClient.cs` (new)
+- `tests/Shortboxerr.Tests/DelugeClientTests.cs` (new)
+
+---
+
 ## Iteration 107 (2026-02-17)
 **EPIC 14.3: Transmission Integration**
 
