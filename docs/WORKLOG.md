@@ -1,5 +1,91 @@
 # Worklog
 
+## Iteration 107 (2026-02-17)
+**EPIC 14.3: Transmission Integration**
+
+### Summary
+Added Transmission torrent client support as an alternative to qBittorrent. Transmission uses a JSON-RPC API with session ID for CSRF protection, following the Sonarr/Radarr client patterns.
+
+### Commits
+1. `feat(torrent): add Transmission client integration`
+
+### Deliverables
+
+#### ITransmissionClient Interface
+- Extends `ITorrentClient` with Transmission-specific operations
+- Session info retrieval (version, config, speed limits)
+- Session statistics (active/paused torrents, speeds)
+- Move torrent location, rename paths
+- Verify/recheck torrents
+- Reannounce (ask tracker for more peers)
+- Set download directory and speed limits
+- Get free space for a path
+
+#### TransmissionSettings
+- `Host` - Hostname or IP address
+- `Port` - RPC port (default: 9091)
+- `Username`/`Password` - HTTP Basic Auth credentials
+- `DownloadDir` - Default download directory
+- `UseSsl` - Enable HTTPS
+- `TimeoutSeconds` - Request timeout (default: 30s)
+- `AddPaused` - Add torrents in paused state
+- `RpcPath` - Custom RPC path (default: /transmission/rpc)
+- `RpcUrl` - Computed full URL property
+
+#### TransmissionClient Implementation
+- JSON-RPC over HTTP POST to `/transmission/rpc`
+- Session ID handling via `X-Transmission-Session-Id` header
+- Auto-retry on 409 Conflict (session ID expired)
+- HTTP Basic Auth for authentication
+- All `ITorrentClient` methods implemented:
+  - `TestConnectionAsync` - Validates connectivity, returns version
+  - `AddTorrentMagnetAsync`/`AddTorrentUrlAsync`/`AddTorrentFileAsync`
+  - `GetStatusAsync`/`GetAllTorrentsAsync`
+  - `RemoveTorrentAsync`, `PauseTorrentAsync`, `ResumeTorrentAsync`
+  - `GetCategoriesAsync` (returns empty - Transmission uses labels in v4.0+)
+  - `GetDiskSpaceAsync`
+- Transmission-specific methods:
+  - `GetSessionInfoAsync`/`GetSessionStatsAsync`
+  - `StartAllAsync`/`StopAllAsync`
+  - `MoveTorrentAsync`, `RenameTorrentPathAsync`
+  - `VerifyTorrentAsync`, `ReannounceAsync`
+  - `SetDownloadDirectoryAsync`, `SetSpeedLimitsAsync`
+  - `GetFreeSpaceAsync`
+
+#### State Mapping
+Transmission status values mapped to `TorrentState`:
+- 0 (stopped) → `Paused`
+- 1 (check pending) → `Queued`
+- 2 (checking) → `Checking`
+- 3 (download pending) → `Queued`
+- 4 (downloading) → `Downloading`
+- 5 (seed pending) → `Queued`
+- 6 (seeding) → `Seeding`
+
+#### Models
+- `TransmissionSessionInfo` - Version, RPC version, download dir, speed limits
+- `TransmissionSessionStats` - Torrent counts, speeds, cumulative stats
+- `TransmissionCumulativeStats` - Downloaded/uploaded bytes, files added
+
+#### Unit Tests (21 tests)
+- TransmissionSettings tests (9 tests)
+  - Default port, custom port, SSL URL
+  - Custom RPC path, timeout, add paused defaults
+- TransmissionSessionInfo tests (1 test)
+- TransmissionSessionStats tests (1 test)
+- TransmissionCumulativeStats tests (1 test)
+- TorrentClientType tests (1 test)
+- Integration pattern tests (2 tests)
+- URL construction tests (4 tests - parameterized)
+- Default values tests (2 tests)
+
+### Files Changed
+- `src/Shortboxerr.Core/Torrent/ITransmissionClient.cs` (new)
+- `src/Shortboxerr.Infrastructure/Torrent/TransmissionClient.cs` (new)
+- `tests/Shortboxerr.Tests/TransmissionClientTests.cs` (new)
+
+---
+
 ## Iteration 106 (2026-02-17)
 **EPIC 10: NZBHydra2 Aggregator Support**
 

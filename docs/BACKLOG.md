@@ -1781,7 +1781,7 @@ Track and prioritize completion of deferred items across all EPICs.
 | 6 | Mylar3 NZB settings import | 10 | M | H | Config parser |
 | ~~7~~ | ~~Indexer health monitoring~~ | 10 | M | H | ✅ Completed |
 | ~~8~~ | ~~Download client failover~~ | 10 | M | H | ✅ Completed |
-| 9 | Transmission integration | 14 | M | M | qBittorrent complete |
+| ~~9~~ | ~~Transmission integration~~ | 14 | M | M | ✅ Completed |
 | **P3 - Medium Value, Medium Effort** |||||
 | ~~10~~ | ~~Variant cover detection~~ | 9 | M | M | ✅ Completed |
 | 11 | Host reliability tracking | 8 | M | M | Statistics DB |
@@ -1928,13 +1928,14 @@ Support for torrent-based downloading via popular clients.
   - AC: Handle ratio limits / seeding requirements ✅
   - Note: Full implementation in `QBittorrentClient.cs`
 
-- [ ] **Transmission integration** (deferred)
-  - AC: Implement Transmission RPC client
-  - AC: Authentication: username/password
-  - AC: Session ID handling
-  - AC: Add torrent by URL or base64-encoded file
-  - AC: Download directory configuration
-  - AC: Monitor progress and completion
+- [x] **Transmission integration** ✅
+  - AC: Implement Transmission RPC client ✅
+  - AC: Authentication: username/password (HTTP Basic Auth) ✅
+  - AC: Session ID handling (X-Transmission-Session-Id for CSRF) ✅
+  - AC: Add torrent by URL or base64-encoded file ✅
+  - AC: Download directory configuration ✅
+  - AC: Monitor progress and completion ✅
+  - Note: Full implementation in `TransmissionClient.cs` with 21 unit tests
 
 - [ ] **Deluge integration** (deferred)
   - AC: Implement Deluge JSON-RPC client
