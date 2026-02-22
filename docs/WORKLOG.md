@@ -1,5 +1,71 @@
 # Worklog
 
+## Iteration 110 (2026-02-17)
+**EPIC 10: Mylar3 NZB Settings Import**
+
+### Summary
+Added Mylar3 config.ini importer for migrating NZB indexer and download client settings from existing Mylar3 installations.
+
+### Commits
+1. `feat(import): add Mylar3 config.ini importer`
+
+### Deliverables
+
+#### IMylar3ConfigImporter Interface
+- `ParseConfigAsync` - Parse config from file path
+- `ParseConfigContentAsync` - Parse config from string content
+- `ImportAsync` - Import parsed settings into Shortboxerr
+- `ValidateAsync` - Validate settings without importing
+
+#### Configuration Models
+- `Mylar3NewznabConfig` - Indexer configuration (name, host, apikey, uid, categories, enabled)
+- `Mylar3SabnzbdConfig` - SABnzbd settings (host, port, apikey, category, ssl, priority)
+- `Mylar3NzbgetConfig` - NZBGet settings (host, port, username, password, category, ssl)
+- `Mylar3GeneralConfig` - General settings (comic_location, download_dir, preferred client)
+
+#### Import Options
+- `ImportIndexers` - Toggle indexer import (default: true)
+- `ImportSabnzbd` - Toggle SABnzbd import (default: true)
+- `ImportNzbget` - Toggle NZBGet import (default: true)
+- `OverwriteExisting` - Replace existing configs (default: false)
+- `ImportDisabled` - Include disabled items (default: false)
+- `TestConnections` - Test after import (default: true)
+
+#### Validation Report
+- `IsValid` - Overall validation status
+- `Errors` - Blocking issues (missing host/apikey)
+- `Warnings` - Non-blocking issues (invalid URL format)
+- `Info` - Informational items (disabled indexers)
+- `Summary` - Import summary (total/enabled indexers, clients found)
+
+#### INI Parsing Features
+- Section headers `[SectionName]`
+- Key=Value pairs with optional quotes
+- Comment lines (# and ;)
+- Case-insensitive sections and keys
+- Multiple indexer formats:
+  - Single `[Newznab]` section
+  - Numbered `[Newznab1]`, `[Newznab2]`, etc.
+  - `extra_newznabs` tuple format in `[General]`
+
+#### Unit Tests (34 tests)
+- Parse tests (4 tests)
+- Indexer parsing tests (3 tests)
+- SABnzbd parsing tests (3 tests)
+- NZBGet parsing tests (2 tests)
+- General config tests (1 test)
+- Validation tests (5 tests)
+- Import tests (7 tests)
+- INI edge case tests (6 tests)
+- Options/enum tests (3 tests)
+
+### Files Changed
+- `src/Shortboxerr.Core/Import/IMylar3ConfigImporter.cs` (new)
+- `src/Shortboxerr.Infrastructure/Import/Mylar3ConfigImporter.cs` (new)
+- `tests/Shortboxerr.Tests/Mylar3ConfigImporterTests.cs` (new)
+
+---
+
 ## Iteration 109 (2026-02-17)
 **EPIC 14.3: Torrent → Import Handoff**
 

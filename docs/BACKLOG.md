@@ -921,11 +921,12 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: NZBGet: URL, username, password, category (deferred)
   - AC: Test connection button ✅
   - AC: Default download client selection ✅
-- [ ] **Mylar3 NZB settings import** (deferred)
-  - AC: Parse Mylar3 config.ini for NZB settings
-  - AC: Import indexer configurations
-  - AC: Import SABnzbd/NZBGet settings
-  - AC: Validation report
+- [x] **Mylar3 NZB settings import** ✅
+  - AC: Parse Mylar3 config.ini for NZB settings ✅
+  - AC: Import indexer configurations ✅ (newznab, numbered sections, extra_newznabs)
+  - AC: Import SABnzbd/NZBGet settings ✅
+  - AC: Validation report ✅ (errors, warnings, summary)
+  - Note: Full implementation in `Mylar3ConfigImporter.cs` with 34 unit tests
 
 ### 10.6 NZB UI - PARTIAL ✅
 - [x] **Indexers settings page** ✅
@@ -1778,7 +1779,7 @@ Track and prioritize completion of deferred items across all EPICs.
 | ~~4~~ | ~~Site availability checks~~ | 8 | M | H | ✅ Completed |
 | **P2 - High Value, Medium Effort** |||||
 | ~~5~~ | ~~Auto-search on release~~ | 11 | M | H | ✅ Completed |
-| 6 | Mylar3 NZB settings import | 10 | M | H | Config parser |
+| ~~6~~ | ~~Mylar3 NZB settings import~~ | 10 | M | H | ✅ Completed |
 | ~~7~~ | ~~Indexer health monitoring~~ | 10 | M | H | ✅ Completed |
 | ~~8~~ | ~~Download client failover~~ | 10 | M | H | ✅ Completed |
 | ~~9~~ | ~~Transmission integration~~ | 14 | M | M | ✅ Completed |
