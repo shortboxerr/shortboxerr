@@ -351,12 +351,12 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
   - AC: Handle "Download" button extraction ✅ (multiple patterns)
   - AC: Detect expired/removed files ✅
 
-#### 8.2.3 Mega.nz Resolver
-- [ ] **Mega link handling** (deferred - requires encryption handling)
-  - AC: Parse mega.nz/#! and mega.nz/file/ URLs
-  - AC: Handle Mega's encryption (MEGAcmd or API)
-  - AC: Support folder links with file selection
-  - AC: Rate limit awareness (free tier limits)
+#### 8.2.3 Mega.nz Resolver ✅ COMPLETED
+- [x] **Mega link handling** ✅
+  - AC: Parse mega.nz/#! and mega.nz/file/ URLs ✅ (both old and new formats)
+  - AC: Handle Mega's encryption (MEGAcmd or API) ✅ (AES-128-CBC decryption)
+  - AC: Support folder links with file selection ⏳ (deferred - file links complete)
+  - AC: Rate limit awareness (free tier limits) ✅ (429 detection)
 
 #### 8.2.4 Pixeldrain Resolver ✅ COMPLETED
 - [x] **Pixeldrain link handling** ✅
@@ -1793,7 +1793,7 @@ Track and prioritize completion of deferred items across all EPICs.
 | ~~15~~ | ~~NZBHydra2 support~~ | 10 | L | M | ✅ Completed |
 | ~~16~~ | ~~Deluge integration~~ | 14 | M | L | ✅ Completed |
 | 17 | Cloudflare challenge handling | 8 | L | M | Complex |
-| 18 | Mega.nz resolver | 8 | L | M | Encryption |
+| ~~18~~ | ~~Mega.nz resolver~~ | 8 | L | M | ✅ Completed |
 | ~~19~~ | ~~Rapidgator/Uploaded resolver~~ | 8 | M | L | ✅ Completed |
 | ~~20~~ | ~~Torrent → Import handoff~~ | 14 | M | M | ✅ Completed |
 | ~~29~~ | ~~Cover cache size limits & eviction~~ | 9 | M | M | ✅ Completed |

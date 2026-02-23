@@ -1,5 +1,70 @@
 # Worklog
 
+## Iteration 113 (2026-02-23)
+**EPIC 8: Mega.nz Resolver with Encryption Support**
+
+### Summary
+Added Mega.nz file host resolver that handles Mega's client-side encryption scheme. Files on Mega are encrypted with AES-128, and the decryption key is embedded in the URL fragment.
+
+### Commits
+1. `feat(ddl): add Mega.nz resolver with encryption support`
+
+### Deliverables
+
+#### MegaResolver
+- **Domains**: mega.nz, mega.co.nz
+- **Priority**: 1 (highest - Mega is reliable and fast)
+- **URL Formats Supported**:
+  - New: `mega.nz/file/fileId#key`
+  - Old: `mega.nz/#!fileId!key`
+
+#### Encryption Implementation
+- Extract 32-byte key from URL fragment (URL-safe Base64)
+- Derive 16-byte AES key by XORing the two halves
+- Decrypt file attributes using AES-128-CBC with zero IV
+- Parse decrypted JSON for filename (`n`) and fingerprint (`c`)
+
+#### API Integration
+- POST to `https://g.api.mega.co.nz/cs` with file request
+- Handle error codes (negative integers = errors)
+- Extract download URL (`g`), file size (`s`), and encrypted attributes (`at`)
+
+#### Base64 Handling
+- Mega uses URL-safe Base64 without padding
+- Replace `-` with `+`, `_` with `/`
+- Add padding as needed for standard Base64 decode
+
+#### Rate Limiting
+- Detect HTTP 429 responses
+- Return `RateLimited` failure reason with user message
+
+### Unit Tests (58 tests)
+- Basic properties: 5 tests
+- CanResolve patterns: 8 tests  
+- URL parsing (new/old formats): 6 tests
+- Folder link handling: 2 tests
+- Invalid URL handling: 5 tests
+- File ID extraction: 3 tests
+- Base64 encoding/decoding: 6 tests
+- Attribute decryption: 2 tests
+- Factory integration: 6 tests
+- Resolver behavior: 4 tests
+- URL format variations: 7 tests
+- Key handling: 3 tests
+- RequiredHeaders: 1 test
+
+### Files Changed
+- `src/Shortboxerr.Infrastructure/Ddl/Resolvers/MegaResolver.cs` (new)
+- `src/Shortboxerr.Infrastructure/Ddl/Resolvers/DownloadHostResolverFactory.cs` (modified)
+- `tests/Shortboxerr.Tests/MegaResolverTests.cs` (new)
+
+### Notes
+- Folder links are detected but not fully supported (deferred)
+- Encryption key stored in `RequiredHeaders["X-Mega-Key"]` for downstream use
+- The download URL returns encrypted content; client must decrypt with key
+
+---
+
 ## Iteration 112 (2026-02-23)
 **EPIC 8: Rapidgator & Uploaded.net Premium Host Resolvers**
 
