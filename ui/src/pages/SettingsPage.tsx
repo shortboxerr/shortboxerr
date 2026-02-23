@@ -3635,125 +3635,85 @@ function DownloadClientsSettings() {
             </div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {clients.map((client) => {
               const health = getClientHealth(client.id);
               return (
                 <div
                   key={client.id}
                   style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
                     background: 'var(--bg-tertiary)',
                     borderRadius: 'var(--radius-md)',
                     border: '1px solid var(--border-color)',
-                    padding: '16px 20px',
+                    padding: '12px 16px',
                   }}
                 >
-                  {/* Header Row */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div>
-                        <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>{client.name}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                          {client.implementation} • {client.type}
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <label className="toggle" style={{ marginRight: '4px' }}>
-                        <input
-                          type="checkbox"
-                          checked={client.isEnabled}
-                          onChange={(e) => toggleMutation.mutate({ id: client.id, enabled: e.target.checked })}
-                        />
-                        <span className="toggle-slider" />
-                      </label>
-                      <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(client)} title="Edit">
-                        <Edit size={14} />
-                        Edit
-                      </button>
-                      <button className="btn btn-sm" onClick={() => handleDelete(client)} title="Delete" style={{ color: 'var(--accent-error)' }}>
-                        <Trash2 size={14} />
-                      </button>
+                  {/* Name & Type */}
+                  <div style={{ flex: '0 0 180px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>{client.name}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                      {client.implementation} • {client.type}
                     </div>
                   </div>
 
-                  {/* Health & Stats Row */}
-                  <div style={{ 
-                    display: 'flex', 
-                    gap: '24px', 
-                    flexWrap: 'wrap',
-                    paddingTop: '12px',
-                    borderTop: '1px solid var(--border-color)',
-                  }}>
-                    <div style={{ minWidth: '100px' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
-                        Status
-                      </div>
-                      {health ? (
-                        <span style={{ 
-                          display: 'inline-flex', 
-                          alignItems: 'center', 
-                          gap: '6px',
-                          color: getHealthColor(health.state),
-                          fontSize: '14px',
-                          fontWeight: 500,
-                        }}>
-                          {getHealthIcon(health.state)}
-                          {health.state}
+                  {/* Health Status */}
+                  <div style={{ flex: '0 0 90px' }}>
+                    {health ? (
+                      <span style={{ 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '4px',
+                        color: getHealthColor(health.state),
+                        fontSize: '13px',
+                      }}>
+                        {getHealthIcon(health.state)}
+                        {health.state}
+                      </span>
+                    ) : (
+                      <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Unknown</span>
+                    )}
+                  </div>
+
+                  {/* Stats */}
+                  <div style={{ flex: '0 0 100px' }}>
+                    {health && (health.successCount > 0 || health.failureCount > 0) ? (
+                      <span style={{ fontSize: '13px' }}>
+                        <span style={{ color: 'var(--accent-success)' }}>{health.successCount}</span>
+                        <span style={{ color: 'var(--text-muted)' }}> / </span>
+                        <span style={{ color: 'var(--accent-error)' }}>{health.failureCount}</span>
+                        <span style={{ color: 'var(--text-muted)', marginLeft: '4px' }}>
+                          ({health.successRate.toFixed(0)}%)
                         </span>
-                      ) : (
-                        <span style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Unknown</span>
-                      )}
-                    </div>
-
-                    {health && (health.successCount > 0 || health.failureCount > 0) && (
-                      <>
-                        <div style={{ minWidth: '80px' }}>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
-                            Success Rate
-                          </div>
-                          <div style={{ 
-                            fontSize: '14px', 
-                            fontWeight: 500,
-                            color: health.successRate >= 80 ? 'var(--accent-success)' : health.successRate >= 50 ? 'var(--accent-warning)' : 'var(--accent-error)'
-                          }}>
-                            {health.successRate.toFixed(0)}%
-                          </div>
-                        </div>
-                        <div style={{ minWidth: '100px' }}>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
-                            Downloads
-                          </div>
-                          <div style={{ fontSize: '14px' }}>
-                            <span style={{ color: 'var(--accent-success)', fontWeight: 500 }}>{health.successCount}</span>
-                            <span style={{ color: 'var(--text-muted)' }}> / </span>
-                            <span style={{ color: 'var(--accent-error)', fontWeight: 500 }}>{health.failureCount}</span>
-                          </div>
-                        </div>
-                      </>
+                      </span>
+                    ) : (
+                      <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>—</span>
                     )}
+                  </div>
 
-                    {health?.lastSuccessAt && (
-                      <div style={{ minWidth: '120px' }}>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
-                          Last Success
-                        </div>
-                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                          {new Date(health.lastSuccessAt).toLocaleDateString()}
-                        </div>
-                      </div>
-                    )}
+                  {/* Spacer */}
+                  <div style={{ flex: 1 }} />
 
-                    {health?.lastErrorMessage && (
-                      <div style={{ flex: 1, minWidth: '200px' }}>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
-                          Last Error
-                        </div>
-                        <div style={{ fontSize: '12px', color: 'var(--accent-error)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {health.lastErrorMessage}
-                        </div>
-                      </div>
-                    )}
+                  {/* Toggle */}
+                  <label className="toggle">
+                    <input
+                      type="checkbox"
+                      checked={client.isEnabled}
+                      onChange={(e) => toggleMutation.mutate({ id: client.id, enabled: e.target.checked })}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button className="btn btn-icon btn-sm" onClick={() => handleEdit(client)} title="Edit">
+                      <Edit size={14} />
+                    </button>
+                    <button className="btn btn-icon btn-sm" onClick={() => handleDelete(client)} title="Delete" style={{ color: 'var(--accent-error)' }}>
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                 </div>
               );
