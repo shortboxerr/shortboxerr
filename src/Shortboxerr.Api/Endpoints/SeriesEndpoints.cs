@@ -206,6 +206,7 @@ public static class SeriesEndpoints
                     .Include(s => s.Editions)
                     .Include(s => s.LinkedAnnualSeries) // Include linked annual series
                         .ThenInclude(a => a.Issues)
+                    .AsSplitQuery() // Use split queries for multiple collection navigations
                     .FirstOrDefaultAsync(s => s.Id == id);
             }, TimeSpan.FromMinutes(5));
 
@@ -242,6 +243,7 @@ public static class SeriesEndpoints
                 .Include(s => s.Issues)
                 .Include(s => s.LinkedAnnualSeries)
                     .ThenInclude(a => a.Issues)
+                .AsSplitQuery() // Use split queries for multiple collection navigations
                 .FirstOrDefaultAsync(s => s.Id == id);
                 
             if (series is null)

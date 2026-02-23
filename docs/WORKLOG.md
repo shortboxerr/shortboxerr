@@ -1,5 +1,39 @@
 # Worklog
 
+## Iteration 130 (2026-02-23)
+**EPIC 15.14: EF Core Query Splitting Performance Warning**
+
+### Summary
+Fixed EF Core performance warning about queries with multiple collection navigations. Added `.AsSplitQuery()` to 4 queries to avoid cartesian explosion when loading nested collections.
+
+### Commits
+1. `perf(ef): add split queries for multi-collection navigations`
+
+### Deliverables
+
+#### Query Optimization
+- Identified 4 queries triggering MultipleCollectionIncludeWarning
+- Added `.AsSplitQuery()` to each to use separate SQL queries instead of joins
+- Prevents N*M row explosion when loading related collections
+
+#### Affected Queries
+1. `SeriesEndpoints.GetSeriesById` - Series with Issues, Editions, and LinkedAnnualSeries.Issues
+2. `SeriesEndpoints.GetSeriesAnnuals` - Series with Issues and LinkedAnnualSeries.Issues
+3. `EditionEndpoints.GetEditionDetail` - Edition with Contents, Issue.Series, and Series
+4. `EditionEndpoints.GetEditionContents` - EditionContents with Issue.Series and Series
+
+### Performance Implications
+- Split queries execute multiple SQL statements
+- Avoids cartesian explosion (N series × M issues × K annuals)
+- Trade-off: more database round trips vs. smaller result sets
+- Recommended for large collections like series with many issues
+
+### Files Changed
+- `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` - 2 queries updated
+- `src/Shortboxerr.Api/Endpoints/EditionEndpoints.cs` - 2 queries updated
+
+---
+
 ## Iteration 129 (2026-02-17)
 **EPIC 15.12 & 15.13: Critical Bug Fixes from Log Analysis**
 

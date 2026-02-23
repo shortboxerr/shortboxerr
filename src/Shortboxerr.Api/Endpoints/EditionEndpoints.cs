@@ -83,6 +83,7 @@ public static class EditionEndpoints
                         .ThenInclude(i => i!.Series)
                 .Include(e => e.Contents)
                     .ThenInclude(c => c.Series)
+                .AsSplitQuery() // Use split queries for multiple collection navigations
                 .FirstOrDefaultAsync(e => e.Id == id);
 
             return edition is null
@@ -102,6 +103,7 @@ public static class EditionEndpoints
                 .Include(c => c.Issue)
                     .ThenInclude(i => i!.Series)
                 .Include(c => c.Series)
+                .AsSplitQuery() // Use split queries for multiple collection navigations
                 .Where(c => c.EditionTitleId == id)
                 .OrderBy(c => c.SortOrder)
                 .ToListAsync();

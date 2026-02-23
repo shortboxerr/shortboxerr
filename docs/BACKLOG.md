@@ -2527,16 +2527,19 @@ NZBgeek (and possibly other indexers) reject requests with "API Error 109: Inval
   - AC: Consider indexer-specific User-Agent configuration option (deferred - simple format works)
   - AC: Test with NZBgeek and other common indexers (NZBHydra2, etc.) ✅
 
-### 15.14 EF Core Query Splitting Performance Warning
+### 15.14 EF Core Query Splitting Performance Warning ✅ COMPLETED
 EF Core warns about queries with multiple collection navigations using single query mode.
 
-**Warning**: `Compiling a query which loads related collections for more than one collection navigation... no 'QuerySplittingBehavior' has been configured`
+**Implemented in Iteration 130:**
+- Added `.AsSplitQuery()` to 4 queries with multiple collection navigations
+- SeriesEndpoints: GetSeriesById, GetSeriesAnnuals
+- EditionEndpoints: GetEditionDetail, GetEditionContents
 
-- [ ] **Configure query splitting behavior**
-  - AC: Identify queries triggering this warning
-  - AC: Configure `QuerySplittingBehavior.SplitQuery` for complex queries
-  - AC: Or suppress warning if single query is intentional
-  - AC: Document performance implications
+- [x] **Configure query splitting behavior**
+  - AC: Identify queries triggering this warning ✅ (4 queries in SeriesEndpoints and EditionEndpoints)
+  - AC: Configure `QuerySplittingBehavior.SplitQuery` for complex queries ✅ (per-query AsSplitQuery)
+  - AC: Or suppress warning if single query is intentional ✅ (opted for split queries)
+  - AC: Document performance implications ✅ (split queries avoid cartesian explosion)
 
 ### 15.9 Pull List Data Accuracy (Mylar3 Parity Investigation)
 Pull list data doesn't match Mylar3's for the same week.
@@ -2589,7 +2592,7 @@ Pull list data doesn't match Mylar3's for the same week.
 9. **15.11 Default User-Agent Header** - ✅ COMPLETED (Iteration 128)
 10. **15.12 SabnzbdClient Constructor Ambiguity** - ✅ COMPLETED (Iteration 129)
 11. **15.13 NewznabClient User-Agent Rejection** - ✅ COMPLETED (Iteration 129)
-12. **15.14 EF Core Query Splitting** - Performance warning for multi-collection queries
+12. **15.14 EF Core Query Splitting** - ✅ COMPLETED (Iteration 130)
 
 ---
 

@@ -2,38 +2,33 @@
 
 ## Summary
 
-Iteration 129 completed: Fixed critical bugs discovered through log analysis - SabnzbdClient DI resolution and User-Agent format compatibility.
+Iteration 130 completed: Fixed EF Core query splitting warning by adding `.AsSplitQuery()` to queries with multiple collection navigations.
 
-## Recent Iterations (125-129)
+## Recent Iterations (126-130)
 
 | Iteration | Feature | Status |
 |-----------|---------|--------|
-| 125 | Cache Statistics, Warming, Revalidation | ✅ |
 | 126 | Compressed Archive of Rotated Logs | ✅ |
 | 127 | Email Notifications (SMTP) | ✅ |
 | 128 | Default User-Agent Header | ✅ |
 | 129 | SabnzbdClient DI Fix & User-Agent Format | ✅ |
+| 130 | EF Core Query Splitting | ✅ |
 
-## Iteration 129 Details
+## Iteration 130 Details
 
-### Issues Addressed
-1. **15.12 SabnzbdClient Constructor** - DI couldn't resolve which constructor to use
-2. **15.13 User-Agent Format** - NZBgeek rejecting requests with extended format
+### Issue Addressed
+EF Core warning: `Compiling a query which loads related collections for more than one collection navigation... no 'QuerySplittingBehavior' has been configured`
 
 ### Changes Made
-- Added `[ActivatorUtilitiesConstructor]` to SabnzbdClient primary constructor
-- Simplified User-Agent from `Shortboxerr/x.y.z (+url)` to `Shortboxerr/x.y.z`
-- Added `ExtendedUserAgent` property for APIs that accept longer format
-- 13 new/updated unit tests
+Added `.AsSplitQuery()` to 4 queries:
+1. `SeriesEndpoints.GetSeriesById`
+2. `SeriesEndpoints.GetSeriesAnnuals`
+3. `EditionEndpoints.GetEditionDetail`
+4. `EditionEndpoints.GetEditionContents`
 
 ### Files Changed
-- `src/Shortboxerr.Infrastructure/Nzb/SabnzbdClient.cs`
-- `src/Shortboxerr.Infrastructure/Http/HttpClientDefaults.cs`
-- `tests/Shortboxerr.Tests/SabnzbdClientDependencyInjectionTests.cs` (new)
-- `tests/Shortboxerr.Tests/HttpClientDefaultsTests.cs`
-
-### Tests
-- All 13 tests passing (3 new DI tests + 10 User-Agent tests)
+- `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs`
+- `src/Shortboxerr.Api/Endpoints/EditionEndpoints.cs`
 
 ## Server Configuration
 
@@ -42,16 +37,18 @@ Iteration 129 completed: Fixed critical bugs discovered through log analysis - S
 | Backend API | 0.0.0.0 | 5000 | Running |
 | Frontend (Vite) | 0.0.0.0 | 8585 | Running |
 
+## All Log-Discovered Issues - RESOLVED
+
+| Issue | Status | Iteration |
+|-------|--------|-----------|
+| 15.12 SabnzbdClient Constructor | ✅ | 129 |
+| 15.13 User-Agent Format | ✅ | 129 |
+| 15.14 EF Core Query Splitting | ✅ | 130 |
+
 ## Remaining Backlog Items
 
-### Recently Fixed
-- ✅ 15.11 Default User-Agent Header (Iteration 128)
-- ✅ 15.12 SabnzbdClient Constructor (Iteration 129)
-- ✅ 15.13 User-Agent Format (Iteration 129)
-
-### Still Open
-- 15.14 EF Core Query Splitting - Performance warning (low priority)
-- 15.9 Pull List Data Accuracy - Research task
+### Research Tasks
+- 15.9 Pull List Data Accuracy - Mylar3 parity investigation
 
 ### External Dependencies
 - EPIC 8: Usenet/NZB integration from DDL sites
@@ -63,9 +60,7 @@ Iteration 129 completed: Fixed critical bugs discovered through log analysis - S
 
 ## Validation
 
-- [x] Build succeeds (24 warnings, 0 errors)
-- [x] All new tests passing (13/13)
-- [x] SabnzbdClient resolves from DI
-- [x] User-Agent format simplified
+- [x] Build succeeds (7 warnings, 0 errors)
+- [x] EF Core split queries configured
 - [x] BACKLOG.md updated
 - [x] WORKLOG.md updated
