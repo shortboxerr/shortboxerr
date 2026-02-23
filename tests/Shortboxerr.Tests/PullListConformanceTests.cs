@@ -8,6 +8,7 @@ using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Core.Entities;
 using Shortboxerr.Core.PullList;
 using Shortboxerr.Core.Services;
+using Shortboxerr.Core.WalkSoftly;
 using Shortboxerr.Infrastructure.Caching;
 using Shortboxerr.Infrastructure.Persistence;
 using Shortboxerr.Infrastructure.PullList;
@@ -25,6 +26,7 @@ public class PullListConformanceTests : IDisposable
     private readonly PullListService _service;
     private readonly Mock<ISettingsService> _mockSettingsService;
     private readonly Mock<IComicVineClient> _mockComicVineClient;
+    private readonly Mock<IWalkSoftlyClient> _mockWalkSoftlyClient;
     private readonly Mock<ISeriesMetadataService> _mockSeriesMetadataService;
     private readonly ICacheService _cacheService;
     private readonly Mock<ILogger<PullListService>> _mockLogger;
@@ -38,16 +40,24 @@ public class PullListConformanceTests : IDisposable
         _dbContext = new ShortboxerrDbContext(options);
         _mockSettingsService = new Mock<ISettingsService>();
         _mockComicVineClient = new Mock<IComicVineClient>();
+        _mockWalkSoftlyClient = new Mock<IWalkSoftlyClient>();
         _mockSeriesMetadataService = new Mock<ISeriesMetadataService>();
         _cacheService = new CacheService(
             new MemoryCache(new MemoryCacheOptions()),
             new Mock<ILogger<CacheService>>().Object,
             Options.Create(new CacheSettings()));
         _mockLogger = new Mock<ILogger<PullListService>>();
+        
+        // Default WalkSoftly setup - returns empty result
+        _mockWalkSoftlyClient
+            .Setup(x => x.GetWeeklyReleasesAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WalkSoftlyResult { Success = false, Error = "Mock - not configured" });
+        
         _service = new PullListService(
             _dbContext, 
             _mockSettingsService.Object, 
-            _mockComicVineClient.Object, 
+            _mockComicVineClient.Object,
+            _mockWalkSoftlyClient.Object,
             _mockSeriesMetadataService.Object, 
             _cacheService, 
             _mockLogger.Object);

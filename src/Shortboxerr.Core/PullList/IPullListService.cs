@@ -561,6 +561,36 @@ public class PullListSettings
     public int ActiveCacheTtlMinutes { get; set; } = 30;
 
     #endregion
+
+    #region WalkSoftly Integration (Mylar3 Data Source Parity)
+
+    /// <summary>
+    /// Whether to use WalkSoftly as the primary data source for weekly releases.
+    /// WalkSoftly provides fresher data than direct ComicVine queries.
+    /// Default: true
+    /// </summary>
+    public bool UseWalkSoftly { get; set; } = true;
+
+    /// <summary>
+    /// Whether to fall back to ComicVine if WalkSoftly is unavailable.
+    /// Default: true
+    /// </summary>
+    public bool WalkSoftlyFallbackToComicVine { get; set; } = true;
+
+    /// <summary>
+    /// Cache TTL in minutes for WalkSoftly responses.
+    /// Mylar3 uses 4 hours (240 minutes).
+    /// Default: 240
+    /// </summary>
+    public int WalkSoftlyCacheTtlMinutes { get; set; } = 240;
+
+    /// <summary>
+    /// Publishers to ignore/exclude from pull list.
+    /// Supports wildcards: "*Manga*" matches any publisher containing "Manga".
+    /// </summary>
+    public List<string> IgnoredPublishers { get; set; } = new();
+
+    #endregion
 }
 
 /// <summary>

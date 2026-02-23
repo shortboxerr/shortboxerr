@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -6,7 +7,9 @@ using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Core.Entities;
 using Shortboxerr.Core.PullList;
 using Shortboxerr.Core.Services;
+using Shortboxerr.Core.WalkSoftly;
 using Shortboxerr.Infrastructure.Persistence;
+using Shortboxerr.Infrastructure.WalkSoftly;
 
 namespace Shortboxerr.Infrastructure.PullList;
 
@@ -18,6 +21,7 @@ public class PullListService : IPullListService
     private readonly ShortboxerrDbContext _dbContext;
     private readonly ISettingsService _settingsService;
     private readonly IComicVineClient _comicVineClient;
+    private readonly IWalkSoftlyClient _walkSoftlyClient;
     private readonly ISeriesMetadataService _seriesMetadataService;
     private readonly ICacheService _cacheService;
     private readonly ILogger<PullListService> _logger;
@@ -37,6 +41,7 @@ public class PullListService : IPullListService
         ShortboxerrDbContext dbContext,
         ISettingsService settingsService,
         IComicVineClient comicVineClient,
+        IWalkSoftlyClient walkSoftlyClient,
         ISeriesMetadataService seriesMetadataService,
         ICacheService cacheService,
         ILogger<PullListService> logger)
@@ -44,6 +49,7 @@ public class PullListService : IPullListService
         _dbContext = dbContext;
         _settingsService = settingsService;
         _comicVineClient = comicVineClient;
+        _walkSoftlyClient = walkSoftlyClient;
         _seriesMetadataService = seriesMetadataService;
         _cacheService = cacheService;
         _logger = logger;
@@ -847,11 +853,12 @@ public class PullListService : IPullListService
             }
             else
             {
-                // Step 3: Fetch from ComicVine (cache miss)
-                _logger.LogInformation("Fetching ComicVine releases for week of {WeekStart} (CacheTier: {CacheTier}, TTL: {CacheTtl})", 
+                // Step 3: Fetch from WalkSoftly/ComicVine (cache miss)
+                _logger.LogInformation("Fetching releases for week of {WeekStart} (CacheTier: {CacheTier}, TTL: {CacheTtl})", 
                     weekStart, cacheTier, cacheTtl);
                 
-                allIssues = await FetchComicVineIssuesForWeekAsync(weekStart, weekEnd, cancellationToken);
+                var (fetchedIssues, dataSource) = await FetchWeeklyReleasesAsync(weekStart, weekEnd, settings, cancellationToken);
+                allIssues = fetchedIssues;
                 refreshedAt = DateTime.UtcNow;
                 
                 // Persist to database
@@ -860,8 +867,8 @@ public class PullListService : IPullListService
                 // Also store in memory cache
                 _cacheService.Set(memoryCacheKey, allIssues, cacheTtl);
                 
-                _logger.LogInformation("Retrieved and cached {Count} issues from ComicVine for week of {WeekStart}", 
-                    allIssues.Count, weekStart);
+                _logger.LogInformation("Retrieved and cached {Count} issues from {DataSource} for week of {WeekStart}", 
+                    allIssues.Count, dataSource, weekStart);
             }
         }
 
@@ -874,7 +881,83 @@ public class PullListService : IPullListService
     }
 
     /// <summary>
-    /// Fetches issues from ComicVine for a specific week.
+    /// Fetches weekly releases using WalkSoftly as primary source, falling back to ComicVine.
+    /// </summary>
+    private async Task<(List<ComicVineIssue> Issues, string DataSource)> FetchWeeklyReleasesAsync(
+        DateTime weekStart,
+        DateTime weekEnd,
+        PullListSettings settings,
+        CancellationToken cancellationToken)
+    {
+        // Calculate week number for WalkSoftly
+        var releaseDay = weekStart.AddDays((int)DayOfWeek.Wednesday);
+        var cal = CultureInfo.InvariantCulture.Calendar;
+        var weekNumber = cal.GetWeekOfYear(releaseDay, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+        var year = releaseDay.Year;
+
+        // Try WalkSoftly first if enabled
+        if (settings.UseWalkSoftly)
+        {
+            _logger.LogInformation("Fetching releases from WalkSoftly for week {Week}, {Year}", weekNumber, year);
+            
+            var wsResult = await _walkSoftlyClient.GetWeeklyReleasesAsync(weekNumber, year, cancellationToken);
+            
+            if (wsResult.Success && wsResult.Releases.Count > 0)
+            {
+                // Apply publisher filtering
+                var filteredReleases = PublisherFilter.FilterByPublisher(
+                    wsResult.Releases, 
+                    settings.IgnoredPublishers);
+                
+                _logger.LogInformation(
+                    "WalkSoftly returned {Total} releases, {Filtered} after publisher filtering",
+                    wsResult.Releases.Count, filteredReleases.Count);
+                
+                var issues = filteredReleases.Select(ConvertWalkSoftlyToComicVineIssue).ToList();
+                return (issues, "WalkSoftly");
+            }
+            
+            _logger.LogWarning("WalkSoftly request failed: {Error}", wsResult.Error);
+            
+            if (!settings.WalkSoftlyFallbackToComicVine)
+            {
+                _logger.LogWarning("WalkSoftly fallback disabled, returning empty list");
+                return (new List<ComicVineIssue>(), "WalkSoftly (failed)");
+            }
+            
+            _logger.LogInformation("Falling back to ComicVine for week {Week}, {Year}", weekNumber, year);
+        }
+
+        // Fall back to ComicVine
+        var cvIssues = await FetchComicVineIssuesForWeekAsync(weekStart, weekEnd, cancellationToken);
+        return (cvIssues, "ComicVine");
+    }
+
+    /// <summary>
+    /// Converts a WalkSoftly release to ComicVineIssue format for compatibility with existing code.
+    /// </summary>
+    private static ComicVineIssue ConvertWalkSoftlyToComicVineIssue(WalkSoftlyRelease release)
+    {
+        return new ComicVineIssue
+        {
+            Id = release.IssueId ?? 0,
+            Name = null, // WalkSoftly doesn't provide issue title
+            IssueNumber = release.Issue?.TrimStart('#') ?? "0",
+            StoreDate = release.ShipDate,
+            CoverDate = release.CoverDate,
+            Volume = release.ComicId.HasValue 
+                ? new ComicVineVolumeRef 
+                { 
+                    Id = release.ComicId.Value, 
+                    Name = release.Series 
+                } 
+                : null,
+            Image = null // WalkSoftly doesn't provide images
+        };
+    }
+
+    /// <summary>
+    /// Fetches issues from ComicVine for a specific week (fallback/legacy method).
     /// </summary>
     private async Task<List<ComicVineIssue>> FetchComicVineIssuesForWeekAsync(
         DateTime weekStart,

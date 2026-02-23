@@ -149,6 +149,9 @@ public static class DependencyInjection
         // Pull list service
         services.AddScoped<IPullListService, PullListService>();
 
+        // WalkSoftly client for pull list data (Mylar3 parity)
+        services.AddHttpClient<Core.WalkSoftly.IWalkSoftlyClient, WalkSoftly.WalkSoftlyClient>();
+
         // NZB/Usenet services
         services.AddHttpClient<INewznabClient, NewznabClient>();
         services.AddScoped<INzbIndexerProvider, NzbIndexerProvider>();

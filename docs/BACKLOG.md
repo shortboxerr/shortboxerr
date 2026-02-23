@@ -1382,6 +1382,50 @@ Implement background refresh service to match Mylar3's ComicVine synchronization
   - AC: Multi-series weekly pull list generation ✅ (2 tests)
   - AC: UI calendar interaction (manual testing complete)
 
+### 11.10 WalkSoftly Pull List Integration (Mylar3 Data Source Parity) ✅ COMPLETED (Iteration 138)
+Based on EPIC 15.9 research findings: Mylar3 uses WalkSoftly aggregator for pull list data, which provides fresher/more complete release data than direct ComicVine queries. ComicVine has known delays (up to 4+ days) for new release information.
+
+**Data Source**: `https://walksoftly.itsaninja.party/newcomics.php`
+**Documentation**: `docs/research/PULL_LIST_DATA_ACCURACY.md`
+
+- [x] **WalkSoftly client implementation** ✅
+  - AC: IWalkSoftlyClient interface with GetWeeklyReleasesAsync method ✅
+  - AC: WalkSoftlyClient HTTP implementation ✅
+  - AC: Request parameters: week number, year ✅
+  - AC: Response parsing: series, issue, publisher, shipdate, coverdate, comicid, issueid, weeknumber, volume, seriesyear, format ✅
+  - AC: Graceful fallback to ComicVine if WalkSoftly unavailable ✅
+  - AC: Configurable in settings (enable/disable, fallback behavior) ✅
+
+- [x] **Data model enhancements** ✅
+  - AC: WalkSoftlyRelease DTO matching response schema ✅
+  - AC: Map WalkSoftly fields to existing PullList models ✅
+  - AC: Handle pre-mapped ComicVine IDs from WalkSoftly response ✅
+  - AC: Track data source (WalkSoftly vs ComicVine) in logs ✅
+
+- [x] **Discovery service refactoring** ✅
+  - AC: PullListService uses WalkSoftly as primary source for weekly discovery ✅
+  - AC: Falls back to ComicVine GetIssuesByStoreDateAsync if WalkSoftly fails ✅
+  - AC: Merge WalkSoftly data with existing library for "in library" detection ✅
+  - AC: Cache WalkSoftly responses with appropriate TTL (4 hours like Mylar3) ✅
+
+- [x] **Publisher filtering (Mylar3 parity)** ✅
+  - AC: Configurable ignored publishers list in PullListSettings ✅
+  - AC: Wildcard support for publisher matching (e.g., "*Manga*") ✅
+  - AC: Apply filter at data retrieval level ✅
+  - AC: Settings UI for managing ignored publishers (settings available, UI deferred)
+
+- [x] **Status indicators and diagnostics** ✅
+  - AC: Log data source info (WalkSoftly vs ComicVine) ✅
+  - AC: Display WalkSoftly service status via IsAvailableAsync ✅
+  - AC: Log when falling back to ComicVine with reason ✅
+
+- [x] **Unit tests** ✅
+  - AC: WalkSoftlyClient response parsing ✅ (13 tests)
+  - AC: Fallback behavior when service unavailable ✅
+  - AC: Publisher filtering with wildcards ✅ (11 theory tests)
+  - AC: Cache handling ✅
+  - AC: Integration with existing PullListService ✅
+
 ---
 
 ## EPIC 12: Performance & Caching Strategy

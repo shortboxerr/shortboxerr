@@ -1,5 +1,36 @@
 # Worklog
 
+## Iteration 138 (2026-02-23)
+**EPIC 11.10: WalkSoftly Pull List Integration**
+
+### Summary
+Implemented WalkSoftly as the primary data source for weekly comic releases, achieving Mylar3 data source parity. WalkSoftly provides fresher/more complete release data than direct ComicVine queries.
+
+### Features
+- **WalkSoftly Client**: HTTP client for walksoftly.itsaninja.party/newcomics.php
+- **Automatic Fallback**: Falls back to ComicVine if WalkSoftly is unavailable
+- **Publisher Filtering**: Configurable ignored publishers with wildcard support
+- **Pre-mapped IDs**: Uses ComicVine IDs directly from WalkSoftly response
+- **4-hour Cache**: Matches Mylar3's cache TTL for WalkSoftly data
+
+### Files Changed
+- `src/Shortboxerr.Core/WalkSoftly/IWalkSoftlyClient.cs` - Interface and DTOs
+- `src/Shortboxerr.Infrastructure/WalkSoftly/WalkSoftlyClient.cs` - HTTP implementation
+- `src/Shortboxerr.Infrastructure/DependencyInjection.cs` - DI registration
+- `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` - Integration
+- `src/Shortboxerr.Core/PullList/IPullListService.cs` - Settings additions
+- `tests/Shortboxerr.Tests/WalkSoftlyClientTests.cs` - 13 unit tests
+- `tests/Shortboxerr.Tests/PullListServiceTests.cs` - Mock setup
+- `tests/Shortboxerr.Tests/PullListConformanceTests.cs` - Mock setup
+
+### New Settings (PullListSettings)
+- `UseWalkSoftly` - Enable/disable WalkSoftly (default: true)
+- `WalkSoftlyFallbackToComicVine` - Enable fallback (default: true)  
+- `WalkSoftlyCacheTtlMinutes` - Cache duration (default: 240)
+- `IgnoredPublishers` - List of publishers to exclude (supports wildcards)
+
+---
+
 ## Iteration 137 (2026-02-23)
 **EPIC 15.9: Pull List Data Accuracy Investigation**
 
