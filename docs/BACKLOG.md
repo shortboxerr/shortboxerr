@@ -649,13 +649,13 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: Rate limit status display
   - AC: Cache management (clear cache button)
 - [x] **Series detail integration** ✅
-  - AC: Series detail page with cover, metadata, overview
-  - AC: ComicVine link on matched series
-  - AC: Issues grid with status indicators (owned/wanted/edition)
-  - AC: Clickable series rows navigate to detail page
-  - AC: API endpoint: GET /api/v1/series/{id}/issues
-  - AC: "Match to ComicVine" button on unmatched series - DEFERRED
-  - AC: "Refresh Metadata" button - DEFERRED
+  - AC: Series detail page with cover, metadata, overview ✅
+  - AC: ComicVine link on matched series ✅
+  - AC: Issues grid with status indicators (owned/wanted/edition) ✅
+  - AC: Clickable series rows navigate to detail page ✅
+  - AC: API endpoint: GET /api/v1/series/{id}/issues ✅
+  - AC: "Match to ComicVine" button on unmatched series ✅ (Iteration 116)
+  - AC: "Refresh Metadata" button ✅ (was already implemented)
 - [x] **Search & match modal** ✅
   - AC: Search ComicVine by name
   - AC: Display results with covers and metadata preview
@@ -910,7 +910,7 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: Handle failed downloads (incomplete, password-protected) ✅
   - Note: NzbImportService with background polling, 19 unit tests
 
-### 10.5 NZB Configuration & Settings - PARTIAL ✅
+### 10.5 NZB Configuration & Settings ✅ COMPLETED
 - [x] **Indexer configuration** ✅
   - AC: Add/edit/delete NZB indexers ✅
   - AC: Test indexer connectivity ✅
@@ -918,7 +918,7 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: Enable/disable per indexer ✅
 - [x] **Download client configuration** ✅
   - AC: SABnzbd: URL, API key, category, priority ✅
-  - AC: NZBGet: URL, username, password, category (deferred)
+  - AC: NZBGet: URL, username, password, category ✅ (implemented in EPIC 14.2)
   - AC: Test connection button ✅
   - AC: Default download client selection ✅
 - [x] **Mylar3 NZB settings import** ✅
@@ -928,7 +928,7 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: Validation report ✅ (errors, warnings, summary)
   - Note: Full implementation in `Mylar3ConfigImporter.cs` with 34 unit tests
 
-### 10.6 NZB UI - PARTIAL ✅
+### 10.6 NZB UI ✅ COMPLETED
 - [x] **Indexers settings page** ✅
   - AC: NZB Indexers section (separate from DDL) ✅
   - AC: Add indexer modal with Newznab fields ✅
@@ -936,11 +936,11 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: Test and status indicators ✅
 - [x] **Download clients settings page** ✅
   - AC: SABnzbd configuration panel ✅
-  - AC: NZBGet configuration panel (deferred)
+  - AC: NZBGet configuration panel ✅ (implemented in EPIC 14.2)
   - AC: Connection test results ✅
 - [x] **Unified download client modal** ✅
   - AC: "Add Download Client" button opens a modal with implementation type selector ✅
-  - AC: Implementation dropdown includes: SABnzbd ✅, NZBGet (deferred), qBittorrent (deferred), Transmission (deferred), Deluge (deferred)
+  - AC: Implementation dropdown includes: SABnzbd ✅, NZBGet ✅, qBittorrent ✅, Transmission ✅, Deluge ✅ (all in EPIC 14.2/14.3)
   - AC: Modal form fields change dynamically based on selected implementation type ✅
   - AC: SABnzbd fields: Host, API Key, Category, Use SSL ✅
   - AC: All download clients (including SABnzbd) managed in single unified list ✅
