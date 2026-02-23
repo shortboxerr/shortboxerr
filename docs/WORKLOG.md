@@ -1,5 +1,39 @@
 # Worklog
 
+## Iteration 129 (2026-02-17)
+**EPIC 15.12 & 15.13: Critical Bug Fixes from Log Analysis**
+
+### Summary
+Fixed two critical issues discovered through log analysis:
+1. SabnzbdClient DI constructor ambiguity causing NzbImportBackgroundService to fail
+2. User-Agent format causing NZBgeek to reject requests
+
+### Commits
+1. `fix(nzb): resolve SabnzbdClient constructor ambiguity for DI`
+2. `fix(http): simplify User-Agent format for indexer compatibility`
+
+### Deliverables
+
+#### SabnzbdClient Fix (15.12)
+- Added `[ActivatorUtilitiesConstructor]` attribute to primary constructor
+- Tells DI which constructor to use when both match parameters
+- Secondary constructor preserved for unit testing
+- 3 new tests verify DI resolution
+
+#### User-Agent Format Fix (15.13)
+- Changed from `Shortboxerr/x.y.z (+https://...)` to `Shortboxerr/x.y.z`
+- Simple format matches Sonarr/Radarr pattern for maximum compatibility
+- Added `ExtendedUserAgent` property for APIs accepting longer format
+- 10 tests verify format correctness
+
+### Files Changed
+- `src/Shortboxerr.Infrastructure/Nzb/SabnzbdClient.cs` - Added ActivatorUtilitiesConstructor
+- `src/Shortboxerr.Infrastructure/Http/HttpClientDefaults.cs` - Simplified UserAgent, added ExtendedUserAgent
+- `tests/Shortboxerr.Tests/SabnzbdClientDependencyInjectionTests.cs` - 3 new DI tests
+- `tests/Shortboxerr.Tests/HttpClientDefaultsTests.cs` - Updated for new format
+
+---
+
 ## Iteration 128 (2026-02-17)
 **EPIC 15.11: Default User-Agent Header for HTTP Requests**
 

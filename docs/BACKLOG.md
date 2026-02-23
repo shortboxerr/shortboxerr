@@ -2498,6 +2498,46 @@ External sites return errors when User-Agent header is missing or invalid.
   - AC: Review existing HttpClient registrations for missing User-Agent ✅
   - AC: Add integration test to verify User-Agent is sent ✅
 
+### 15.12 SabnzbdClient Constructor Ambiguity (Critical Bug) ✅ COMPLETED
+NzbImportBackgroundService fails continuously due to DI not being able to resolve SabnzbdClient constructor.
+
+**Implemented in Iteration 129:**
+- Added `[ActivatorUtilitiesConstructor]` attribute to the primary DI constructor
+- Secondary constructor retained for testing with explicit settings
+- 3 unit tests verify DI resolution works correctly
+
+- [x] **Fix SabnzbdClient constructor for typed HttpClient**
+  - AC: Remove ambiguous constructor overload or mark one with `[ActivatorUtilitiesConstructor]` ✅
+  - AC: Ensure typed HttpClient factory can instantiate SabnzbdClient ✅
+  - AC: NzbImportBackgroundService processes downloads without errors ✅
+  - AC: Add test to verify SabnzbdClient can be resolved from DI ✅
+
+### 15.13 NewznabClient User-Agent Rejection ✅ COMPLETED
+NZBgeek (and possibly other indexers) reject requests with "API Error 109: Invalid User Agent" even after User-Agent header fix.
+
+**Implemented in Iteration 129:**
+- Simplified User-Agent format from `Shortboxerr/x.y.z (+url)` to `Shortboxerr/x.y.z`
+- Added `ExtendedUserAgent` property for APIs that accept longer format
+- Simple format follows same pattern as Sonarr/Radarr for indexer compatibility
+- 10 unit tests verify User-Agent format and configuration
+
+- [x] **Investigate indexer-specific User-Agent requirements**
+  - AC: Research NZBgeek User-Agent format requirements ✅ (requires simple format)
+  - AC: Add User-Agent header to NewznabClient HTTP requests explicitly ✅ (via HttpClient defaults)
+  - AC: Consider indexer-specific User-Agent configuration option (deferred - simple format works)
+  - AC: Test with NZBgeek and other common indexers (NZBHydra2, etc.) ✅
+
+### 15.14 EF Core Query Splitting Performance Warning
+EF Core warns about queries with multiple collection navigations using single query mode.
+
+**Warning**: `Compiling a query which loads related collections for more than one collection navigation... no 'QuerySplittingBehavior' has been configured`
+
+- [ ] **Configure query splitting behavior**
+  - AC: Identify queries triggering this warning
+  - AC: Configure `QuerySplittingBehavior.SplitQuery` for complex queries
+  - AC: Or suppress warning if single query is intentional
+  - AC: Document performance implications
+
 ### 15.9 Pull List Data Accuracy (Mylar3 Parity Investigation)
 Pull list data doesn't match Mylar3's for the same week.
 
@@ -2545,8 +2585,11 @@ Pull list data doesn't match Mylar3's for the same week.
 7. **15.3 Forthcoming Releases View** - ✅ COMPLETED (verified Iteration 098 - was already implemented)
 8. **15.8 Pull List Data Accuracy Investigation** - Deferred (requires research, non-blocking)
 
-### P4 - High (Integration Issues) ✅ COMPLETED
+### P4 - High (Integration Issues)
 9. **15.11 Default User-Agent Header** - ✅ COMPLETED (Iteration 128)
+10. **15.12 SabnzbdClient Constructor Ambiguity** - ✅ COMPLETED (Iteration 129)
+11. **15.13 NewznabClient User-Agent Rejection** - ✅ COMPLETED (Iteration 129)
+12. **15.14 EF Core Query Splitting** - Performance warning for multi-collection queries
 
 ---
 

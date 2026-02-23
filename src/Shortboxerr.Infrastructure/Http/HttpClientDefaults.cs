@@ -27,9 +27,15 @@ public static class HttpClientDefaults
 
     /// <summary>
     /// Gets the default User-Agent header value.
+    /// Format: "Shortboxerr/0.1.0" (simple format for maximum compatibility with indexers)
+    /// </summary>
+    public static string UserAgent => $"{ApplicationName}/{Version}";
+
+    /// <summary>
+    /// Gets the extended User-Agent with project URL (for non-indexer APIs).
     /// Format: "Shortboxerr/0.1.0 (+https://github.com/shortboxerr/shortboxerr)"
     /// </summary>
-    public static string UserAgent => $"{ApplicationName}/{Version} (+https://github.com/shortboxerr/shortboxerr)";
+    public static string ExtendedUserAgent => $"{ApplicationName}/{Version} (+https://github.com/shortboxerr/shortboxerr)";
 
     /// <summary>
     /// Default timeout for HTTP requests in seconds.

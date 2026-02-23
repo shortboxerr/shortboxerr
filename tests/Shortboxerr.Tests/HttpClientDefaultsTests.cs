@@ -28,17 +28,26 @@ public class HttpClientDefaultsTests
     }
 
     [Fact]
-    public void UserAgent_ContainsProjectUrl()
+    public void UserAgent_MatchesSimpleFormat()
     {
         var userAgent = HttpClientDefaults.UserAgent;
+        
+        // Expected format: "Shortboxerr/x.y.z" (simple format for indexer compatibility)
+        Assert.Matches(@"^Shortboxerr/\d+\.\d+\.\d+$", userAgent);
+    }
+
+    [Fact]
+    public void ExtendedUserAgent_ContainsProjectUrl()
+    {
+        var userAgent = HttpClientDefaults.ExtendedUserAgent;
         
         Assert.Contains("github.com/shortboxerr", userAgent);
     }
 
     [Fact]
-    public void UserAgent_MatchesExpectedFormat()
+    public void ExtendedUserAgent_MatchesExpectedFormat()
     {
-        var userAgent = HttpClientDefaults.UserAgent;
+        var userAgent = HttpClientDefaults.ExtendedUserAgent;
         
         // Expected format: "Shortboxerr/x.y.z (+https://github.com/shortboxerr/shortboxerr)"
         Assert.Matches(@"^Shortboxerr/\d+\.\d+\.\d+ \(\+https://github\.com/shortboxerr/shortboxerr\)$", userAgent);

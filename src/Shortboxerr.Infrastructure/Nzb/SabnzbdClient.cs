@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Shortboxerr.Core.Nzb;
@@ -26,6 +27,10 @@ public class SabnzbdClient : ISabnzbdClient
 
     public NzbDownloadClientType ClientType => NzbDownloadClientType.SABnzbd;
 
+    /// <summary>
+    /// Primary constructor for dependency injection.
+    /// </summary>
+    [ActivatorUtilitiesConstructor]
     public SabnzbdClient(HttpClient httpClient, IOptions<SabnzbdSettings> settings, ILogger<SabnzbdClient>? logger = null)
     {
         _httpClient = httpClient;
@@ -35,7 +40,9 @@ public class SabnzbdClient : ISabnzbdClient
         ConfigureHttpClient();
     }
 
-    // Constructor for testing/direct instantiation
+    /// <summary>
+    /// Constructor for testing and direct instantiation with explicit settings.
+    /// </summary>
     public SabnzbdClient(HttpClient httpClient, SabnzbdSettings settings, ILogger<SabnzbdClient>? logger = null)
     {
         _httpClient = httpClient;
