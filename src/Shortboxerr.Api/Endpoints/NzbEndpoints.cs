@@ -270,7 +270,7 @@ public static class NzbEndpoints
         var settings = await settingsService.GetAsync<DownloadClientSettings>(
             DownloadClientSettingsKey,
             new DownloadClientSettings(),
-            cancellationToken);
+            cancellationToken) ?? new DownloadClientSettings();
 
         return Results.Ok(new DownloadClientSettingsResponse
         {

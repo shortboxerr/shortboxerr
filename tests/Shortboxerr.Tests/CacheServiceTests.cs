@@ -188,7 +188,7 @@ public class CacheServiceTests : IDisposable
     public void GenerateKey_WithNullSegment_HandlesGracefully()
     {
         // Act
-        var key = _service.GenerateKey("series", "detail", null, 123);
+        var key = _service.GenerateKey("series", "detail", null!, 123);
 
         // Assert
         Assert.Equal("series:detail:null:123", key);

@@ -72,7 +72,7 @@ public class WalkSoftlyClientTests
             new
             {
                 series = "Amazing Spider-Man",
-                alias = "ASM",
+                alias = (string?)"ASM",
                 issue = "#45",
                 publisher = "Marvel",
                 shipdate = "2026-02-18",
