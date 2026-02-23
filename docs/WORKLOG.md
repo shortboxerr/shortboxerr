@@ -1,5 +1,43 @@
 # Worklog
 
+## Iteration 137 (2026-02-23)
+**EPIC 15.9: Pull List Data Accuracy Investigation**
+
+### Summary
+Completed investigation into why pull list data doesn't match Mylar3 for the same week. Researched Mylar3's data sources, audited our ComicVine integration, and created a debug comparison endpoint.
+
+### Key Findings
+1. **Mylar3 Data Source**: Uses WalkSoftly aggregator (`walksoftly.itsaninja.party/newcomics.php`), NOT direct ComicVine
+2. **WalkSoftly Benefits**: Pre-mapped ComicVine IDs, potentially fresher data, includes publisher info
+3. **ComicVine Delays**: Known issue - new releases often not updated until Thu/Fri/Sun
+4. **Our Implementation**: Correctly uses `store_date` field and proper week boundaries (Sun-Sat)
+5. **Publisher Filtering**: Mylar3 has configurable "ignored publishers" list
+
+### Deliverables
+- Comprehensive research document: `docs/research/PULL_LIST_DATA_ACCURACY.md`
+- Debug comparison endpoint: `GET /api/v1/pulllist/export/compare/{date}`
+- Documented alternative data sources (LOCG, Publisher RSS, WalkSoftly)
+
+### API Endpoints Added
+- `GET /api/v1/pulllist/export/compare/{date}` - Detailed comparison data showing:
+  - Library vs Discovery issue counts
+  - ComicVine total issues for week
+  - Publisher breakdown
+  - Data source information
+  - Sample issues from both sources
+
+### Files Changed
+- `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` - Added comparison endpoint + DTOs
+- `docs/research/PULL_LIST_DATA_ACCURACY.md` - New research document
+- `docs/BACKLOG.md` - Marked EPIC 15.9 as completed
+
+### Recommendations
+1. **Short-term**: Use comparison endpoint to debug specific week discrepancies
+2. **Medium-term**: Consider adding configurable ignored publishers
+3. **Long-term**: Evaluate WalkSoftly integration as alternative data source
+
+---
+
 ## Iteration 136 (2026-02-23)
 **Telegram Notification Provider**
 

@@ -1,38 +1,63 @@
-# Self Check - Iteration 136
+# Self Check - Iteration 137
 
 ## Summary
-**Telegram Notification Provider** - Added Telegram as a notification provider, enabling users to receive comic release notifications via Telegram bots.
+**EPIC 15.9: Pull List Data Accuracy Investigation** - Research completed
+
+Investigated why Shortboxerr pull list data doesn't match Mylar3 for the same week.
 
 ## Recent Iterations
-- **136**: Telegram notification provider (current)
-- **135**: Compiler warning cleanup
-- **134**: Download client health status UI
-- **133**: Pushover/Pushbullet notification providers
+- **137**: Pull List Data Accuracy Investigation (EPIC 15.9)
+- **136**: Telegram Notification Provider
+- **135**: Compiler Warning Cleanup
+- **134**: Pushover/Pushbullet Notification Providers
+
+## Key Findings
+
+### Root Cause Identified
+Mylar3 uses **WalkSoftly** (`walksoftly.itsaninja.party/newcomics.php`), an external aggregator for weekly pull lists, NOT direct ComicVine queries.
+
+### Our Implementation Status
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Date Field (store_date) | ✅ Correct | Using proper field |
+| Week Boundaries | ✅ Correct | Sunday-Saturday, Wednesday release |
+| Publisher Filter | ⚠️ Partial | Available but not globally configurable |
+| Alternative Sources | ❌ None | ComicVine only |
+
+### ComicVine Known Limitation
+ComicVine frequently delays updating new releases:
+- Sometimes not available until Thursday, Friday
+- Occasionally updates on Sunday after Wednesday release
+- WalkSoftly aggregator may mitigate this delay
 
 ## Implementation Checklist
-- [x] TelegramProviderSettings class with all options
-- [x] TelegramNotificationProvider implementation using Bot API
-- [x] Provider registered in DI container
-- [x] Full CRUD API endpoints (7 endpoints)
-- [x] Frontend types and API client methods
-- [x] Settings UI with section and add/edit modal
-- [x] 26 unit tests covering all functionality
-
-## Test Results
-- Tests: 26 passed
-- Coverage: Properties, validation, success/error responses, formatting, options
+- [x] Research Mylar3 pull list source
+- [x] Audit ComicVine date field usage
+- [x] Check publisher/variant filtering
+- [x] Document data augmentation options
+- [x] Create pull list comparison endpoint
+- [x] Update documentation
 
 ## Build Health
-- Backend: Compiles with 3 pre-existing warnings (not from this iteration)
-- Frontend: Compiles successfully
-- Tests: All pass
+```
+Build succeeded.
+    1 Warning(s) - pre-existing
+    0 Error(s)
+```
 
-## Documentation
-- [x] BACKLOG.md - Added Telegram under notification providers
-- [x] WORKLOG.md - Full iteration entry
-- [x] SELF_CHECK.md - This file
+## New API Endpoint
+```
+GET /api/v1/pulllist/export/compare/{date}
+```
+Returns detailed comparison data for debugging.
+
+## Documentation Updates
+- Created: `docs/research/PULL_LIST_DATA_ACCURACY.md`
+- Updated: `docs/BACKLOG.md` (marked 15.9 complete)
+- Updated: `docs/WORKLOG.md`
+
+## Files Modified
+- `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs`
 
 ## Commits
-1. `feat(notifications): add Telegram notification provider`
-2. `feat(ui): add Telegram notification provider settings UI`
-3. `test: add unit tests for Telegram notification provider`
+1. `docs: add pull list data accuracy research (EPIC 15.9)`

@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Core.Entities;
 using Shortboxerr.Core.PullList;
 using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure;
+using Shortboxerr.Infrastructure.Persistence;
 
 namespace Shortboxerr.Api.Endpoints;
 
@@ -472,6 +474,116 @@ public static class PullListEndpoints
         .WithDescription("Gets the history of weekly exports")
         .Produces<List<WeeklyExportInfo>>(200);
 
+        // GET /api/v1/pulllist/export/compare/{date} - get pull list comparison data for debugging
+        group.MapGet("/export/compare/{date}", async (
+            DateTime date,
+            [FromServices] IPullListService pullListService,
+            [FromServices] IComicVineClient comicVineClient,
+            [FromServices] ShortboxerrDbContext dbContext,
+            CancellationToken cancellationToken) =>
+        {
+            // Get week boundaries
+            var diff = (7 + (date.DayOfWeek - DayOfWeek.Sunday)) % 7;
+            var weekStart = date.Date.AddDays(-diff);
+            var weekEnd = weekStart.AddDays(7);
+            var releaseDay = weekStart.AddDays((int)DayOfWeek.Wednesday);
+            
+            // Get our pull list (from library)
+            var pullList = await pullListService.GetWeeklyReleasesAsync(date, null, cancellationToken);
+            
+            // Get discovery data (from ComicVine)
+            var discovery = await pullListService.GetWeeklyDiscoveryAsync(date, null, cancellationToken);
+            
+            // Get raw ComicVine count
+            var dateFilter = $"{weekStart:yyyy-MM-dd}|{weekEnd.AddDays(-1):yyyy-MM-dd}";
+            var cvResult = await comicVineClient.GetIssuesByStoreDateAsync(dateFilter, 0, 1, cancellationToken);
+            
+            // Get library stats
+            var librarySeriesCount = await dbContext.Series.CountAsync(cancellationToken);
+            var monitoredSeriesCount = await dbContext.Series.CountAsync(s => s.Monitored, cancellationToken);
+            var matchedSeriesCount = await dbContext.Series.CountAsync(s => s.ComicVineId != null, cancellationToken);
+            
+            // Get publisher breakdown from discovery
+            var publisherBreakdown = discovery.Issues
+                .Where(i => !string.IsNullOrEmpty(i.Publisher))
+                .GroupBy(i => i.Publisher!)
+                .Select(g => new { Publisher = g.Key, Count = g.Count() })
+                .OrderByDescending(x => x.Count)
+                .Take(20)
+                .ToDictionary(x => x.Publisher, x => x.Count);
+            
+            return Results.Ok(new PullListComparisonResult
+            {
+                WeekStart = weekStart,
+                WeekEnd = weekEnd,
+                ReleaseDay = releaseDay,
+                
+                // Our library pull list
+                LibraryIssueCount = pullList.TotalCount,
+                LibraryWantedCount = pullList.WantedCount,
+                LibraryOwnedCount = pullList.OwnedCount,
+                LibrarySkippedCount = pullList.SkippedCount,
+                
+                // ComicVine discovery
+                DiscoveryIssueCount = discovery.Issues.Count,
+                DiscoveryInLibraryCount = discovery.Issues.Count(i => i.IsInLibrary),
+                DiscoveryNewCount = discovery.Issues.Count(i => !i.IsInLibrary),
+                
+                // Raw ComicVine total
+                ComicVineTotalIssues = cvResult.TotalResults,
+                
+                // Library stats
+                TotalSeriesInLibrary = librarySeriesCount,
+                MonitoredSeriesCount = monitoredSeriesCount,
+                MatchedSeriesCount = matchedSeriesCount,
+                
+                // Publisher breakdown
+                IssuesByPublisher = publisherBreakdown,
+                
+                // Data source info
+                DataSources = new DataSourceInfo
+                {
+                    PullListSource = "Local Database (monitored series)",
+                    DiscoverySource = "ComicVine API (store_date filter)",
+                    DateField = "store_date",
+                    Notes = new[]
+                    {
+                        "ComicVine may have delays (up to 4+ days) in updating new releases",
+                        "Mylar3 uses WalkSoftly aggregator which may have fresher data",
+                        "Library pull list only shows issues from monitored series",
+                        "Discovery shows ALL ComicVine issues for the week"
+                    }
+                },
+                
+                // Cache info
+                CacheMetadata = discovery.CacheMetadata,
+                
+                // Sample issues for comparison
+                SampleLibraryIssues = pullList.Issues.Take(10).Select(i => new SampleIssue
+                {
+                    SeriesTitle = i.SeriesTitle,
+                    IssueNumber = i.IssueNumber,
+                    Publisher = i.Publisher,
+                    StoreDate = i.StoreDate,
+                    Status = i.Status.ToString()
+                }).ToList(),
+                
+                SampleDiscoveryIssues = discovery.Issues.Take(10).Select(i => new SampleIssue
+                {
+                    SeriesTitle = i.SeriesTitle,
+                    IssueNumber = i.IssueNumber,
+                    Publisher = i.Publisher,
+                    StoreDate = i.StoreDate,
+                    Status = i.Status?.ToString() ?? "N/A",
+                    IsInLibrary = i.IsInLibrary,
+                    ComicVineIssueId = i.ComicVineIssueId
+                }).ToList()
+            });
+        })
+        .WithName("GetPullListComparison")
+        .WithDescription("Gets detailed pull list comparison data for debugging Mylar3 parity")
+        .Produces<PullListComparisonResult>(200);
+
         #endregion
 
         #region Discovery Refresh
@@ -535,7 +647,7 @@ public static class PullListEndpoints
             [FromServices] ISettingsService settingsService,
             CancellationToken cancellationToken) =>
         {
-            var settings = await settingsService.GetAsync<PullListSettings>("pulllist", new(), cancellationToken);
+            var settings = await settingsService.GetAsync<PullListSettings>("pulllist", new(), cancellationToken) ?? new PullListSettings();
             var lastProcessed = await settingsService.GetAsync<DateTime?>("pulllist_release_day_last_processed", null, cancellationToken);
             
             return Results.Ok(new ReleaseDayStatus
@@ -647,6 +759,73 @@ public class ReleaseDayStatus
     
     /// <summary>Next release day date.</summary>
     public DateTime NextProcessingDate { get; set; }
+}
+
+/// <summary>
+/// Pull list comparison result for debugging Mylar3 parity.
+/// </summary>
+public class PullListComparisonResult
+{
+    public DateTime WeekStart { get; set; }
+    public DateTime WeekEnd { get; set; }
+    public DateTime ReleaseDay { get; set; }
+    
+    // Library pull list stats
+    public int LibraryIssueCount { get; set; }
+    public int LibraryWantedCount { get; set; }
+    public int LibraryOwnedCount { get; set; }
+    public int LibrarySkippedCount { get; set; }
+    
+    // Discovery stats (all ComicVine issues for week)
+    public int DiscoveryIssueCount { get; set; }
+    public int DiscoveryInLibraryCount { get; set; }
+    public int DiscoveryNewCount { get; set; }
+    
+    // Raw ComicVine total
+    public int ComicVineTotalIssues { get; set; }
+    
+    // Library stats
+    public int TotalSeriesInLibrary { get; set; }
+    public int MonitoredSeriesCount { get; set; }
+    public int MatchedSeriesCount { get; set; }
+    
+    // Publisher breakdown
+    public Dictionary<string, int> IssuesByPublisher { get; set; } = new();
+    
+    // Data source info
+    public DataSourceInfo DataSources { get; set; } = new();
+    
+    // Cache metadata
+    public PullListCacheMetadata? CacheMetadata { get; set; }
+    
+    // Sample issues for comparison
+    public List<SampleIssue> SampleLibraryIssues { get; set; } = new();
+    public List<SampleIssue> SampleDiscoveryIssues { get; set; } = new();
+}
+
+/// <summary>
+/// Information about data sources used.
+/// </summary>
+public class DataSourceInfo
+{
+    public string PullListSource { get; set; } = string.Empty;
+    public string DiscoverySource { get; set; } = string.Empty;
+    public string DateField { get; set; } = string.Empty;
+    public string[] Notes { get; set; } = Array.Empty<string>();
+}
+
+/// <summary>
+/// Sample issue for comparison display.
+/// </summary>
+public class SampleIssue
+{
+    public string? SeriesTitle { get; set; }
+    public decimal IssueNumber { get; set; }
+    public string? Publisher { get; set; }
+    public DateTime? StoreDate { get; set; }
+    public string? Status { get; set; }
+    public bool? IsInLibrary { get; set; }
+    public int? ComicVineIssueId { get; set; }
 }
 
 #endregion
