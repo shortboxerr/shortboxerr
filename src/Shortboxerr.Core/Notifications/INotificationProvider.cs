@@ -385,3 +385,49 @@ public class PushbulletProviderSettings : NotificationProviderSettings
     /// </summary>
     public string? SendToEmail { get; set; }
 }
+
+/// <summary>
+/// Telegram-specific provider settings.
+/// </summary>
+public class TelegramProviderSettings : NotificationProviderSettings
+{
+    public TelegramProviderSettings()
+    {
+        ProviderType = "Telegram";
+    }
+    
+    /// <summary>
+    /// Telegram Bot API token (from @BotFather).
+    /// Format: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz
+    /// </summary>
+    public string BotToken { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Chat ID to send messages to.
+    /// Can be a user ID, group ID (negative number), or channel username (@channelname).
+    /// Use @userinfobot or @getidsbot to find your chat ID.
+    /// </summary>
+    public string ChatId { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Message parse mode: "HTML", "Markdown", or "MarkdownV2".
+    /// Default is HTML which supports bold, italic, links, and code formatting.
+    /// </summary>
+    public string ParseMode { get; set; } = "HTML";
+    
+    /// <summary>
+    /// Whether to send notifications silently (no sound/vibration on recipient's device).
+    /// </summary>
+    public bool SilentNotification { get; set; } = false;
+    
+    /// <summary>
+    /// Whether to include a link preview for URLs in the message.
+    /// </summary>
+    public bool EnableLinkPreview { get; set; } = true;
+    
+    /// <summary>
+    /// Optional topic ID for sending to a specific topic in a supergroup.
+    /// Leave empty for regular groups/users.
+    /// </summary>
+    public int? TopicId { get; set; }
+}

@@ -206,6 +206,12 @@ public static class DependencyInjection
             var logger = sp.GetService<ILogger<PushbulletNotificationProvider>>();
             return new PushbulletNotificationProvider(httpClientFactory.CreateClient("Pushbullet"), logger);
         });
+        services.AddSingleton<INotificationProvider, TelegramNotificationProvider>(sp =>
+        {
+            var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+            var logger = sp.GetService<ILogger<TelegramNotificationProvider>>();
+            return new TelegramNotificationProvider(httpClientFactory.CreateClient("Telegram"), logger);
+        });
 
         // Settings (can be overridden via configuration)
         services.Configure<DecisionEngineSettings>(options =>

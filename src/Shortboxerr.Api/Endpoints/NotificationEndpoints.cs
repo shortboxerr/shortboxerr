@@ -1071,6 +1071,212 @@ public static class NotificationEndpoints
 
         #endregion
 
+        #region Telegram Providers
+
+        // GET /api/v1/notifications/telegram-providers
+        group.MapGet("/telegram-providers", async (
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var providers = await settingsService.GetAsync<List<TelegramProviderSettings>>(
+                "telegram_notification_providers", new List<TelegramProviderSettings>(), cancellationToken);
+            return Results.Ok(providers);
+        })
+        .WithName("GetTelegramProviders")
+        .WithDescription("Gets all configured Telegram notification providers")
+        .Produces<List<TelegramProviderSettings>>(200);
+
+        // GET /api/v1/notifications/telegram-providers/{id}
+        group.MapGet("/telegram-providers/{id}", async (
+            string id,
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var providers = await settingsService.GetAsync<List<TelegramProviderSettings>>(
+                "telegram_notification_providers", new List<TelegramProviderSettings>(), cancellationToken);
+            var provider = providers?.FirstOrDefault(p => p.Id == id);
+            return provider != null ? Results.Ok(provider) : Results.NotFound();
+        })
+        .WithName("GetTelegramProvider")
+        .WithDescription("Gets a specific Telegram notification provider")
+        .Produces<TelegramProviderSettings>(200)
+        .Produces(404);
+
+        // POST /api/v1/notifications/telegram-providers
+        group.MapPost("/telegram-providers", async (
+            [FromBody] TelegramProviderSettings provider,
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(provider.BotToken))
+            {
+                return Results.BadRequest(new { Error = "Bot Token is required" });
+            }
+            
+            if (string.IsNullOrWhiteSpace(provider.ChatId))
+            {
+                return Results.BadRequest(new { Error = "Chat ID is required" });
+            }
+
+            var providers = await settingsService.GetAsync<List<TelegramProviderSettings>>(
+                "telegram_notification_providers", new List<TelegramProviderSettings>(), cancellationToken) ?? new List<TelegramProviderSettings>();
+
+            if (providers.Any(p => p.Id == provider.Id))
+            {
+                return Results.Conflict(new { Error = "Provider with this ID already exists" });
+            }
+
+            provider.ProviderType = "Telegram";
+            providers.Add(provider);
+            await settingsService.SetAsync("telegram_notification_providers", providers, cancellationToken);
+
+            return Results.Created($"/api/v1/notifications/telegram-providers/{provider.Id}", provider);
+        })
+        .WithName("AddTelegramProvider")
+        .WithDescription("Adds a new Telegram notification provider")
+        .Produces<TelegramProviderSettings>(201)
+        .Produces(400)
+        .Produces(409);
+
+        // PUT /api/v1/notifications/telegram-providers/{id}
+        group.MapPut("/telegram-providers/{id}", async (
+            string id,
+            [FromBody] TelegramProviderSettings provider,
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(provider.BotToken))
+            {
+                return Results.BadRequest(new { Error = "Bot Token is required" });
+            }
+            
+            if (string.IsNullOrWhiteSpace(provider.ChatId))
+            {
+                return Results.BadRequest(new { Error = "Chat ID is required" });
+            }
+
+            var providers = await settingsService.GetAsync<List<TelegramProviderSettings>>(
+                "telegram_notification_providers", new List<TelegramProviderSettings>(), cancellationToken) ?? new List<TelegramProviderSettings>();
+
+            var index = providers.FindIndex(p => p.Id == id);
+            if (index < 0)
+            {
+                return Results.NotFound();
+            }
+
+            if (id != provider.Id && providers.Any(p => p.Id == provider.Id))
+            {
+                return Results.Conflict(new { Error = "Provider with this ID already exists" });
+            }
+
+            provider.ProviderType = "Telegram";
+            providers[index] = provider;
+            await settingsService.SetAsync("telegram_notification_providers", providers, cancellationToken);
+
+            return Results.Ok(provider);
+        })
+        .WithName("UpdateTelegramProvider")
+        .WithDescription("Updates an existing Telegram notification provider")
+        .Produces<TelegramProviderSettings>(200)
+        .Produces(400)
+        .Produces(404)
+        .Produces(409);
+
+        // DELETE /api/v1/notifications/telegram-providers/{id}
+        group.MapDelete("/telegram-providers/{id}", async (
+            string id,
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var providers = await settingsService.GetAsync<List<TelegramProviderSettings>>(
+                "telegram_notification_providers", new List<TelegramProviderSettings>(), cancellationToken) ?? new List<TelegramProviderSettings>();
+
+            var removed = providers.RemoveAll(p => p.Id == id);
+            if (removed == 0)
+            {
+                return Results.NotFound();
+            }
+
+            await settingsService.SetAsync("telegram_notification_providers", providers, cancellationToken);
+            return Results.NoContent();
+        })
+        .WithName("DeleteTelegramProvider")
+        .WithDescription("Deletes a Telegram notification provider")
+        .Produces(204)
+        .Produces(404);
+
+        // POST /api/v1/notifications/telegram-providers/{id}/test
+        group.MapPost("/telegram-providers/{id}/test", async (
+            string id,
+            [FromServices] ISettingsService settingsService,
+            [FromServices] IEnumerable<INotificationProvider> providers,
+            CancellationToken cancellationToken) =>
+        {
+            var telegramProviders = await settingsService.GetAsync<List<TelegramProviderSettings>>(
+                "telegram_notification_providers", new List<TelegramProviderSettings>(), cancellationToken);
+            var settings = telegramProviders?.FirstOrDefault(p => p.Id == id);
+            
+            if (settings == null)
+            {
+                return Results.NotFound();
+            }
+
+            var telegramProvider = providers.FirstOrDefault(p => p.ProviderType == "Telegram");
+            if (telegramProvider == null)
+            {
+                return Results.StatusCode(500);
+            }
+
+            var result = await telegramProvider.TestAsync(settings, cancellationToken);
+            return Results.Ok(new PushTestResponse
+            {
+                Success = result.Success,
+                Message = result.Message,
+                Latency = result.Latency
+            });
+        })
+        .WithName("TestTelegramProvider")
+        .WithDescription("Tests a saved Telegram notification provider")
+        .Produces<PushTestResponse>(200)
+        .Produces(404);
+
+        // POST /api/v1/notifications/telegram-providers/test
+        group.MapPost("/telegram-providers/test", async (
+            [FromBody] TelegramProviderSettings provider,
+            [FromServices] IEnumerable<INotificationProvider> providers,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(provider.BotToken))
+            {
+                return Results.BadRequest(new { Error = "Bot Token is required" });
+            }
+            
+            if (string.IsNullOrWhiteSpace(provider.ChatId))
+            {
+                return Results.BadRequest(new { Error = "Chat ID is required" });
+            }
+
+            var telegramProvider = providers.FirstOrDefault(p => p.ProviderType == "Telegram");
+            if (telegramProvider == null)
+            {
+                return Results.StatusCode(500);
+            }
+
+            var result = await telegramProvider.TestAsync(provider, cancellationToken);
+            return Results.Ok(new PushTestResponse
+            {
+                Success = result.Success,
+                Message = result.Message,
+                Latency = result.Latency
+            });
+        })
+        .WithName("TestTelegramProviderSettings")
+        .WithDescription("Tests Telegram notification settings without saving")
+        .Produces<PushTestResponse>(200)
+        .Produces(400);
+
+        #endregion
+
         #region Test Endpoints (for development/testing)
 
         // POST /api/v1/notifications/test - create a test notification
