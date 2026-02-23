@@ -16,8 +16,9 @@ import type {
   EmailProviderSettings, EmailProviderRequest,
   PushoverProviderSettings, PushoverProviderRequest,
   PushbulletProviderSettings, PushbulletProviderRequest,
+  TelegramProviderSettings, TelegramProviderRequest,
   SearchSettings, PreferredQuality,
-  DownloadClientHealthStatus, DownloadClientHealthSummary
+  DownloadClientHealthStatus
 } from '../api/client';
 import { useTheme } from '../App';
 
@@ -4623,6 +4624,7 @@ function NotificationsSettings() {
       <EmailProvidersSection />
       <PushoverProvidersSection />
       <PushbulletProvidersSection />
+      <TelegramProvidersSection />
     </>
   );
 }
@@ -6252,6 +6254,338 @@ function PushbulletProviderModal({
             <button type="button" className="btn" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={!isValid || isLoading}>
               {isLoading ? 'Saving...' : (provider ? 'Save Changes' : 'Add Pushbullet')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function TelegramProvidersSection() {
+  const queryClient = useQueryClient();
+  const [editingProvider, setEditingProvider] = useState<TelegramProviderSettings | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [testingId, setTestingId] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const { data: providers = [], isLoading } = useQuery({
+    queryKey: ['telegramProviders'],
+    queryFn: api.getTelegramProviders,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: api.deleteTelegramProvider,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['telegramProviders'] });
+    },
+  });
+
+  const addMutation = useMutation({
+    mutationFn: api.addTelegramProvider,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['telegramProviders'] });
+      setShowAddModal(false);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, provider }: { id: string; provider: TelegramProviderRequest }) =>
+      api.updateTelegramProvider(id, provider),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['telegramProviders'] });
+      setEditingProvider(null);
+    },
+  });
+
+  const handleTest = async (id: string) => {
+    setTestingId(id);
+    setTestResult(null);
+    try {
+      const result = await api.testTelegramProvider(id);
+      setTestResult({ success: result.success, message: result.message });
+    } catch {
+      setTestResult({ success: false, message: 'Test failed' });
+    } finally {
+      setTestingId(null);
+    }
+  };
+
+  return (
+    <>
+      <SettingsSection title="Telegram Notifications">
+        {isLoading ? (
+          <div style={{ padding: '20px', textAlign: 'center' }}>
+            <Loader2 className="spinning" size={24} />
+          </div>
+        ) : providers.length === 0 ? (
+          <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <p>No Telegram bots configured</p>
+            <button className="btn btn-primary" onClick={() => setShowAddModal(true)} style={{ marginTop: '12px' }}>
+              <Plus size={14} /> Add Telegram Bot
+            </button>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+              <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>
+                <Plus size={14} /> Add Telegram Bot
+              </button>
+            </div>
+            <div className="data-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Chat ID</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {providers.map((p) => (
+                    <tr key={p.id}>
+                      <td>{p.name}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '12px' }}>{p.chatId}</td>
+                      <td>
+                        <span className={`status-badge ${p.enabled ? 'status-active' : 'status-inactive'}`}>
+                          {p.enabled ? 'Enabled' : 'Disabled'}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <button className="btn btn-icon btn-sm" onClick={() => handleTest(p.id)} disabled={testingId === p.id} title="Test">
+                            {testingId === p.id ? <Loader2 size={14} className="spinning" /> : <Play size={14} />}
+                          </button>
+                          <button className="btn btn-icon btn-sm" onClick={() => setEditingProvider(p)} title="Edit">
+                            <Edit size={14} />
+                          </button>
+                          <button className="btn btn-icon btn-sm btn-danger" onClick={() => deleteMutation.mutate(p.id)} title="Delete">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {testResult && (
+              <div style={{ marginTop: '12px', padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: testResult.success ? 'var(--bg-success)' : 'var(--bg-danger)', color: testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                {testResult.success ? <CheckCircle size={14} /> : <XCircle size={14} />}
+                {testResult.message}
+              </div>
+            )}
+          </>
+        )}
+      </SettingsSection>
+
+      {(showAddModal || editingProvider) && (
+        <TelegramProviderModal
+          provider={editingProvider}
+          onSave={(provider) => {
+            if (editingProvider) {
+              updateMutation.mutate({ id: editingProvider.id, provider });
+            } else {
+              addMutation.mutate(provider);
+            }
+          }}
+          onClose={() => {
+            setShowAddModal(false);
+            setEditingProvider(null);
+          }}
+          isLoading={addMutation.isPending || updateMutation.isPending}
+        />
+      )}
+    </>
+  );
+}
+
+function TelegramProviderModal({
+  provider,
+  onSave,
+  onClose,
+  isLoading,
+}: {
+  provider: TelegramProviderSettings | null;
+  onSave: (provider: TelegramProviderRequest) => void;
+  onClose: () => void;
+  isLoading: boolean;
+}) {
+  const [name, setName] = useState(provider?.name || '');
+  const [botToken, setBotToken] = useState(provider?.botToken || '');
+  const [chatId, setChatId] = useState(provider?.chatId || '');
+  const [parseMode, setParseMode] = useState(provider?.parseMode || 'HTML');
+  const [silentNotification, setSilentNotification] = useState(provider?.silentNotification ?? false);
+  const [enableLinkPreview, setEnableLinkPreview] = useState(provider?.enableLinkPreview ?? true);
+  const [topicId, setTopicId] = useState(provider?.topicId?.toString() || '');
+  const [enabled, setEnabled] = useState(provider?.enabled ?? true);
+  const [onEvents, setOnEvents] = useState<NotificationEventType[]>(provider?.onEvents || ['Grabbed', 'NewRelease']);
+  const [includeSeries, setIncludeSeries] = useState(provider?.includeSeries ?? true);
+  const [includeImages, setIncludeImages] = useState(provider?.includeImages ?? false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [testing, setTesting] = useState(false);
+  const [showToken, setShowToken] = useState(false);
+
+  const isValid = name.trim() && botToken.trim() && chatId.trim();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isValid) return;
+    onSave({
+      name,
+      botToken,
+      chatId,
+      parseMode,
+      silentNotification,
+      enableLinkPreview,
+      topicId: topicId ? parseInt(topicId, 10) : undefined,
+      enabled,
+      onEvents,
+      includeSeries,
+      includeImages,
+    });
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const result = await api.testTelegramProviderSettings({
+        name,
+        botToken,
+        chatId,
+        parseMode,
+        silentNotification,
+        enableLinkPreview,
+        topicId: topicId ? parseInt(topicId, 10) : undefined,
+      });
+      setTestResult({ success: result.success, message: result.message });
+    } catch {
+      setTestResult({ success: false, message: 'Test failed' });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const toggleEvent = (event: NotificationEventType) => {
+    setOnEvents((prev) =>
+      prev.includes(event) ? prev.filter((e) => e !== event) : [...prev, event]
+    );
+  };
+
+  const allEvents: NotificationEventType[] = ['Test', 'NewRelease', 'Grabbed', 'Imported', 'WeeklySummary', 'DownloadFailed', 'SeriesAdded', 'Health', 'Update'];
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+        <div className="modal-header">
+          <h3>{provider ? 'Edit Telegram Bot' : 'Add Telegram Bot'}</h3>
+          <button className="btn btn-icon" onClick={onClose}><X size={18} /></button>
+        </div>
+        <form onSubmit={handleSubmit} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Name *</label>
+            <input type="text" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="My Telegram Bot" style={{ width: '100%' }} />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Bot Token *</label>
+            <div style={{ position: 'relative' }}>
+              <input type={showToken ? 'text' : 'password'} className="input" value={botToken} onChange={(e) => setBotToken(e.target.value)} placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz" style={{ width: '100%', paddingRight: '36px' }} />
+              <button type="button" onClick={() => setShowToken(!showToken)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '4px' }}>
+                {showToken ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            <small style={{ color: 'var(--text-muted)' }}>Get from <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer">@BotFather</a> on Telegram</small>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Chat ID *</label>
+            <input type="text" className="input" value={chatId} onChange={(e) => setChatId(e.target.value)} placeholder="123456789 or @channelname" style={{ width: '100%' }} />
+            <small style={{ color: 'var(--text-muted)' }}>Use <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer">@userinfobot</a> to find your ID</small>
+          </div>
+
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+              <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+              <span style={{ fontSize: '13px' }}>Enabled</span>
+            </label>
+          </div>
+
+          <button type="button" onClick={() => setShowAdvanced(!showAdvanced)} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', fontSize: '13px', textAlign: 'left', padding: 0 }}>
+            {showAdvanced ? '▼' : '▶'} Advanced Options
+          </button>
+
+          {showAdvanced && (
+            <>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Parse Mode</label>
+                <select className="input" value={parseMode} onChange={(e) => setParseMode(e.target.value)} style={{ width: '100%' }}>
+                  <option value="HTML">HTML</option>
+                  <option value="Markdown">Markdown</option>
+                  <option value="MarkdownV2">MarkdownV2</option>
+                </select>
+                <small style={{ color: 'var(--text-muted)' }}>Message formatting style</small>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Topic ID (optional)</label>
+                <input type="text" className="input" value={topicId} onChange={(e) => setTopicId(e.target.value)} placeholder="Topic ID for supergroups" style={{ width: '100%' }} />
+                <small style={{ color: 'var(--text-muted)' }}>Only for forum/topic-enabled supergroups</small>
+              </div>
+
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '12px' }}>
+                  <input type="checkbox" checked={silentNotification} onChange={(e) => setSilentNotification(e.target.checked)} />
+                  Silent notifications
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '12px' }}>
+                  <input type="checkbox" checked={enableLinkPreview} onChange={(e) => setEnableLinkPreview(e.target.checked)} />
+                  Enable link preview
+                </label>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500 }}>Notification Events</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {allEvents.map((event) => (
+                    <label key={event} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '12px' }}>
+                      <input type="checkbox" checked={onEvents.includes(event)} onChange={() => toggleEvent(event)} />
+                      {event}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '12px' }}>
+                  <input type="checkbox" checked={includeSeries} onChange={(e) => setIncludeSeries(e.target.checked)} />
+                  Include series name
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '12px' }}>
+                  <input type="checkbox" checked={includeImages} onChange={(e) => setIncludeImages(e.target.checked)} />
+                  Include images
+                </label>
+              </div>
+            </>
+          )}
+
+          {testResult && (
+            <div style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: testResult.success ? 'var(--bg-success)' : 'var(--bg-danger)', color: testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+              {testResult.success ? <CheckCircle size={16} /> : <XCircle size={16} />}
+              {testResult.message}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            <button type="button" className="btn" onClick={handleTest} disabled={!botToken.trim() || !chatId.trim() || testing}>
+              {testing ? <><RefreshCw size={14} className="spinning" /> Testing...</> : <><Play size={14} /> Test</>}
+            </button>
+            <button type="button" className="btn" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={!isValid || isLoading}>
+              {isLoading ? 'Saving...' : (provider ? 'Save Changes' : 'Add Telegram Bot')}
             </button>
           </div>
         </form>

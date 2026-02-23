@@ -954,6 +954,37 @@ export interface PushbulletProviderRequest {
   sendToEmail?: string;
 }
 
+// Telegram Notification Provider Types
+export interface TelegramProviderSettings {
+  id: string;
+  name: string;
+  providerType: 'Telegram';
+  enabled: boolean;
+  onEvents: NotificationEventType[];
+  includeSeries: boolean;
+  includeImages: boolean;
+  botToken: string;
+  chatId: string;
+  parseMode: string;
+  silentNotification: boolean;
+  enableLinkPreview: boolean;
+  topicId?: number;
+}
+
+export interface TelegramProviderRequest {
+  name: string;
+  enabled?: boolean;
+  onEvents?: NotificationEventType[];
+  includeSeries?: boolean;
+  includeImages?: boolean;
+  botToken: string;
+  chatId: string;
+  parseMode?: string;
+  silentNotification?: boolean;
+  enableLinkPreview?: boolean;
+  topicId?: number;
+}
+
 export interface ProviderImplementation {
   name: string;
   displayName: string;
@@ -2726,6 +2757,54 @@ export const api = {
       body: JSON.stringify({
         ...settings,
         providerType: 'Pushbullet',
+      }),
+    });
+  },
+
+  // === Telegram Notification Providers ===
+  getTelegramProviders: async (): Promise<TelegramProviderSettings[]> => {
+    return fetchApi<TelegramProviderSettings[]>('/api/v1/notifications/telegram-providers');
+  },
+
+  getTelegramProvider: async (id: string): Promise<TelegramProviderSettings> => {
+    return fetchApi<TelegramProviderSettings>(`/api/v1/notifications/telegram-providers/${id}`);
+  },
+
+  addTelegramProvider: async (provider: TelegramProviderRequest): Promise<TelegramProviderSettings> => {
+    return fetchApi<TelegramProviderSettings>('/api/v1/notifications/telegram-providers', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...provider,
+        providerType: 'Telegram',
+      }),
+    });
+  },
+
+  updateTelegramProvider: async (id: string, provider: TelegramProviderRequest): Promise<TelegramProviderSettings> => {
+    return fetchApi<TelegramProviderSettings>(`/api/v1/notifications/telegram-providers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        ...provider,
+        id,
+        providerType: 'Telegram',
+      }),
+    });
+  },
+
+  deleteTelegramProvider: async (id: string): Promise<void> => {
+    await fetchApi(`/api/v1/notifications/telegram-providers/${id}`, { method: 'DELETE' });
+  },
+
+  testTelegramProvider: async (id: string): Promise<PushTestResult> => {
+    return fetchApi<PushTestResult>(`/api/v1/notifications/telegram-providers/${id}/test`, { method: 'POST' });
+  },
+
+  testTelegramProviderSettings: async (settings: TelegramProviderRequest): Promise<PushTestResult> => {
+    return fetchApi<PushTestResult>('/api/v1/notifications/telegram-providers/test', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...settings,
+        providerType: 'Telegram',
       }),
     });
   },
