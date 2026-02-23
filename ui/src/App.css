@@ -2649,6 +2649,429 @@ tr.discoverable {
   border-color: var(--accent-hover);
 }
 
+/* ===========================================
+   Calendar Page Styles
+   =========================================== */
+.calendar-container {
+  display: flex;
+  gap: 24px;
+}
+
+.calendar-grid-wrapper {
+  flex: 1;
+  overflow-x: auto;
+}
+
+.calendar-grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.calendar-header-cell {
+  padding: 12px 8px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.calendar-cell {
+  height: 100px;
+  min-width: 100px;
+  vertical-align: top;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  cursor: default;
+  transition: background-color 0.15s ease;
+}
+
+.calendar-cell.empty {
+  background: var(--bg-secondary);
+}
+
+.calendar-cell.other-month {
+  background: var(--bg-secondary);
+  opacity: 0.5;
+}
+
+.calendar-cell.today {
+  background: rgba(var(--accent-rgb), 0.1);
+  border-color: var(--accent);
+}
+
+.calendar-cell.has-issues {
+  cursor: pointer;
+}
+
+.calendar-cell.has-issues:hover {
+  background: var(--bg-hover);
+}
+
+.calendar-cell.selected {
+  background: rgba(var(--accent-rgb), 0.15);
+  border-color: var(--accent);
+}
+
+.calendar-cell.release-day {
+  border-left: 3px solid var(--accent-warning);
+}
+
+.calendar-cell-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.calendar-day-number {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.calendar-cell.other-month .calendar-day-number {
+  color: var(--text-muted);
+}
+
+.release-day-badge {
+  font-size: 9px;
+  padding: 2px 4px;
+  background: var(--accent-warning);
+  color: white;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.calendar-cell-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.calendar-issue-count {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.calendar-issue-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.issue-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.issue-dot.status-owned {
+  background: var(--accent-success);
+}
+
+.issue-dot.status-wanted {
+  background: var(--accent-warning);
+}
+
+.issue-dot.status-skipped {
+  background: var(--text-muted);
+}
+
+.issue-dot.status-downloading {
+  background: var(--accent-info);
+}
+
+.issue-dot.status-missing {
+  background: var(--accent-danger);
+}
+
+.issue-dot.more {
+  width: auto;
+  height: auto;
+  border-radius: var(--radius-sm);
+  font-size: 9px;
+  padding: 1px 3px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+
+/* Calendar Month Display */
+.calendar-month-display {
+  min-width: 180px;
+  text-align: center;
+}
+
+.calendar-month-name {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* Calendar Day Detail Panel */
+.calendar-day-detail {
+  width: 320px;
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.calendar-day-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.calendar-day-detail-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.calendar-day-detail-content {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.calendar-issues-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.calendar-issue-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.calendar-issue-item:last-child {
+  border-bottom: none;
+}
+
+.calendar-issue-thumb {
+  width: 40px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.calendar-issue-thumb-placeholder {
+  width: 40px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.calendar-issue-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.calendar-issue-series {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+  text-decoration: none;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-issue-series:hover {
+  color: var(--accent);
+}
+
+.calendar-issue-number {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.calendar-issue-publisher {
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.calendar-issue-status {
+  flex-shrink: 0;
+  align-self: center;
+}
+
+/* Agenda View */
+.agenda-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.agenda-day {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.agenda-day.release-day {
+  border-left: 3px solid var(--accent-warning);
+}
+
+.agenda-day-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.agenda-day-date {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.agenda-day-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.agenda-day-issues {
+  display: flex;
+  flex-direction: column;
+}
+
+.agenda-issue {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  align-items: center;
+}
+
+.agenda-issue:last-child {
+  border-bottom: none;
+}
+
+.agenda-issue-cover {
+  width: 40px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.agenda-issue-cover-placeholder {
+  width: 40px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.agenda-issue-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.agenda-issue-series {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+  text-decoration: none;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agenda-issue-series:hover {
+  color: var(--accent);
+}
+
+.agenda-issue-number {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.agenda-issue-title {
+  color: var(--text-muted);
+}
+
+.agenda-issue-publisher {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.agenda-issue-status {
+  flex-shrink: 0;
+}
+
+/* Calendar Mobile Responsive */
+@media (max-width: 1024px) {
+  .calendar-container {
+    flex-direction: column;
+  }
+  
+  .calendar-day-detail {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .calendar-cell {
+    height: 70px;
+    min-width: 40px;
+    padding: 4px;
+  }
+  
+  .calendar-day-number {
+    font-size: 12px;
+  }
+  
+  .release-day-badge {
+    display: none;
+  }
+  
+  .calendar-issue-count {
+    font-size: 10px;
+  }
+  
+  .calendar-issue-dots {
+    display: none;
+  }
+  
+  .calendar-month-display {
+    min-width: 140px;
+  }
+  
+  .calendar-month-name {
+    font-size: 14px;
+  }
+}
+
 /* Modal Styles */
 .modal-overlay {
   position: fixed;

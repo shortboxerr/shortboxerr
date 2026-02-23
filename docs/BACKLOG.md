@@ -2253,10 +2253,14 @@ Mylar3 shows releases for upcoming weeks, not just the current week.
   - AC: Same issue card format as current week view ✅
   - AC: Ability to mark issues as Wanted/Skip from future weeks ✅
 
-- [ ] **Calendar view enhancement** (deferred - separate page)
-  - AC: Existing calendar view shows multiple weeks
-  - AC: Navigate forward/backward through months
-  - AC: Click day to see releases for that day
+- [x] **Calendar view enhancement** ✅ (Iteration 124)
+  - AC: New dedicated Calendar page with monthly grid view ✅
+  - AC: Navigate forward/backward through months ✅
+  - AC: Click day to see releases for that day ✅
+  - AC: Agenda view alternative with list format ✅
+  - AC: Status filtering (Wanted/Owned/Skipped/Missing) ✅
+  - AC: Release day highlighting (Wednesday) ✅
+  - AC: Mobile responsive layout ✅
 
 ### 15.4 Issue Overlay Button Visibility (Light Theme) ✅ COMPLETED
 Mark as owned/skip buttons are difficult to see on light theme.

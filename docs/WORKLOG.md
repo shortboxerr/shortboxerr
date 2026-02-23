@@ -1,5 +1,49 @@
 # Worklog
 
+## Iteration 124 (2026-02-17)
+**EPIC 15.3: Calendar View Enhancement**
+
+### Summary
+Created a new dedicated Calendar page that provides a monthly grid view of comic releases. This complements the existing Pull List page by offering a visual calendar perspective for tracking release dates.
+
+### Commits
+1. `feat(ui): add calendar page with monthly release view`
+
+### Deliverables
+
+#### New CalendarPage Component
+- Monthly calendar grid showing releases per day
+- Month navigation (previous/next/today)
+- Click on day to see detailed release list
+- Status filtering (Wanted/Owned/Skipped/Missing)
+- Release day highlighting (typically Wednesdays)
+- Issue count and status dots per day
+
+#### Alternative Agenda View
+- List-based view grouped by date
+- Shows all issues with covers, series, status
+- Links to series detail pages
+
+#### Navigation Integration
+- Added "Calendar" to sidebar navigation (CalendarDays icon)
+- Route: `/calendar`
+
+#### Responsive Design
+- Desktop: Full calendar grid with detail panel
+- Tablet: Stacked layout
+- Mobile: Compact calendar cells with hidden dots
+
+### Files Changed
+- `ui/src/pages/CalendarPage.tsx` - New calendar page component
+- `ui/src/App.tsx` - Added route and import
+- `ui/src/components/Layout.tsx` - Added navigation item
+- `ui/src/App.css` - Added calendar styles
+
+### API Used
+- `GET /api/v1/pulllist/calendar` - Fetches ReleaseCalendar data
+
+---
+
 ## Iteration 123 (2026-02-17)
 **EPIC 9: Per-Issue Search on Wanted Page**
 
