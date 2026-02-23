@@ -55,6 +55,29 @@ export function WantedPage() {
     searchAllWanted.mutate();
   };
 
+  // Search individual issue mutation
+  const searchIssue = useMutation({
+    mutationFn: async (issueId: number) => {
+      return api.searchIssue(issueId);
+    },
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success(`Found: ${result.selectedCandidateTitle || 'Download started'}`);
+      } else if (result.candidatesFound === 0) {
+        toast.info(`No results found for #${result.issueNumber}`);
+      } else {
+        toast.warning(result.error || 'Search completed but no download started');
+      }
+    },
+    onError: () => {
+      toast.error('Search failed');
+    },
+  });
+
+  const handleSearchIssue = (issueId: number) => {
+    searchIssue.mutate(issueId);
+  };
+
   const items = wanted?.items ?? [];
 
   return (
@@ -152,9 +175,19 @@ export function WantedPage() {
                     {tab === 'collections' && <td>{item.volumeNumber ?? '-'}</td>}
                     <td style={{ color: 'var(--text-muted)' }}>{item.dateAdded}</td>
                     <td className="table-actions">
-                      <button className="btn btn-icon" title="Search for download">
-                        <Search size={16} />
-                      </button>
+                      {tab === 'issues' && (
+                        <button 
+                          className="btn btn-icon" 
+                          title="Search for download"
+                          onClick={() => handleSearchIssue(item.id)}
+                          disabled={searchIssue.isPending && searchIssue.variables === item.id}
+                        >
+                          {searchIssue.isPending && searchIssue.variables === item.id 
+                            ? <Loader2 size={16} className="spinning" />
+                            : <Search size={16} />
+                          }
+                        </button>
+                      )}
                       <button className="btn btn-icon" title="Manual download">
                         <Download size={16} />
                       </button>

@@ -1,4 +1,4 @@
-# Self Check - Iteration 122
+# Self Check - Iteration 123
 
 ## Checklist Status
 
@@ -13,26 +13,28 @@
 
 ## Implementation Details
 
-### Feature: Search All Button on Wanted Page
+### Feature: Per-Issue Search on Wanted Page
 
-**Previous State**: Button existed but was not functional
-
-**Current State**: Button triggers global search for all wanted issues
+**Location**: Wanted page issues table, per-row actions
 
 ### Changes Made
 
-1. **API Client** - Added `searchAllWanted()` method
-2. **WantedPage** - Added mutation and handler, wired up button
+1. **searchIssue mutation** - Calls `api.searchIssue(issueId)`
+2. **handleSearchIssue handler** - Triggers the mutation
+3. **Search button per row** - Only shown for issues tab
+   - Shows spinner for currently searching issue
+   - Toast notifications for results
 
 ### User Flow
 
 1. Navigate to Wanted page
-2. Click "Search All" button
-3. System searches for all wanted issues globally
-4. Toast notification shows results
+2. In the Issues tab, click Search button on any row
+3. System searches for that specific issue
+4. Toast notification shows result
 
 ### Validation
 
 - [x] Frontend builds successfully
-- [x] Button shows spinner during search
+- [x] Per-row search button appears for issues
+- [x] Spinner shows for searching issue only
 - [x] Toast notifications for success/no results/error

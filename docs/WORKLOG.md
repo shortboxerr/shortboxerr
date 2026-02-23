@@ -1,5 +1,27 @@
 # Worklog
 
+## Iteration 123 (2026-02-17)
+**EPIC 9: Per-Issue Search on Wanted Page**
+
+### Summary
+Added per-issue search button on the Wanted page issues table. Each wanted issue now has a search button that triggers individual auto-search.
+
+### Commits
+1. `feat(ui): add per-issue search button on wanted page`
+
+### Deliverables
+
+#### WantedPage
+- Added searchIssue mutation for individual issue search
+- Per-row search button for issues (shows for issues tab only)
+- Spinner during individual search
+- Toast notifications for search results
+
+### Files Changed
+- `ui/src/pages/WantedPage.tsx` - Added per-issue search
+
+---
+
 ## Iteration 122 (2026-02-17)
 **EPIC 9: Wanted Page Search All**
 
