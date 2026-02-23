@@ -54,6 +54,7 @@ export function SettingsPage() {
   // Sync with URL on mount/URL change
   useEffect(() => {
     if (tabFromUrl && tabs.some(t => t.id === tabFromUrl)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- URL sync on mount/navigation
       setActiveTab(tabFromUrl);
     }
   }, [tabFromUrl]);
@@ -374,6 +375,7 @@ function GeneralSettings() {
   // Update local state when settings load
   useEffect(() => {
     if (generalSettings) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Initialize form state from API
       setSeriesFolderFormat(generalSettings.seriesFolderFormat);
       setIssueFileFormat(generalSettings.issueFileFormat);
       setCollectionFileFormat(generalSettings.collectionFileFormat);
@@ -681,6 +683,7 @@ function LoggingSettingsSection() {
   // Update local state when settings load
   useEffect(() => {
     if (settings) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Initialize form state from API
       setLocalSettings(settings);
     }
   }, [settings]);
@@ -1005,6 +1008,7 @@ function CoverCacheSettingsSection() {
 
   useEffect(() => {
     if (settings) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Initialize form state from API
       setLocalSettings({
         maxCacheSizeMb: settings.maxCacheSizeMb,
         retentionDays: settings.retentionDays,
@@ -4450,7 +4454,7 @@ function NotificationsSettings() {
     try {
       const result = await api.testWebhookProvider(id);
       setTestResult({ success: result.success, message: result.message });
-    } catch (err) {
+    } catch {
       setTestResult({ success: false, message: 'Failed to test webhook' });
     } finally {
       setTestingId(null);
@@ -4687,7 +4691,7 @@ function WebhookProviderModal({
         password: password || undefined,
       });
       setTestResult({ success: result.success, message: result.message });
-    } catch (err) {
+    } catch {
       setTestResult({ success: false, message: 'Failed to test webhook' });
     } finally {
       setTesting(false);
@@ -4987,7 +4991,7 @@ function EmailProvidersSection() {
     try {
       const result = await api.testEmailProvider(id);
       setTestResult({ success: result.success, message: result.message });
-    } catch (err) {
+    } catch {
       setTestResult({ success: false, message: 'Failed to test email provider' });
     } finally {
       setTestingId(null);
@@ -5235,7 +5239,7 @@ function EmailProviderModal({
         includeImages,
       });
       setTestResult({ success: result.success, message: result.message });
-    } catch (err) {
+    } catch {
       setTestResult({ success: false, message: 'Failed to test email provider' });
     } finally {
       setTesting(false);
