@@ -2595,6 +2595,43 @@ Pull list data doesn't match Mylar3's for the same week.
 11. **15.13 NewznabClient User-Agent Rejection** - ✅ COMPLETED (Iteration 129)
 12. **15.14 EF Core Query Splitting** - ✅ COMPLETED (Iteration 130)
 
+### P5 - Medium (Log Quality)
+13. **15.15 Download Client Error Log Noise** - READY
+14. **15.16 Background Service Graceful Degradation** - READY
+
+### 15.15 Download Client Error Log Noise
+Download clients log at ERROR level when server is unreachable, causing log spam in dev/test environments.
+
+**Problem**: `SabnzbdClient` logs "Error getting history from SABnzbd" at ERROR level every minute when SABnzbd isn't running, filling logs with noise.
+
+- [ ] **Reduce log level for expected connection failures**
+  - AC: Log at WARN level (not ERROR) when download client server is unreachable
+  - AC: Log at DEBUG level after first connection failure (avoid repeated warnings)
+  - AC: Log at ERROR level only for unexpected errors (auth failures, malformed responses)
+  - AC: Include connection URL in log message for debugging
+  - AC: Consider exponential backoff for connection retry logging
+
+- [ ] **Distinguish configuration vs connectivity errors**
+  - AC: Check if download client is properly configured before attempting connection
+  - AC: Return empty result (not error) if client URL/API key not configured
+  - AC: Add `IsConfigured` property to download client interface
+
+### 15.16 Background Service Graceful Degradation
+`NzbImportBackgroundService` continues polling even when no download client is configured.
+
+**Problem**: The service tries to process downloads every minute even when SABnzbd isn't configured, resulting in repeated errors.
+
+- [ ] **Skip processing when no download client configured**
+  - AC: Check for configured download clients before attempting to process
+  - AC: Log once at INFO level "No download clients configured, skipping import check"
+  - AC: Reduce polling frequency (or pause entirely) when no clients configured
+  - AC: Resume normal polling when a download client is added
+
+- [ ] **Improve health check for download clients**
+  - AC: Add health check endpoint that returns download client status
+  - AC: Include "configured" vs "healthy" vs "unreachable" status
+  - AC: Display download client health in Settings > Download Clients
+
 ---
 
 ## EPIC 16: End-to-End Testing Infrastructure
