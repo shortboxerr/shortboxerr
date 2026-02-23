@@ -92,9 +92,9 @@ public class DownloadHostResolverFactory : IDownloadHostResolverFactory
         RegisterResolver(new DirectDownloadResolver(
             _loggerFactory?.CreateLogger<DirectDownloadResolver>()));
 
-        // Mega.nz - Priority 1 (very reliable, fast)
-        // Note: Mega resolver requires special handling (encryption) - not implemented yet
-        // RegisterResolver(new MegaResolver(_loggerFactory?.CreateLogger<MegaResolver>()));
+        // Mega.nz - Priority 1 (very reliable, fast, encrypted downloads)
+        RegisterResolver(new MegaResolver(
+            _loggerFactory?.CreateLogger<MegaResolver>()));
 
         // MediaFire - Priority 2 (common, reliable)
         RegisterResolver(new MediaFireResolver(
