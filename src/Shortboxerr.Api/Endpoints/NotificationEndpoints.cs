@@ -386,6 +386,241 @@ public static class NotificationEndpoints
 
         #endregion
 
+        #region Email Providers
+
+        // GET /api/v1/notifications/email-providers - get all email providers
+        group.MapGet("/email-providers", async (
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var providers = await settingsService.GetAsync<List<EmailProviderSettings>>(
+                "email_notification_providers", 
+                new List<EmailProviderSettings>(), 
+                cancellationToken) ?? [];
+            return Results.Ok(providers);
+        })
+        .WithName("GetEmailProviders")
+        .WithDescription("Gets all configured email notification providers")
+        .Produces<List<EmailProviderSettings>>(200);
+
+        // GET /api/v1/notifications/email-providers/{id} - get a specific email provider
+        group.MapGet("/email-providers/{id}", async (
+            string id,
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var providers = await settingsService.GetAsync<List<EmailProviderSettings>>(
+                "email_notification_providers",
+                new List<EmailProviderSettings>(),
+                cancellationToken) ?? [];
+            var provider = providers.FirstOrDefault(p => p.Id == id);
+            return provider != null 
+                ? Results.Ok(provider) 
+                : Results.NotFound(new { Error = "Email provider not found" });
+        })
+        .WithName("GetEmailProvider")
+        .WithDescription("Gets a specific email provider by ID")
+        .Produces<EmailProviderSettings>(200)
+        .Produces(404);
+
+        // POST /api/v1/notifications/email-providers - add a new email provider
+        group.MapPost("/email-providers", async (
+            [FromBody] EmailProviderSettings provider,
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(provider.Name))
+            {
+                return Results.BadRequest(new { Error = "Name is required" });
+            }
+            if (string.IsNullOrWhiteSpace(provider.SmtpServer))
+            {
+                return Results.BadRequest(new { Error = "SMTP server is required" });
+            }
+            if (string.IsNullOrWhiteSpace(provider.SenderEmail))
+            {
+                return Results.BadRequest(new { Error = "Sender email is required" });
+            }
+            if (string.IsNullOrWhiteSpace(provider.RecipientEmails))
+            {
+                return Results.BadRequest(new { Error = "At least one recipient email is required" });
+            }
+
+            if (string.IsNullOrEmpty(provider.Id))
+            {
+                provider.Id = Guid.NewGuid().ToString();
+            }
+
+            var providers = await settingsService.GetAsync<List<EmailProviderSettings>>(
+                "email_notification_providers",
+                new List<EmailProviderSettings>(),
+                cancellationToken) ?? [];
+
+            if (providers.Any(p => p.Name.Equals(provider.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                return Results.Conflict(new { Error = $"An email provider with name '{provider.Name}' already exists" });
+            }
+
+            providers.Add(provider);
+            await settingsService.SetAsync("email_notification_providers", providers, cancellationToken);
+
+            return Results.Created($"/api/v1/notifications/email-providers/{provider.Id}", provider);
+        })
+        .WithName("AddEmailProvider")
+        .WithDescription("Adds a new email notification provider")
+        .Produces<EmailProviderSettings>(201)
+        .Produces(400)
+        .Produces(409);
+
+        // PUT /api/v1/notifications/email-providers/{id} - update an email provider
+        group.MapPut("/email-providers/{id}", async (
+            string id,
+            [FromBody] EmailProviderSettings provider,
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(provider.Name))
+            {
+                return Results.BadRequest(new { Error = "Name is required" });
+            }
+            if (string.IsNullOrWhiteSpace(provider.SmtpServer))
+            {
+                return Results.BadRequest(new { Error = "SMTP server is required" });
+            }
+
+            var providers = await settingsService.GetAsync<List<EmailProviderSettings>>(
+                "email_notification_providers",
+                new List<EmailProviderSettings>(),
+                cancellationToken) ?? [];
+
+            var existingIndex = providers.FindIndex(p => p.Id == id);
+            if (existingIndex == -1)
+            {
+                return Results.NotFound(new { Error = "Email provider not found" });
+            }
+
+            if (providers.Any(p => p.Id != id && p.Name.Equals(provider.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                return Results.Conflict(new { Error = $"An email provider with name '{provider.Name}' already exists" });
+            }
+
+            provider.Id = id;
+            providers[existingIndex] = provider;
+            await settingsService.SetAsync("email_notification_providers", providers, cancellationToken);
+
+            return Results.Ok(provider);
+        })
+        .WithName("UpdateEmailProvider")
+        .WithDescription("Updates an existing email notification provider")
+        .Produces<EmailProviderSettings>(200)
+        .Produces(400)
+        .Produces(404)
+        .Produces(409);
+
+        // DELETE /api/v1/notifications/email-providers/{id} - delete an email provider
+        group.MapDelete("/email-providers/{id}", async (
+            string id,
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var providers = await settingsService.GetAsync<List<EmailProviderSettings>>(
+                "email_notification_providers",
+                new List<EmailProviderSettings>(),
+                cancellationToken) ?? [];
+
+            var provider = providers.FirstOrDefault(p => p.Id == id);
+            if (provider == null)
+            {
+                return Results.NotFound(new { Error = "Email provider not found" });
+            }
+
+            providers.Remove(provider);
+            await settingsService.SetAsync("email_notification_providers", providers, cancellationToken);
+
+            return Results.NoContent();
+        })
+        .WithName("DeleteEmailProvider")
+        .WithDescription("Deletes an email notification provider")
+        .Produces(204)
+        .Produces(404);
+
+        // POST /api/v1/notifications/email-providers/{id}/test - test an existing email provider
+        group.MapPost("/email-providers/{id}/test", async (
+            string id,
+            [FromServices] ISettingsService settingsService,
+            [FromServices] IEnumerable<INotificationProvider> providers,
+            CancellationToken cancellationToken) =>
+        {
+            var allProviders = await settingsService.GetAsync<List<EmailProviderSettings>>(
+                "email_notification_providers",
+                new List<EmailProviderSettings>(),
+                cancellationToken) ?? [];
+
+            var provider = allProviders.FirstOrDefault(p => p.Id == id);
+            if (provider == null)
+            {
+                return Results.NotFound(new { Error = "Email provider not found" });
+            }
+
+            var emailProvider = providers.FirstOrDefault(p => p.ProviderType == "Email");
+            if (emailProvider == null)
+            {
+                return Results.StatusCode(500);
+            }
+
+            var result = await emailProvider.TestAsync(provider, cancellationToken);
+            return Results.Ok(new EmailTestResponse
+            {
+                Success = result.Success,
+                Message = result.Message,
+                Latency = result.Latency
+            });
+        })
+        .WithName("TestEmailProvider")
+        .WithDescription("Tests an email notification provider")
+        .Produces<EmailTestResponse>(200)
+        .Produces(404);
+
+        // POST /api/v1/notifications/email-providers/test - test email provider with settings
+        group.MapPost("/email-providers/test", async (
+            [FromBody] EmailProviderSettings provider,
+            [FromServices] IEnumerable<INotificationProvider> providers,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(provider.SmtpServer))
+            {
+                return Results.BadRequest(new { Error = "SMTP server is required" });
+            }
+            if (string.IsNullOrWhiteSpace(provider.SenderEmail))
+            {
+                return Results.BadRequest(new { Error = "Sender email is required" });
+            }
+            if (string.IsNullOrWhiteSpace(provider.RecipientEmails))
+            {
+                return Results.BadRequest(new { Error = "At least one recipient email is required" });
+            }
+
+            var emailProvider = providers.FirstOrDefault(p => p.ProviderType == "Email");
+            if (emailProvider == null)
+            {
+                return Results.StatusCode(500);
+            }
+
+            var result = await emailProvider.TestAsync(provider, cancellationToken);
+            return Results.Ok(new EmailTestResponse
+            {
+                Success = result.Success,
+                Message = result.Message,
+                Latency = result.Latency
+            });
+        })
+        .WithName("TestEmailProviderSettings")
+        .WithDescription("Tests email notification settings without saving")
+        .Produces<EmailTestResponse>(200)
+        .Produces(400);
+
+        #endregion
+
         #region Test Endpoints (for development/testing)
 
         // POST /api/v1/notifications/test - create a test notification
@@ -421,6 +656,16 @@ public class NotificationListResponse
 /// Response from testing a webhook provider.
 /// </summary>
 public class WebhookTestResponse
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public TimeSpan? Latency { get; set; }
+}
+
+/// <summary>
+/// Response from testing an email provider.
+/// </summary>
+public class EmailTestResponse
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;

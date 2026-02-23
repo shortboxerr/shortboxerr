@@ -233,3 +233,74 @@ public class WebhookProviderSettings : NotificationProviderSettings
     /// </summary>
     public Dictionary<string, string>? Headers { get; set; }
 }
+
+/// <summary>
+/// Email/SMTP-specific provider settings.
+/// </summary>
+public class EmailProviderSettings : NotificationProviderSettings
+{
+    public EmailProviderSettings()
+    {
+        ProviderType = "Email";
+    }
+    
+    /// <summary>
+    /// SMTP server hostname (e.g., smtp.gmail.com).
+    /// </summary>
+    public string SmtpServer { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// SMTP server port (default: 587 for TLS, 465 for SSL, 25 for plain).
+    /// </summary>
+    public int Port { get; set; } = 587;
+    
+    /// <summary>
+    /// Whether to use SSL/TLS encryption.
+    /// </summary>
+    public bool UseSsl { get; set; } = true;
+    
+    /// <summary>
+    /// SMTP username for authentication.
+    /// </summary>
+    public string? Username { get; set; }
+    
+    /// <summary>
+    /// SMTP password for authentication.
+    /// </summary>
+    public string? Password { get; set; }
+    
+    /// <summary>
+    /// Sender email address (From field).
+    /// </summary>
+    public string SenderEmail { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Sender display name (optional).
+    /// </summary>
+    public string? SenderName { get; set; } = "Shortboxerr";
+    
+    /// <summary>
+    /// Recipient email addresses (comma-separated for multiple).
+    /// </summary>
+    public string RecipientEmails { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// CC recipients (optional, comma-separated).
+    /// </summary>
+    public string? CcEmails { get; set; }
+    
+    /// <summary>
+    /// BCC recipients (optional, comma-separated).
+    /// </summary>
+    public string? BccEmails { get; set; }
+    
+    /// <summary>
+    /// Subject line prefix (e.g., "[Shortboxerr]").
+    /// </summary>
+    public string SubjectPrefix { get; set; } = "[Shortboxerr]";
+    
+    /// <summary>
+    /// Whether to send HTML emails (true) or plain text (false).
+    /// </summary>
+    public bool UseHtml { get; set; } = true;
+}

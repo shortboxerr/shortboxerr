@@ -1,5 +1,47 @@
 # Worklog
 
+## Iteration 127 (2026-02-17)
+**EPIC 11.4: Email Notifications (SMTP)**
+
+### Summary
+Implemented email notification support via SMTP. Users can now configure email notifications alongside webhooks to receive alerts for new releases, downloads, and other events.
+
+### Commits
+1. `feat(notifications): add email notification provider with SMTP support`
+
+### Deliverables
+
+#### EmailNotificationProvider
+- Implements `INotificationProvider` interface
+- Sends emails via SMTP with configurable server, port, SSL
+- Supports authentication (username/password)
+- HTML email templates with event-colored headers
+- Plain text fallback for compatibility
+
+#### EmailProviderSettings
+- SMTP server configuration (host, port, SSL)
+- Sender email and display name
+- Multiple recipients (To, CC, BCC) comma-separated
+- Subject prefix customization
+- HTML/plain text toggle
+
+#### API Endpoints
+- `GET /api/v1/notifications/email-providers` - List all email providers
+- `GET /api/v1/notifications/email-providers/{id}` - Get specific provider
+- `POST /api/v1/notifications/email-providers` - Create new provider
+- `PUT /api/v1/notifications/email-providers/{id}` - Update provider
+- `DELETE /api/v1/notifications/email-providers/{id}` - Delete provider
+- `POST /api/v1/notifications/email-providers/{id}/test` - Test existing provider
+- `POST /api/v1/notifications/email-providers/test` - Test settings without saving
+
+### Files Changed
+- `src/Shortboxerr.Core/Notifications/INotificationProvider.cs` - Added EmailProviderSettings class
+- `src/Shortboxerr.Infrastructure/Notifications/EmailNotificationProvider.cs` - New email provider
+- `src/Shortboxerr.Infrastructure/DependencyInjection.cs` - Registered provider
+- `src/Shortboxerr.Api/Endpoints/NotificationEndpoints.cs` - Added email endpoints
+
+---
+
 ## Iteration 126 (2026-02-17)
 **EPIC 13.1: Compressed Archive of Rotated Logs**
 
