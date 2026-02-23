@@ -1,5 +1,45 @@
 # Worklog
 
+## Iteration 136 (2026-02-23)
+**Telegram Notification Provider**
+
+### Summary
+Added Telegram as a notification provider, allowing users to receive comic release notifications via Telegram bots. This follows the same pattern as existing providers (Pushover, Pushbullet, Email, Webhook).
+
+### Features
+- **Bot Integration**: Uses Telegram Bot API with bot token authentication
+- **Flexible Targeting**: Send to users, groups, or channels via chat ID
+- **Rich Formatting**: Support for HTML, Markdown, and MarkdownV2 parse modes
+- **Silent Mode**: Option to send notifications without sound/vibration
+- **Link Preview**: Toggle for URL preview in messages
+- **Forum Support**: Topic ID for forum-enabled supergroups
+- **Event Filtering**: Select which notification events trigger Telegram messages
+
+### Commits
+1. `feat(notifications): add Telegram notification provider` - Backend implementation
+2. `feat(ui): add Telegram notification provider settings UI` - Frontend implementation
+3. `test: add unit tests for Telegram notification provider` - 26 unit tests
+
+### API Endpoints
+- `GET /api/v1/notifications/telegram-providers` - List all providers
+- `GET /api/v1/notifications/telegram-providers/{id}` - Get specific provider
+- `POST /api/v1/notifications/telegram-providers` - Add new provider
+- `PUT /api/v1/notifications/telegram-providers/{id}` - Update provider
+- `DELETE /api/v1/notifications/telegram-providers/{id}` - Delete provider
+- `POST /api/v1/notifications/telegram-providers/{id}/test` - Test saved provider
+- `POST /api/v1/notifications/telegram-providers/test` - Test unsaved settings
+
+### Files Changed
+- `src/Shortboxerr.Core/Notifications/INotificationProvider.cs` - TelegramProviderSettings
+- `src/Shortboxerr.Infrastructure/Notifications/TelegramNotificationProvider.cs` - New provider
+- `src/Shortboxerr.Infrastructure/DependencyInjection.cs` - DI registration
+- `src/Shortboxerr.Api/Endpoints/NotificationEndpoints.cs` - API endpoints
+- `ui/src/api/client.ts` - Frontend types and API methods
+- `ui/src/pages/SettingsPage.tsx` - Settings UI section and modal
+- `tests/Shortboxerr.Tests/TelegramNotificationProviderTests.cs` - Unit tests
+
+---
+
 ## Iteration 135 (2026-02-23)
 **Code Quality: Compiler Warning Fixes**
 

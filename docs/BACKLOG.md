@@ -1163,6 +1163,17 @@ In-app notifications and external notification providers fully implemented inclu
   - AC: Test endpoints for connection validation ✅
   - AC: Settings UI for both providers ✅
   - AC: 46 unit tests covering provider functionality ✅
+- [x] **Telegram notification provider** ✅ (Iteration 136)
+  - AC: TelegramNotificationProvider using Telegram Bot API ✅
+  - AC: TelegramProviderSettings with bot token and chat ID ✅
+  - AC: Support for HTML and Markdown/MarkdownV2 parse modes ✅
+  - AC: Silent notification option ✅
+  - AC: Link preview toggle ✅
+  - AC: Topic ID for forum-enabled supergroups ✅
+  - AC: Full CRUD API endpoints for /api/v1/notifications/telegram-providers ✅
+  - AC: Test endpoint for bot token and chat ID validation ✅
+  - AC: Settings UI with add/edit modal ✅
+  - AC: 26 unit tests covering provider functionality ✅
 
 ### 11.9 Pull List UX Improvements ✅ COMPLETED
 - [x] **Empty state improvements** ✅
