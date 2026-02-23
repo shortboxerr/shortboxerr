@@ -13,6 +13,7 @@ import type {
   Provider, CreateProviderRequest, ProviderTestResult, ComicVineTestResult,
   NzbIndexer, NzbIndexerRequest, NzbTestResult, NzbIndexerPreset,
   WebhookProviderSettings, WebhookProviderRequest, NotificationEventType,
+  EmailProviderSettings, EmailProviderRequest,
   SearchSettings, PreferredQuality
 } from '../api/client';
 import { useTheme } from '../App';
@@ -4426,6 +4427,8 @@ function NotificationsSettings() {
           isLoading={addMutation.isPending || updateMutation.isPending}
         />
       )}
+
+      <EmailProvidersSection />
     </>
   );
 }
@@ -4733,6 +4736,643 @@ function WebhookProviderModal({
               disabled={!isValid || isLoading}
             >
               {isLoading ? 'Saving...' : (provider ? 'Save Changes' : 'Add Webhook')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function EmailProvidersSection() {
+  const queryClient = useQueryClient();
+  const [editingProvider, setEditingProvider] = useState<EmailProviderSettings | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [testingId, setTestingId] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Fetch email providers
+  const { data: providers = [], isLoading } = useQuery({
+    queryKey: ['emailProviders'],
+    queryFn: api.getEmailProviders,
+  });
+
+  // Add provider mutation
+  const addMutation = useMutation({
+    mutationFn: api.addEmailProvider,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['emailProviders'] });
+      setShowAddModal(false);
+    },
+  });
+
+  // Update provider mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, provider }: { id: string; provider: EmailProviderRequest }) =>
+      api.updateEmailProvider(id, provider),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['emailProviders'] });
+      setEditingProvider(null);
+    },
+  });
+
+  // Delete provider mutation
+  const deleteMutation = useMutation({
+    mutationFn: api.deleteEmailProvider,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['emailProviders'] });
+    },
+  });
+
+  // Test provider
+  const handleTest = async (id: string) => {
+    setTestingId(id);
+    setTestResult(null);
+    try {
+      const result = await api.testEmailProvider(id);
+      setTestResult({ success: result.success, message: result.message });
+    } catch (err) {
+      setTestResult({ success: false, message: 'Failed to test email provider' });
+    } finally {
+      setTestingId(null);
+    }
+  };
+
+  return (
+    <>
+      <SettingsSection title="Email Providers">
+        <div style={{ marginBottom: '16px' }}>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+            Configure SMTP email providers to receive notifications from Shortboxerr.
+          </p>
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowAddModal(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Plus size={16} />
+            Add Email Provider
+          </button>
+        </div>
+
+        {isLoading ? (
+          <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            Loading...
+          </div>
+        ) : providers.length === 0 ? (
+          <div style={{ 
+            padding: '32px', 
+            textAlign: 'center', 
+            color: 'var(--text-muted)',
+            background: 'var(--bg-tertiary)',
+            borderRadius: 'var(--radius-md)',
+            border: '1px dashed var(--border-color)'
+          }}>
+            <Bell size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
+            <p>No email providers configured</p>
+            <p style={{ fontSize: '12px' }}>Add an email provider to receive notifications via SMTP</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {providers.map((provider) => (
+              <div
+                key={provider.id}
+                style={{
+                  padding: '16px',
+                  background: 'var(--bg-tertiary)',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border-color)',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                      <span style={{ fontWeight: 600, fontSize: '14px' }}>{provider.name}</span>
+                      <span style={{
+                        fontSize: '11px',
+                        padding: '2px 8px',
+                        borderRadius: '10px',
+                        background: provider.enabled ? 'rgba(34, 197, 94, 0.15)' : 'rgba(107, 114, 128, 0.15)',
+                        color: provider.enabled ? 'rgb(34, 197, 94)' : 'var(--text-muted)',
+                      }}>
+                        {provider.enabled ? 'Enabled' : 'Disabled'}
+                      </span>
+                      <span style={{
+                        fontSize: '11px',
+                        padding: '2px 8px',
+                        borderRadius: '10px',
+                        background: 'rgba(59, 130, 246, 0.15)',
+                        color: 'rgb(59, 130, 246)',
+                      }}>
+                        {provider.smtpServer}:{provider.port}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                      To: {provider.recipientEmails}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      Events: {provider.onEvents?.map(e => notificationEventLabels[e]).join(', ') || 'None'}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      className="btn btn-sm"
+                      onClick={() => handleTest(provider.id)}
+                      disabled={testingId === provider.id}
+                      title="Test email"
+                      style={{ padding: '6px 10px' }}
+                    >
+                      {testingId === provider.id ? (
+                        <RefreshCw size={14} className="spinning" />
+                      ) : (
+                        <Play size={14} />
+                      )}
+                    </button>
+                    <button
+                      className="btn btn-sm"
+                      onClick={() => setEditingProvider(provider)}
+                      title="Edit"
+                      style={{ padding: '6px 10px' }}
+                    >
+                      <Edit size={14} />
+                    </button>
+                    <button
+                      className="btn btn-sm btn-danger"
+                      onClick={() => {
+                        if (confirm(`Delete email provider "${provider.name}"?`)) {
+                          deleteMutation.mutate(provider.id);
+                        }
+                      }}
+                      title="Delete"
+                      style={{ padding: '6px 10px' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+                {testResult && testingId === null && (
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: testResult.success ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                    color: testResult.success ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)',
+                    fontSize: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}>
+                    {testResult.success ? <CheckCircle size={14} /> : <XCircle size={14} />}
+                    {testResult.message}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </SettingsSection>
+
+      {/* Add/Edit Email Modal */}
+      {(showAddModal || editingProvider) && (
+        <EmailProviderModal
+          provider={editingProvider}
+          onSave={(provider) => {
+            if (editingProvider) {
+              updateMutation.mutate({ id: editingProvider.id, provider });
+            } else {
+              addMutation.mutate(provider);
+            }
+          }}
+          onClose={() => {
+            setShowAddModal(false);
+            setEditingProvider(null);
+          }}
+          isLoading={addMutation.isPending || updateMutation.isPending}
+        />
+      )}
+    </>
+  );
+}
+
+function EmailProviderModal({
+  provider,
+  onSave,
+  onClose,
+  isLoading,
+}: {
+  provider: EmailProviderSettings | null;
+  onSave: (provider: EmailProviderRequest) => void;
+  onClose: () => void;
+  isLoading: boolean;
+}) {
+  const [name, setName] = useState(provider?.name || '');
+  const [smtpServer, setSmtpServer] = useState(provider?.smtpServer || '');
+  const [port, setPort] = useState(provider?.port ?? 587);
+  const [useSsl, setUseSsl] = useState(provider?.useSsl ?? true);
+  const [username, setUsername] = useState(provider?.username || '');
+  const [password, setPassword] = useState(provider?.password || '');
+  const [senderEmail, setSenderEmail] = useState(provider?.senderEmail || '');
+  const [senderName, setSenderName] = useState(provider?.senderName || 'Shortboxerr');
+  const [recipientEmails, setRecipientEmails] = useState(provider?.recipientEmails || '');
+  const [ccEmails, setCcEmails] = useState(provider?.ccEmails || '');
+  const [bccEmails, setBccEmails] = useState(provider?.bccEmails || '');
+  const [subjectPrefix, setSubjectPrefix] = useState(provider?.subjectPrefix || '[Shortboxerr]');
+  const [useHtml, setUseHtml] = useState(provider?.useHtml ?? true);
+  const [enabled, setEnabled] = useState(provider?.enabled ?? true);
+  const [onEvents, setOnEvents] = useState<NotificationEventType[]>(
+    provider?.onEvents || ['Grabbed', 'NewRelease']
+  );
+  const [includeSeries, setIncludeSeries] = useState(provider?.includeSeries ?? true);
+  const [includeImages, setIncludeImages] = useState(provider?.includeImages ?? false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [testing, setTesting] = useState(false);
+
+  const isValid = name.trim() && smtpServer.trim() && senderEmail.trim() && recipientEmails.trim();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isValid) return;
+    onSave({
+      name: name.trim(),
+      smtpServer: smtpServer.trim(),
+      port,
+      useSsl,
+      username: username || undefined,
+      password: password || undefined,
+      senderEmail: senderEmail.trim(),
+      senderName: senderName || undefined,
+      recipientEmails: recipientEmails.trim(),
+      ccEmails: ccEmails || undefined,
+      bccEmails: bccEmails || undefined,
+      subjectPrefix,
+      useHtml,
+      enabled,
+      onEvents,
+      includeSeries,
+      includeImages,
+    });
+  };
+
+  const handleTest = async () => {
+    if (!smtpServer.trim() || !senderEmail.trim() || !recipientEmails.trim()) return;
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const result = await api.testEmailProviderSettings({
+        name: name || 'Test',
+        smtpServer: smtpServer.trim(),
+        port,
+        useSsl,
+        username: username || undefined,
+        password: password || undefined,
+        senderEmail: senderEmail.trim(),
+        senderName: senderName || undefined,
+        recipientEmails: recipientEmails.trim(),
+        ccEmails: ccEmails || undefined,
+        bccEmails: bccEmails || undefined,
+        subjectPrefix,
+        useHtml,
+        enabled: true,
+        onEvents,
+        includeSeries,
+        includeImages,
+      });
+      setTestResult({ success: result.success, message: result.message });
+    } catch (err) {
+      setTestResult({ success: false, message: 'Failed to test email provider' });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const toggleEvent = (event: NotificationEventType) => {
+    setOnEvents(prev =>
+      prev.includes(event) ? prev.filter(e => e !== event) : [...prev, event]
+    );
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0, 0, 0, 0.6)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+    }}>
+      <div style={{
+        background: 'var(--bg-secondary)',
+        borderRadius: 'var(--radius-lg)',
+        width: '100%',
+        maxWidth: '550px',
+        maxHeight: '90vh',
+        overflow: 'auto',
+        border: '1px solid var(--border-color)',
+      }}>
+        <div style={{
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-color)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
+            {provider ? 'Edit Email Provider' : 'Add Email Provider'}
+          </h3>
+          <button
+            className="btn btn-sm"
+            onClick={onClose}
+            style={{ padding: '4px 8px', background: 'transparent' }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ padding: '20px' }}>
+          <SettingsField label="Name" description="A friendly name to identify this email provider">
+            <input
+              className="input"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="My Email Provider"
+              style={{ width: '100%' }}
+            />
+          </SettingsField>
+
+          <SettingsField label="SMTP Server" description="SMTP server hostname (e.g., smtp.gmail.com)">
+            <input
+              className="input"
+              type="text"
+              value={smtpServer}
+              onChange={(e) => setSmtpServer(e.target.value)}
+              placeholder="smtp.gmail.com"
+              style={{ width: '100%' }}
+            />
+          </SettingsField>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <SettingsField label="Port" description="SMTP port">
+              <input
+                className="input"
+                type="number"
+                value={port}
+                onChange={(e) => setPort(parseInt(e.target.value) || 587)}
+                min={1}
+                max={65535}
+                style={{ width: '100%' }}
+              />
+            </SettingsField>
+
+            <SettingsField label="SSL/TLS">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                <input
+                  type="checkbox"
+                  checked={useSsl}
+                  onChange={(e) => setUseSsl(e.target.checked)}
+                />
+                <span style={{ fontSize: '13px' }}>Use SSL/TLS encryption</span>
+              </label>
+            </SettingsField>
+          </div>
+
+          <SettingsField label="Username" description="SMTP authentication username (optional)">
+            <input
+              className="input"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="user@example.com"
+              style={{ width: '100%' }}
+            />
+          </SettingsField>
+
+          <SettingsField label="Password" description="SMTP authentication password (optional)">
+            <input
+              className="input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              style={{ width: '100%' }}
+            />
+          </SettingsField>
+
+          <SettingsField label="Sender Email" description="From address for emails">
+            <input
+              className="input"
+              type="email"
+              value={senderEmail}
+              onChange={(e) => setSenderEmail(e.target.value)}
+              placeholder="notifications@example.com"
+              style={{ width: '100%' }}
+            />
+          </SettingsField>
+
+          <SettingsField label="Sender Name" description="Display name for sender (optional)">
+            <input
+              className="input"
+              type="text"
+              value={senderName}
+              onChange={(e) => setSenderName(e.target.value)}
+              placeholder="Shortboxerr"
+              style={{ width: '100%' }}
+            />
+          </SettingsField>
+
+          <SettingsField label="Recipients" description="Email addresses to send notifications to (comma-separated)">
+            <input
+              className="input"
+              type="text"
+              value={recipientEmails}
+              onChange={(e) => setRecipientEmails(e.target.value)}
+              placeholder="user@example.com, another@example.com"
+              style={{ width: '100%' }}
+            />
+          </SettingsField>
+
+          <SettingsField label="">
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="checkbox"
+                checked={enabled}
+                onChange={(e) => setEnabled(e.target.checked)}
+              />
+              <span style={{ fontSize: '13px' }}>Enable this email provider</span>
+            </label>
+          </SettingsField>
+
+          <SettingsField label="Notification Events" description="Select which events should trigger emails">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {allNotificationEvents.map((event) => (
+                <label
+                  key={event}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    background: onEvents.includes(event) ? 'var(--accent-color)' : 'var(--bg-tertiary)',
+                    color: onEvents.includes(event) ? 'white' : 'var(--text-color)',
+                    borderRadius: 'var(--radius-sm)',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={onEvents.includes(event)}
+                    onChange={() => toggleEvent(event)}
+                    style={{ display: 'none' }}
+                  />
+                  {notificationEventLabels[event]}
+                </label>
+              ))}
+            </div>
+          </SettingsField>
+
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--accent-color)',
+              cursor: 'pointer',
+              fontSize: '13px',
+              padding: '8px 0',
+              marginBottom: '12px',
+            }}
+          >
+            {showAdvanced ? '▼' : '►'} Advanced Options
+          </button>
+
+          {showAdvanced && (
+            <div style={{ 
+              padding: '16px', 
+              background: 'var(--bg-tertiary)', 
+              borderRadius: 'var(--radius-md)',
+              marginBottom: '16px'
+            }}>
+              <SettingsField label="CC" description="CC recipients (comma-separated)">
+                <input
+                  className="input"
+                  type="text"
+                  value={ccEmails}
+                  onChange={(e) => setCcEmails(e.target.value)}
+                  placeholder="cc@example.com"
+                  style={{ width: '100%' }}
+                />
+              </SettingsField>
+
+              <SettingsField label="BCC" description="BCC recipients (comma-separated)">
+                <input
+                  className="input"
+                  type="text"
+                  value={bccEmails}
+                  onChange={(e) => setBccEmails(e.target.value)}
+                  placeholder="bcc@example.com"
+                  style={{ width: '100%' }}
+                />
+              </SettingsField>
+
+              <SettingsField label="Subject Prefix" description="Prefix for email subject lines">
+                <input
+                  className="input"
+                  type="text"
+                  value={subjectPrefix}
+                  onChange={(e) => setSubjectPrefix(e.target.value)}
+                  placeholder="[Shortboxerr]"
+                  style={{ width: '100%' }}
+                />
+              </SettingsField>
+
+              <SettingsField label="Email Format">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="checkbox"
+                    checked={useHtml}
+                    onChange={(e) => setUseHtml(e.target.checked)}
+                  />
+                  <span style={{ fontSize: '13px' }}>Use HTML formatting</span>
+                </label>
+              </SettingsField>
+
+              <SettingsField label="Content Options">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="checkbox"
+                      checked={includeSeries}
+                      onChange={(e) => setIncludeSeries(e.target.checked)}
+                    />
+                    <span style={{ fontSize: '13px' }}>Include series information</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="checkbox"
+                      checked={includeImages}
+                      onChange={(e) => setIncludeImages(e.target.checked)}
+                    />
+                    <span style={{ fontSize: '13px' }}>Include cover images (as attachments)</span>
+                  </label>
+                </div>
+              </SettingsField>
+            </div>
+          )}
+
+          {testResult && (
+            <div style={{
+              marginBottom: '16px',
+              padding: '12px',
+              borderRadius: 'var(--radius-sm)',
+              background: testResult.success ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+              color: testResult.success ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}>
+              {testResult.success ? <CheckCircle size={16} /> : <XCircle size={16} />}
+              {testResult.message}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              className="btn"
+              onClick={handleTest}
+              disabled={!smtpServer.trim() || !senderEmail.trim() || !recipientEmails.trim() || testing}
+            >
+              {testing ? (
+                <>
+                  <RefreshCw size={14} className="spinning" />
+                  Testing...
+                </>
+              ) : (
+                <>
+                  <Play size={14} />
+                  Test
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              className="btn"
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={!isValid || isLoading}
+            >
+              {isLoading ? 'Saving...' : (provider ? 'Save Changes' : 'Add Email Provider')}
             </button>
           </div>
         </form>

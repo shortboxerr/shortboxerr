@@ -836,6 +836,55 @@ export interface WebhookProviderRequest {
 export interface WebhookTestResult {
   success: boolean;
   message: string;
+  latency?: number;
+}
+
+// Email Notification Provider Types
+export interface EmailProviderSettings {
+  id: string;
+  name: string;
+  providerType: 'Email';
+  enabled: boolean;
+  onEvents: NotificationEventType[];
+  includeSeries: boolean;
+  includeImages: boolean;
+  smtpServer: string;
+  port: number;
+  useSsl: boolean;
+  username?: string;
+  password?: string;
+  senderEmail: string;
+  senderName?: string;
+  recipientEmails: string;
+  ccEmails?: string;
+  bccEmails?: string;
+  subjectPrefix: string;
+  useHtml: boolean;
+}
+
+export interface EmailProviderRequest {
+  name: string;
+  enabled?: boolean;
+  onEvents?: NotificationEventType[];
+  includeSeries?: boolean;
+  includeImages?: boolean;
+  smtpServer: string;
+  port?: number;
+  useSsl?: boolean;
+  username?: string;
+  password?: string;
+  senderEmail: string;
+  senderName?: string;
+  recipientEmails: string;
+  ccEmails?: string;
+  bccEmails?: string;
+  subjectPrefix?: string;
+  useHtml?: boolean;
+}
+
+export interface EmailTestResult {
+  success: boolean;
+  message: string;
   latency?: string;
 }
 
@@ -2403,6 +2452,54 @@ export const api = {
       body: JSON.stringify({
         ...settings,
         providerType: 'Webhook',
+      }),
+    });
+  },
+
+  // === Email Notification Providers ===
+  getEmailProviders: async (): Promise<EmailProviderSettings[]> => {
+    return fetchApi<EmailProviderSettings[]>('/api/v1/notifications/email-providers');
+  },
+
+  getEmailProvider: async (id: string): Promise<EmailProviderSettings> => {
+    return fetchApi<EmailProviderSettings>(`/api/v1/notifications/email-providers/${id}`);
+  },
+
+  addEmailProvider: async (provider: EmailProviderRequest): Promise<EmailProviderSettings> => {
+    return fetchApi<EmailProviderSettings>('/api/v1/notifications/email-providers', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...provider,
+        providerType: 'Email',
+      }),
+    });
+  },
+
+  updateEmailProvider: async (id: string, provider: EmailProviderRequest): Promise<EmailProviderSettings> => {
+    return fetchApi<EmailProviderSettings>(`/api/v1/notifications/email-providers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        ...provider,
+        id,
+        providerType: 'Email',
+      }),
+    });
+  },
+
+  deleteEmailProvider: async (id: string): Promise<void> => {
+    await fetchApi(`/api/v1/notifications/email-providers/${id}`, { method: 'DELETE' });
+  },
+
+  testEmailProvider: async (id: string): Promise<EmailTestResult> => {
+    return fetchApi<EmailTestResult>(`/api/v1/notifications/email-providers/${id}/test`, { method: 'POST' });
+  },
+
+  testEmailProviderSettings: async (settings: EmailProviderRequest): Promise<EmailTestResult> => {
+    return fetchApi<EmailTestResult>('/api/v1/notifications/email-providers/test', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...settings,
+        providerType: 'Email',
       }),
     });
   },

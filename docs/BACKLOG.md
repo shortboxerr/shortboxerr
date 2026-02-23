@@ -1145,13 +1145,14 @@ In-app notifications and webhook providers fully implemented. Additional channel
   - AC: Settings UI for managing webhooks ✅
   - AC: 25 unit tests covering all webhook functionality ✅
 
-- [x] **Email notifications (SMTP)** ✅ (Iteration 127)
+- [x] **Email notifications (SMTP)** ✅ (Iteration 127, UI: Iteration 131)
   - AC: EmailNotificationProvider implementing INotificationProvider ✅
   - AC: EmailProviderSettings with SMTP configuration (server, port, SSL, auth) ✅
   - AC: Support for multiple recipients, CC, BCC ✅
   - AC: HTML and plain text email formats ✅
   - AC: API endpoints: CRUD for /api/v1/notifications/email-providers ✅
   - AC: Test endpoint: POST /api/v1/notifications/email-providers/test ✅
+  - AC: Settings UI for managing email providers ✅ (Iteration 131)
 - [ ] **Pushover/Pushbullet support** (future)
 
 ### 11.9 Pull List UX Improvements ✅ COMPLETED

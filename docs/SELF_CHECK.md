@@ -2,33 +2,32 @@
 
 ## Summary
 
-Iteration 130 completed: Fixed EF Core query splitting warning by adding `.AsSplitQuery()` to queries with multiple collection navigations.
+Iteration 131 completed: Added Email Provider Settings UI to the Notifications settings tab, completing the email notifications feature.
 
-## Recent Iterations (126-130)
+## Recent Iterations (127-131)
 
 | Iteration | Feature | Status |
 |-----------|---------|--------|
-| 126 | Compressed Archive of Rotated Logs | ✅ |
-| 127 | Email Notifications (SMTP) | ✅ |
+| 127 | Email Notifications (SMTP) Backend | ✅ |
 | 128 | Default User-Agent Header | ✅ |
 | 129 | SabnzbdClient DI Fix & User-Agent Format | ✅ |
 | 130 | EF Core Query Splitting | ✅ |
+| 131 | Email Provider Settings UI | ✅ |
 
-## Iteration 130 Details
+## Iteration 131 Details
 
-### Issue Addressed
-EF Core warning: `Compiling a query which loads related collections for more than one collection navigation... no 'QuerySplittingBehavior' has been configured`
+### Feature Implemented
+Email Provider Settings UI - frontend components for managing SMTP email notification providers.
 
 ### Changes Made
-Added `.AsSplitQuery()` to 4 queries:
-1. `SeriesEndpoints.GetSeriesById`
-2. `SeriesEndpoints.GetSeriesAnnuals`
-3. `EditionEndpoints.GetEditionDetail`
-4. `EditionEndpoints.GetEditionContents`
+1. Added TypeScript types for email providers in API client
+2. Added API methods for email provider CRUD operations
+3. Created `EmailProvidersSection` component for listing providers
+4. Created `EmailProviderModal` component for add/edit with full SMTP configuration
 
 ### Files Changed
-- `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs`
-- `src/Shortboxerr.Api/Endpoints/EditionEndpoints.cs`
+- `ui/src/api/client.ts` - Email provider types and API methods
+- `ui/src/pages/SettingsPage.tsx` - EmailProvidersSection and EmailProviderModal components
 
 ## Server Configuration
 
@@ -60,7 +59,9 @@ Added `.AsSplitQuery()` to 4 queries:
 
 ## Validation
 
-- [x] Build succeeds (7 warnings, 0 errors)
-- [x] EF Core split queries configured
+- [x] Frontend compiles without errors
+- [x] Email provider types and API methods added
+- [x] EmailProvidersSection and EmailProviderModal components added
+- [x] Both servers running (5000 and 8585)
 - [x] BACKLOG.md updated
 - [x] WORKLOG.md updated

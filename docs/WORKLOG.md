@@ -1,5 +1,49 @@
 # Worklog
 
+## Iteration 131 (2026-02-23)
+**EPIC 11.7: Email Provider Settings UI**
+
+### Summary
+Added frontend UI for managing email notification providers in the Settings page, completing the email notifications feature started in Iteration 127.
+
+### Commits
+1. `feat(ui): add email provider settings UI`
+
+### Deliverables
+
+#### TypeScript Types
+- `EmailProviderSettings` interface for email provider configuration
+- `EmailProviderRequest` interface for create/update requests
+- `EmailTestResult` interface for test responses
+
+#### API Client Methods
+- `getEmailProviders()` - fetch all email providers
+- `getEmailProvider(id)` - fetch single provider
+- `addEmailProvider(provider)` - create new provider
+- `updateEmailProvider(id, provider)` - update existing provider
+- `deleteEmailProvider(id)` - delete provider
+- `testEmailProvider(id)` - test saved provider
+- `testEmailProviderSettings(settings)` - test unsaved settings
+
+#### UI Components
+- `EmailProvidersSection` - displays list of configured email providers
+- `EmailProviderModal` - add/edit form with SMTP configuration
+- Form fields: name, SMTP server, port, SSL, username, password, sender email/name, recipients, CC, BCC
+- Advanced options: subject prefix, HTML format toggle, content options
+- Test button with inline result display
+- Event selection for notification triggers
+
+#### Integration
+- Added Email Providers section below Webhook Providers in Notifications settings tab
+- Follows same UI patterns as webhook providers for consistency
+- Supports all SMTP configuration options from backend
+
+### Files Changed
+- `ui/src/api/client.ts` - Added email provider types and API methods
+- `ui/src/pages/SettingsPage.tsx` - Added EmailProvidersSection and EmailProviderModal components
+
+---
+
 ## Iteration 130 (2026-02-23)
 **EPIC 15.14: EF Core Query Splitting Performance Warning**
 
