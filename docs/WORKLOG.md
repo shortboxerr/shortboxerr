@@ -1,5 +1,82 @@
 # Worklog
 
+## Iteration 111 (2026-02-17)
+**EPIC 8: Host Reliability Tracking per DDL Site**
+
+### Summary
+Added host reliability tracking service for measuring and analyzing download host performance over time. Provides data for intelligent host selection and priority ordering.
+
+### Commits
+1. `feat(ddl): add host reliability tracking service`
+
+### Deliverables
+
+#### IHostReliabilityService Interface
+- `RecordSuccessAsync` - Record successful download with bytes and duration
+- `RecordFailureAsync` - Record failed download with reason
+- `GetHostStatsAsync` - Get stats for a host (global or per-site)
+- `GetAllStatsAsync` - Get all tracked host statistics
+- `GetStatsBySiteAsync` - Get stats for all hosts on a DDL site
+- `GetHostRankingsAsync` - Get hosts ranked by reliability score
+- `GetGlobalHostRankingsAsync` - Get global host rankings
+- `CalculateReliabilityScoreAsync` - Calculate score for a specific host
+- `GetRecommendedHostOrderAsync` - Get optimal host order for downloading
+- `GetSummaryAsync` - Get aggregate statistics across all hosts
+- `ClearHostStatsAsync`/`ClearSiteStatsAsync`/`ClearAllStatsAsync` - Clear statistics
+- `PurgeOldStatsAsync` - Remove old records beyond retention period
+
+#### Models
+- `HostReliabilityStats` - Per-host statistics (successes, failures, speed, score)
+- `HostReliabilityRanking` - Host ranking with trend indicator
+- `HostReliabilitySummary` - Aggregate statistics across all hosts
+- `HostReliabilitySettings` - Configurable tracking options
+- `HostDownloadRecord` - Individual download record
+- `ReliabilityTrend` enum - Unknown, Improving, Stable, Declining
+
+#### Reliability Score Calculation
+Weighted combination of:
+- Success rate (default: 60%)
+- Download speed (default: 30%)
+- Recency (default: 10%)
+
+Minimum 5 attempts required for scoring.
+
+#### Settings
+- `TrackingEnabled` - Toggle tracking (default: true)
+- `RetentionPeriod` - How long to keep stats (default: 30 days)
+- `MinAttemptsForScore` - Minimum samples for scoring (default: 5)
+- `SuccessRateWeight`/`SpeedWeight`/`RecencyWeight` - Score weights
+- `UseForHostOrdering` - Use for automatic host prioritization
+- `TrendWindowSize` - Samples for trend calculation (default: 10)
+- `TrendChangeThreshold` - Percentage change for trend detection (default: 10%)
+
+#### Unit Tests (35 tests)
+- RecordSuccessAsync tests (3 tests)
+- RecordFailureAsync tests (2 tests)
+- GetHostStatsAsync tests (4 tests)
+- GetAllStatsAsync tests (2 tests)
+- GetStatsBySiteAsync tests (1 test)
+- GetHostRankingsAsync tests (1 test)
+- GetRecommendedHostOrderAsync tests (1 test)
+- GetSummaryAsync tests (1 test)
+- Clear tests (3 tests)
+- PurgeOldStatsAsync tests (1 test)
+- Settings tests (3 tests)
+- HostReliabilityStats tests (3 tests)
+- HostReliabilityRanking tests (1 test)
+- ReliabilityTrend tests (1 test)
+- HostReliabilitySettings tests (2 tests)
+- HostDownloadRecord tests (4 tests)
+- HostReliabilitySummary tests (1 test)
+- Display name tests (2 tests)
+
+### Files Changed
+- `src/Shortboxerr.Core/Ddl/IHostReliabilityService.cs` (new)
+- `src/Shortboxerr.Infrastructure/Ddl/HostReliabilityService.cs` (new)
+- `tests/Shortboxerr.Tests/HostReliabilityServiceTests.cs` (new)
+
+---
+
 ## Iteration 110 (2026-02-17)
 **EPIC 10: Mylar3 NZB Settings Import**
 

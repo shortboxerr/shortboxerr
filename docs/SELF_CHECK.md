@@ -1,129 +1,150 @@
-# Self-Check: Iteration 110
+# Self-Check: Iteration 111
 
 ## Checklist
 
 - [x] Read ITERATION_PROTOCOL.md
-- [x] Pulled next READY item from BACKLOG.md (Item 6: Mylar3 NZB settings import)
+- [x] Pulled next READY item from BACKLOG.md (Item 11: Host reliability tracking)
 - [x] Implemented vertical slice with code + tests
-- [x] All tests pass (34 new tests)
+- [x] All tests pass (35 new tests)
 - [x] Build succeeds with no new errors
 - [x] Updated WORKLOG.md
-- [x] Updated BACKLOG.md (marked Item 6 complete)
+- [x] Updated BACKLOG.md (marked Item 11 complete)
 - [x] Committed after logical breakpoint
-- [x] Logged assumptions in ASSUMPTIONS.md
 
 ## Item Completed
 
-**Item 6: Mylar3 NZB settings import** (EPIC 10)
-- Priority: P2 (High Value, Medium Effort)
-- Blocker: Config parser (implemented)
+**Item 11: Host reliability tracking** (EPIC 8)
+- Priority: P3 (Medium Value, Medium Effort)
+- Blocker: Statistics DB (implemented with in-memory + settings persistence)
 
 ## Acceptance Criteria Status
 
 | AC | Status | Notes |
 |----|--------|-------|
-| Parse Mylar3 config.ini for NZB settings | ✅ | Full INI parsing with sections, comments |
-| Import indexer configurations | ✅ | Newznab, numbered sections, extra_newznabs |
-| Import SABnzbd/NZBGet settings | ✅ | Host, port, apikey, category, ssl |
-| Validation report | ✅ | Errors, warnings, info, summary |
+| Track host reliability per DDL site | ✅ | HostReliabilityService with per-site stats |
+| Success/failure counting | ✅ | TotalSuccesses, TotalFailures, FailuresByReason |
+| Download speed tracking | ✅ | AverageSpeedBps, MedianSpeedBps |
+| Reliability score calculation | ✅ | Weighted: success rate, speed, recency |
+| Host ranking by reliability | ✅ | GetHostRankingsAsync, GetGlobalHostRankingsAsync |
+| Trend detection | ✅ | ReliabilityTrend enum |
 
 ## Implementation Details
 
 ### Interface Design
 ```csharp
-public interface IMylar3ConfigImporter
+public interface IHostReliabilityService
 {
-    Task<Mylar3ConfigParseResult> ParseConfigAsync(string configPath, ...);
-    Task<Mylar3ConfigParseResult> ParseConfigContentAsync(string configContent, ...);
-    Task<Mylar3ImportResult> ImportAsync(Mylar3ConfigParseResult parseResult, Mylar3ImportOptions options, ...);
-    Task<Mylar3ValidationReport> ValidateAsync(Mylar3ConfigParseResult parseResult, ...);
+    Task RecordSuccessAsync(string hostId, string ddlSiteId, long bytesDownloaded, TimeSpan duration, ...);
+    Task RecordFailureAsync(string hostId, string ddlSiteId, HostResolverFailureReason reason, ...);
+    Task<HostReliabilityStats?> GetHostStatsAsync(string hostId, ...);
+    Task<HostReliabilityStats?> GetHostStatsAsync(string hostId, string ddlSiteId, ...);
+    Task<IReadOnlyList<HostReliabilityStats>> GetAllStatsAsync(...);
+    Task<IReadOnlyList<HostReliabilityRanking>> GetHostRankingsAsync(string ddlSiteId, ...);
+    Task<IReadOnlyList<string>> GetRecommendedHostOrderAsync(string ddlSiteId, IEnumerable<string> hosts, ...);
+    Task<HostReliabilitySummary> GetSummaryAsync(...);
+    // ... clear and settings methods
 }
 ```
 
-### Configuration Models
-```csharp
-// Indexer configuration
-public class Mylar3NewznabConfig
-{
-    public string Name { get; init; }
-    public string Host { get; init; }
-    public string ApiKey { get; init; }
-    public string? Uid { get; init; }
-    public List<string> Categories { get; init; }
-    public bool Enabled { get; init; }
-    public bool VerifySsl { get; init; }
-    public string ProviderType { get; init; }  // newznab or torznab
-}
-
-// Download client configurations
-public class Mylar3SabnzbdConfig { Host, Port, ApiKey, Category, UseSsl, Priority, Enabled }
-public class Mylar3NzbgetConfig { Host, Port, Username, Password, Category, UseSsl, Priority, Enabled }
+### Reliability Score Formula
+```
+Score = (SuccessRate * 0.6) + (SpeedScore * 0.3) + (RecencyScore * 0.1)
 ```
 
-### INI Parsing
-- Supports `[Section]` headers
-- Parses `Key = Value` pairs
-- Handles quoted values (`"value"` or `'value'`)
-- Ignores comments (`#` and `;`)
-- Case-insensitive for sections and keys
-- Parses Mylar3's `extra_newznabs` tuple format
+Where:
+- SuccessRate = successes / total_attempts (0-1)
+- SpeedScore = min(avg_speed / 10MB_per_sec, 1) (0-1)
+- RecencyScore = recent_success_rate (0-1)
 
-### Supported Indexer Formats
-1. Single `[Newznab]` section with `newznab_*` keys
-2. Numbered sections: `[Newznab1]`, `[Newznab2]`, etc.
-3. Python tuple format in `extra_newznabs`
+### Trend Detection
+Compares success rate of:
+- Recent window (last N attempts)
+- Previous window (N attempts before that)
 
-## Unit Tests (34 total)
+Change > threshold = Improving or Declining
+Change < threshold = Stable
 
-### Parse Tests (4 tests)
-- EmptyContent, WhitespaceContent, ValidIni, ParsesComments
+### Known Hosts (Display Names)
+- mediafire → MediaFire
+- mega → Mega
+- pixeldrain → Pixeldrain
+- gdrive → Google Drive
+- dropbox → Dropbox
+- direct → Direct Download
+- zippyshare → Zippyshare
+- uploadhaven → UploadHaven
+- 1fichier → 1Fichier
+- turbobit → Turbobit
+- nitroflare → Nitroflare
+- rapidgator → Rapidgator
+- uploaded → Uploaded
 
-### Indexer Parsing (3 tests)
-- ParsesSingleNewznab, ParsesNumberedNewznab, ParsesExtraNewznabs
+## Unit Tests (35 total)
 
-### SABnzbd Parsing (3 tests)
-- ParsesSabnzbd, ParsesFromGeneral, DefaultPort
+### Recording Tests (5 tests)
+- RecordSuccessAsync_AddsRecord
+- RecordSuccessAsync_NormalizesHostId
+- RecordSuccessAsync_CalculatesSpeed
+- RecordFailureAsync_AddsRecord
+- RecordFailureAsync_TracksFailuresByReason
 
-### NZBGet Parsing (2 tests)
-- ParsesNzbget, DefaultPort
+### Stats Retrieval Tests (7 tests)
+- GetHostStatsAsync_ReturnsNullForUnknownHost
+- GetHostStatsAsync_CalculatesSuccessRate
+- GetHostStatsAsync_FiltersBySite
+- GetAllStatsAsync_ReturnsAllHosts
+- GetAllStatsAsync_SortsbyReliabilityScore
+- GetStatsBySiteAsync_FiltersBySite
+- GetHostRankingsAsync_RanksHosts
 
-### General Config (1 test)
-- ParsesGeneral
+### Recommendation Tests (1 test)
+- GetRecommendedHostOrderAsync_OrdersByReliability
 
-### Validation (5 tests)
-- ValidConfig, MissingApiKey, MissingHost, DisabledIndexer, Summary
+### Summary Tests (1 test)
+- GetSummaryAsync_ReturnsAggregateStats
 
-### Import (7 tests)
-- FailedParse, ImportsEnabledIndexers, ImportsAllWhenDisabled, ImportsSabnzbd, ImportsNzbget, SkipsDisabled, ItemResults
+### Clear Tests (3 tests)
+- ClearHostStatsAsync_RemovesHostData
+- ClearSiteStatsAsync_RemovesSiteData
+- ClearAllStatsAsync_RemovesEverything
 
-### INI Edge Cases (6 tests)
-- QuotedValues, EmptyValues, CaseInsensitiveKeys, CaseInsensitiveSections, BooleanValues
+### Purge Tests (1 test)
+- PurgeOldStatsAsync_RemovesOldRecords
 
-### Options/Enum (3 tests)
-- DefaultValues, ImportActionValues, FactoryMethods
+### Settings Tests (3 tests)
+- GetSettingsAsync_ReturnsDefaultSettings
+- SaveSettingsAsync_PersistsSettings
+- RecordSuccessAsync_RespectsTrackingEnabled
+
+### Model Tests (14 tests)
+- HostReliabilityStats: TotalAttempts, AverageFileSizeBytes (2 + 1 edge case)
+- HostReliabilityRanking: Properties
+- ReliabilityTrend: Values
+- HostReliabilitySettings: DefaultValues, WeightsSumToOne
+- HostDownloadRecord: SpeedBps calculation, ZeroDuration, DefaultId, DefaultTimestamp
+- HostReliabilitySummary: Properties
+- Display names: MapsKnownHosts, UsesHostIdForUnknown
 
 ## Files Changed
 
 | File | Action | Lines |
 |------|--------|-------|
-| `src/Shortboxerr.Core/Import/IMylar3ConfigImporter.cs` | Added | 380 |
-| `src/Shortboxerr.Infrastructure/Import/Mylar3ConfigImporter.cs` | Added | 550 |
-| `tests/Shortboxerr.Tests/Mylar3ConfigImporterTests.cs` | Added | 500 |
-| `docs/BACKLOG.md` | Updated | ~10 |
+| `src/Shortboxerr.Core/Ddl/IHostReliabilityService.cs` | Added | 350 |
+| `src/Shortboxerr.Infrastructure/Ddl/HostReliabilityService.cs` | Added | 420 |
+| `tests/Shortboxerr.Tests/HostReliabilityServiceTests.cs` | Added | 650 |
+| `docs/BACKLOG.md` | Updated | ~5 |
 | `docs/WORKLOG.md` | Updated | ~80 |
-| `docs/ASSUMPTIONS.md` | Updated | ~20 |
 
-## Assumptions Made
+## Integration with Existing Services
 
-See `docs/ASSUMPTIONS.md` for details:
-- Mylar3 config.ini format based on standard INI with Python-style extras
-- SABnzbd default port 8080, NZBGet default port 6789
-- `extra_newznabs` uses Python tuple format
+The `HostReliabilityService` complements:
+- `IHostBlacklistService` - Short-term blacklisting for failing hosts
+- `DdlDownloadService` - Can use `GetRecommendedHostOrderAsync` for intelligent host selection
 
 ## Next Available Items
 
 From BACKLOG.md Priority Table:
-1. **Item 11: Host reliability tracking** (P3, M effort, Statistics DB)
-2. **Item 17: Cloudflare challenge handling** (P4, L effort, Complex)
-3. **Item 18: Mega.nz resolver** (P4, L effort, Encryption)
-4. **Item 19: Rapidgator/Uploaded resolver** (P4, M effort, Premium accounts)
+1. **Item 17: Cloudflare challenge handling** (P4, L effort, Complex)
+2. **Item 18: Mega.nz resolver** (P4, L effort, Encryption)
+3. **Item 19: Rapidgator/Uploaded resolver** (P4, M effort, Premium accounts)
+4. **Item 21-28**: Low priority / deferred items

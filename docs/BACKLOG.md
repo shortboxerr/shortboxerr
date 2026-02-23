@@ -401,7 +401,7 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
   - AC: Default priority: Direct > Mega > MediaFire > Pixeldrain > GDrive > Others ✅
 - [x] **Automatic fallback** ✅
   - AC: Try next host on failure ✅ (DdlDownloadService fallback loop)
-  - AC: Track host reliability per DDL site (deferred - statistics tracking)
+  - AC: Track host reliability per DDL site ✅ (IHostReliabilityService)
   - AC: Blacklist consistently failing hosts temporarily ✅ (IHostBlacklistService)
 
 ### 8.4 DDL Site Health Monitoring ✅ COMPLETED
@@ -1785,7 +1785,7 @@ Track and prioritize completion of deferred items across all EPICs.
 | ~~9~~ | ~~Transmission integration~~ | 14 | M | M | ✅ Completed |
 | **P3 - Medium Value, Medium Effort** |||||
 | ~~10~~ | ~~Variant cover detection~~ | 9 | M | M | ✅ Completed |
-| 11 | Host reliability tracking | 8 | M | M | Statistics DB |
+| ~~11~~ | ~~Host reliability tracking~~ | 8 | M | M | ✅ Completed |
 | ~~12~~ | ~~Host blacklisting~~ | 8 | S | M | ✅ Completed |
 | ~~13~~ | ~~First-time user experience~~ | 11 | M | M | ✅ Completed |
 | ~~14~~ | ~~Publisher filter dropdown~~ | 11 | S | M | ✅ Completed |
