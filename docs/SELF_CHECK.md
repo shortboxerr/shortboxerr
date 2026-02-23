@@ -5,8 +5,8 @@
 - [x] Frontend builds successfully
 - [x] BACKLOG.md updated (EPIC 9.13 cache settings UI)
 - [x] WORKLOG.md updated
-- [ ] Code committed with conventional commit message
-- [ ] Servers restarted and verified
+- [x] Code committed with conventional commit message
+- [x] Servers restarted and verified
 
 ## Implementation Status
 
