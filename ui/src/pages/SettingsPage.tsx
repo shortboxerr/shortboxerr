@@ -3609,9 +3609,9 @@ function DownloadClientsSettings() {
       )}
 
       <SettingsSection title="Download Clients">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
-            Configure download clients for Usenet (SABnzbd), torrent, or DDL downloads.
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0, maxWidth: '500px' }}>
+            Configure download clients for Usenet (SABnzbd, NZBGet), torrent, or DDL downloads.
           </p>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button className="btn btn-icon" onClick={() => { refetch(); refetchHealth(); refetchSummary(); }} title="Refresh">
@@ -3619,7 +3619,7 @@ function DownloadClientsSettings() {
             </button>
             <button className="btn btn-primary" onClick={handleAdd}>
               <Plus size={16} />
-              Add Download Client
+              Add Client
             </button>
           </div>
         </div>
@@ -3627,91 +3627,137 @@ function DownloadClientsSettings() {
         {isLoading ? (
           <div className="loading"><div className="spinner" /></div>
         ) : !clients?.length ? (
-          <div className="empty-state" style={{ padding: '40px 20px' }}>
+          <div className="empty-state" style={{ padding: '48px 24px' }}>
             <Download size={48} />
             <div className="empty-state-title">No download clients configured</div>
             <div className="empty-state-text">
-              Add SABnzbd for Usenet downloads, or configure torrent/DDL clients.
+              Add SABnzbd or NZBGet for Usenet downloads, or configure torrent/DDL clients.
             </div>
           </div>
         ) : (
-          <div className="data-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Type</th>
-                  <th>Health</th>
-                  <th>Stats</th>
-                  <th>Enabled</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {clients.map((client) => {
-                  const health = getClientHealth(client.id);
-                  return (
-                    <tr key={client.id}>
-                      <td>
-                        <div style={{ fontWeight: 500 }}>{client.name}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{client.implementation}</div>
-                      </td>
-                      <td>{client.type}</td>
-                      <td>
-                        {health ? (
-                          <span style={{ 
-                            display: 'inline-flex', 
-                            alignItems: 'center', 
-                            gap: '4px',
-                            color: getHealthColor(health.state),
-                            fontSize: '13px',
-                          }}>
-                            {getHealthIcon(health.state)}
-                            {health.state}
-                          </span>
-                        ) : (
-                          <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>—</span>
-                        )}
-                      </td>
-                      <td>
-                        {health && (health.successCount > 0 || health.failureCount > 0) ? (
-                          <div style={{ fontSize: '12px' }}>
-                            <span style={{ color: 'var(--accent-success)' }}>{health.successCount}</span>
-                            {' / '}
-                            <span style={{ color: 'var(--accent-error)' }}>{health.failureCount}</span>
-                            <span style={{ color: 'var(--text-muted)', marginLeft: '4px' }}>
-                              ({health.successRate.toFixed(0)}%)
-                            </span>
-                          </div>
-                        ) : (
-                          <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>No data</span>
-                        )}
-                      </td>
-                      <td>
-                        <label className="toggle">
-                          <input
-                            type="checkbox"
-                            checked={client.isEnabled}
-                            onChange={(e) => toggleMutation.mutate({ id: client.id, enabled: e.target.checked })}
-                          />
-                          <span className="toggle-slider" />
-                        </label>
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <button className="btn btn-icon btn-sm" onClick={() => handleEdit(client)} title="Edit">
-                            <Edit size={14} />
-                          </button>
-                          <button className="btn btn-icon btn-sm btn-danger" onClick={() => handleDelete(client)} title="Delete">
-                            <Trash2 size={14} />
-                          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {clients.map((client) => {
+              const health = getClientHealth(client.id);
+              return (
+                <div
+                  key={client.id}
+                  style={{
+                    background: 'var(--bg-tertiary)',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-color)',
+                    padding: '16px 20px',
+                  }}
+                >
+                  {/* Header Row */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div>
+                        <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>{client.name}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                          {client.implementation} • {client.type}
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <label className="toggle" style={{ marginRight: '4px' }}>
+                        <input
+                          type="checkbox"
+                          checked={client.isEnabled}
+                          onChange={(e) => toggleMutation.mutate({ id: client.id, enabled: e.target.checked })}
+                        />
+                        <span className="toggle-slider" />
+                      </label>
+                      <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(client)} title="Edit">
+                        <Edit size={14} />
+                        Edit
+                      </button>
+                      <button className="btn btn-sm" onClick={() => handleDelete(client)} title="Delete" style={{ color: 'var(--accent-error)' }}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Health & Stats Row */}
+                  <div style={{ 
+                    display: 'flex', 
+                    gap: '24px', 
+                    flexWrap: 'wrap',
+                    paddingTop: '12px',
+                    borderTop: '1px solid var(--border-color)',
+                  }}>
+                    <div style={{ minWidth: '100px' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
+                        Status
+                      </div>
+                      {health ? (
+                        <span style={{ 
+                          display: 'inline-flex', 
+                          alignItems: 'center', 
+                          gap: '6px',
+                          color: getHealthColor(health.state),
+                          fontSize: '14px',
+                          fontWeight: 500,
+                        }}>
+                          {getHealthIcon(health.state)}
+                          {health.state}
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Unknown</span>
+                      )}
+                    </div>
+
+                    {health && (health.successCount > 0 || health.failureCount > 0) && (
+                      <>
+                        <div style={{ minWidth: '80px' }}>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
+                            Success Rate
+                          </div>
+                          <div style={{ 
+                            fontSize: '14px', 
+                            fontWeight: 500,
+                            color: health.successRate >= 80 ? 'var(--accent-success)' : health.successRate >= 50 ? 'var(--accent-warning)' : 'var(--accent-error)'
+                          }}>
+                            {health.successRate.toFixed(0)}%
+                          </div>
+                        </div>
+                        <div style={{ minWidth: '100px' }}>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
+                            Downloads
+                          </div>
+                          <div style={{ fontSize: '14px' }}>
+                            <span style={{ color: 'var(--accent-success)', fontWeight: 500 }}>{health.successCount}</span>
+                            <span style={{ color: 'var(--text-muted)' }}> / </span>
+                            <span style={{ color: 'var(--accent-error)', fontWeight: 500 }}>{health.failureCount}</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {health?.lastSuccessAt && (
+                      <div style={{ minWidth: '120px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
+                          Last Success
+                        </div>
+                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                          {new Date(health.lastSuccessAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    )}
+
+                    {health?.lastErrorMessage && (
+                      <div style={{ flex: 1, minWidth: '200px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
+                          Last Error
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--accent-error)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {health.lastErrorMessage}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </SettingsSection>
