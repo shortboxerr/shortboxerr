@@ -2031,11 +2031,11 @@ Enable ReadComicOnline adapter with full feature parity to GetComics.org.
   - AC: Tests for enable/disable, priorities, site status ✅
   - AC: Tests for factory default configuration ✅
 
-- [ ] **Site health monitoring** (deferred)
-  - AC: Periodic health check for each enabled site
-  - AC: Auto-disable site on repeated failures
-  - AC: Alert user when site becomes unavailable
-  - AC: Automatic re-enable after health check passes
+- [x] **Site health monitoring** ✅ (was incorrectly marked deferred - already implemented in ISiteHealthService)
+  - AC: Periodic health check for each enabled site ✅
+  - AC: Auto-disable site on repeated failures ✅
+  - AC: Alert user when site becomes unavailable ✅ (via health status API)
+  - AC: Automatic re-enable after health check passes ✅
 
 ### 14.4 Theme Accessibility & Color Scheme Audit ✅ COMPLETED
 Ensure proper contrast and accessibility for both light and dark themes.
