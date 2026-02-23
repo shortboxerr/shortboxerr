@@ -3,7 +3,7 @@ Run the next iteration strictly per docs/ITERATION_PROTOCOL.md. Do not ask quest
 ## Server Management
 
 **Ports (DO NOT CHANGE):**
-- **8585** - Frontend (user-facing, Vite dev server)
+- **8585** - Frontend (user-facing, Vite dev server, bound to 0.0.0.0)
 - **5000** - Backend API (internal, proxied by Vite)
 
 **Restart servers after each commit (STOP-WAIT-VERIFY-START):**
