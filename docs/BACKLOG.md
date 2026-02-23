@@ -415,7 +415,7 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
   - AC: Respect site-specific rate limits ✅ (IDdlRateLimiter)
   - AC: Configurable delays between requests ✅ (minDelayMs)
   - AC: Request queuing to prevent bans ✅ (AcquireAsync blocks until available)
-  - AC: Cloudflare challenge handling (deferred)
+  - AC: Cloudflare challenge handling ✅ (FlareSolverr integration)
 
 ### 8.5 DDL Adapter Tests ✅ COMPLETED
 - [x] **GetComics fixture tests** ✅
@@ -1792,7 +1792,7 @@ Track and prioritize completion of deferred items across all EPICs.
 | **P4 - Lower Priority / Complex** |||||
 | ~~15~~ | ~~NZBHydra2 support~~ | 10 | L | M | ✅ Completed |
 | ~~16~~ | ~~Deluge integration~~ | 14 | M | L | ✅ Completed |
-| 17 | Cloudflare challenge handling | 8 | L | M | Complex |
+| ~~17~~ | ~~Cloudflare challenge handling~~ | 8 | L | M | ✅ Completed |
 | ~~18~~ | ~~Mega.nz resolver~~ | 8 | L | M | ✅ Completed |
 | ~~19~~ | ~~Rapidgator/Uploaded resolver~~ | 8 | M | L | ✅ Completed |
 | ~~20~~ | ~~Torrent → Import handoff~~ | 14 | M | M | ✅ Completed |

@@ -1,88 +1,102 @@
-# Self-Check: Iteration 113
+# Self-Check: Iteration 114
 
 ## Checklist
 - [x] Code compiles without errors
 - [x] All new code has unit tests
-- [x] Tests pass (58/58)
-- [x] BACKLOG.md updated (Item 18 marked complete)
+- [x] Tests pass (32/32)
+- [x] BACKLOG.md updated (Item 17 marked complete)
 - [x] WORKLOG.md updated
 - [x] Code committed with conventional commit message
 
 ## Implementation Status
 
-### Item 18: Mega.nz Resolver ✅ COMPLETED
+### Item 17: Cloudflare Challenge Handling ✅ COMPLETED
 
 | AC | Status | Notes |
 |----|--------|-------|
-| Parse mega.nz/#! and mega.nz/file/ URLs | ✅ | Both old and new URL formats |
-| Handle Mega's encryption | ✅ | AES-128-CBC with key from URL |
-| Support folder links with file selection | ⏳ | Deferred - file links complete |
-| Rate limit awareness | ✅ | 429 detection and user message |
+| Cloudflare challenge handling | ✅ | FlareSolverr integration with session caching |
 
 ## Files Changed
 | File | Change |
 |------|--------|
-| `MegaResolver.cs` | New - Encrypted file host resolver |
-| `DownloadHostResolverFactory.cs` | Modified - Enable Mega resolver |
-| `MegaResolverTests.cs` | New - 58 unit tests |
+| `ICloudflareBypassService.cs` | New - Service interface and models |
+| `FlareSolverrService.cs` | New - FlareSolverr API client |
+| `CloudflareBypassServiceTests.cs` | New - 32 unit tests |
 
 ## Test Summary
 ```
-Total tests: 58
-Passed: 58
+Total tests: 32
+Passed: 32
 Failed: 0
 ```
 
 ### Test Categories
-- Basic properties: 5 tests
-- CanResolve patterns: 8 tests
-- URL parsing: 13 tests
-- Base64 encoding: 6 tests
-- Attribute decryption: 2 tests
-- Factory integration: 6 tests
-- Resolver behavior: 4 tests
-- URL variations: 10 tests
-- Key/Headers handling: 4 tests
+- Settings: 2 tests
+- Options: 2 tests
+- Cookie session: 5 tests
+- Results: 3 tests
+- Test result: 2 tests
+- Failure reasons: 11 tests
+- Service behavior: 7 tests
 
 ## Technical Implementation
 
-### Mega Encryption Scheme
-1. **URL Structure**: `mega.nz/file/{fileId}#{key}`
-2. **Key Derivation**: XOR two 16-byte halves of 32-byte URL key → 16-byte AES key
-3. **Attribute Decryption**: AES-128-CBC with zero IV
-4. **Decrypted Format**: `MEGA{"n":"filename.ext","c":"fingerprint"}`
+### FlareSolverr Integration
+- **Endpoint**: `http://localhost:8191/v1`
+- **Commands**: `sessions.list`, `request.get`, `request.post`
+- **Response**: JSON with cookies, user-agent, and optional HTML
 
-### API Interaction
-- Endpoint: `https://g.api.mega.co.nz/cs`
-- Request: `[{"a":"g","g":1,"p":"fileId"}]`
-- Response: `[{"g":"downloadUrl","s":fileSize,"at":"encryptedAttrs"}]`
+### Session Management
+- In-memory cache using ConcurrentDictionary
+- Configurable TTL (default 120 minutes)
+- cf_clearance cookie tracking
+- User-agent preservation (must match for cookies to work)
 
-## EPIC 8 Progress
+### Error Handling
+- 11 distinct failure reasons
+- Automatic retry with backoff
+- CAPTCHA detection (cannot auto-solve)
+- Rate limiting detection
+
+## EPIC 8 Progress (DDL Integration)
 
 | Sub-item | Status |
 |----------|--------|
 | Host resolver factory | ✅ Complete |
-| **Mega.nz resolver** | **✅ Complete** |
+| Mega.nz resolver | ✅ Complete |
 | MediaFire resolver | ✅ Complete |
 | Pixeldrain resolver | ✅ Complete |
 | Google Drive resolver | ✅ Complete |
 | Dropbox resolver | ✅ Complete |
 | 1fichier resolver | ✅ Complete |
-| Zippyshare (defunct) | ✅ Complete |
 | Rapidgator/Uploaded | ✅ Complete |
+| Zippyshare (defunct) | ✅ Complete |
 | Host priority config | ✅ Complete |
 | Fallback chain | ✅ Complete |
 | Host reliability tracking | ✅ Complete |
 | Host blacklisting | ✅ Complete |
-| Cloudflare handling | ⏳ Pending (complex) |
+| **Cloudflare handling** | **✅ Complete** |
 
-## Next Available Items
+## P4 Items Complete!
 
-From BACKLOG.md Priority Table:
+All P4 (Lower Priority / Complex) items have been completed:
+- ~~Item 15: NZBHydra2 support~~ ✅
+- ~~Item 16: Deluge integration~~ ✅
+- ~~Item 17: Cloudflare challenge handling~~ ✅
+- ~~Item 18: Mega.nz resolver~~ ✅
+- ~~Item 19: Rapidgator/Uploaded resolver~~ ✅
+- ~~Item 20: Torrent → Import handoff~~ ✅
+- ~~Item 29: Cover cache size limits~~ ✅
 
-1. **Item 17: Cloudflare challenge handling** (P4, L effort, Complex)
-   - Requires browser automation or FlareSolverr integration
-   - May need external service dependency
+## Next Available Items (P5 - Deferred)
 
-2. **P5 Items** (Deferred):
-   - Item 21-28: Performance, API rates, automation tests
+| Item | Description | Notes |
+|------|-------------|-------|
+| 21 | Request batching (ComicVine) | Performance only |
+| 22 | Rate limit awareness | Performance only |
+| 23 | Character/team appearances | API rate limits |
+| 24 | Usenet/NZB from DDL sites | Niche use case |
+| 25 | Folder download (Dropbox/Drive) | Complex |
+| 26 | Distributed cache pub/sub | Single-instance OK |
+| 27 | Automation tests | Full pipeline |
+| 28 | Full integration tests | Full pipeline |

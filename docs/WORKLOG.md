@@ -1,5 +1,74 @@
 # Worklog
 
+## Iteration 114 (2026-02-23)
+**EPIC 8: Cloudflare Challenge Handling**
+
+### Summary
+Added Cloudflare bypass service using FlareSolverr integration. FlareSolverr is a proxy server that solves Cloudflare's JavaScript challenges using a real browser (Chromium), making it possible to access protected sites.
+
+### Commits
+1. `feat(ddl): add Cloudflare bypass service with FlareSolverr integration`
+
+### Deliverables
+
+#### ICloudflareBypassService Interface
+- `TestConnectionAsync` - Verify FlareSolverr is available
+- `BypassAsync` - Solve Cloudflare challenge and get session cookies
+- `GetCachedSessionAsync` - Retrieve cached session for a domain
+- `ClearSessionAsync` - Clear cached session
+- `GetSettingsAsync`/`SaveSettingsAsync` - Manage configuration
+
+#### FlareSolverrService Implementation
+- REST API integration with FlareSolverr `/v1` endpoint
+- Session cookie caching with configurable TTL
+- Automatic retry with exponential backoff (configurable)
+- Concurrency limiting via SemaphoreSlim
+- Support for GET and POST requests
+- Detailed error classification (11 failure types)
+
+#### Models
+- `CloudflareBypassResult` - Result with cookies, user-agent, HTML content
+- `CloudflareCookieSession` - Cached session with cf_clearance tracking
+- `CloudflareBypassOptions` - Request options (timeout, method, headers)
+- `CloudflareBypassSettings` - Service configuration
+- `CloudflareBypassTestResult` - Connection test result
+- `CloudflareBypassFailureReason` enum
+
+#### Settings
+- `Enabled` - Toggle bypass functionality (default: false)
+- `ServerUrl` - FlareSolverr URL (default: http://localhost:8191)
+- `DefaultTimeoutSeconds` - Challenge solving timeout (default: 60s)
+- `SessionCacheMinutes` - Cookie cache duration (default: 120 min)
+- `MaxConcurrentSessions` - Browser instance limit (default: 2)
+- `AutoRetry`/`MaxRetries` - Retry configuration
+
+#### FlareSolverr API Commands
+- `sessions.list` - Test connectivity
+- `request.get` - GET request with challenge solving
+- `request.post` - POST request with challenge solving
+
+### Unit Tests (32 tests)
+- Settings defaults and customization: 2 tests
+- Options defaults and customization: 2 tests
+- Cookie session handling: 5 tests
+- Result creation (success/failure): 3 tests
+- Test result properties: 2 tests
+- Failure reason enum values: 11 tests
+- Service behavior: 7 tests
+
+### Files Changed
+- `src/Shortboxerr.Core/Ddl/ICloudflareBypassService.cs` (new)
+- `src/Shortboxerr.Infrastructure/Ddl/FlareSolverrService.cs` (new)
+- `tests/Shortboxerr.Tests/CloudflareBypassServiceTests.cs` (new)
+
+### Usage Notes
+- FlareSolverr requires Docker or direct installation
+- Each browser instance uses 100-200MB RAM
+- Cannot solve CAPTCHA challenges (will timeout)
+- cf_clearance cookies typically valid for ~2 hours
+
+---
+
 ## Iteration 113 (2026-02-23)
 **EPIC 8: Mega.nz Resolver with Encryption Support**
 
