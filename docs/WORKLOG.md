@@ -1,5 +1,84 @@
 # Worklog
 
+## Iteration 112 (2026-02-23)
+**EPIC 8: Rapidgator & Uploaded.net Premium Host Resolvers**
+
+### Summary
+Added premium file host resolvers for Rapidgator and Uploaded.net, supporting both premium API authentication and free tier metadata extraction.
+
+### Commits
+1. `feat(ddl): add Rapidgator and Uploaded.net host resolvers`
+
+### Deliverables
+
+#### RapidgatorResolver
+- Supports domains: rapidgator.net, rapidgator.asia, rg.to
+- Premium API authentication via:
+  - API key (direct token)
+  - Username/password login (session token)
+- File info extraction from API
+- Direct download URL generation
+- Free tier: metadata extraction without download capability
+- URL expiry tracking (24 hours for premium links)
+
+#### UploadedResolver  
+- Supports domains: uploaded.net, uploaded.to, ul.to
+- Premium API authentication via:
+  - API key
+  - Username/password login (CSV token format)
+- Multiple response format parsing (JSON, CSV, key-value)
+- Alternate download endpoint fallback
+- Free tier: metadata extraction (CAPTCHA blocks actual downloads)
+- URL expiry tracking (12 hours for premium links)
+
+#### Factory Registration
+- Both resolvers registered in DownloadHostResolverFactory
+- Priority 15 for Rapidgator, 16 for Uploaded (lower priority due to premium requirement)
+
+#### Parsing Capabilities
+- File ID extraction from various URL formats
+- Session/auth token extraction (JSON, CSV, key-value)
+- File info parsing (name, size)
+- Download URL extraction from API responses
+- HTML page parsing for metadata (filename, filesize patterns)
+
+### Unit Tests (79 tests)
+- RapidgatorResolver tests (25):
+  - Host ID, display name, supported hosts validation
+  - URL pattern matching with multiple domains
+  - File ID extraction from URL variants
+  - Session token extraction from JSON responses
+  - File info parsing from API responses
+  - Download URL extraction
+  - Filename and file size extraction from HTML
+  - Network resolution behavior
+- UploadedResolver tests (32):
+  - Host ID, display name, supported hosts validation  
+  - URL pattern matching with multiple domains
+  - File ID extraction from URL variants
+  - Auth token extraction (JSON, CSV, key-value formats)
+  - File info parsing (JSON and CSV formats)
+  - Download URL extraction (JSON and plain URL)
+  - Filename extraction (class, id, title patterns)
+  - File size extraction
+  - Network resolution behavior
+- Factory integration tests (8):
+  - Resolver registration verification
+  - URL resolution capability
+  - Host info inclusion
+- HostCredentials and HostResolverOptions tests (14):
+  - Credential property handling
+  - Default values verification
+  - Result object construction
+
+### Files Changed
+- `src/Shortboxerr.Infrastructure/Ddl/Resolvers/RapidgatorResolver.cs` (new)
+- `src/Shortboxerr.Infrastructure/Ddl/Resolvers/UploadedResolver.cs` (new)
+- `src/Shortboxerr.Infrastructure/Ddl/Resolvers/DownloadHostResolverFactory.cs` (modified)
+- `tests/Shortboxerr.Tests/PremiumHostResolverTests.cs` (new)
+
+---
+
 ## Iteration 111 (2026-02-17)
 **EPIC 8: Host Reliability Tracking per DDL Site**
 

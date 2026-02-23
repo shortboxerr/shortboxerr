@@ -382,9 +382,9 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
   - AC: Detect and skip defunct links gracefully ✅
   - AC: Returns HostUnavailable with shutdown date info ✅
   - AC: IsAvailable = false so factory excludes from active resolvers ✅
-- [ ] **Rapidgator/Uploaded resolver** (premium) - deferred
-  - AC: Support premium account credentials
-  - AC: Free tier with wait times (optional)
+- [x] **Rapidgator/Uploaded resolver** ✅
+  - AC: Support premium account credentials ✅ (API key and username/password auth)
+  - AC: Free tier with wait times (optional) ✅ (metadata extraction for free users)
 - [x] **1fichier resolver** ✅
   - AC: Parse download page ✅ (CDN, CZ, FR domains)
   - AC: Handle wait times for free users ✅ (detection)
@@ -1794,7 +1794,7 @@ Track and prioritize completion of deferred items across all EPICs.
 | ~~16~~ | ~~Deluge integration~~ | 14 | M | L | ✅ Completed |
 | 17 | Cloudflare challenge handling | 8 | L | M | Complex |
 | 18 | Mega.nz resolver | 8 | L | M | Encryption |
-| 19 | Rapidgator/Uploaded resolver | 8 | M | L | Premium accounts |
+| ~~19~~ | ~~Rapidgator/Uploaded resolver~~ | 8 | M | L | ✅ Completed |
 | ~~20~~ | ~~Torrent → Import handoff~~ | 14 | M | M | ✅ Completed |
 | ~~29~~ | ~~Cover cache size limits & eviction~~ | 9 | M | M | ✅ Completed |
 | **P5 - Low Priority / Deferred** |||||
