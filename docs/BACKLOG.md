@@ -2636,10 +2636,10 @@ Download clients log at ERROR level when server is unreachable, causing log spam
   - AC: Reduce polling frequency (or pause entirely) when no clients configured ✅ (5 min interval)
   - AC: Resume normal polling when a download client is added ✅
 
-- [ ] **Improve health check for download clients** (deferred - nice to have)
-  - AC: Add health check endpoint that returns download client status
-  - AC: Include "configured" vs "healthy" vs "unreachable" status
-  - AC: Display download client health in Settings > Download Clients
+- [x] **Improve health check for download clients** ✅ (Iteration 134)
+  - AC: Add health check endpoint that returns download client status ✅
+  - AC: Include "configured" vs "healthy" vs "unreachable" status ✅ (Unknown/Healthy/Degraded/Unavailable/Offline)
+  - AC: Display download client health in Settings > Download Clients ✅
 
 ---
 

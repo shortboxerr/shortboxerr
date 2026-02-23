@@ -1,5 +1,33 @@
 # Worklog
 
+## Iteration 134 (2026-02-23)
+**Download Client Health Status UI**
+
+### Summary
+Added UI to display download client health status in Settings > Download Clients. The backend health service and API endpoints were already implemented; this iteration adds the frontend visualization.
+
+### Commits
+1. `feat(ui): add download client health status display` - Health summary and table columns
+
+### Deliverables
+
+#### Health Summary Section
+- Overall health percentage display with color coding
+- Healthy/Degraded/Offline client counts
+- Average download time (when available)
+- "Check Health" button for manual health checks
+
+#### Download Clients Table Enhancements
+- Health status column with color-coded state indicators (Unknown/Healthy/Degraded/Unavailable/Offline)
+- Stats column showing success/failure counts and success rate
+- Auto-refresh every 60 seconds
+
+### Files Changed
+- `ui/src/api/client.ts` - Added health status interfaces and API methods
+- `ui/src/pages/SettingsPage.tsx` - Added health summary section and table columns
+
+---
+
 ## Iteration 133 (2026-02-17)
 **EPIC 11.4: Pushover and Pushbullet Notification Providers**
 
