@@ -787,7 +787,7 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
 - 14 unit tests covering all scenarios
 - Migration for `StatusSource` column
 
-### 9.13 Cover Cache Size Limits & Eviction ✅ PARTIAL
+### 9.13 Cover Cache Size Limits & Eviction ✅ COMPLETED
 - [x] **Cache size management** ✅
   - AC: Configurable maximum cache size (default: 500MB) ✅
   - AC: LRU (Least Recently Used) eviction when limit exceeded ✅
@@ -1070,8 +1070,8 @@ Track upcoming comic releases and automate wanted list management. Must achieve 
   - AC: API endpoints for status, history, manual trigger ✅
   - Note: 8 unit tests added
 
-### 11.4 Pull List Notifications (PARTIAL)
-In-app notification system implemented. External notification channels (email, webhooks) deferred.
+### 11.4 Pull List Notifications ✅ COMPLETED
+In-app notifications and webhook providers fully implemented. Additional channels (email, Pushover) are future enhancements.
 
 - [x] **In-app notifications (notification center)** ✅
   - AC: Notification entity with types (Info, Success, Warning, Error, NewRelease, Grabbed, WeeklySummary, Health, Update) ✅
@@ -1371,7 +1371,7 @@ Implement comprehensive caching to minimize database queries and external API ca
 - Rationale: ComicVine release data is set weeks in advance and rarely changes;
   30-minute client cache matches backend cache duration
 
-### 12.1 Data Caching Strategy ✅ PARTIAL
+### 12.1 Data Caching Strategy ✅ COMPLETED
 - [x] **Pull list query caching** ✅
   - AC: Cache weekly pull list results with 5-minute TTL ✅ (discovery caching migrated to ICacheService)
   - AC: Cache upcoming/past releases with 10-minute TTL ⏸️ (can be added incrementally)
