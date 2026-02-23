@@ -895,6 +895,28 @@ export interface CoverCleanupResult {
   message?: string;
 }
 
+export interface AutoSearchResult {
+  issueId: number;
+  seriesTitle: string;
+  issueNumber: string;
+  success: boolean;
+  candidatesFound: number;
+  selectedCandidateTitle?: string;
+  downloadId?: string;
+  error?: string;
+  durationMs: number;
+}
+
+export interface AutoSearchBatchResult {
+  totalSearched: number;
+  successCount: number;
+  failedCount: number;
+  notFoundCount: number;
+  results: AutoSearchResult[];
+  totalDurationMs: number;
+  error?: string;
+}
+
 export interface NamingToken {
   token: string;
   description: string;
@@ -2029,6 +2051,19 @@ export const api = {
 
   refreshSeriesIssues: async (seriesId: number, force = false): Promise<{ success: boolean; issuesRefreshed?: number; error?: string }> => {
     return fetchApi(`/api/v1/metadata/series/${seriesId}/issues/refresh?force=${force}`, {
+      method: 'POST',
+    });
+  },
+
+  // === Auto-Search ===
+  searchIssue: async (issueId: number): Promise<AutoSearchResult> => {
+    return fetchApi<AutoSearchResult>(`/api/v1/search/auto/issue/${issueId}`, {
+      method: 'POST',
+    });
+  },
+
+  searchSeriesWanted: async (seriesId: number): Promise<AutoSearchBatchResult> => {
+    return fetchApi<AutoSearchBatchResult>(`/api/v1/search/auto/series/${seriesId}`, {
       method: 'POST',
     });
   },

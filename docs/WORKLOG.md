@@ -1,5 +1,36 @@
 # Worklog
 
+## Iteration 119 (2026-02-17)
+**EPIC 9: Issue Search Button**
+
+### Summary
+Added a Search button to issue cover cards for wanted/missing issues. When clicked, triggers the auto-search API to search for and potentially download the specific issue. Shows toast notification with search result.
+
+### Commits
+1. `feat(ui): add search button to issue cover cards`
+
+### Deliverables
+
+#### API Client (client.ts)
+- `searchIssue(issueId)` - Search for a specific issue
+- `searchSeriesWanted(seriesId)` - Search for all wanted issues in a series
+- `AutoSearchResult` and `AutoSearchBatchResult` types
+
+#### Issue Cover Cards (SeriesDetailPage.tsx)
+- Search button visible on wanted/missing issues
+- Shows spinner while search is in progress
+- Toast notification with search results:
+  - Success: "Found: [candidate title]"
+  - No results: "No results found for #[number]"
+  - Error: "Search failed"
+
+### Files Changed
+- `ui/src/api/client.ts` - Added search API methods and types
+- `ui/src/pages/SeriesDetailPage.tsx` - Added search button to IssueCoverCard
+- `docs/BACKLOG.md` - Marked search button as completed
+
+---
+
 ## Iteration 118 (2026-02-17)
 **EPIC 15: Toast Notification System**
 

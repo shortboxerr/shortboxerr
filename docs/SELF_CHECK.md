@@ -1,61 +1,65 @@
-# Self-Check: Iteration 118
+# Self-Check: Iteration 119
 
 ## Checklist
 - [x] Code compiles without errors
 - [x] Frontend builds successfully
-- [x] BACKLOG.md updated (EPIC 15 toast notification)
+- [x] BACKLOG.md updated (EPIC 9.9 search button)
 - [x] WORKLOG.md updated
-- [x] Code committed with conventional commit message
-- [x] Servers restarted and verified
+- [ ] Code committed with conventional commit message
+- [ ] Servers restarted and verified
 
 ## Implementation Status
 
-### EPIC 15: Toast Notification System ✅ COMPLETED
+### EPIC 9.9: Issue Search Button ✅ COMPLETED
 
 | AC | Status | Notes |
 |----|--------|-------|
-| Toast/notification confirming change | ✅ | Full implementation with ToastProvider |
+| Search button on issue cards | ✅ | Cover view - wanted/missing issues only |
+| Search triggers auto-search API | ✅ | POST /api/v1/search/auto/issue/{issueId} |
+| Toast feedback on completion | ✅ | Success/no results/error messages |
 
 ## Implementation Details
 
-### Toast Component Architecture
+### API Client Methods
 
-**ToastProvider** (ui/src/components/Toast.tsx):
-- Context-based global toast management
-- `useToast()` hook for any component to show toasts
-- Methods: `success()`, `error()`, `warning()`, `info()`, `showToast()`
-- Auto-dismiss with configurable duration
-- Stacked display with animation
+| Method | Description |
+|--------|-------------|
+| `searchIssue(issueId)` | Search for specific issue via auto-search API |
+| `searchSeriesWanted(seriesId)` | Search all wanted issues in a series |
 
-**Toast Item Features:**
-- Color-coded left border (success=green, error=red, warning=yellow, info=blue)
-- Icon per type (CheckCircle, XCircle, AlertCircle, Info)
-- Manual dismiss button
-- CSS animations for enter/exit
+### Types Added
 
-### Integration Points
+**AutoSearchResult:**
+- `issueId`, `seriesTitle`, `issueNumber`
+- `success`, `candidatesFound`
+- `selectedCandidateTitle`, `downloadId`
+- `error`, `durationMs`
 
-| Location | Trigger | Toast Message |
-|----------|---------|---------------|
-| SeriesDetailPage | Issue status change | "Issue marked as wanted/skipped" or "X issues marked as wanted/skipped" |
-| SeriesDetailPage | Status change error | "Failed to update issue status" |
-| SeriesDetailPage | Metadata refresh | "Metadata refreshed from ComicVine" |
-| SeriesDetailPage | Refresh error | "Failed to refresh metadata" |
-| SeriesDetailPage | Series deleted | "Series deleted" |
-| SeriesDetailPage | Delete error | "Failed to delete series" |
+**AutoSearchBatchResult:**
+- `totalSearched`, `successCount`, `failedCount`, `notFoundCount`
+- `results: AutoSearchResult[]`
+- `totalDurationMs`, `error`
+
+### UI Changes
+
+**IssueCoverCard:**
+- Added `onSearch` and `isSearching` props
+- Search button shows on `wanted` or `missing` status
+- Spinner icon while search is in progress
+- Button disabled during search
 
 ### Files Changed
 
 | File | Change |
 |------|--------|
-| `ui/src/components/Toast.tsx` | New toast notification component |
-| `ui/src/App.tsx` | Added ToastProvider wrapper |
-| `ui/src/pages/SeriesDetailPage.tsx` | Added useToast and integrated with mutations |
-| `docs/BACKLOG.md` | Marked toast item complete |
+| `ui/src/api/client.ts` | Added search methods and types |
+| `ui/src/pages/SeriesDetailPage.tsx` | Added search mutation and button |
+| `docs/BACKLOG.md` | Marked search button complete |
 
 ## Validation
 
-- [x] Backend compiles: No changes to backend
-- [x] Frontend compiles: `npm run build` successful
-- [ ] Toast appears on issue status change
-- [ ] Toast appears on metadata refresh
+- [x] Backend: No changes needed
+- [x] Frontend builds: `npm run build` successful
+- [ ] Search button appears on wanted issue
+- [ ] Search triggers API call
+- [ ] Toast shows result

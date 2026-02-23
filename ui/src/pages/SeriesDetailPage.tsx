@@ -142,6 +142,29 @@ export function SeriesDetailPage() {
     }
   };
 
+  // Search for a specific issue
+  const searchIssue = useMutation({
+    mutationFn: async (issueId: number) => {
+      return api.searchIssue(issueId);
+    },
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success(`Found: ${result.selectedCandidateTitle || 'Download started'}`);
+      } else if (result.candidatesFound === 0) {
+        toast.info(`No results found for #${result.issueNumber}`);
+      } else {
+        toast.warning(result.error || 'Search completed but no download started');
+      }
+    },
+    onError: () => {
+      toast.error('Search failed');
+    },
+  });
+
+  const handleSearchIssue = (issueId: number) => {
+    searchIssue.mutate(issueId);
+  };
+
   // Refresh this series metadata mutation
   const refreshMetadata = useMutation({
     mutationFn: async () => {
@@ -633,7 +656,9 @@ export function SeriesDetailPage() {
                           onSelect={() => toggleIssueSelection(issue.id)}
                           onMarkWanted={() => handleMarkAsWanted([issue.id])}
                           onMarkSkipped={() => handleMarkAsSkipped([issue.id])}
+                          onSearch={() => handleSearchIssue(issue.id)}
                           isUpdating={updateIssueStatus.isPending}
+                          isSearching={searchIssue.isPending && searchIssue.variables === issue.id}
                         />
                       ))}
                     </div>
@@ -768,7 +793,9 @@ export function SeriesDetailPage() {
                           onSelect={() => toggleIssueSelection(issue.id)}
                           onMarkWanted={() => handleMarkAsWanted([issue.id])}
                           onMarkSkipped={() => handleMarkAsSkipped([issue.id])}
+                          onSearch={() => handleSearchIssue(issue.id)}
                           isUpdating={updateIssueStatus.isPending}
+                          isSearching={searchIssue.isPending && searchIssue.variables === issue.id}
                         />
                       ))}
                     </div>
@@ -1242,10 +1269,12 @@ interface IssueCoverCardProps {
   onSelect: () => void;
   onMarkWanted: () => void;
   onMarkSkipped: () => void;
+  onSearch: () => void;
   isUpdating: boolean;
+  isSearching: boolean;
 }
 
-function IssueCoverCard({ issue, selected, onSelect, onMarkWanted, onMarkSkipped, isUpdating }: IssueCoverCardProps) {
+function IssueCoverCard({ issue, selected, onSelect, onMarkWanted, onMarkSkipped, onSearch, isUpdating, isSearching }: IssueCoverCardProps) {
   const [showActions, setShowActions] = useState(false);
   const placeholderCover = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="150" viewBox="0 0 100 150"%3E%3Crect fill="%232a2d35" width="100" height="150"/%3E%3Ctext fill="%236b7280" font-family="sans-serif" font-size="10" x="50" y="75" text-anchor="middle"%3ENo Cover%3C/text%3E%3C/svg%3E';
   
@@ -1315,6 +1344,17 @@ function IssueCoverCard({ issue, selected, onSelect, onMarkWanted, onMarkSkipped
                 title="View on ComicVine"
               >
                 <ExternalLink size={14} />
+              </button>
+            )}
+            {/* Search button - available for wanted/missing issues */}
+            {(status === 'wanted' || status === 'missing') && (
+              <button 
+                className="btn btn-icon btn-sm btn-action" 
+                onClick={(e) => { e.stopPropagation(); onSearch(); }}
+                disabled={isSearching}
+                title="Search for this issue"
+              >
+                {isSearching ? <Loader2 size={14} className="spinning" /> : <Search size={14} />}
               </button>
             )}
             {/* Status toggle buttons - Mylar3 parity: can mark ANY issue as Wanted/Skipped */}
