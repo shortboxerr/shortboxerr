@@ -165,6 +165,29 @@ export function SeriesDetailPage() {
     searchIssue.mutate(issueId);
   };
 
+  // Search all wanted issues in this series
+  const searchAllWanted = useMutation({
+    mutationFn: async () => {
+      return api.searchSeriesWanted(seriesId);
+    },
+    onSuccess: (result) => {
+      if (result.totalSearched === 0) {
+        toast.info('No wanted issues to search');
+      } else if (result.successCount > 0) {
+        toast.success(`Found downloads for ${result.successCount} of ${result.totalSearched} issues`);
+      } else {
+        toast.warning(`Searched ${result.totalSearched} issues - no results found`);
+      }
+    },
+    onError: () => {
+      toast.error('Search failed');
+    },
+  });
+
+  const handleSearchAllWanted = () => {
+    searchAllWanted.mutate();
+  };
+
   // Refresh this series metadata mutation
   const refreshMetadata = useMutation({
     mutationFn: async () => {
@@ -372,6 +395,14 @@ export function SeriesDetailPage() {
         </Link>
         <h1 className="page-title">{series.title}</h1>
         <div className="toolbar-group">
+          <button 
+            className="btn btn-icon" 
+            title="Search All Wanted Issues"
+            onClick={handleSearchAllWanted}
+            disabled={searchAllWanted.isPending}
+          >
+            {searchAllWanted.isPending ? <Loader2 size={18} className="spinning" /> : <Search size={18} />}
+          </button>
           <button 
             className="btn btn-icon" 
             title="Series Settings (Annual/Special Handling)"

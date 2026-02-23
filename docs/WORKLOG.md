@@ -1,5 +1,29 @@
 # Worklog
 
+## Iteration 121 (2026-02-17)
+**EPIC 9: Search All Wanted Button**
+
+### Summary
+Added a "Search All Wanted" button to the series detail page header toolbar. This allows users to trigger a search for all wanted issues in a series with a single click.
+
+### Commits
+1. `feat(ui): add search all wanted button to series header`
+
+### Deliverables
+
+#### Series Header Toolbar
+- Added Search All Wanted button (Search icon)
+- Shows spinner during search
+- Displays toast notifications with results:
+  - Success: "Found downloads for X of Y issues"
+  - Warning: "Searched X issues - no results found"
+  - Info: "No wanted issues to search"
+
+### Files Changed
+- `ui/src/pages/SeriesDetailPage.tsx` - Added searchAllWanted mutation and header button
+
+---
+
 ## Iteration 120 (2026-02-17)
 **EPIC 9: Issue Search Button - List View**
 

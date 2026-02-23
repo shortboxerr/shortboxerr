@@ -724,7 +724,8 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: "Mark as Owned" button (marks as owned without file) ✅
   - AC: "Skip" button (excludes from wanted list) ✅
   - AC: Buttons show current state (disabled when already in that state) ✅
-  - AC: "Search" button for wanted/missing issues ✅ (Iteration 119)
+  - AC: "Search" button for wanted/missing issues ✅ (Iteration 119-120)
+  - AC: "Search All Wanted" button in series header ✅ (Iteration 121)
   - Note: "Edit" button deferred (issue metadata editing not implemented)
 
 - [x] **Status indicators** ✅
