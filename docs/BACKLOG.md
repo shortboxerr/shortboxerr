@@ -1420,9 +1420,11 @@ Implement comprehensive caching to minimize database queries and external API ca
   - AC: Cache-busting for UI assets (already handled by Vite build) ✅
 
 ### 12.4 ComicVine API Optimization
-- [ ] **Request batching** (deferred)
-  - AC: Batch multiple issue lookups into single request where API supports
-  - AC: Queue and deduplicate concurrent identical requests
+- [x] **Request batching** ✅ (Iteration 115)
+  - AC: Batch multiple issue lookups into single request where API supports ✅
+  - AC: Queue and deduplicate concurrent identical requests ✅
+  - Implementation: `IComicVineRequestBatcher` interface with `ComicVineRequestBatcher` service
+  - Features: ID filter batching (`id:123|456|789`), in-flight deduplication, statistics tracking
   
 - [x] **Prefetching** ✅ (REMOVED - Iteration 064)
   - ~~AC: Prefetch next week's releases when viewing current week~~ → Replaced by startup cache population
@@ -1798,7 +1800,7 @@ Track and prioritize completion of deferred items across all EPICs.
 | ~~20~~ | ~~Torrent → Import handoff~~ | 14 | M | M | ✅ Completed |
 | ~~29~~ | ~~Cover cache size limits & eviction~~ | 9 | M | M | ✅ Completed |
 | **P5 - Low Priority / Deferred** |||||
-| 21 | Request batching (ComicVine) | 12 | M | L | Performance only |
+| ~~21~~ | ~~Request batching (ComicVine)~~ | 12 | M | L | ✅ Completed |
 | 22 | Rate limit awareness | 12 | M | L | Performance only |
 | 23 | Character/team appearances | 9 | M | L | API rate limits |
 | 24 | Usenet/NZB from DDL sites | 8 | M | L | Niche use case |

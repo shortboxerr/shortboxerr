@@ -1,5 +1,73 @@
 # Worklog
 
+## Iteration 115 (2026-02-17)
+**EPIC 12: ComicVine API Optimization - Request Batching**
+
+### Summary
+Implemented request batching and deduplication for ComicVine API calls to reduce API usage and improve performance. The batcher combines multiple issue/volume lookups into single API requests using ComicVine's ID filter syntax and deduplicates concurrent identical requests.
+
+### Commits
+1. `feat(comicvine): add request batching and deduplication service`
+
+### Deliverables
+
+#### IComicVineRequestBatcher Interface
+- `GetIssuesBatchAsync` - Fetch multiple issues in single batched request
+- `GetIssueDeduplicatedAsync` - Single issue fetch with deduplication
+- `GetVolumesBatchAsync` - Fetch multiple volumes in batched request
+- `GetVolumeDeduplicatedAsync` - Single volume fetch with deduplication
+- `GetStats` - Get batching efficiency statistics
+- `ResetStats` - Clear statistics counters
+
+#### ComicVineRequestBatcher Implementation
+- In-flight request tracking using `ConcurrentDictionary<string, Task<object?>>`
+- Automatic deduplication of concurrent identical requests
+- Small batch optimization (<=3 items use individual cached lookups)
+- Large batch processing using ID filter syntax (`id:123|456|789`)
+- Configurable batch sizes (max 100 items, max 50 IDs per filter)
+- Thread-safe statistics tracking via `Interlocked` operations
+
+#### Batch Methods Added to IComicVineClient
+- `GetIssuesByIdsAsync(IEnumerable<int> issueIds)` - Batch issue lookup
+- `GetVolumesByIdsAsync(IEnumerable<int> volumeIds)` - Batch volume lookup
+
+#### ComicVineClient Batch Implementation
+- Cache-first approach: check cache, only fetch uncached items
+- Uses ComicVine filter syntax: `filter=id:123|456|789`
+- Automatic caching of fetched results
+- Graceful degradation on rate limit (returns cached results)
+
+#### Statistics Model (ComicVineBatchingStats)
+- `TotalRequests` - Total item requests received
+- `ActualApiCalls` - Actual API calls made
+- `DeduplicatedRequests` - Requests served from deduplication
+- `BatchedItems` - Items fetched via batch requests
+- `BatchRequests` - Number of batch API calls
+- `AverageItemsPerBatch` - Computed average
+- `DeduplicationRate` - Percentage of deduplicated requests
+- `EstimatedSavedApiCalls` - API calls avoided
+- `EfficiencyRate` - Overall efficiency percentage
+
+### Unit Tests (28 tests)
+- Statistics calculations (8 tests)
+- Interface method verification (8 tests)
+- Empty batch handling (2 tests)
+- Small batch optimization (1 test)
+- Large batch processing (1 test)
+- Duplicate ID deduplication (2 tests)
+- Concurrent request handling (2 tests)
+- Stats reset functionality (1 test)
+- Mock client integration (3 tests)
+
+### Files Changed
+- `src/Shortboxerr.Core/ComicVine/IComicVineClient.cs` (modified)
+- `src/Shortboxerr.Core/ComicVine/IComicVineRequestBatcher.cs` (new)
+- `src/Shortboxerr.Infrastructure/ComicVine/ComicVineClient.cs` (modified)
+- `src/Shortboxerr.Infrastructure/ComicVine/ComicVineRequestBatcher.cs` (new)
+- `tests/Shortboxerr.Tests/ComicVineRequestBatcherTests.cs` (new)
+
+---
+
 ## Iteration 114 (2026-02-23)
 **EPIC 8: Cloudflare Challenge Handling**
 

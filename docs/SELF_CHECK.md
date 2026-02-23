@@ -1,102 +1,116 @@
-# Self-Check: Iteration 114
+# Self-Check: Iteration 115
 
 ## Checklist
 - [x] Code compiles without errors
 - [x] All new code has unit tests
-- [x] Tests pass (32/32)
-- [x] BACKLOG.md updated (Item 17 marked complete)
+- [x] Tests pass (28/28)
+- [x] BACKLOG.md updated (Item 21 marked complete)
 - [x] WORKLOG.md updated
 - [x] Code committed with conventional commit message
 
 ## Implementation Status
 
-### Item 17: Cloudflare Challenge Handling ✅ COMPLETED
+### Item 21: Request Batching (ComicVine) ✅ COMPLETED
 
 | AC | Status | Notes |
 |----|--------|-------|
-| Cloudflare challenge handling | ✅ | FlareSolverr integration with session caching |
+| Batch multiple issue lookups | ✅ | Uses ID filter syntax `id:123\|456\|789` |
+| Queue and deduplicate requests | ✅ | In-flight tracking via ConcurrentDictionary |
 
 ## Files Changed
 | File | Change |
 |------|--------|
-| `ICloudflareBypassService.cs` | New - Service interface and models |
-| `FlareSolverrService.cs` | New - FlareSolverr API client |
-| `CloudflareBypassServiceTests.cs` | New - 32 unit tests |
+| `IComicVineClient.cs` | Modified - Added batch methods |
+| `IComicVineRequestBatcher.cs` | New - Batcher interface |
+| `ComicVineClient.cs` | Modified - Implemented batch methods |
+| `ComicVineRequestBatcher.cs` | New - Batcher implementation |
+| `ComicVineRequestBatcherTests.cs` | New - 28 unit tests |
 
 ## Test Summary
 ```
-Total tests: 32
-Passed: 32
+Total tests: 28
+Passed: 28
 Failed: 0
 ```
 
 ### Test Categories
-- Settings: 2 tests
-- Options: 2 tests
-- Cookie session: 5 tests
-- Results: 3 tests
-- Test result: 2 tests
-- Failure reasons: 11 tests
-- Service behavior: 7 tests
+- Statistics calculations: 8 tests
+- Interface verification: 8 tests
+- Empty batch handling: 2 tests
+- Batch optimization: 2 tests
+- Deduplication: 2 tests
+- Concurrency: 2 tests
+- Service behavior: 4 tests
 
 ## Technical Implementation
 
-### FlareSolverr Integration
-- **Endpoint**: `http://localhost:8191/v1`
-- **Commands**: `sessions.list`, `request.get`, `request.post`
-- **Response**: JSON with cookies, user-agent, and optional HTML
+### Batching Strategy
+- **Small batches (<=3 items)**: Use individual deduplicated calls (benefit from cache)
+- **Large batches (>3 items)**: Use batch API with ID filter
+- **Max IDs per filter**: 50 (keeps URL reasonable)
+- **Max results per request**: 100 (ComicVine limit)
 
-### Session Management
-- In-memory cache using ConcurrentDictionary
-- Configurable TTL (default 120 minutes)
-- cf_clearance cookie tracking
-- User-agent preservation (must match for cookies to work)
+### Request Deduplication
+- Track in-flight requests in `ConcurrentDictionary<string, Task<object?>>`
+- Concurrent identical requests share the same API call result
+- Brief retention window (100ms) for deduplication
+- Thread-safe statistics via `Interlocked` operations
 
-### Error Handling
-- 11 distinct failure reasons
-- Automatic retry with backoff
-- CAPTCHA detection (cannot auto-solve)
-- Rate limiting detection
+### Batch API Format
+```
+GET /issues/?api_key={key}&format=json&filter=id:123|456|789&limit=50
+GET /volumes/?api_key={key}&format=json&filter=id:123|456|789&limit=50
+```
 
-## EPIC 8 Progress (DDL Integration)
+### Caching Integration
+- Check cache first before making API calls
+- Only fetch uncached items
+- Cache individual results from batch responses
+- Return cached results on rate limit (graceful degradation)
+
+### Statistics Tracking
+| Metric | Description |
+|--------|-------------|
+| TotalRequests | Individual item requests received |
+| ActualApiCalls | API calls actually made |
+| DeduplicatedRequests | Requests served from deduplication |
+| BatchedItems | Items fetched via batches |
+| BatchRequests | Number of batch API calls |
+| EfficiencyRate | Percentage of API calls saved |
+
+## EPIC 12 Progress (Performance Optimization)
 
 | Sub-item | Status |
 |----------|--------|
-| Host resolver factory | ✅ Complete |
-| Mega.nz resolver | ✅ Complete |
-| MediaFire resolver | ✅ Complete |
-| Pixeldrain resolver | ✅ Complete |
-| Google Drive resolver | ✅ Complete |
-| Dropbox resolver | ✅ Complete |
-| 1fichier resolver | ✅ Complete |
-| Rapidgator/Uploaded | ✅ Complete |
-| Zippyshare (defunct) | ✅ Complete |
-| Host priority config | ✅ Complete |
-| Fallback chain | ✅ Complete |
-| Host reliability tracking | ✅ Complete |
-| Host blacklisting | ✅ Complete |
-| **Cloudflare handling** | **✅ Complete** |
+| Query optimization | ✅ Complete |
+| EF Core eager loading | ✅ Complete |
+| HTTP caching headers | ✅ Complete |
+| Static asset caching | ✅ Complete |
+| **Request batching** | **✅ Complete** |
+| Prefetching | ✅ Complete (via background service) |
+| Rate limit awareness | Deferred |
 
-## P4 Items Complete!
+## P5 Items Progress
 
-All P4 (Lower Priority / Complex) items have been completed:
-- ~~Item 15: NZBHydra2 support~~ ✅
-- ~~Item 16: Deluge integration~~ ✅
-- ~~Item 17: Cloudflare challenge handling~~ ✅
-- ~~Item 18: Mega.nz resolver~~ ✅
-- ~~Item 19: Rapidgator/Uploaded resolver~~ ✅
-- ~~Item 20: Torrent → Import handoff~~ ✅
-- ~~Item 29: Cover cache size limits~~ ✅
+| Item | Description | Status |
+|------|-------------|--------|
+| ~~21~~ | Request batching (ComicVine) | ✅ Completed |
+| 22 | Rate limit awareness | Deferred |
+| 23 | Character/team appearances | Deferred |
+| 24 | Usenet/NZB from DDL sites | Deferred |
+| 25 | Folder download (Dropbox/Drive) | Deferred |
+| 26 | Distributed cache pub/sub | Deferred |
+| 27 | Automation tests | Deferred |
+| 28 | Full integration tests | Deferred |
 
-## Next Available Items (P5 - Deferred)
+## Next Available Items
 
-| Item | Description | Notes |
-|------|-------------|-------|
-| 21 | Request batching (ComicVine) | Performance only |
-| 22 | Rate limit awareness | Performance only |
-| 23 | Character/team appearances | API rate limits |
-| 24 | Usenet/NZB from DDL sites | Niche use case |
-| 25 | Folder download (Dropbox/Drive) | Complex |
-| 26 | Distributed cache pub/sub | Single-instance OK |
-| 27 | Automation tests | Full pipeline |
-| 28 | Full integration tests | Full pipeline |
+The remaining P5 items are all marked as "Deferred" in the backlog:
+- Rate limit awareness (performance only)
+- Character/team appearances (API rate limits concern)
+- Usenet/NZB from DDL sites (niche use case)
+- Folder downloads (complex implementation)
+- Distributed cache (single-instance is OK)
+- Full test suites (full pipeline required)
+
+These items are intentionally deferred and should only be implemented when explicitly requested.
