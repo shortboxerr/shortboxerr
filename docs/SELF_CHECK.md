@@ -1,116 +1,88 @@
-# Self-Check: Iteration 115
+# Self-Check: Iteration 116
 
 ## Checklist
 - [x] Code compiles without errors
-- [x] All new code has unit tests
-- [x] Tests pass (28/28)
-- [x] BACKLOG.md updated (Item 21 marked complete)
+- [x] Frontend builds successfully
+- [x] BACKLOG.md updated (EPIC 9.9, EPIC 10.5, EPIC 10.6 corrected)
 - [x] WORKLOG.md updated
-- [x] Code committed with conventional commit message
+- [ ] Code committed with conventional commit message
 
 ## Implementation Status
 
-### Item 21: Request Batching (ComicVine) ✅ COMPLETED
+### EPIC 9.9: ComicVine UI - Final Items ✅ COMPLETED
 
 | AC | Status | Notes |
 |----|--------|-------|
-| Batch multiple issue lookups | ✅ | Uses ID filter syntax `id:123\|456\|789` |
-| Queue and deduplicate requests | ✅ | In-flight tracking via ConcurrentDictionary |
+| Match to ComicVine button on unmatched series | ✅ | Shows in header toolbar and series info |
+| Refresh Metadata button | ✅ | Already existed (was incorrectly marked deferred) |
+
+### Backlog Cleanup ✅ COMPLETED
+
+| Section | Issue | Resolution |
+|---------|-------|------------|
+| EPIC 10.5 | NZBGet marked (deferred) but done in EPIC 14.2 | Updated to ✅ |
+| EPIC 10.6 | NZBGet panel marked (deferred) but done in EPIC 14.2 | Updated to ✅ |
+| EPIC 10.6 | Download client dropdown still showed deferred | Updated all clients ✅ |
+| EPIC 10.5/10.6 | Section headers still showed PARTIAL | Updated to COMPLETED |
 
 ## Files Changed
+
 | File | Change |
 |------|--------|
-| `IComicVineClient.cs` | Modified - Added batch methods |
-| `IComicVineRequestBatcher.cs` | New - Batcher interface |
-| `ComicVineClient.cs` | Modified - Implemented batch methods |
-| `ComicVineRequestBatcher.cs` | New - Batcher implementation |
-| `ComicVineRequestBatcherTests.cs` | New - 28 unit tests |
+| `ui/src/pages/SeriesDetailPage.tsx` | Modified - Added MatchToComicVineModal |
+| `ui/src/api/client.ts` | Modified - Added match/unmatch API methods |
+| `docs/BACKLOG.md` | Modified - Fixed inconsistencies |
+| `docs/WORKLOG.md` | Modified - Added Iteration 116 |
+| `docs/SELF_CHECK.md` | Replaced - Updated for Iteration 116 |
 
-## Test Summary
-```
-Total tests: 28
-Passed: 28
-Failed: 0
-```
+## UI Implementation Details
 
-### Test Categories
-- Statistics calculations: 8 tests
-- Interface verification: 8 tests
-- Empty batch handling: 2 tests
-- Batch optimization: 2 tests
-- Deduplication: 2 tests
-- Concurrency: 2 tests
-- Service behavior: 4 tests
+### Match to ComicVine Button
+- Shows in toolbar when `!series.comicVineId`
+- Uses `LinkIcon` from lucide-react
+- Also shows as primary button in series info section when unmatched
 
-## Technical Implementation
+### MatchToComicVineModal Component
+- Pre-populates search with series title
+- 400ms debounce on search input
+- Uses existing `searchSeriesFromComicVine` API
+- Results sorted by popularity (issue count)
+- Visual selection state with border highlight
+- Shows cover, title, publisher, year, issue count
+- Aliases shown when available
+- Calls `matchSeriesToComicVine` on confirm
+- Refetches series and issues on success
 
-### Batching Strategy
-- **Small batches (<=3 items)**: Use individual deduplicated calls (benefit from cache)
-- **Large batches (>3 items)**: Use batch API with ID filter
-- **Max IDs per filter**: 50 (keeps URL reasonable)
-- **Max results per request**: 100 (ComicVine limit)
-
-### Request Deduplication
-- Track in-flight requests in `ConcurrentDictionary<string, Task<object?>>`
-- Concurrent identical requests share the same API call result
-- Brief retention window (100ms) for deduplication
-- Thread-safe statistics via `Interlocked` operations
-
-### Batch API Format
-```
-GET /issues/?api_key={key}&format=json&filter=id:123|456|789&limit=50
-GET /volumes/?api_key={key}&format=json&filter=id:123|456|789&limit=50
+### New API Client Methods
+```typescript
+matchSeriesToComicVine(seriesId, volumeId, syncMetadata?, createMissingIssues?)
+autoMatchSeries(seriesId)
+unmatchSeriesFromComicVine(seriesId)
 ```
 
-### Caching Integration
-- Check cache first before making API calls
-- Only fetch uncached items
-- Cache individual results from batch responses
-- Return cached results on rate limit (graceful degradation)
-
-### Statistics Tracking
-| Metric | Description |
-|--------|-------------|
-| TotalRequests | Individual item requests received |
-| ActualApiCalls | API calls actually made |
-| DeduplicatedRequests | Requests served from deduplication |
-| BatchedItems | Items fetched via batches |
-| BatchRequests | Number of batch API calls |
-| EfficiencyRate | Percentage of API calls saved |
-
-## EPIC 12 Progress (Performance Optimization)
+## EPIC 9.9 Status (ComicVine UI)
 
 | Sub-item | Status |
 |----------|--------|
-| Query optimization | ✅ Complete |
-| EF Core eager loading | ✅ Complete |
-| HTTP caching headers | ✅ Complete |
-| Static asset caching | ✅ Complete |
-| **Request batching** | **✅ Complete** |
-| Prefetching | ✅ Complete (via background service) |
-| Rate limit awareness | Deferred |
+| Settings page | ✅ Complete |
+| Series detail integration | ✅ Complete |
+| Search & match modal | ✅ Complete |
+| Issue display enhancements | ✅ Complete |
+| Collection/Edition detail page | ✅ Complete |
 
-## P5 Items Progress
+## EPIC 10 Status (NZB Integration)
 
-| Item | Description | Status |
-|------|-------------|--------|
-| ~~21~~ | Request batching (ComicVine) | ✅ Completed |
-| 22 | Rate limit awareness | Deferred |
-| 23 | Character/team appearances | Deferred |
-| 24 | Usenet/NZB from DDL sites | Deferred |
-| 25 | Folder download (Dropbox/Drive) | Deferred |
-| 26 | Distributed cache pub/sub | Deferred |
-| 27 | Automation tests | Deferred |
-| 28 | Full integration tests | Deferred |
+| Sub-item | Status |
+|----------|--------|
+| 10.1 NZB Core Integration | ✅ Complete |
+| 10.2 NZB Search & Queue | ✅ Complete |
+| 10.3 SABnzbd Integration | ✅ Complete |
+| 10.4 NZB Import Processing | ✅ Complete |
+| 10.5 NZB Configuration & Settings | ✅ **Now Complete** |
+| 10.6 NZB UI | ✅ **Now Complete** |
 
-## Next Available Items
-
-The remaining P5 items are all marked as "Deferred" in the backlog:
-- Rate limit awareness (performance only)
-- Character/team appearances (API rate limits concern)
-- Usenet/NZB from DDL sites (niche use case)
-- Folder downloads (complex implementation)
-- Distributed cache (single-instance is OK)
-- Full test suites (full pipeline required)
-
-These items are intentionally deferred and should only be implemented when explicitly requested.
+## Notes
+- "Refresh Metadata" button was already implemented but backlog showed it as deferred
+- The button appears on series detail page in the header toolbar
+- Uses `refreshSeriesMetadata` mutation which calls `api.refreshSeriesMetadata(seriesId, true)`
+- NZBGet, qBittorrent, Transmission, Deluge were all implemented in EPIC 14.2/14.3

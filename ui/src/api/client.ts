@@ -1974,6 +1974,46 @@ export const api = {
     });
   },
 
+  // === Series ComicVine Matching ===
+  matchSeriesToComicVine: async (
+    seriesId: number,
+    comicVineVolumeId: number,
+    syncMetadata = true,
+    createMissingIssues = true
+  ): Promise<{ 
+    success: boolean; 
+    error?: string; 
+    seriesId?: number; 
+    comicVineId?: number; 
+    metadataSynced?: boolean;
+    issuesCreated?: number;
+    issuesUpdated?: number;
+  }> => {
+    return fetchApi(`/api/v1/metadata/series/${seriesId}/match/${comicVineVolumeId}?syncMetadata=${syncMetadata}&createMissingIssues=${createMissingIssues}`, {
+      method: 'POST',
+    });
+  },
+
+  autoMatchSeries: async (seriesId: number): Promise<{
+    success: boolean;
+    error?: string;
+    seriesId?: number;
+    matchedComicVineId?: number;
+    confidenceScore?: number;
+    requiresManualReview?: boolean;
+    candidates?: SeriesMatchCandidate[];
+  }> => {
+    return fetchApi(`/api/v1/metadata/series/${seriesId}/automatch`, {
+      method: 'POST',
+    });
+  },
+
+  unmatchSeriesFromComicVine: async (seriesId: number): Promise<{ success: boolean }> => {
+    return fetchApi(`/api/v1/metadata/series/${seriesId}/unmatch`, {
+      method: 'POST',
+    });
+  },
+
   // === NZB Indexers ===
   getNzbIndexers: async (): Promise<NzbIndexersResponse> => {
     return fetchApi<NzbIndexersResponse>('/api/v1/nzb/indexers');

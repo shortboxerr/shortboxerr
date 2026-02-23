@@ -1,13 +1,13 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   ArrowLeft, ExternalLink, RefreshCw, Calendar, BookOpen, HardDrive, 
   Check, X, Clock, Grid, List, Filter, SortAsc, SortDesc, Star, Zap, Trash2, Settings,
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, Loader2, Link as LinkIcon
 } from 'lucide-react';
 import { api } from '../api/client';
-import type { Issue, IssueStatus, SeriesPullListSettingsDto } from '../api/client';
+import type { Issue, IssueStatus, SeriesPullListSettingsDto, SeriesMatchCandidate } from '../api/client';
 
 type ViewMode = 'cover' | 'list';
 type SortKey = 'issueNumber' | 'releaseDate' | 'status' | 'title';
@@ -35,6 +35,7 @@ export function SeriesDetailPage() {
   const [selectedIssues, setSelectedIssues] = useState<Set<number>>(new Set());
   const [showAnnuals, setShowAnnuals] = useState(true);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showMatchModal, setShowMatchModal] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -330,14 +331,24 @@ export function SeriesDetailPage() {
           >
             <Settings size={18} />
           </button>
-          <button 
-            className="btn btn-icon" 
-            title="Refresh Series Metadata from ComicVine"
-            onClick={handleRefreshMetadata}
-            disabled={refreshMetadata.isPending}
-          >
-            <RefreshCw size={18} className={refreshMetadata.isPending ? 'spinning' : ''} />
-          </button>
+          {!series?.comicVineId ? (
+            <button 
+              className="btn btn-icon" 
+              title="Match to ComicVine"
+              onClick={() => setShowMatchModal(true)}
+            >
+              <LinkIcon size={18} />
+            </button>
+          ) : (
+            <button 
+              className="btn btn-icon" 
+              title="Refresh Series Metadata from ComicVine"
+              onClick={handleRefreshMetadata}
+              disabled={refreshMetadata.isPending}
+            >
+              <RefreshCw size={18} className={refreshMetadata.isPending ? 'spinning' : ''} />
+            </button>
+          )}
           <button 
             className="btn btn-icon btn-danger" 
             title="Delete Series"
@@ -401,7 +412,7 @@ export function SeriesDetailPage() {
               )}
             </div>
 
-            {series.comicVineUrl && (
+            {series.comicVineUrl ? (
               <a
                 href={series.comicVineUrl}
                 target="_blank"
@@ -411,6 +422,15 @@ export function SeriesDetailPage() {
                 <ExternalLink size={14} />
                 View on ComicVine
               </a>
+            ) : (
+              <button 
+                className="btn btn-primary btn-sm"
+                onClick={() => setShowMatchModal(true)}
+                style={{ marginTop: '12px' }}
+              >
+                <LinkIcon size={14} />
+                Match to ComicVine
+              </button>
             )}
 
             {series.metadataLastRefreshed && (
@@ -790,6 +810,21 @@ export function SeriesDetailPage() {
           isSaving={updateSeriesSettings.isPending}
         />
       )}
+
+      {/* Match to ComicVine Modal */}
+      {showMatchModal && (
+        <MatchToComicVineModal
+          seriesId={seriesId}
+          seriesTitle={series.title}
+          onClose={() => setShowMatchModal(false)}
+          onMatched={async () => {
+            await refetchSeries();
+            await refetchIssues();
+            queryClient.invalidateQueries({ queryKey: ['series', seriesId] });
+            setShowMatchModal(false);
+          }}
+        />
+      )}
     </>
   );
 }
@@ -949,6 +984,217 @@ function SeriesSettingsModal({ seriesTitle, settings, onClose, onSave, isSaving 
           <button className="btn" onClick={onClose}>Cancel</button>
           <button className="btn btn-primary" onClick={handleSave} disabled={isSaving}>
             {isSaving ? 'Saving...' : 'Save Settings'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// === Match to ComicVine Modal ===
+interface MatchToComicVineModalProps {
+  seriesId: number;
+  seriesTitle: string;
+  onClose: () => void;
+  onMatched: () => Promise<void>;
+}
+
+function MatchToComicVineModal({ seriesId, seriesTitle, onClose, onMatched }: MatchToComicVineModalProps) {
+  const [searchQuery, setSearchQuery] = useState(seriesTitle);
+  const [debouncedQuery, setDebouncedQuery] = useState(seriesTitle);
+  const [selectedVolume, setSelectedVolume] = useState<SeriesMatchCandidate | null>(null);
+  const [matchError, setMatchError] = useState<string | null>(null);
+  const [isMatching, setIsMatching] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const { data: searchResults, isLoading: isSearching } = useQuery({
+    queryKey: ['comicvine-search', debouncedQuery],
+    queryFn: () => api.searchSeriesFromComicVine(debouncedQuery, { limit: 25 }),
+    enabled: debouncedQuery.length >= 2,
+    staleTime: 60000,
+  });
+
+  const sortedResults = useMemo(() => {
+    const results = searchResults?.results ?? [];
+    return [...results].sort((a, b) => (b.issueCount || 0) - (a.issueCount || 0));
+  }, [searchResults?.results]);
+
+  const matchMutation = useMutation({
+    mutationFn: (volumeId: number) => api.matchSeriesToComicVine(seriesId, volumeId),
+    onSuccess: async (result) => {
+      if (result.success) {
+        setIsMatching(true);
+        try {
+          await onMatched();
+        } finally {
+          setIsMatching(false);
+        }
+      } else {
+        setMatchError(result.error || 'Failed to match series');
+      }
+    },
+    onError: (e) => {
+      setMatchError(e instanceof Error ? e.message : 'Failed to match series');
+    },
+  });
+
+  const handleMatch = useCallback(() => {
+    if (!selectedVolume) return;
+    setMatchError(null);
+    matchMutation.mutate(selectedVolume.comicVineId);
+  }, [selectedVolume, matchMutation]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  const isPending = matchMutation.isPending || isMatching;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal modal-large" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 className="modal-title">Match to ComicVine</h2>
+          <button className="btn btn-icon" onClick={onClose}>
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px', minHeight: '400px' }}>
+          <div style={{ 
+            background: 'var(--bg-secondary)', 
+            padding: '12px 16px', 
+            borderRadius: 'var(--radius-md)', 
+            border: '1px solid var(--border-color)'
+          }}>
+            <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>
+              {seriesTitle}
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Search ComicVine to find the matching volume
+            </div>
+          </div>
+
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <div style={{ position: 'relative' }}>
+              <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              <input
+                type="text"
+                className="input"
+                placeholder="Search ComicVine..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                autoFocus
+                style={{ paddingLeft: '40px' }}
+              />
+              {isSearching && (
+                <Loader2 size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--accent-primary)' }} className="spinning" />
+              )}
+            </div>
+          </div>
+
+          {matchError && (
+            <div className="alert alert-danger" style={{ padding: '10px 14px' }}>
+              {matchError}
+            </div>
+          )}
+
+          <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+            {sortedResults.length > 0 ? (
+              <div className="match-results-list">
+                {sortedResults.map((candidate) => (
+                  <div
+                    key={candidate.comicVineId}
+                    className={`match-result-item ${selectedVolume?.comicVineId === candidate.comicVineId ? 'selected' : ''}`}
+                    onClick={() => setSelectedVolume(candidate)}
+                    style={{
+                      display: 'flex',
+                      gap: '12px',
+                      padding: '12px',
+                      borderRadius: 'var(--radius-sm)',
+                      cursor: 'pointer',
+                      border: selectedVolume?.comicVineId === candidate.comicVineId 
+                        ? '2px solid var(--accent-primary)' 
+                        : '1px solid var(--border-color)',
+                      background: selectedVolume?.comicVineId === candidate.comicVineId 
+                        ? 'var(--bg-tertiary)' 
+                        : 'transparent',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    <img
+                      src={candidate.coverImageUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="60" height="90" viewBox="0 0 60 90"%3E%3Crect fill="%232a2d35" width="60" height="90"/%3E%3C/svg%3E'}
+                      alt={candidate.title}
+                      style={{ width: '60px', height: '90px', objectFit: 'cover', borderRadius: '4px' }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="60" height="90" viewBox="0 0 60 90"%3E%3Crect fill="%232a2d35" width="60" height="90"/%3E%3C/svg%3E';
+                      }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{candidate.title}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        {candidate.publisher && <span>{candidate.publisher} • </span>}
+                        {candidate.startYear && <span>{candidate.startYear}</span>}
+                        {candidate.issueCount && <span> • {candidate.issueCount} issues</span>}
+                      </div>
+                      {candidate.aliases && candidate.aliases.length > 0 && (
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', opacity: 0.7 }}>
+                          Also known as: {candidate.aliases.slice(0, 2).join(', ')}
+                        </div>
+                      )}
+                    </div>
+                    {selectedVolume?.comicVineId === candidate.comicVineId && (
+                      <Check size={20} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : debouncedQuery.length >= 2 && !isSearching ? (
+              <div className="empty-state" style={{ padding: '40px 20px' }}>
+                <Search size={48} style={{ opacity: 0.3 }} />
+                <div className="empty-state-title">No results found</div>
+                <div className="empty-state-text">Try a different search term.</div>
+              </div>
+            ) : (
+              <div className="empty-state" style={{ padding: '40px 20px' }}>
+                <Search size={48} style={{ opacity: 0.3 }} />
+                <div className="empty-state-title">Search ComicVine</div>
+                <div className="empty-state-text">Enter at least 2 characters to search.</div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="modal-footer">
+          <button className="btn" onClick={onClose} disabled={isPending}>
+            Cancel
+          </button>
+          <button 
+            className="btn btn-primary" 
+            onClick={handleMatch} 
+            disabled={!selectedVolume || isPending}
+          >
+            {isPending ? (
+              <>
+                <Loader2 size={16} className="spinning" />
+                Matching...
+              </>
+            ) : (
+              <>
+                <LinkIcon size={16} />
+                Match Series
+              </>
+            )}
           </button>
         </div>
       </div>

@@ -1,5 +1,47 @@
 # Worklog
 
+## Iteration 116 (2026-02-17)
+**EPIC 9: ComicVine Integration - UI Completion & Backlog Cleanup**
+
+### Summary
+Completed the remaining deferred UI items from EPIC 9.9 (Match to ComicVine and Refresh Metadata buttons) and fixed backlog inconsistencies where items were marked deferred but had actually been completed in later iterations (NZBGet support from EPIC 14.2/14.3).
+
+### Commits
+1. `chore(backlog): fix NZBGet and download client inconsistencies`
+2. `feat(ui): add Match to ComicVine button and modal for unmatched series`
+
+### Deliverables
+
+#### UI Enhancements (SeriesDetailPage.tsx)
+- **Match to ComicVine Button**: Shows on series detail header when series is not matched to ComicVine
+- **Match to ComicVine Modal**: 
+  - Pre-filled with series title
+  - Searches ComicVine volumes with debounce
+  - Displays results sorted by popularity (issue count)
+  - Shows cover image, publisher, year, and issue count
+  - Selection state with visual feedback
+  - Calls `matchSeriesToComicVine` API on confirm
+  - Refreshes series data after successful match
+- **Refresh Metadata Button**: Already existed (was incorrectly marked as deferred)
+
+#### API Client Updates (client.ts)
+- `matchSeriesToComicVine(seriesId, volumeId)` - Match existing series to ComicVine volume
+- `autoMatchSeries(seriesId)` - Auto-match using confidence scoring
+- `unmatchSeriesFromComicVine(seriesId)` - Remove ComicVine match from series
+
+#### Backlog Cleanup
+- EPIC 10.5: Updated NZBGet download client configuration to show ✅ (implemented in EPIC 14.2)
+- EPIC 10.6: Updated NZBGet configuration panel to show ✅ (implemented in EPIC 14.2)
+- EPIC 10.6: Updated unified download client modal to show all implementations ✅ (SABnzbd, NZBGet, qBittorrent, Transmission, Deluge)
+- EPIC 9.9: Marked "Match to ComicVine" and "Refresh Metadata" as completed
+
+### Files Changed
+- `ui/src/pages/SeriesDetailPage.tsx` - Added MatchToComicVineModal component
+- `ui/src/api/client.ts` - Added match/unmatch API methods
+- `docs/BACKLOG.md` - Fixed inconsistencies, marked items complete
+
+---
+
 ## Iteration 115 (2026-02-17)
 **EPIC 12: ComicVine API Optimization - Request Batching**
 
