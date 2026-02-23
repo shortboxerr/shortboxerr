@@ -11,6 +11,12 @@ public interface INzbDownloadClient
     /// The type of download client.
     /// </summary>
     NzbDownloadClientType ClientType { get; }
+    
+    /// <summary>
+    /// Indicates whether the client has minimum required configuration (host, API key, etc.).
+    /// Returns false if client settings are not properly configured.
+    /// </summary>
+    bool IsConfigured { get; }
 
     /// <summary>
     /// Tests connectivity to the download client.

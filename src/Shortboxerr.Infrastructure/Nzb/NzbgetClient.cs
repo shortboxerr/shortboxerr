@@ -36,6 +36,11 @@ public class NzbgetClient : INzbgetClient
     }
 
     public NzbDownloadClientType ClientType => NzbDownloadClientType.NZBGet;
+    
+    /// <summary>
+    /// Indicates whether the client has minimum required configuration.
+    /// </summary>
+    public bool IsConfigured => _settings.IsConfigured;
 
     /// <summary>
     /// Updates the client settings.

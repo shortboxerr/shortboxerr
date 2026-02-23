@@ -1,5 +1,44 @@
 # Worklog
 
+## Iteration 132 (2026-02-23)
+**EPIC 15.15 & 15.16: Download Client Error Log Noise & Graceful Degradation**
+
+### Summary
+Fixed excessive error logging when download clients are unavailable or not configured. Added `IsConfigured` property to download client interfaces and improved background service to skip processing when no clients are configured.
+
+### Commits
+1. `fix(nzb): reduce log noise for unconfigured/unreachable download clients`
+
+### Deliverables
+
+#### Download Client Improvements
+- Added `IsConfigured` property to `INzbDownloadClient` interface
+- Added `IsConfigured` to `SabnzbdSettings` and `NzbgetSettings`
+- Implemented `IsConfigured` in `SabnzbdClient` and `NzbgetClient`
+- Changed error logging: WARN for first connection failure, DEBUG for subsequent
+- Return empty results (not errors) when client not configured
+
+#### Background Service Graceful Degradation
+- `NzbImportBackgroundService` checks for configured clients before processing
+- Logs once at INFO level when no clients configured
+- Reduces polling to 5-minute intervals when no clients available
+- Resumes normal polling when client is added
+
+#### Unit Tests
+- 12 new tests for `IsConfigured` behavior
+- Tests for empty result when not configured
+
+### Files Changed
+- `src/Shortboxerr.Core/Nzb/INzbDownloadClient.cs` - Added `IsConfigured` to interface
+- `src/Shortboxerr.Core/Nzb/ISabnzbdClient.cs` - Added `IsConfigured` to `SabnzbdSettings`
+- `src/Shortboxerr.Core/Nzb/INzbgetClient.cs` - Added `IsConfigured` to `NzbgetSettings`
+- `src/Shortboxerr.Infrastructure/Nzb/SabnzbdClient.cs` - Implemented `IsConfigured`, improved logging
+- `src/Shortboxerr.Infrastructure/Nzb/NzbgetClient.cs` - Implemented `IsConfigured`
+- `src/Shortboxerr.Infrastructure/BackgroundServices/NzbImportBackgroundService.cs` - Skip when no clients configured
+- `tests/Shortboxerr.Tests/SabnzbdClientTests.cs` - Added 12 new tests
+
+---
+
 ## Iteration 131 (2026-02-23)
 **EPIC 11.7: Email Provider Settings UI**
 

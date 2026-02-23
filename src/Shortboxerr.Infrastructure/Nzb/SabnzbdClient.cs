@@ -18,6 +18,8 @@ public class SabnzbdClient : ISabnzbdClient
     private readonly HttpClient _httpClient;
     private readonly SabnzbdSettings _settings;
     private readonly ILogger<SabnzbdClient>? _logger;
+    
+    private bool _connectionFailureLogged;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -26,6 +28,11 @@ public class SabnzbdClient : ISabnzbdClient
     };
 
     public NzbDownloadClientType ClientType => NzbDownloadClientType.SABnzbd;
+    
+    /// <summary>
+    /// Indicates whether the client has minimum required configuration.
+    /// </summary>
+    public bool IsConfigured => _settings.IsConfigured;
 
     /// <summary>
     /// Primary constructor for dependency injection.
@@ -240,9 +247,15 @@ public class SabnzbdClient : ISabnzbdClient
 
     public async Task<IReadOnlyList<NzbDownloadStatus>> GetQueueAsync(CancellationToken cancellationToken = default)
     {
+        if (!IsConfigured)
+        {
+            return Array.Empty<NzbDownloadStatus>();
+        }
+        
         try
         {
             var response = await CallApiAsync<SabnzbdQueueResponse>("queue", cancellationToken: cancellationToken);
+            _connectionFailureLogged = false;
 
             if (response?.Queue?.Slots == null)
             {
@@ -251,15 +264,30 @@ public class SabnzbdClient : ISabnzbdClient
 
             return response.Queue.Slots.Select(MapQueueSlotToStatus).ToList();
         }
+        catch (HttpRequestException ex)
+        {
+            LogConnectionFailure("queue", ex);
+            return Array.Empty<NzbDownloadStatus>();
+        }
+        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        {
+            LogConnectionFailure("queue", ex);
+            return Array.Empty<NzbDownloadStatus>();
+        }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, "Error getting queue from SABnzbd");
+            _logger?.LogError(ex, "Unexpected error getting queue from SABnzbd at {Url}", _settings.BaseUrl);
             return Array.Empty<NzbDownloadStatus>();
         }
     }
 
     public async Task<IReadOnlyList<NzbDownloadStatus>> GetHistoryAsync(int limit = 50, CancellationToken cancellationToken = default)
     {
+        if (!IsConfigured)
+        {
+            return Array.Empty<NzbDownloadStatus>();
+        }
+        
         try
         {
             var parameters = new Dictionary<string, string>
@@ -268,6 +296,7 @@ public class SabnzbdClient : ISabnzbdClient
             };
 
             var response = await CallApiAsync<SabnzbdHistoryResponse>("history", parameters, cancellationToken);
+            _connectionFailureLogged = false;
 
             if (response?.History?.Slots == null)
             {
@@ -276,9 +305,19 @@ public class SabnzbdClient : ISabnzbdClient
 
             return response.History.Slots.Select(MapHistorySlotToStatus).ToList();
         }
+        catch (HttpRequestException ex)
+        {
+            LogConnectionFailure("history", ex);
+            return Array.Empty<NzbDownloadStatus>();
+        }
+        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        {
+            LogConnectionFailure("history", ex);
+            return Array.Empty<NzbDownloadStatus>();
+        }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, "Error getting history from SABnzbd");
+            _logger?.LogError(ex, "Unexpected error getting history from SABnzbd at {Url}", _settings.BaseUrl);
             return Array.Empty<NzbDownloadStatus>();
         }
     }
@@ -503,6 +542,21 @@ public class SabnzbdClient : ISabnzbdClient
     #endregion
 
     #region Helper Methods
+    
+    private void LogConnectionFailure(string operation, Exception ex)
+    {
+        if (!_connectionFailureLogged)
+        {
+            _logger?.LogWarning("SABnzbd unreachable at {Url} during {Operation}: {Message}", 
+                _settings.BaseUrl, operation, ex.Message);
+            _connectionFailureLogged = true;
+        }
+        else
+        {
+            _logger?.LogDebug("SABnzbd still unreachable at {Url} during {Operation}", 
+                _settings.BaseUrl, operation);
+        }
+    }
 
     private string BuildApiUrl()
     {

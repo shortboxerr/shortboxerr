@@ -2,32 +2,40 @@
 
 ## Summary
 
-Iteration 131 completed: Added Email Provider Settings UI to the Notifications settings tab, completing the email notifications feature.
+Iteration 132 completed: Fixed download client error log noise and added graceful degradation for background services when no clients are configured.
 
-## Recent Iterations (127-131)
+## Recent Iterations (128-132)
 
 | Iteration | Feature | Status |
 |-----------|---------|--------|
-| 127 | Email Notifications (SMTP) Backend | ✅ |
 | 128 | Default User-Agent Header | ✅ |
 | 129 | SabnzbdClient DI Fix & User-Agent Format | ✅ |
 | 130 | EF Core Query Splitting | ✅ |
 | 131 | Email Provider Settings UI | ✅ |
+| 132 | Download Client Log Noise & Graceful Degradation | ✅ |
 
-## Iteration 131 Details
+## Iteration 132 Details
 
-### Feature Implemented
-Email Provider Settings UI - frontend components for managing SMTP email notification providers.
+### Issues Addressed
+1. **15.15 Download Client Error Log Noise** - SabnzbdClient logging at ERROR level every minute when unreachable
+2. **15.16 Background Service Graceful Degradation** - NzbImportBackgroundService polling when no client configured
 
 ### Changes Made
-1. Added TypeScript types for email providers in API client
-2. Added API methods for email provider CRUD operations
-3. Created `EmailProvidersSection` component for listing providers
-4. Created `EmailProviderModal` component for add/edit with full SMTP configuration
+1. Added `IsConfigured` property to `INzbDownloadClient` interface
+2. Implemented smart logging: WARN on first failure, DEBUG on subsequent
+3. Return empty results when client not configured (no errors)
+4. Background service checks for configured clients before processing
+5. Reduced polling interval to 5 minutes when no clients configured
+6. 12 new unit tests for configuration checking
 
 ### Files Changed
-- `ui/src/api/client.ts` - Email provider types and API methods
-- `ui/src/pages/SettingsPage.tsx` - EmailProvidersSection and EmailProviderModal components
+- `src/Shortboxerr.Core/Nzb/INzbDownloadClient.cs`
+- `src/Shortboxerr.Core/Nzb/ISabnzbdClient.cs`
+- `src/Shortboxerr.Core/Nzb/INzbgetClient.cs`
+- `src/Shortboxerr.Infrastructure/Nzb/SabnzbdClient.cs`
+- `src/Shortboxerr.Infrastructure/Nzb/NzbgetClient.cs`
+- `src/Shortboxerr.Infrastructure/BackgroundServices/NzbImportBackgroundService.cs`
+- `tests/Shortboxerr.Tests/SabnzbdClientTests.cs`
 
 ## Server Configuration
 
@@ -43,6 +51,8 @@ Email Provider Settings UI - frontend components for managing SMTP email notific
 | 15.12 SabnzbdClient Constructor | ✅ | 129 |
 | 15.13 User-Agent Format | ✅ | 129 |
 | 15.14 EF Core Query Splitting | ✅ | 130 |
+| 15.15 Download Client Log Noise | ✅ | 132 |
+| 15.16 Background Service Graceful Degradation | ✅ | 132 |
 
 ## Remaining Backlog Items
 
@@ -56,12 +66,13 @@ Email Provider Settings UI - frontend components for managing SMTP email notific
 ### Future Features
 - EPIC 11.4: Pushover/Pushbullet notifications
 - EPIC 16: E2E Testing Infrastructure
+- Download client health check endpoint (deferred from 15.16)
 
 ## Validation
 
-- [x] Frontend compiles without errors
-- [x] Email provider types and API methods added
-- [x] EmailProvidersSection and EmailProviderModal components added
-- [x] Both servers running (5000 and 8585)
+- [x] Build succeeds (24 warnings, 0 errors)
+- [x] All 34 SabnzbdClient tests passing (12 new)
+- [x] IsConfigured property on download clients
+- [x] Background service skips when no clients configured
 - [x] BACKLOG.md updated
 - [x] WORKLOG.md updated

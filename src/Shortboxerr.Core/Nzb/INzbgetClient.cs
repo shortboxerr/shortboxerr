@@ -132,6 +132,11 @@ public class NzbgetSettings
     /// Gets the JSON-RPC endpoint URL with authentication.
     /// </summary>
     public string JsonRpcUrl => $"{BaseUrl}/{Username}:{Password}/jsonrpc";
+    
+    /// <summary>
+    /// Indicates whether the client has minimum required configuration.
+    /// </summary>
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(Host) && !string.IsNullOrWhiteSpace(Username) && !string.IsNullOrWhiteSpace(Password);
 }
 
 /// <summary>

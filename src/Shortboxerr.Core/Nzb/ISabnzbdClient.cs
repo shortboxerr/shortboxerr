@@ -114,6 +114,11 @@ public class SabnzbdSettings
             return $"{protocol}://{Host}";
         }
     }
+    
+    /// <summary>
+    /// Indicates whether the client has minimum required configuration.
+    /// </summary>
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(Host) && !string.IsNullOrWhiteSpace(ApiKey);
 }
 
 /// <summary>

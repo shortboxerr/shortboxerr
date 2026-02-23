@@ -506,6 +506,74 @@ public class SabnzbdClientTests
     }
 
     #endregion
+    
+    #region IsConfigured Tests
+    
+    [Fact]
+    public void IsConfigured_WithValidSettings_ReturnsTrue()
+    {
+        // Arrange
+        var client = CreateClient(HttpStatusCode.OK, "{}");
+        
+        // Act & Assert
+        Assert.True(client.IsConfigured);
+    }
+    
+    [Fact]
+    public void IsConfigured_WithEmptyHost_ReturnsFalse()
+    {
+        // Arrange
+        var settings = new SabnzbdSettings { Host = "", ApiKey = "test-key" };
+        var httpClient = CreateMockHttpClient(HttpStatusCode.OK, "{}");
+        var client = new SabnzbdClient(httpClient, settings, _loggerMock.Object);
+        
+        // Act & Assert
+        Assert.False(client.IsConfigured);
+    }
+    
+    [Fact]
+    public void IsConfigured_WithEmptyApiKey_ReturnsFalse()
+    {
+        // Arrange
+        var settings = new SabnzbdSettings { Host = "localhost", ApiKey = "" };
+        var httpClient = CreateMockHttpClient(HttpStatusCode.OK, "{}");
+        var client = new SabnzbdClient(httpClient, settings, _loggerMock.Object);
+        
+        // Act & Assert
+        Assert.False(client.IsConfigured);
+    }
+    
+    [Fact]
+    public async Task GetQueueAsync_WhenNotConfigured_ReturnsEmptyList()
+    {
+        // Arrange
+        var settings = new SabnzbdSettings { Host = "", ApiKey = "" };
+        var httpClient = CreateMockHttpClient(HttpStatusCode.OK, "{}");
+        var client = new SabnzbdClient(httpClient, settings, _loggerMock.Object);
+        
+        // Act
+        var result = await client.GetQueueAsync();
+        
+        // Assert
+        Assert.Empty(result);
+    }
+    
+    [Fact]
+    public async Task GetHistoryAsync_WhenNotConfigured_ReturnsEmptyList()
+    {
+        // Arrange
+        var settings = new SabnzbdSettings { Host = "", ApiKey = "" };
+        var httpClient = CreateMockHttpClient(HttpStatusCode.OK, "{}");
+        var client = new SabnzbdClient(httpClient, settings, _loggerMock.Object);
+        
+        // Act
+        var result = await client.GetHistoryAsync();
+        
+        // Assert
+        Assert.Empty(result);
+    }
+    
+    #endregion
 }
 
 /// <summary>
@@ -610,5 +678,51 @@ public class SabnzbdSettingsTests
         Assert.Equal("https://sabnzbd.local:9091", settings.BaseUrl);
     }
 
+    #endregion
+    
+    #region IsConfigured Tests
+    
+    [Fact]
+    public void IsConfigured_WithHostAndApiKey_ReturnsTrue()
+    {
+        var settings = new SabnzbdSettings { Host = "localhost", ApiKey = "test-key" };
+        Assert.True(settings.IsConfigured);
+    }
+    
+    [Fact]
+    public void IsConfigured_WithEmptyHost_ReturnsFalse()
+    {
+        var settings = new SabnzbdSettings { Host = "", ApiKey = "test-key" };
+        Assert.False(settings.IsConfigured);
+    }
+    
+    [Fact]
+    public void IsConfigured_WithWhitespaceHost_ReturnsFalse()
+    {
+        var settings = new SabnzbdSettings { Host = "   ", ApiKey = "test-key" };
+        Assert.False(settings.IsConfigured);
+    }
+    
+    [Fact]
+    public void IsConfigured_WithEmptyApiKey_ReturnsFalse()
+    {
+        var settings = new SabnzbdSettings { Host = "localhost", ApiKey = "" };
+        Assert.False(settings.IsConfigured);
+    }
+    
+    [Fact]
+    public void IsConfigured_WithWhitespaceApiKey_ReturnsFalse()
+    {
+        var settings = new SabnzbdSettings { Host = "localhost", ApiKey = "   " };
+        Assert.False(settings.IsConfigured);
+    }
+    
+    [Fact]
+    public void IsConfigured_WithBothEmpty_ReturnsFalse()
+    {
+        var settings = new SabnzbdSettings { Host = "", ApiKey = "" };
+        Assert.False(settings.IsConfigured);
+    }
+    
     #endregion
 }

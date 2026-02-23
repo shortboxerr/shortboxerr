@@ -17,6 +17,7 @@ public class NzbImportBackgroundService : BackgroundService
     
     // Default check interval (can be overridden via settings)
     private TimeSpan _checkInterval = TimeSpan.FromMinutes(1);
+    private TimeSpan _noClientCheckInterval = TimeSpan.FromMinutes(5);
     
     // Settings keys
     private const string EnabledSettingKey = "nzb_import_enabled";
@@ -27,6 +28,7 @@ public class NzbImportBackgroundService : BackgroundService
     
     private int _consecutiveErrors = 0;
     private const int MaxConsecutiveErrors = 5;
+    private bool _noClientWarningLogged;
     
     public NzbImportBackgroundService(
         IServiceProvider services,
@@ -84,6 +86,34 @@ public class NzbImportBackgroundService : BackgroundService
         {
             _logger.LogDebug("NZB import processing is disabled");
             return;
+        }
+        
+        // Check if any download client is configured
+        var downloadClients = scope.ServiceProvider.GetServices<INzbDownloadClient>();
+        var configuredClients = downloadClients.Where(c => c.IsConfigured).ToList();
+        
+        if (configuredClients.Count == 0)
+        {
+            if (!_noClientWarningLogged)
+            {
+                _logger.LogInformation("No download clients configured, skipping import check (will check again in {Interval} minutes)", 
+                    _noClientCheckInterval.TotalMinutes);
+                _noClientWarningLogged = true;
+            }
+            else
+            {
+                _logger.LogDebug("No download clients configured, skipping import check");
+            }
+            
+            _checkInterval = _noClientCheckInterval;
+            return;
+        }
+        
+        // Reset the warning flag if we have clients now
+        if (_noClientWarningLogged)
+        {
+            _logger.LogInformation("Download client now configured, resuming normal import checks");
+            _noClientWarningLogged = false;
         }
         
         // Get interval setting
