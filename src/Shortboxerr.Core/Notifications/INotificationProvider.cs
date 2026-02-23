@@ -304,3 +304,84 @@ public class EmailProviderSettings : NotificationProviderSettings
     /// </summary>
     public bool UseHtml { get; set; } = true;
 }
+
+/// <summary>
+/// Pushover-specific provider settings.
+/// </summary>
+public class PushoverProviderSettings : NotificationProviderSettings
+{
+    public PushoverProviderSettings()
+    {
+        ProviderType = "Pushover";
+    }
+    
+    /// <summary>
+    /// Pushover API token (from creating an application at pushover.net).
+    /// </summary>
+    public string ApiToken { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Pushover user key (or group key for group notifications).
+    /// </summary>
+    public string UserKey { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Optional comma-separated device names to send to specific devices.
+    /// Leave empty to send to all devices.
+    /// </summary>
+    public string? Devices { get; set; }
+    
+    /// <summary>
+    /// Notification priority (-2 to 2).
+    /// -2: Lowest (no sound/vibration), -1: Low (no sound), 0: Normal, 1: High, 2: Emergency (requires acknowledgment).
+    /// </summary>
+    public int Priority { get; set; } = 0;
+    
+    /// <summary>
+    /// Notification sound (e.g., "pushover", "bike", "bugle", "cashregister", etc.).
+    /// See https://pushover.net/api#sounds for full list.
+    /// </summary>
+    public string? Sound { get; set; }
+    
+    /// <summary>
+    /// Retry interval in seconds for emergency priority (priority=2). Minimum 30 seconds.
+    /// </summary>
+    public int RetrySeconds { get; set; } = 60;
+    
+    /// <summary>
+    /// How long to retry emergency notifications before giving up (in seconds). Maximum 10800 (3 hours).
+    /// </summary>
+    public int ExpireSeconds { get; set; } = 3600;
+}
+
+/// <summary>
+/// Pushbullet-specific provider settings.
+/// </summary>
+public class PushbulletProviderSettings : NotificationProviderSettings
+{
+    public PushbulletProviderSettings()
+    {
+        ProviderType = "Pushbullet";
+    }
+    
+    /// <summary>
+    /// Pushbullet API access token (from Settings > Access Tokens at pushbullet.com).
+    /// </summary>
+    public string AccessToken { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Optional device identifier to send to a specific device.
+    /// Leave empty to send to all devices.
+    /// </summary>
+    public string? DeviceId { get; set; }
+    
+    /// <summary>
+    /// Optional channel tag to send to a Pushbullet channel.
+    /// </summary>
+    public string? ChannelTag { get; set; }
+    
+    /// <summary>
+    /// Optional email address to send notification to another Pushbullet user.
+    /// </summary>
+    public string? SendToEmail { get; set; }
+}

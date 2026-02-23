@@ -621,6 +621,456 @@ public static class NotificationEndpoints
 
         #endregion
 
+        #region Pushover Providers
+
+        // GET /api/v1/notifications/pushover-providers - get all pushover providers
+        group.MapGet("/pushover-providers", async (
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var providers = await settingsService.GetAsync<List<PushoverProviderSettings>>(
+                "pushover_notification_providers", 
+                new List<PushoverProviderSettings>(), 
+                cancellationToken) ?? [];
+            return Results.Ok(providers);
+        })
+        .WithName("GetPushoverProviders")
+        .WithDescription("Gets all configured Pushover notification providers")
+        .Produces<List<PushoverProviderSettings>>(200);
+
+        // GET /api/v1/notifications/pushover-providers/{id}
+        group.MapGet("/pushover-providers/{id}", async (
+            string id,
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var providers = await settingsService.GetAsync<List<PushoverProviderSettings>>(
+                "pushover_notification_providers",
+                new List<PushoverProviderSettings>(),
+                cancellationToken) ?? [];
+            var provider = providers.FirstOrDefault(p => p.Id == id);
+            return provider != null 
+                ? Results.Ok(provider) 
+                : Results.NotFound(new { Error = "Pushover provider not found" });
+        })
+        .WithName("GetPushoverProvider")
+        .WithDescription("Gets a specific Pushover provider by ID")
+        .Produces<PushoverProviderSettings>(200)
+        .Produces(404);
+
+        // POST /api/v1/notifications/pushover-providers
+        group.MapPost("/pushover-providers", async (
+            [FromBody] PushoverProviderSettings provider,
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(provider.Name))
+            {
+                return Results.BadRequest(new { Error = "Name is required" });
+            }
+            if (string.IsNullOrWhiteSpace(provider.ApiToken))
+            {
+                return Results.BadRequest(new { Error = "API Token is required" });
+            }
+            if (string.IsNullOrWhiteSpace(provider.UserKey))
+            {
+                return Results.BadRequest(new { Error = "User Key is required" });
+            }
+
+            if (string.IsNullOrEmpty(provider.Id))
+            {
+                provider.Id = Guid.NewGuid().ToString();
+            }
+
+            var providers = await settingsService.GetAsync<List<PushoverProviderSettings>>(
+                "pushover_notification_providers",
+                new List<PushoverProviderSettings>(),
+                cancellationToken) ?? [];
+
+            if (providers.Any(p => p.Name.Equals(provider.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                return Results.Conflict(new { Error = $"A Pushover provider with name '{provider.Name}' already exists" });
+            }
+
+            providers.Add(provider);
+            await settingsService.SetAsync("pushover_notification_providers", providers, cancellationToken);
+
+            return Results.Created($"/api/v1/notifications/pushover-providers/{provider.Id}", provider);
+        })
+        .WithName("AddPushoverProvider")
+        .WithDescription("Adds a new Pushover notification provider")
+        .Produces<PushoverProviderSettings>(201)
+        .Produces(400)
+        .Produces(409);
+
+        // PUT /api/v1/notifications/pushover-providers/{id}
+        group.MapPut("/pushover-providers/{id}", async (
+            string id,
+            [FromBody] PushoverProviderSettings provider,
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(provider.Name))
+            {
+                return Results.BadRequest(new { Error = "Name is required" });
+            }
+            if (string.IsNullOrWhiteSpace(provider.ApiToken))
+            {
+                return Results.BadRequest(new { Error = "API Token is required" });
+            }
+            if (string.IsNullOrWhiteSpace(provider.UserKey))
+            {
+                return Results.BadRequest(new { Error = "User Key is required" });
+            }
+
+            var providers = await settingsService.GetAsync<List<PushoverProviderSettings>>(
+                "pushover_notification_providers",
+                new List<PushoverProviderSettings>(),
+                cancellationToken) ?? [];
+
+            var existingIndex = providers.FindIndex(p => p.Id == id);
+            if (existingIndex == -1)
+            {
+                return Results.NotFound(new { Error = "Pushover provider not found" });
+            }
+
+            if (providers.Any(p => p.Id != id && p.Name.Equals(provider.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                return Results.Conflict(new { Error = $"A Pushover provider with name '{provider.Name}' already exists" });
+            }
+
+            provider.Id = id;
+            providers[existingIndex] = provider;
+            await settingsService.SetAsync("pushover_notification_providers", providers, cancellationToken);
+
+            return Results.Ok(provider);
+        })
+        .WithName("UpdatePushoverProvider")
+        .WithDescription("Updates an existing Pushover notification provider")
+        .Produces<PushoverProviderSettings>(200)
+        .Produces(400)
+        .Produces(404)
+        .Produces(409);
+
+        // DELETE /api/v1/notifications/pushover-providers/{id}
+        group.MapDelete("/pushover-providers/{id}", async (
+            string id,
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var providers = await settingsService.GetAsync<List<PushoverProviderSettings>>(
+                "pushover_notification_providers",
+                new List<PushoverProviderSettings>(),
+                cancellationToken) ?? [];
+
+            var provider = providers.FirstOrDefault(p => p.Id == id);
+            if (provider == null)
+            {
+                return Results.NotFound(new { Error = "Pushover provider not found" });
+            }
+
+            providers.Remove(provider);
+            await settingsService.SetAsync("pushover_notification_providers", providers, cancellationToken);
+
+            return Results.NoContent();
+        })
+        .WithName("DeletePushoverProvider")
+        .WithDescription("Deletes a Pushover notification provider")
+        .Produces(204)
+        .Produces(404);
+
+        // POST /api/v1/notifications/pushover-providers/{id}/test
+        group.MapPost("/pushover-providers/{id}/test", async (
+            string id,
+            [FromServices] ISettingsService settingsService,
+            [FromServices] IEnumerable<INotificationProvider> providers,
+            CancellationToken cancellationToken) =>
+        {
+            var allProviders = await settingsService.GetAsync<List<PushoverProviderSettings>>(
+                "pushover_notification_providers",
+                new List<PushoverProviderSettings>(),
+                cancellationToken) ?? [];
+
+            var provider = allProviders.FirstOrDefault(p => p.Id == id);
+            if (provider == null)
+            {
+                return Results.NotFound(new { Error = "Pushover provider not found" });
+            }
+
+            var pushoverProvider = providers.FirstOrDefault(p => p.ProviderType == "Pushover");
+            if (pushoverProvider == null)
+            {
+                return Results.StatusCode(500);
+            }
+
+            var result = await pushoverProvider.TestAsync(provider, cancellationToken);
+            return Results.Ok(new PushTestResponse
+            {
+                Success = result.Success,
+                Message = result.Message,
+                Latency = result.Latency
+            });
+        })
+        .WithName("TestPushoverProvider")
+        .WithDescription("Tests a Pushover notification provider")
+        .Produces<PushTestResponse>(200)
+        .Produces(404);
+
+        // POST /api/v1/notifications/pushover-providers/test
+        group.MapPost("/pushover-providers/test", async (
+            [FromBody] PushoverProviderSettings provider,
+            [FromServices] IEnumerable<INotificationProvider> providers,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(provider.ApiToken))
+            {
+                return Results.BadRequest(new { Error = "API Token is required" });
+            }
+            if (string.IsNullOrWhiteSpace(provider.UserKey))
+            {
+                return Results.BadRequest(new { Error = "User Key is required" });
+            }
+
+            var pushoverProvider = providers.FirstOrDefault(p => p.ProviderType == "Pushover");
+            if (pushoverProvider == null)
+            {
+                return Results.StatusCode(500);
+            }
+
+            var result = await pushoverProvider.TestAsync(provider, cancellationToken);
+            return Results.Ok(new PushTestResponse
+            {
+                Success = result.Success,
+                Message = result.Message,
+                Latency = result.Latency
+            });
+        })
+        .WithName("TestPushoverProviderSettings")
+        .WithDescription("Tests Pushover notification settings without saving")
+        .Produces<PushTestResponse>(200)
+        .Produces(400);
+
+        #endregion
+
+        #region Pushbullet Providers
+
+        // GET /api/v1/notifications/pushbullet-providers
+        group.MapGet("/pushbullet-providers", async (
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var providers = await settingsService.GetAsync<List<PushbulletProviderSettings>>(
+                "pushbullet_notification_providers", 
+                new List<PushbulletProviderSettings>(), 
+                cancellationToken) ?? [];
+            return Results.Ok(providers);
+        })
+        .WithName("GetPushbulletProviders")
+        .WithDescription("Gets all configured Pushbullet notification providers")
+        .Produces<List<PushbulletProviderSettings>>(200);
+
+        // GET /api/v1/notifications/pushbullet-providers/{id}
+        group.MapGet("/pushbullet-providers/{id}", async (
+            string id,
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var providers = await settingsService.GetAsync<List<PushbulletProviderSettings>>(
+                "pushbullet_notification_providers",
+                new List<PushbulletProviderSettings>(),
+                cancellationToken) ?? [];
+            var provider = providers.FirstOrDefault(p => p.Id == id);
+            return provider != null 
+                ? Results.Ok(provider) 
+                : Results.NotFound(new { Error = "Pushbullet provider not found" });
+        })
+        .WithName("GetPushbulletProvider")
+        .WithDescription("Gets a specific Pushbullet provider by ID")
+        .Produces<PushbulletProviderSettings>(200)
+        .Produces(404);
+
+        // POST /api/v1/notifications/pushbullet-providers
+        group.MapPost("/pushbullet-providers", async (
+            [FromBody] PushbulletProviderSettings provider,
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(provider.Name))
+            {
+                return Results.BadRequest(new { Error = "Name is required" });
+            }
+            if (string.IsNullOrWhiteSpace(provider.AccessToken))
+            {
+                return Results.BadRequest(new { Error = "Access Token is required" });
+            }
+
+            if (string.IsNullOrEmpty(provider.Id))
+            {
+                provider.Id = Guid.NewGuid().ToString();
+            }
+
+            var providers = await settingsService.GetAsync<List<PushbulletProviderSettings>>(
+                "pushbullet_notification_providers",
+                new List<PushbulletProviderSettings>(),
+                cancellationToken) ?? [];
+
+            if (providers.Any(p => p.Name.Equals(provider.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                return Results.Conflict(new { Error = $"A Pushbullet provider with name '{provider.Name}' already exists" });
+            }
+
+            providers.Add(provider);
+            await settingsService.SetAsync("pushbullet_notification_providers", providers, cancellationToken);
+
+            return Results.Created($"/api/v1/notifications/pushbullet-providers/{provider.Id}", provider);
+        })
+        .WithName("AddPushbulletProvider")
+        .WithDescription("Adds a new Pushbullet notification provider")
+        .Produces<PushbulletProviderSettings>(201)
+        .Produces(400)
+        .Produces(409);
+
+        // PUT /api/v1/notifications/pushbullet-providers/{id}
+        group.MapPut("/pushbullet-providers/{id}", async (
+            string id,
+            [FromBody] PushbulletProviderSettings provider,
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(provider.Name))
+            {
+                return Results.BadRequest(new { Error = "Name is required" });
+            }
+            if (string.IsNullOrWhiteSpace(provider.AccessToken))
+            {
+                return Results.BadRequest(new { Error = "Access Token is required" });
+            }
+
+            var providers = await settingsService.GetAsync<List<PushbulletProviderSettings>>(
+                "pushbullet_notification_providers",
+                new List<PushbulletProviderSettings>(),
+                cancellationToken) ?? [];
+
+            var existingIndex = providers.FindIndex(p => p.Id == id);
+            if (existingIndex == -1)
+            {
+                return Results.NotFound(new { Error = "Pushbullet provider not found" });
+            }
+
+            if (providers.Any(p => p.Id != id && p.Name.Equals(provider.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                return Results.Conflict(new { Error = $"A Pushbullet provider with name '{provider.Name}' already exists" });
+            }
+
+            provider.Id = id;
+            providers[existingIndex] = provider;
+            await settingsService.SetAsync("pushbullet_notification_providers", providers, cancellationToken);
+
+            return Results.Ok(provider);
+        })
+        .WithName("UpdatePushbulletProvider")
+        .WithDescription("Updates an existing Pushbullet notification provider")
+        .Produces<PushbulletProviderSettings>(200)
+        .Produces(400)
+        .Produces(404)
+        .Produces(409);
+
+        // DELETE /api/v1/notifications/pushbullet-providers/{id}
+        group.MapDelete("/pushbullet-providers/{id}", async (
+            string id,
+            [FromServices] ISettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var providers = await settingsService.GetAsync<List<PushbulletProviderSettings>>(
+                "pushbullet_notification_providers",
+                new List<PushbulletProviderSettings>(),
+                cancellationToken) ?? [];
+
+            var provider = providers.FirstOrDefault(p => p.Id == id);
+            if (provider == null)
+            {
+                return Results.NotFound(new { Error = "Pushbullet provider not found" });
+            }
+
+            providers.Remove(provider);
+            await settingsService.SetAsync("pushbullet_notification_providers", providers, cancellationToken);
+
+            return Results.NoContent();
+        })
+        .WithName("DeletePushbulletProvider")
+        .WithDescription("Deletes a Pushbullet notification provider")
+        .Produces(204)
+        .Produces(404);
+
+        // POST /api/v1/notifications/pushbullet-providers/{id}/test
+        group.MapPost("/pushbullet-providers/{id}/test", async (
+            string id,
+            [FromServices] ISettingsService settingsService,
+            [FromServices] IEnumerable<INotificationProvider> providers,
+            CancellationToken cancellationToken) =>
+        {
+            var allProviders = await settingsService.GetAsync<List<PushbulletProviderSettings>>(
+                "pushbullet_notification_providers",
+                new List<PushbulletProviderSettings>(),
+                cancellationToken) ?? [];
+
+            var provider = allProviders.FirstOrDefault(p => p.Id == id);
+            if (provider == null)
+            {
+                return Results.NotFound(new { Error = "Pushbullet provider not found" });
+            }
+
+            var pushbulletProvider = providers.FirstOrDefault(p => p.ProviderType == "Pushbullet");
+            if (pushbulletProvider == null)
+            {
+                return Results.StatusCode(500);
+            }
+
+            var result = await pushbulletProvider.TestAsync(provider, cancellationToken);
+            return Results.Ok(new PushTestResponse
+            {
+                Success = result.Success,
+                Message = result.Message,
+                Latency = result.Latency
+            });
+        })
+        .WithName("TestPushbulletProvider")
+        .WithDescription("Tests a Pushbullet notification provider")
+        .Produces<PushTestResponse>(200)
+        .Produces(404);
+
+        // POST /api/v1/notifications/pushbullet-providers/test
+        group.MapPost("/pushbullet-providers/test", async (
+            [FromBody] PushbulletProviderSettings provider,
+            [FromServices] IEnumerable<INotificationProvider> providers,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(provider.AccessToken))
+            {
+                return Results.BadRequest(new { Error = "Access Token is required" });
+            }
+
+            var pushbulletProvider = providers.FirstOrDefault(p => p.ProviderType == "Pushbullet");
+            if (pushbulletProvider == null)
+            {
+                return Results.StatusCode(500);
+            }
+
+            var result = await pushbulletProvider.TestAsync(provider, cancellationToken);
+            return Results.Ok(new PushTestResponse
+            {
+                Success = result.Success,
+                Message = result.Message,
+                Latency = result.Latency
+            });
+        })
+        .WithName("TestPushbulletProviderSettings")
+        .WithDescription("Tests Pushbullet notification settings without saving")
+        .Produces<PushTestResponse>(200)
+        .Produces(400);
+
+        #endregion
+
         #region Test Endpoints (for development/testing)
 
         // POST /api/v1/notifications/test - create a test notification
@@ -666,6 +1116,16 @@ public class WebhookTestResponse
 /// Response from testing an email provider.
 /// </summary>
 public class EmailTestResponse
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public TimeSpan? Latency { get; set; }
+}
+
+/// <summary>
+/// Response from testing a push notification provider (Pushover/Pushbullet).
+/// </summary>
+public class PushTestResponse
 {
     public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;

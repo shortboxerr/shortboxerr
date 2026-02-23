@@ -194,6 +194,18 @@ public static class DependencyInjection
             var logger = sp.GetService<ILogger<EmailNotificationProvider>>();
             return new EmailNotificationProvider(logger);
         });
+        services.AddSingleton<INotificationProvider, PushoverNotificationProvider>(sp =>
+        {
+            var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+            var logger = sp.GetService<ILogger<PushoverNotificationProvider>>();
+            return new PushoverNotificationProvider(httpClientFactory.CreateClient("Pushover"), logger);
+        });
+        services.AddSingleton<INotificationProvider, PushbulletNotificationProvider>(sp =>
+        {
+            var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+            var logger = sp.GetService<ILogger<PushbulletNotificationProvider>>();
+            return new PushbulletNotificationProvider(httpClientFactory.CreateClient("Pushbullet"), logger);
+        });
 
         // Settings (can be overridden via configuration)
         services.Configure<DecisionEngineSettings>(options =>
