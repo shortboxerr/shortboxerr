@@ -14,6 +14,8 @@ import type {
   NzbIndexer, NzbIndexerRequest, NzbTestResult, NzbIndexerPreset,
   WebhookProviderSettings, WebhookProviderRequest, NotificationEventType,
   EmailProviderSettings, EmailProviderRequest,
+  PushoverProviderSettings, PushoverProviderRequest,
+  PushbulletProviderSettings, PushbulletProviderRequest,
   SearchSettings, PreferredQuality
 } from '../api/client';
 import { useTheme } from '../App';
@@ -4429,6 +4431,8 @@ function NotificationsSettings() {
       )}
 
       <EmailProvidersSection />
+      <PushoverProvidersSection />
+      <PushbulletProvidersSection />
     </>
   );
 }
@@ -5373,6 +5377,691 @@ function EmailProviderModal({
               disabled={!isValid || isLoading}
             >
               {isLoading ? 'Saving...' : (provider ? 'Save Changes' : 'Add Email Provider')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function PushoverProvidersSection() {
+  const queryClient = useQueryClient();
+  const [editingProvider, setEditingProvider] = useState<PushoverProviderSettings | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [testingId, setTestingId] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const { data: providers = [], isLoading } = useQuery({
+    queryKey: ['pushoverProviders'],
+    queryFn: api.getPushoverProviders,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: api.deletePushoverProvider,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pushoverProviders'] });
+    },
+  });
+
+  const addMutation = useMutation({
+    mutationFn: api.addPushoverProvider,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pushoverProviders'] });
+      setShowAddModal(false);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, provider }: { id: string; provider: PushoverProviderRequest }) =>
+      api.updatePushoverProvider(id, provider),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pushoverProviders'] });
+      setEditingProvider(null);
+    },
+  });
+
+  const handleTest = async (id: string) => {
+    setTestingId(id);
+    setTestResult(null);
+    try {
+      const result = await api.testPushoverProvider(id);
+      setTestResult({ success: result.success, message: result.message });
+    } catch {
+      setTestResult({ success: false, message: 'Test failed' });
+    } finally {
+      setTestingId(null);
+    }
+  };
+
+  const priorityLabels: Record<number, string> = {
+    [-2]: 'Lowest',
+    [-1]: 'Low',
+    [0]: 'Normal',
+    [1]: 'High',
+    [2]: 'Emergency',
+  };
+
+  return (
+    <>
+      <SettingsSection title="Pushover Notifications">
+        {isLoading ? (
+          <div style={{ padding: '20px', textAlign: 'center' }}>
+            <Loader2 className="spinning" size={24} />
+          </div>
+        ) : providers.length === 0 ? (
+          <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <p>No Pushover providers configured</p>
+            <button className="btn btn-primary" onClick={() => setShowAddModal(true)} style={{ marginTop: '12px' }}>
+              <Plus size={14} /> Add Pushover
+            </button>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+              <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>
+                <Plus size={14} /> Add Pushover
+              </button>
+            </div>
+            <div className="data-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {providers.map((p) => (
+                    <tr key={p.id}>
+                      <td>{p.name}</td>
+                      <td>{priorityLabels[p.priority] || 'Normal'}</td>
+                      <td>
+                        <span className={`status-badge ${p.enabled ? 'status-active' : 'status-inactive'}`}>
+                          {p.enabled ? 'Enabled' : 'Disabled'}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <button className="btn btn-icon btn-sm" onClick={() => handleTest(p.id)} disabled={testingId === p.id} title="Test">
+                            {testingId === p.id ? <Loader2 size={14} className="spinning" /> : <Play size={14} />}
+                          </button>
+                          <button className="btn btn-icon btn-sm" onClick={() => setEditingProvider(p)} title="Edit">
+                            <Edit size={14} />
+                          </button>
+                          <button className="btn btn-icon btn-sm btn-danger" onClick={() => deleteMutation.mutate(p.id)} title="Delete">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {testResult && (
+              <div style={{ marginTop: '12px', padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: testResult.success ? 'var(--bg-success)' : 'var(--bg-danger)', color: testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                {testResult.success ? <CheckCircle size={14} /> : <XCircle size={14} />}
+                {testResult.message}
+              </div>
+            )}
+          </>
+        )}
+      </SettingsSection>
+
+      {(showAddModal || editingProvider) && (
+        <PushoverProviderModal
+          provider={editingProvider}
+          onSave={(provider) => {
+            if (editingProvider) {
+              updateMutation.mutate({ id: editingProvider.id, provider });
+            } else {
+              addMutation.mutate(provider);
+            }
+          }}
+          onClose={() => {
+            setShowAddModal(false);
+            setEditingProvider(null);
+          }}
+          isLoading={addMutation.isPending || updateMutation.isPending}
+        />
+      )}
+    </>
+  );
+}
+
+function PushoverProviderModal({
+  provider,
+  onSave,
+  onClose,
+  isLoading,
+}: {
+  provider: PushoverProviderSettings | null;
+  onSave: (provider: PushoverProviderRequest) => void;
+  onClose: () => void;
+  isLoading: boolean;
+}) {
+  const [name, setName] = useState(provider?.name || '');
+  const [apiToken, setApiToken] = useState(provider?.apiToken || '');
+  const [userKey, setUserKey] = useState(provider?.userKey || '');
+  const [devices, setDevices] = useState(provider?.devices || '');
+  const [priority, setPriority] = useState(provider?.priority ?? 0);
+  const [sound, setSound] = useState(provider?.sound || '');
+  const [retrySeconds, setRetrySeconds] = useState(provider?.retrySeconds ?? 60);
+  const [expireSeconds, setExpireSeconds] = useState(provider?.expireSeconds ?? 3600);
+  const [enabled, setEnabled] = useState(provider?.enabled ?? true);
+  const [onEvents, setOnEvents] = useState<NotificationEventType[]>(provider?.onEvents || ['Grabbed', 'NewRelease']);
+  const [includeSeries, setIncludeSeries] = useState(provider?.includeSeries ?? true);
+  const [includeImages, setIncludeImages] = useState(provider?.includeImages ?? false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [testing, setTesting] = useState(false);
+  const [showApiToken, setShowApiToken] = useState(false);
+
+  const isValid = name.trim() && apiToken.trim() && userKey.trim();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isValid) return;
+    onSave({
+      name,
+      apiToken,
+      userKey,
+      devices: devices || undefined,
+      priority,
+      sound: sound || undefined,
+      retrySeconds,
+      expireSeconds,
+      enabled,
+      onEvents,
+      includeSeries,
+      includeImages,
+    });
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const result = await api.testPushoverProviderSettings({
+        name,
+        apiToken,
+        userKey,
+        devices: devices || undefined,
+        priority,
+      });
+      setTestResult({ success: result.success, message: result.message });
+    } catch {
+      setTestResult({ success: false, message: 'Test failed' });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const toggleEvent = (event: NotificationEventType) => {
+    setOnEvents((prev) =>
+      prev.includes(event) ? prev.filter((e) => e !== event) : [...prev, event]
+    );
+  };
+
+  const allEvents: NotificationEventType[] = ['Test', 'NewRelease', 'Grabbed', 'Imported', 'WeeklySummary', 'DownloadFailed', 'SeriesAdded', 'Health', 'Update'];
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+        <div className="modal-header">
+          <h3>{provider ? 'Edit Pushover Provider' : 'Add Pushover Provider'}</h3>
+          <button className="btn btn-icon" onClick={onClose}><X size={18} /></button>
+        </div>
+        <form onSubmit={handleSubmit} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Name *</label>
+            <input type="text" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="My Pushover" style={{ width: '100%' }} />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>API Token *</label>
+            <div style={{ position: 'relative' }}>
+              <input type={showApiToken ? 'text' : 'password'} className="input" value={apiToken} onChange={(e) => setApiToken(e.target.value)} placeholder="Your Pushover API Token" style={{ width: '100%', paddingRight: '36px' }} />
+              <button type="button" onClick={() => setShowApiToken(!showApiToken)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '4px' }}>
+                {showApiToken ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            <small style={{ color: 'var(--text-muted)' }}>Get from <a href="https://pushover.net/apps" target="_blank" rel="noopener noreferrer">pushover.net/apps</a></small>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>User Key *</label>
+            <input type="text" className="input" value={userKey} onChange={(e) => setUserKey(e.target.value)} placeholder="Your User Key" style={{ width: '100%' }} />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Priority</label>
+            <select className="input" value={priority} onChange={(e) => setPriority(Number(e.target.value))} style={{ width: '100%' }}>
+              <option value={-2}>Lowest (no alert)</option>
+              <option value={-1}>Low (no sound)</option>
+              <option value={0}>Normal</option>
+              <option value={1}>High</option>
+              <option value={2}>Emergency (repeat until acknowledged)</option>
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+              <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+              <span style={{ fontSize: '13px' }}>Enabled</span>
+            </label>
+          </div>
+
+          <button type="button" onClick={() => setShowAdvanced(!showAdvanced)} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', fontSize: '13px', textAlign: 'left', padding: 0 }}>
+            {showAdvanced ? '▼' : '▶'} Advanced Options
+          </button>
+
+          {showAdvanced && (
+            <>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Devices (optional)</label>
+                <input type="text" className="input" value={devices} onChange={(e) => setDevices(e.target.value)} placeholder="device1,device2" style={{ width: '100%' }} />
+                <small style={{ color: 'var(--text-muted)' }}>Leave empty to send to all devices</small>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Sound</label>
+                <select className="input" value={sound} onChange={(e) => setSound(e.target.value)} style={{ width: '100%' }}>
+                  <option value="">Default</option>
+                  <option value="pushover">Pushover</option>
+                  <option value="bike">Bike</option>
+                  <option value="bugle">Bugle</option>
+                  <option value="cashregister">Cash Register</option>
+                  <option value="classical">Classical</option>
+                  <option value="cosmic">Cosmic</option>
+                  <option value="falling">Falling</option>
+                  <option value="gamelan">Gamelan</option>
+                  <option value="incoming">Incoming</option>
+                  <option value="intermission">Intermission</option>
+                  <option value="magic">Magic</option>
+                  <option value="mechanical">Mechanical</option>
+                  <option value="pianobar">Piano Bar</option>
+                  <option value="siren">Siren</option>
+                  <option value="spacealarm">Space Alarm</option>
+                  <option value="tugboat">Tugboat</option>
+                  <option value="alien">Alien Alarm</option>
+                  <option value="climb">Climb</option>
+                  <option value="persistent">Persistent</option>
+                  <option value="echo">Echo</option>
+                  <option value="updown">Up Down</option>
+                  <option value="vibrate">Vibrate Only</option>
+                  <option value="none">None (silent)</option>
+                </select>
+              </div>
+
+              {priority === 2 && (
+                <>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Retry Interval (seconds)</label>
+                    <input type="number" className="input" value={retrySeconds} onChange={(e) => setRetrySeconds(Math.max(30, Number(e.target.value)))} min={30} style={{ width: '100%' }} />
+                    <small style={{ color: 'var(--text-muted)' }}>Minimum 30 seconds</small>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Expire After (seconds)</label>
+                    <input type="number" className="input" value={expireSeconds} onChange={(e) => setExpireSeconds(Math.min(10800, Number(e.target.value)))} max={10800} style={{ width: '100%' }} />
+                    <small style={{ color: 'var(--text-muted)' }}>Maximum 3 hours (10800 seconds)</small>
+                  </div>
+                </>
+              )}
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500 }}>Notification Events</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {allEvents.map((event) => (
+                    <label key={event} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '12px' }}>
+                      <input type="checkbox" checked={onEvents.includes(event)} onChange={() => toggleEvent(event)} />
+                      {event}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '12px' }}>
+                  <input type="checkbox" checked={includeSeries} onChange={(e) => setIncludeSeries(e.target.checked)} />
+                  Include series name
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '12px' }}>
+                  <input type="checkbox" checked={includeImages} onChange={(e) => setIncludeImages(e.target.checked)} />
+                  Include images
+                </label>
+              </div>
+            </>
+          )}
+
+          {testResult && (
+            <div style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: testResult.success ? 'var(--bg-success)' : 'var(--bg-danger)', color: testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+              {testResult.success ? <CheckCircle size={16} /> : <XCircle size={16} />}
+              {testResult.message}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            <button type="button" className="btn" onClick={handleTest} disabled={!apiToken.trim() || !userKey.trim() || testing}>
+              {testing ? <><RefreshCw size={14} className="spinning" /> Testing...</> : <><Play size={14} /> Test</>}
+            </button>
+            <button type="button" className="btn" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={!isValid || isLoading}>
+              {isLoading ? 'Saving...' : (provider ? 'Save Changes' : 'Add Pushover')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function PushbulletProvidersSection() {
+  const queryClient = useQueryClient();
+  const [editingProvider, setEditingProvider] = useState<PushbulletProviderSettings | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [testingId, setTestingId] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const { data: providers = [], isLoading } = useQuery({
+    queryKey: ['pushbulletProviders'],
+    queryFn: api.getPushbulletProviders,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: api.deletePushbulletProvider,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pushbulletProviders'] });
+    },
+  });
+
+  const addMutation = useMutation({
+    mutationFn: api.addPushbulletProvider,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pushbulletProviders'] });
+      setShowAddModal(false);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, provider }: { id: string; provider: PushbulletProviderRequest }) =>
+      api.updatePushbulletProvider(id, provider),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pushbulletProviders'] });
+      setEditingProvider(null);
+    },
+  });
+
+  const handleTest = async (id: string) => {
+    setTestingId(id);
+    setTestResult(null);
+    try {
+      const result = await api.testPushbulletProvider(id);
+      setTestResult({ success: result.success, message: result.message });
+    } catch {
+      setTestResult({ success: false, message: 'Test failed' });
+    } finally {
+      setTestingId(null);
+    }
+  };
+
+  return (
+    <>
+      <SettingsSection title="Pushbullet Notifications">
+        {isLoading ? (
+          <div style={{ padding: '20px', textAlign: 'center' }}>
+            <Loader2 className="spinning" size={24} />
+          </div>
+        ) : providers.length === 0 ? (
+          <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <p>No Pushbullet providers configured</p>
+            <button className="btn btn-primary" onClick={() => setShowAddModal(true)} style={{ marginTop: '12px' }}>
+              <Plus size={14} /> Add Pushbullet
+            </button>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+              <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>
+                <Plus size={14} /> Add Pushbullet
+              </button>
+            </div>
+            <div className="data-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Target</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {providers.map((p) => (
+                    <tr key={p.id}>
+                      <td>{p.name}</td>
+                      <td>{p.deviceId ? 'Device' : p.channelTag ? 'Channel' : p.sendToEmail ? 'Email' : 'All Devices'}</td>
+                      <td>
+                        <span className={`status-badge ${p.enabled ? 'status-active' : 'status-inactive'}`}>
+                          {p.enabled ? 'Enabled' : 'Disabled'}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <button className="btn btn-icon btn-sm" onClick={() => handleTest(p.id)} disabled={testingId === p.id} title="Test">
+                            {testingId === p.id ? <Loader2 size={14} className="spinning" /> : <Play size={14} />}
+                          </button>
+                          <button className="btn btn-icon btn-sm" onClick={() => setEditingProvider(p)} title="Edit">
+                            <Edit size={14} />
+                          </button>
+                          <button className="btn btn-icon btn-sm btn-danger" onClick={() => deleteMutation.mutate(p.id)} title="Delete">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {testResult && (
+              <div style={{ marginTop: '12px', padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: testResult.success ? 'var(--bg-success)' : 'var(--bg-danger)', color: testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                {testResult.success ? <CheckCircle size={14} /> : <XCircle size={14} />}
+                {testResult.message}
+              </div>
+            )}
+          </>
+        )}
+      </SettingsSection>
+
+      {(showAddModal || editingProvider) && (
+        <PushbulletProviderModal
+          provider={editingProvider}
+          onSave={(provider) => {
+            if (editingProvider) {
+              updateMutation.mutate({ id: editingProvider.id, provider });
+            } else {
+              addMutation.mutate(provider);
+            }
+          }}
+          onClose={() => {
+            setShowAddModal(false);
+            setEditingProvider(null);
+          }}
+          isLoading={addMutation.isPending || updateMutation.isPending}
+        />
+      )}
+    </>
+  );
+}
+
+function PushbulletProviderModal({
+  provider,
+  onSave,
+  onClose,
+  isLoading,
+}: {
+  provider: PushbulletProviderSettings | null;
+  onSave: (provider: PushbulletProviderRequest) => void;
+  onClose: () => void;
+  isLoading: boolean;
+}) {
+  const [name, setName] = useState(provider?.name || '');
+  const [accessToken, setAccessToken] = useState(provider?.accessToken || '');
+  const [deviceId, setDeviceId] = useState(provider?.deviceId || '');
+  const [channelTag, setChannelTag] = useState(provider?.channelTag || '');
+  const [sendToEmail, setSendToEmail] = useState(provider?.sendToEmail || '');
+  const [enabled, setEnabled] = useState(provider?.enabled ?? true);
+  const [onEvents, setOnEvents] = useState<NotificationEventType[]>(provider?.onEvents || ['Grabbed', 'NewRelease']);
+  const [includeSeries, setIncludeSeries] = useState(provider?.includeSeries ?? true);
+  const [includeImages, setIncludeImages] = useState(provider?.includeImages ?? false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [testing, setTesting] = useState(false);
+  const [showToken, setShowToken] = useState(false);
+
+  const isValid = name.trim() && accessToken.trim();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isValid) return;
+    onSave({
+      name,
+      accessToken,
+      deviceId: deviceId || undefined,
+      channelTag: channelTag || undefined,
+      sendToEmail: sendToEmail || undefined,
+      enabled,
+      onEvents,
+      includeSeries,
+      includeImages,
+    });
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const result = await api.testPushbulletProviderSettings({
+        name,
+        accessToken,
+        deviceId: deviceId || undefined,
+        channelTag: channelTag || undefined,
+        sendToEmail: sendToEmail || undefined,
+      });
+      setTestResult({ success: result.success, message: result.message });
+    } catch {
+      setTestResult({ success: false, message: 'Test failed' });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const toggleEvent = (event: NotificationEventType) => {
+    setOnEvents((prev) =>
+      prev.includes(event) ? prev.filter((e) => e !== event) : [...prev, event]
+    );
+  };
+
+  const allEvents: NotificationEventType[] = ['Test', 'NewRelease', 'Grabbed', 'Imported', 'WeeklySummary', 'DownloadFailed', 'SeriesAdded', 'Health', 'Update'];
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+        <div className="modal-header">
+          <h3>{provider ? 'Edit Pushbullet Provider' : 'Add Pushbullet Provider'}</h3>
+          <button className="btn btn-icon" onClick={onClose}><X size={18} /></button>
+        </div>
+        <form onSubmit={handleSubmit} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Name *</label>
+            <input type="text" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="My Pushbullet" style={{ width: '100%' }} />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Access Token *</label>
+            <div style={{ position: 'relative' }}>
+              <input type={showToken ? 'text' : 'password'} className="input" value={accessToken} onChange={(e) => setAccessToken(e.target.value)} placeholder="Your Pushbullet Access Token" style={{ width: '100%', paddingRight: '36px' }} />
+              <button type="button" onClick={() => setShowToken(!showToken)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '4px' }}>
+                {showToken ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            <small style={{ color: 'var(--text-muted)' }}>Get from <a href="https://www.pushbullet.com/#settings/account" target="_blank" rel="noopener noreferrer">Pushbullet Settings</a></small>
+          </div>
+
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+              <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+              <span style={{ fontSize: '13px' }}>Enabled</span>
+            </label>
+          </div>
+
+          <button type="button" onClick={() => setShowAdvanced(!showAdvanced)} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', fontSize: '13px', textAlign: 'left', padding: 0 }}>
+            {showAdvanced ? '▼' : '▶'} Advanced Options
+          </button>
+
+          {showAdvanced && (
+            <>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Device ID (optional)</label>
+                <input type="text" className="input" value={deviceId} onChange={(e) => setDeviceId(e.target.value)} placeholder="Device identifier" style={{ width: '100%' }} />
+                <small style={{ color: 'var(--text-muted)' }}>Leave empty to send to all devices</small>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Channel Tag (optional)</label>
+                <input type="text" className="input" value={channelTag} onChange={(e) => setChannelTag(e.target.value)} placeholder="Channel tag" style={{ width: '100%' }} />
+                <small style={{ color: 'var(--text-muted)' }}>Send to a Pushbullet channel</small>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Send to Email (optional)</label>
+                <input type="email" className="input" value={sendToEmail} onChange={(e) => setSendToEmail(e.target.value)} placeholder="user@example.com" style={{ width: '100%' }} />
+                <small style={{ color: 'var(--text-muted)' }}>Send to another Pushbullet user</small>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 500 }}>Notification Events</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {allEvents.map((event) => (
+                    <label key={event} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '12px' }}>
+                      <input type="checkbox" checked={onEvents.includes(event)} onChange={() => toggleEvent(event)} />
+                      {event}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '12px' }}>
+                  <input type="checkbox" checked={includeSeries} onChange={(e) => setIncludeSeries(e.target.checked)} />
+                  Include series name
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '12px' }}>
+                  <input type="checkbox" checked={includeImages} onChange={(e) => setIncludeImages(e.target.checked)} />
+                  Include images
+                </label>
+              </div>
+            </>
+          )}
+
+          {testResult && (
+            <div style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: testResult.success ? 'var(--bg-success)' : 'var(--bg-danger)', color: testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+              {testResult.success ? <CheckCircle size={16} /> : <XCircle size={16} />}
+              {testResult.message}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            <button type="button" className="btn" onClick={handleTest} disabled={!accessToken.trim() || testing}>
+              {testing ? <><RefreshCw size={14} className="spinning" /> Testing...</> : <><Play size={14} /> Test</>}
+            </button>
+            <button type="button" className="btn" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={!isValid || isLoading}>
+              {isLoading ? 'Saving...' : (provider ? 'Save Changes' : 'Add Pushbullet')}
             </button>
           </div>
         </form>

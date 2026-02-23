@@ -888,6 +888,72 @@ export interface EmailTestResult {
   latency?: string;
 }
 
+// Pushover Notification Provider Types
+export interface PushoverProviderSettings {
+  id: string;
+  name: string;
+  providerType: 'Pushover';
+  enabled: boolean;
+  onEvents: NotificationEventType[];
+  includeSeries: boolean;
+  includeImages: boolean;
+  apiToken: string;
+  userKey: string;
+  devices?: string;
+  priority: number;
+  sound?: string;
+  retrySeconds: number;
+  expireSeconds: number;
+}
+
+export interface PushoverProviderRequest {
+  name: string;
+  enabled?: boolean;
+  onEvents?: NotificationEventType[];
+  includeSeries?: boolean;
+  includeImages?: boolean;
+  apiToken: string;
+  userKey: string;
+  devices?: string;
+  priority?: number;
+  sound?: string;
+  retrySeconds?: number;
+  expireSeconds?: number;
+}
+
+export interface PushTestResult {
+  success: boolean;
+  message: string;
+  latency?: string;
+}
+
+// Pushbullet Notification Provider Types
+export interface PushbulletProviderSettings {
+  id: string;
+  name: string;
+  providerType: 'Pushbullet';
+  enabled: boolean;
+  onEvents: NotificationEventType[];
+  includeSeries: boolean;
+  includeImages: boolean;
+  accessToken: string;
+  deviceId?: string;
+  channelTag?: string;
+  sendToEmail?: string;
+}
+
+export interface PushbulletProviderRequest {
+  name: string;
+  enabled?: boolean;
+  onEvents?: NotificationEventType[];
+  includeSeries?: boolean;
+  includeImages?: boolean;
+  accessToken: string;
+  deviceId?: string;
+  channelTag?: string;
+  sendToEmail?: string;
+}
+
 export interface ProviderImplementation {
   name: string;
   displayName: string;
@@ -2495,6 +2561,102 @@ export const api = {
       body: JSON.stringify({
         ...settings,
         providerType: 'Email',
+      }),
+    });
+  },
+
+  // === Pushover Notification Providers ===
+  getPushoverProviders: async (): Promise<PushoverProviderSettings[]> => {
+    return fetchApi<PushoverProviderSettings[]>('/api/v1/notifications/pushover-providers');
+  },
+
+  getPushoverProvider: async (id: string): Promise<PushoverProviderSettings> => {
+    return fetchApi<PushoverProviderSettings>(`/api/v1/notifications/pushover-providers/${id}`);
+  },
+
+  addPushoverProvider: async (provider: PushoverProviderRequest): Promise<PushoverProviderSettings> => {
+    return fetchApi<PushoverProviderSettings>('/api/v1/notifications/pushover-providers', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...provider,
+        providerType: 'Pushover',
+      }),
+    });
+  },
+
+  updatePushoverProvider: async (id: string, provider: PushoverProviderRequest): Promise<PushoverProviderSettings> => {
+    return fetchApi<PushoverProviderSettings>(`/api/v1/notifications/pushover-providers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        ...provider,
+        id,
+        providerType: 'Pushover',
+      }),
+    });
+  },
+
+  deletePushoverProvider: async (id: string): Promise<void> => {
+    await fetchApi(`/api/v1/notifications/pushover-providers/${id}`, { method: 'DELETE' });
+  },
+
+  testPushoverProvider: async (id: string): Promise<PushTestResult> => {
+    return fetchApi<PushTestResult>(`/api/v1/notifications/pushover-providers/${id}/test`, { method: 'POST' });
+  },
+
+  testPushoverProviderSettings: async (settings: PushoverProviderRequest): Promise<PushTestResult> => {
+    return fetchApi<PushTestResult>('/api/v1/notifications/pushover-providers/test', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...settings,
+        providerType: 'Pushover',
+      }),
+    });
+  },
+
+  // === Pushbullet Notification Providers ===
+  getPushbulletProviders: async (): Promise<PushbulletProviderSettings[]> => {
+    return fetchApi<PushbulletProviderSettings[]>('/api/v1/notifications/pushbullet-providers');
+  },
+
+  getPushbulletProvider: async (id: string): Promise<PushbulletProviderSettings> => {
+    return fetchApi<PushbulletProviderSettings>(`/api/v1/notifications/pushbullet-providers/${id}`);
+  },
+
+  addPushbulletProvider: async (provider: PushbulletProviderRequest): Promise<PushbulletProviderSettings> => {
+    return fetchApi<PushbulletProviderSettings>('/api/v1/notifications/pushbullet-providers', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...provider,
+        providerType: 'Pushbullet',
+      }),
+    });
+  },
+
+  updatePushbulletProvider: async (id: string, provider: PushbulletProviderRequest): Promise<PushbulletProviderSettings> => {
+    return fetchApi<PushbulletProviderSettings>(`/api/v1/notifications/pushbullet-providers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        ...provider,
+        id,
+        providerType: 'Pushbullet',
+      }),
+    });
+  },
+
+  deletePushbulletProvider: async (id: string): Promise<void> => {
+    await fetchApi(`/api/v1/notifications/pushbullet-providers/${id}`, { method: 'DELETE' });
+  },
+
+  testPushbulletProvider: async (id: string): Promise<PushTestResult> => {
+    return fetchApi<PushTestResult>(`/api/v1/notifications/pushbullet-providers/${id}/test`, { method: 'POST' });
+  },
+
+  testPushbulletProviderSettings: async (settings: PushbulletProviderRequest): Promise<PushTestResult> => {
+    return fetchApi<PushTestResult>('/api/v1/notifications/pushbullet-providers/test', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...settings,
+        providerType: 'Pushbullet',
       }),
     });
   },
