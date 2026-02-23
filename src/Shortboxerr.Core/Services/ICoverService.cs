@@ -42,9 +42,34 @@ public interface ICoverService
     Task<DetailedCoverCacheStats> GetDetailedCacheStatsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets cache access statistics (hit/miss ratios).
+    /// </summary>
+    CoverCacheAccessStats GetAccessStats();
+
+    /// <summary>
+    /// Resets cache access statistics.
+    /// </summary>
+    void ResetAccessStats();
+
+    /// <summary>
     /// Clears all cached covers.
     /// </summary>
     Task ClearAllCacheAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Warms the cache for a specific series (downloads all issue covers).
+    /// </summary>
+    Task<CacheWarmingResult> WarmSeriesCacheAsync(int seriesId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Warms the cache for multiple series.
+    /// </summary>
+    Task<CacheWarmingResult> WarmCacheAsync(IEnumerable<int> seriesIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the current cache warming status.
+    /// </summary>
+    CacheWarmingStatus GetWarmingStatus();
 
     /// <summary>
     /// Performs cache cleanup: removes expired covers and enforces size limit via LRU eviction.
@@ -231,6 +256,44 @@ public class DetailedCoverCacheStats : CoverCacheStats
     /// Number of covers evicted in the last cleanup.
     /// </summary>
     public int LastCleanupEvictedCount { get; set; }
+
+    /// <summary>
+    /// Hit/miss statistics for cache access monitoring.
+    /// </summary>
+    public CoverCacheAccessStats AccessStats { get; set; } = new();
+}
+
+/// <summary>
+/// Cache access statistics for hit/miss ratio tracking.
+/// </summary>
+public class CoverCacheAccessStats
+{
+    /// <summary>Number of cache hits (cover found in cache).</summary>
+    public long Hits { get; set; }
+    
+    /// <summary>Number of cache misses (cover not in cache, had to download).</summary>
+    public long Misses { get; set; }
+    
+    /// <summary>Number of fallbacks (used series cover for issue, etc.).</summary>
+    public long Fallbacks { get; set; }
+    
+    /// <summary>Number of placeholders served.</summary>
+    public long Placeholders { get; set; }
+    
+    /// <summary>Total number of cover requests.</summary>
+    public long TotalRequests => Hits + Misses + Fallbacks + Placeholders;
+    
+    /// <summary>Hit ratio (0-1). Higher is better.</summary>
+    public double HitRatio => TotalRequests > 0 ? Math.Round((double)Hits / TotalRequests, 4) : 0;
+    
+    /// <summary>Miss ratio (0-1). Lower is better.</summary>
+    public double MissRatio => TotalRequests > 0 ? Math.Round((double)Misses / TotalRequests, 4) : 0;
+    
+    /// <summary>Estimated bandwidth saved (bytes not re-downloaded due to cache hits).</summary>
+    public long EstimatedBandwidthSavedBytes { get; set; }
+    
+    /// <summary>Timestamp when statistics were last reset.</summary>
+    public DateTime LastReset { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>
@@ -286,11 +349,95 @@ public class CoverCleanupResult
     /// Duration of cleanup operation.
     /// </summary>
     public TimeSpan Duration { get; set; }
+}
 
-    /// <summary>
-    /// Timestamp of cleanup.
-    /// </summary>
-    public DateTime CleanedAt { get; set; } = DateTime.UtcNow;
+/// <summary>
+/// Result of a cache warming operation.
+/// </summary>
+public class CacheWarmingResult
+{
+    public bool Success { get; set; }
+    public string? Error { get; set; }
+
+    /// <summary>Number of series processed.</summary>
+    public int SeriesProcessed { get; set; }
+
+    /// <summary>Number of covers successfully downloaded.</summary>
+    public int CoversDownloaded { get; set; }
+
+    /// <summary>Number of covers that were already cached.</summary>
+    public int CoversAlreadyCached { get; set; }
+
+    /// <summary>Number of download failures.</summary>
+    public int FailedDownloads { get; set; }
+
+    /// <summary>Total bytes downloaded.</summary>
+    public long BytesDownloaded { get; set; }
+
+    /// <summary>Duration of warming operation.</summary>
+    public TimeSpan Duration { get; set; }
+
+    /// <summary>Timestamp when warming completed.</summary>
+    public DateTime CompletedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Status of an ongoing cache warming operation.
+/// </summary>
+public class CacheWarmingStatus
+{
+    /// <summary>Whether warming is currently in progress.</summary>
+    public bool IsWarming { get; set; }
+
+    /// <summary>Total series to process.</summary>
+    public int TotalSeries { get; set; }
+
+    /// <summary>Series processed so far.</summary>
+    public int ProcessedSeries { get; set; }
+
+    /// <summary>Total covers to process.</summary>
+    public int TotalCovers { get; set; }
+
+    /// <summary>Covers processed so far.</summary>
+    public int ProcessedCovers { get; set; }
+
+    /// <summary>Progress percentage (0-100).</summary>
+    public double ProgressPercent => TotalCovers > 0 
+        ? Math.Round((double)ProcessedCovers / TotalCovers * 100, 1) 
+        : 0;
+
+    /// <summary>Timestamp when warming started.</summary>
+    public DateTime? StartedAt { get; set; }
+
+    /// <summary>Estimated time remaining.</summary>
+    public TimeSpan? EstimatedRemaining { get; set; }
+
+    /// <summary>Current series being processed.</summary>
+    public string? CurrentSeries { get; set; }
+}
+
+/// <summary>
+/// Metadata for a cached cover, used for efficient revalidation.
+/// </summary>
+public class CoverCacheMetadata
+{
+    /// <summary>ETag from the HTTP response.</summary>
+    public string? ETag { get; set; }
+
+    /// <summary>Last-Modified header from the HTTP response.</summary>
+    public DateTime? LastModified { get; set; }
+
+    /// <summary>When the cover was originally downloaded.</summary>
+    public DateTime DownloadedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>When the cover was last validated (checked for changes).</summary>
+    public DateTime LastValidatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>Original URL the cover was downloaded from.</summary>
+    public string? SourceUrl { get; set; }
+
+    /// <summary>File size in bytes.</summary>
+    public long FileSize { get; set; }
 }
 
 /// <summary>
@@ -351,5 +498,26 @@ public class CoverSettings
     /// Whether to enable automatic cleanup when cache exceeds limit.
     /// </summary>
     public bool AutoCleanupEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Whether to automatically warm cache when a series is added.
+    /// </summary>
+    public bool WarmCacheOnSeriesAdd { get; set; } = false;
+
+    /// <summary>
+    /// Comma-separated list of sizes to warm (e.g., "Medium,Thumb").
+    /// </summary>
+    public string WarmCacheSizes { get; set; } = "Medium";
+
+    /// <summary>
+    /// Whether to use ETag/Last-Modified for efficient revalidation.
+    /// </summary>
+    public bool EnableRevalidation { get; set; } = true;
+
+    /// <summary>
+    /// Hours between revalidation checks (0 = revalidate on every request).
+    /// Default: 168 hours (7 days).
+    /// </summary>
+    public int RevalidationIntervalHours { get; set; } = 168;
 }
 

@@ -53,6 +53,12 @@ public static class SettingsEndpoints
             .WithOpenApi()
             .Produces<LoggingSettings>(200);
 
+        group.MapPost("/logging/compress", TriggerLogCompression)
+            .WithName("TriggerLogCompression")
+            .WithDescription("Triggers immediate compression of old log files")
+            .WithOpenApi()
+            .Produces<LogCompressionResponse>(200);
+
         // Folder Settings (convenience endpoints)
         group.MapGet("/folders", GetFolderSettings)
             .WithName("GetFolderSettings")
@@ -126,7 +132,11 @@ public static class SettingsEndpoints
             DefaultSize = settings.DefaultSize.ToString(),
             DownloadAllSizes = settings.DownloadAllSizes,
             MaxConcurrentDownloads = settings.MaxConcurrentDownloads,
-            DownloadTimeoutSeconds = settings.DownloadTimeoutSeconds
+            DownloadTimeoutSeconds = settings.DownloadTimeoutSeconds,
+            WarmCacheOnSeriesAdd = settings.WarmCacheOnSeriesAdd,
+            WarmCacheSizes = settings.WarmCacheSizes,
+            EnableRevalidation = settings.EnableRevalidation,
+            RevalidationIntervalHours = settings.RevalidationIntervalHours
         });
     }
 
@@ -187,6 +197,14 @@ public static class SettingsEndpoints
             settings.MaxConcurrentDownloads = Math.Clamp(request.MaxConcurrentDownloads.Value, 1, 10);
         if (request.DownloadTimeoutSeconds.HasValue)
             settings.DownloadTimeoutSeconds = Math.Clamp(request.DownloadTimeoutSeconds.Value, 5, 120);
+        if (request.WarmCacheOnSeriesAdd.HasValue)
+            settings.WarmCacheOnSeriesAdd = request.WarmCacheOnSeriesAdd.Value;
+        if (!string.IsNullOrEmpty(request.WarmCacheSizes))
+            settings.WarmCacheSizes = request.WarmCacheSizes;
+        if (request.EnableRevalidation.HasValue)
+            settings.EnableRevalidation = request.EnableRevalidation.Value;
+        if (request.RevalidationIntervalHours.HasValue)
+            settings.RevalidationIntervalHours = Math.Clamp(request.RevalidationIntervalHours.Value, 0, 720); // Max 30 days
 
         // Save settings
         await settingsService.SetAsync("covers", settings, cancellationToken);
@@ -202,7 +220,11 @@ public static class SettingsEndpoints
             DefaultSize = settings.DefaultSize.ToString(),
             DownloadAllSizes = settings.DownloadAllSizes,
             MaxConcurrentDownloads = settings.MaxConcurrentDownloads,
-            DownloadTimeoutSeconds = settings.DownloadTimeoutSeconds
+            DownloadTimeoutSeconds = settings.DownloadTimeoutSeconds,
+            WarmCacheOnSeriesAdd = settings.WarmCacheOnSeriesAdd,
+            WarmCacheSizes = settings.WarmCacheSizes,
+            EnableRevalidation = settings.EnableRevalidation,
+            RevalidationIntervalHours = settings.RevalidationIntervalHours
         });
     }
 
@@ -262,6 +284,9 @@ public static class SettingsEndpoints
         var httpRequestBodyLogging = bool.TryParse(await settingsService.GetAsync("Logging:HttpRequestBodyLogging", cancellationToken), out var http) && http;
         var fullStackTraces = bool.TryParse(await settingsService.GetAsync("Logging:FullStackTraces", cancellationToken), out var stack) && stack;
         var retentionDays = int.TryParse(await settingsService.GetAsync("Logging:RetentionDays", cancellationToken), out var days) ? days : 30;
+        var compressOldLogsStr = await settingsService.GetAsync("Logging:CompressOldLogs", cancellationToken);
+        var compressOldLogs = string.IsNullOrEmpty(compressOldLogsStr) || bool.TryParse(compressOldLogsStr, out var compress) && compress;
+        var compressLogsOlderThanDays = int.TryParse(await settingsService.GetAsync("Logging:CompressLogsOlderThanDays", cancellationToken), out var compressDays) ? compressDays : 1;
 
         // Get actual log path from environment or default
         var actualLogPath = Environment.GetEnvironmentVariable("SHORTBOXERR_LOG_DIR")
@@ -277,7 +302,9 @@ public static class SettingsEndpoints
             SqlQueryLogging = sqlQueryLogging,
             HttpRequestBodyLogging = httpRequestBodyLogging,
             FullStackTraces = fullStackTraces,
-            RetentionDays = retentionDays
+            RetentionDays = retentionDays,
+            CompressOldLogs = compressOldLogs,
+            CompressLogsOlderThanDays = compressLogsOlderThanDays
         });
     }
 
@@ -311,6 +338,12 @@ public static class SettingsEndpoints
             return Results.BadRequest(new { error = "RetentionDays must be between 1 and 365." });
         }
 
+        // Validate compress logs older than days (1-30)
+        if (request.CompressLogsOlderThanDays < 1 || request.CompressLogsOlderThanDays > 30)
+        {
+            return Results.BadRequest(new { error = "CompressLogsOlderThanDays must be between 1 and 30." });
+        }
+
         await settingsService.SetAsync("Logging:LogLevel", request.LogLevel, cancellationToken);
         if (!string.IsNullOrEmpty(request.LogPath))
             await settingsService.SetAsync("Logging:LogPath", request.LogPath, cancellationToken);
@@ -321,8 +354,22 @@ public static class SettingsEndpoints
         await settingsService.SetAsync("Logging:HttpRequestBodyLogging", request.HttpRequestBodyLogging.ToString(), cancellationToken);
         await settingsService.SetAsync("Logging:FullStackTraces", request.FullStackTraces.ToString(), cancellationToken);
         await settingsService.SetAsync("Logging:RetentionDays", request.RetentionDays.ToString(), cancellationToken);
+        await settingsService.SetAsync("Logging:CompressOldLogs", request.CompressOldLogs.ToString(), cancellationToken);
+        await settingsService.SetAsync("Logging:CompressLogsOlderThanDays", request.CompressLogsOlderThanDays.ToString(), cancellationToken);
 
         return Results.Ok(request);
+    }
+
+    private static async Task<IResult> TriggerLogCompression(
+        Shortboxerr.Infrastructure.BackgroundServices.LogCompressionBackgroundService compressionService,
+        CancellationToken cancellationToken)
+    {
+        var result = await compressionService.TriggerCompressionAsync(cancellationToken);
+        return Results.Ok(new LogCompressionResponse
+        {
+            FilesCompressed = result.FilesCompressed,
+            BytesSaved = result.BytesSaved
+        });
     }
 
     private static async Task<IResult> GetFolderSettings(ISettingsService settingsService, CancellationToken cancellationToken)
@@ -603,6 +650,16 @@ public class LoggingSettings
     /// Number of days to retain log files before auto-cleanup
     /// </summary>
     public int RetentionDays { get; set; } = 30;
+
+    /// <summary>
+    /// Whether to compress old rotated log files
+    /// </summary>
+    public bool CompressOldLogs { get; set; } = true;
+
+    /// <summary>
+    /// Compress logs older than this many days
+    /// </summary>
+    public int CompressLogsOlderThanDays { get; set; } = 1;
 }
 
 public class CoverCacheSettingsRequest
@@ -617,6 +674,10 @@ public class CoverCacheSettingsRequest
     public bool? DownloadAllSizes { get; set; }
     public int? MaxConcurrentDownloads { get; set; }
     public int? DownloadTimeoutSeconds { get; set; }
+    public bool? WarmCacheOnSeriesAdd { get; set; }
+    public string? WarmCacheSizes { get; set; }
+    public bool? EnableRevalidation { get; set; }
+    public int? RevalidationIntervalHours { get; set; }
 }
 
 public class CoverCacheSettingsResponse
@@ -670,4 +731,40 @@ public class CoverCacheSettingsResponse
     /// Timeout for cover downloads in seconds.
     /// </summary>
     public int DownloadTimeoutSeconds { get; set; } = 30;
+
+    /// <summary>
+    /// Whether to automatically warm cache when a series is added.
+    /// </summary>
+    public bool WarmCacheOnSeriesAdd { get; set; } = false;
+
+    /// <summary>
+    /// Comma-separated list of sizes to warm (e.g., "Medium,Thumb").
+    /// </summary>
+    public string WarmCacheSizes { get; set; } = "Medium";
+
+    /// <summary>
+    /// Whether to use ETag/Last-Modified for efficient revalidation.
+    /// </summary>
+    public bool EnableRevalidation { get; set; } = true;
+
+    /// <summary>
+    /// Hours between revalidation checks.
+    /// </summary>
+    public int RevalidationIntervalHours { get; set; } = 168;
+}
+
+/// <summary>
+/// Response from log compression operation.
+/// </summary>
+public class LogCompressionResponse
+{
+    /// <summary>
+    /// Number of log files that were compressed.
+    /// </summary>
+    public int FilesCompressed { get; set; }
+
+    /// <summary>
+    /// Total bytes saved by compression.
+    /// </summary>
+    public long BytesSaved { get; set; }
 }

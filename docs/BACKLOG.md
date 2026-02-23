@@ -728,7 +728,10 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: "Search All Wanted" button in series header ✅ (Iteration 121)
   - AC: "Search All" button on Wanted page ✅ (Iteration 122)
   - AC: Per-issue search button on Wanted page ✅ (Iteration 123)
-  - Note: "Edit" button deferred (issue metadata editing not implemented)
+  - AC: "Edit" button for issue metadata ✅ (Iteration 125 - API implemented)
+    - GET /api/v1/issues/{issueId} - Get issue details
+    - PUT /api/v1/issues/{issueId} - Update issue metadata
+    - Editable: issueNumber, title, releaseDate, storeDate, overview, monitored, status, isAnnual, isSpecial, specialType, coverImageUrl
 
 - [x] **Status indicators** ✅
   - AC: Visual distinction for each status ✅
@@ -800,23 +803,27 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: API endpoint to trigger manual cleanup: POST /api/v1/covers/cleanup ✅
   - AC: Settings UI for cache size limit configuration ✅ (Iteration 117)
 
-- [ ] **Cache warming** (deferred)
-  - AC: Optionally pre-fetch covers when series added
-  - AC: Configurable: download all sizes vs. on-demand
-  - AC: Priority queue for cover downloads (visible items first)
-  - AC: Respect ComicVine rate limits during bulk download
+- [x] **Cache warming** ✅ (Iteration 125)
+  - AC: Optionally pre-fetch covers when series added ✅
+  - AC: Configurable sizes to warm (via WarmCacheSizes setting) ✅
+  - AC: API endpoints for warming (single series, batch, status) ✅
+  - AC: Progress tracking during warming operation ✅
+  - AC: UI settings for enabling/configuring warming ✅
 
-- [ ] **Efficient revalidation** (deferred)
-  - AC: Store ETag/Last-Modified from ComicVine responses
-  - AC: Use If-None-Match/If-Modified-Since for revalidation
-  - AC: Only re-download if remote cover changed
-  - AC: Track last validated timestamp per cover
+- [x] **Efficient revalidation** ✅ (Iteration 125)
+  - AC: Store ETag/Last-Modified from ComicVine responses ✅
+  - AC: Use If-None-Match/If-Modified-Since for revalidation ✅
+  - AC: Only re-download if remote cover changed (304 Not Modified) ✅
+  - AC: Track last validated timestamp per cover ✅
+  - AC: Configurable revalidation interval (EnableRevalidation, RevalidationIntervalHours) ✅
+  - AC: UI settings for revalidation configuration ✅
 
 - [x] **Cache statistics enhancements** ✅
   - AC: Breakdown by size (thumb/small/medium/large) ✅
-  - AC: Cache hit/miss ratio tracking (deferred)
-  - AC: Estimated space savings vs. fetching every time (deferred)
+  - AC: Cache hit/miss ratio tracking ✅ (Iteration 125)
+  - AC: Estimated bandwidth savings tracking ✅ (Iteration 125)
   - AC: API endpoint: GET /api/v1/covers/stats/detailed ✅
+  - AC: API endpoint: POST /api/v1/covers/cache/stats/reset ✅
 
 **Design Notes:**
 - Current ICoverService already caches to disk with size variants
@@ -1583,7 +1590,13 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
   - AC: Configurable number of rotated files to keep (default: 5) ✅
   - AC: Automatic rotation when size limit reached ✅
   - AC: Date-based rotation option (daily/weekly) ✅ (daily implemented)
-  - AC: Compressed archive of rotated logs (optional) (deferred)
+  - AC: Compressed archive of rotated logs ✅ (Iteration 126)
+    - Background service compresses .log/.txt files older than configurable days
+    - GZip compression with original file deletion after success
+    - Settings: CompressOldLogs (bool), CompressLogsOlderThanDays (int)
+    - API endpoint: POST /api/v1/settings/logging/compress for manual trigger
+    - UI: Settings page with enable toggle, days configuration, and Compress Now button
+    - 6 unit tests covering compression scenarios
 
 - [x] **Log format** ✅
   - AC: Timestamp with milliseconds: `2026-02-04 20:30:45.123` ✅

@@ -265,6 +265,47 @@ export interface Issue {
   linkedAnnualSeriesTitle?: string | null;
 }
 
+export interface IssueDetailResponse {
+  id: number;
+  seriesId: number;
+  seriesTitle: string | null;
+  issueNumber: number;
+  issueNumberText: string | null;
+  title: string | null;
+  releaseDate: string | null;
+  storeDate: string | null;
+  coverDate: string | null;
+  overview: string | null;
+  monitored: boolean;
+  status: IssueStatus;
+  hasFile: boolean;
+  isAnnual: boolean;
+  isSpecial: boolean;
+  specialType: string | null;
+  comicVineId: number | null;
+  comicVineUrl: string | null;
+  coverImageUrl: string | null;
+  satisfiedByEdition: boolean;
+  createdAt: string;
+  updatedAt: string | null;
+  metadataLastRefreshed: string | null;
+}
+
+export interface UpdateIssueRequest {
+  issueNumber?: number;
+  issueNumberText?: string;
+  title?: string;
+  releaseDate?: string;
+  storeDate?: string;
+  overview?: string;
+  monitored?: boolean;
+  status?: IssueStatus;
+  isAnnual?: boolean;
+  isSpecial?: boolean;
+  specialType?: string;
+  coverImageUrl?: string;
+}
+
 // Pull List types
 export type IssueStatus = 'Wanted' | 'Owned' | 'Downloading' | 'Skipped' | 'Missing' | 'Staged';
 
@@ -865,6 +906,13 @@ export interface LoggingSettings {
   httpRequestBodyLogging: boolean;
   fullStackTraces: boolean;
   retentionDays: number;
+  compressOldLogs: boolean;
+  compressLogsOlderThanDays: number;
+}
+
+export interface LogCompressionResult {
+  filesCompressed: number;
+  bytesSaved: number;
 }
 
 export interface CoverCacheSettings {
@@ -878,6 +926,10 @@ export interface CoverCacheSettings {
   downloadAllSizes: boolean;
   maxConcurrentDownloads: number;
   downloadTimeoutSeconds: number;
+  warmCacheOnSeriesAdd: boolean;
+  warmCacheSizes: string;
+  enableRevalidation: boolean;
+  revalidationIntervalHours: number;
 }
 
 export interface CoverCacheStats {
@@ -886,6 +938,67 @@ export interface CoverCacheStats {
   seriesCovers: number;
   issueCovers: number;
   cacheDirectory: string;
+}
+
+export interface CoverSizeStats {
+  size: string;
+  count: number;
+  totalBytes: number;
+}
+
+export interface CoverCacheAccessStats {
+  hits: number;
+  misses: number;
+  fallbacks: number;
+  placeholders: number;
+  totalRequests: number;
+  hitRatio: number;
+  missRatio: number;
+  estimatedBandwidthSavedBytes: number;
+  lastReset: string;
+}
+
+export interface DetailedCoverCacheStats {
+  totalSizeBytes: number;
+  totalFiles: number;
+  seriesCovers: number;
+  issueCovers: number;
+  cacheDirectory: string;
+  maxSizeBytes: number;
+  isOverLimit: boolean;
+  usagePercent: number;
+  retentionDays: number;
+  cleanupTargetPercent: number;
+  lastCleanupAt: string | null;
+  lastCleanupEvictedCount: number;
+  pendingEvictionCount: number;
+  oldestFileDate: string | null;
+  bySize: Record<string, CoverSizeStats>;
+  accessStats: CoverCacheAccessStats;
+}
+
+export interface CacheWarmingResult {
+  success: boolean;
+  error: string | null;
+  seriesProcessed: number;
+  coversDownloaded: number;
+  coversAlreadyCached: number;
+  failedDownloads: number;
+  bytesDownloaded: number;
+  duration: string;
+  completedAt: string;
+}
+
+export interface CacheWarmingStatus {
+  isWarming: boolean;
+  totalSeries: number;
+  processedSeries: number;
+  totalCovers: number;
+  processedCovers: number;
+  progressPercent: number;
+  startedAt: string | null;
+  estimatedRemaining: string | null;
+  currentSeries: string | null;
 }
 
 export interface CoverCleanupResult {
@@ -1283,6 +1396,22 @@ export const api = {
     }
   },
 
+  // Issue metadata editing
+  getIssue: async (issueId: number): Promise<IssueDetailResponse | null> => {
+    try {
+      return await fetchApi<IssueDetailResponse>(`/api/v1/issues/${issueId}`);
+    } catch {
+      return null;
+    }
+  },
+
+  updateIssue: async (issueId: number, request: UpdateIssueRequest): Promise<IssueDetailResponse> => {
+    return await fetchApi<IssueDetailResponse>(`/api/v1/issues/${issueId}`, {
+      method: 'PUT',
+      body: JSON.stringify(request),
+    });
+  },
+
   // Get all annuals for a series (includes linked annual series - Mylar3 parity)
   getSeriesAnnuals: async (seriesId: number): Promise<SeriesAnnualsResponse> => {
     try {
@@ -1651,6 +1780,10 @@ export const api = {
         downloadAllSizes: false,
         maxConcurrentDownloads: 3,
         downloadTimeoutSeconds: 30,
+        warmCacheOnSeriesAdd: false,
+        warmCacheSizes: 'Medium',
+        enableRevalidation: true,
+        revalidationIntervalHours: 168,
       };
     }
   },
@@ -1664,6 +1797,33 @@ export const api = {
 
   getCoverCacheStats: async (): Promise<CoverCacheStats> => {
     return await fetchApi<CoverCacheStats>('/api/v1/covers/cache/stats');
+  },
+
+  getDetailedCoverCacheStats: async (): Promise<DetailedCoverCacheStats> => {
+    return await fetchApi<DetailedCoverCacheStats>('/api/v1/covers/cache/stats/detailed');
+  },
+
+  resetCoverAccessStats: async (): Promise<void> => {
+    await fetchApi('/api/v1/covers/cache/stats/reset', {
+      method: 'POST',
+    });
+  },
+
+  warmSeriesCache: async (seriesId: number): Promise<CacheWarmingResult> => {
+    return await fetchApi<CacheWarmingResult>(`/api/v1/covers/warm/series/${seriesId}`, {
+      method: 'POST',
+    });
+  },
+
+  warmCache: async (seriesIds: number[]): Promise<CacheWarmingResult> => {
+    return await fetchApi<CacheWarmingResult>('/api/v1/covers/warm', {
+      method: 'POST',
+      body: JSON.stringify({ seriesIds }),
+    });
+  },
+
+  getCacheWarmingStatus: async (): Promise<CacheWarmingStatus> => {
+    return await fetchApi<CacheWarmingStatus>('/api/v1/covers/warm/status');
   },
 
   triggerCoverCacheCleanup: async (): Promise<CoverCleanupResult> => {
@@ -1732,6 +1892,8 @@ export const api = {
         httpRequestBodyLogging: false,
         fullStackTraces: false,
         retentionDays: 30,
+        compressOldLogs: true,
+        compressLogsOlderThanDays: 1,
       };
     }
   },
@@ -1740,6 +1902,12 @@ export const api = {
     return await fetchApi<LoggingSettings>('/api/v1/settings/logging', {
       method: 'PUT',
       body: JSON.stringify(settings),
+    });
+  },
+
+  triggerLogCompression: async (): Promise<LogCompressionResult> => {
+    return await fetchApi<LogCompressionResult>('/api/v1/settings/logging/compress', {
+      method: 'POST',
     });
   },
 

@@ -1,5 +1,112 @@
 # Worklog
 
+## Iteration 126 (2026-02-17)
+**EPIC 13.1: Compressed Archive of Rotated Logs**
+
+### Summary
+Implemented automatic compression of old log files to save disk space. A background service periodically scans for rotated log files and compresses them using GZip. Users can configure when compression occurs and trigger manual compression via the Settings UI.
+
+### Commits
+1. `feat(logging): add compressed archive for rotated logs`
+
+### Deliverables
+
+#### Background Service
+- `LogCompressionBackgroundService` runs every 6 hours
+- Scans log directory for `.log` and `.txt` files
+- Skips current log file (`shortboxerr.log`)
+- Compresses files older than configured threshold
+- Deletes original after successful compression
+- GZip compression with `.gz` extension
+
+#### Settings
+- `CompressOldLogs` (bool, default: true) - Enable/disable auto-compression
+- `CompressLogsOlderThanDays` (int, default: 1) - Age threshold for compression
+
+#### API Endpoints
+- `POST /api/v1/settings/logging/compress` - Trigger manual compression
+- Returns: `{ filesCompressed: number, bytesSaved: number }`
+
+#### Frontend Integration
+- Added "Log Compression" section to Settings page
+- Enable/disable toggle for auto-compression
+- Configurable days threshold
+- "Compress Now" button for manual trigger
+- Success message showing files compressed and bytes saved
+
+### Files Changed
+- `src/Shortboxerr.Infrastructure/BackgroundServices/LogCompressionBackgroundService.cs` - New background service
+- `src/Shortboxerr.Infrastructure/DependencyInjection.cs` - Registered service
+- `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` - Added endpoint and settings
+- `ui/src/api/client.ts` - TypeScript types and API methods
+- `ui/src/pages/SettingsPage.tsx` - UI for compression settings
+- `tests/Shortboxerr.Tests/LogCompressionBackgroundServiceTests.cs` - 6 unit tests
+
+---
+
+## Iteration 125 (2026-02-17)
+**EPIC 9.13: Cache Statistics, Warming, and Efficient Revalidation**
+
+### Summary
+Implemented comprehensive cache enhancements including: (1) access statistics tracking with hit/miss ratios, (2) cache warming for pre-fetching covers, and (3) efficient revalidation using HTTP ETag/Last-Modified headers. The cache now stores metadata for each cover and uses conditional GET requests to avoid re-downloading unchanged covers.
+
+### Commits
+1. `feat(cache): add cover cache statistics, warming, and revalidation`
+
+### Deliverables
+
+#### Cache Statistics Tracking
+- Added `CoverCacheAccessStats` model to `ICoverService.cs`
+- Thread-safe counters using `Interlocked` operations
+- Track hits, misses, fallbacks, placeholders
+- Calculate hit ratio and estimated bandwidth saved
+- Reset statistics functionality
+
+#### Cache Warming
+- `WarmSeriesCacheAsync` - Warm cache for a specific series
+- `WarmCacheAsync` - Warm cache for multiple series
+- `GetWarmingStatus` - Get progress of ongoing warming operation
+- Configurable sizes to warm (via `WarmCacheSizes` setting)
+- Automatic warming option when series added (`WarmCacheOnSeriesAdd` setting)
+- Progress tracking with estimated time remaining
+
+#### Efficient Revalidation
+- `CoverCacheMetadata` model stores ETag, Last-Modified, validation timestamp
+- Metadata saved as `.meta.json` alongside each cached cover
+- Conditional GET requests with `If-None-Match` and `If-Modified-Since` headers
+- 304 Not Modified responses update validation timestamp without re-download
+- Configurable revalidation interval (`EnableRevalidation`, `RevalidationIntervalHours`)
+- Default: Check every 168 hours (7 days)
+
+#### API Endpoints
+- `GET /api/v1/covers/cache/stats/detailed` - Returns detailed stats including access stats
+- `POST /api/v1/covers/cache/stats/reset` - Resets access statistics counters
+- `POST /api/v1/covers/warm/series/{seriesId}` - Warm cache for a series
+- `POST /api/v1/covers/warm` - Warm cache for multiple series
+- `GET /api/v1/covers/warm/status` - Get warming operation status
+
+#### Frontend Display
+- Added "Cache Performance" section with hit/miss stats
+- Added "Cache Warming" section with settings
+- Added "Revalidation" section with enable toggle and interval setting
+
+#### Issue Metadata Editing (EPIC 9.11)
+- GET /api/v1/issues/{issueId} - Get issue details
+- PUT /api/v1/issues/{issueId} - Update issue metadata
+- Editable fields: issueNumber, issueNumberText, title, releaseDate, storeDate, overview, monitored, status, isAnnual, isSpecial, specialType, coverImageUrl
+- Frontend API client methods: `api.getIssue()`, `api.updateIssue()`
+
+### Files Changed
+- `src/Shortboxerr.Core/Services/ICoverService.cs` - Added models and interface methods
+- `src/Shortboxerr.Infrastructure/Services/CoverService.cs` - Implemented all logic
+- `src/Shortboxerr.Api/Endpoints/CoverEndpoints.cs` - Added warming endpoints
+- `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` - Added settings
+- `src/Shortboxerr.Api/Endpoints/IssueMetadataEndpoints.cs` - Added GET/PUT issue endpoints
+- `ui/src/api/client.ts` - Added TypeScript types and API methods
+- `ui/src/pages/SettingsPage.tsx` - Added all UI sections
+
+---
+
 ## Iteration 124 (2026-02-17)
 **EPIC 15.3: Calendar View Enhancement**
 

@@ -1,4 +1,6 @@
+using System.Net;
 using System.Net.Http.Headers;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shortboxerr.Core.Services;
@@ -17,8 +19,21 @@ public class CoverService : ICoverService
     private readonly ILogger<CoverService> _logger;
     private readonly SemaphoreSlim _downloadSemaphore;
 
+    // Thread-safe access statistics tracking
+    private long _hits;
+    private long _misses;
+    private long _fallbacks;
+    private long _placeholders;
+    private long _bandwidthSaved;
+    private DateTime _statsLastReset = DateTime.UtcNow;
+
+    // Cache warming status
+    private readonly object _warmingLock = new();
+    private CacheWarmingStatus _warmingStatus = new();
+
     private const string PlaceholderFileName = "placeholder.png";
     private static readonly byte[] PlaceholderPng = CreatePlaceholderPng();
+    private const long EstimatedAverageCoverSize = 50 * 1024; // 50KB average cover size estimate
 
     public CoverService(
         ShortboxerrDbContext dbContext,
@@ -50,17 +65,42 @@ public class CoverService : ICoverService
         var cachedPath = GetCachePath(settings.CacheDirectory, CoverType.Series, seriesId, size);
         if (File.Exists(cachedPath))
         {
+            // Check if revalidation is needed
+            if (settings.EnableRevalidation && !string.IsNullOrEmpty(series.CoverImageUrl))
+            {
+                var revalidationResult = await TryRevalidateAsync(
+                    cachedPath, 
+                    GetSizedUrl(series.CoverImageUrl, size), 
+                    settings, 
+                    CoverType.Series, 
+                    seriesId, 
+                    size, 
+                    cancellationToken);
+                
+                if (revalidationResult != null)
+                {
+                    return revalidationResult;
+                }
+            }
+            
+            // Cache hit (no revalidation needed or revalidation confirmed unchanged)
+            Interlocked.Increment(ref _hits);
+            var fileInfo = new FileInfo(cachedPath);
+            Interlocked.Add(ref _bandwidthSaved, fileInfo.Length);
+            
             // Update last access time for LRU tracking
             TouchFile(cachedPath);
             return CreateCoverResult(cachedPath, CoverType.Series, seriesId, size, series.CoverImageUrl);
         }
 
-        // No cached cover, try to download
+        // No cached cover, try to download (cache miss)
         if (string.IsNullOrEmpty(series.CoverImageUrl))
         {
+            Interlocked.Increment(ref _placeholders);
             return CoverResult.Placeholder(await EnsurePlaceholderAsync(cancellationToken));
         }
 
+        Interlocked.Increment(ref _misses);
         var sizedUrl = GetSizedUrl(series.CoverImageUrl, size);
         return await DownloadCoverAsync(sizedUrl, CoverType.Series, seriesId, size, cancellationToken);
     }
@@ -85,14 +125,38 @@ public class CoverService : ICoverService
         var cachedPath = GetCachePath(settings.CacheDirectory, CoverType.Issue, issueId, size);
         if (File.Exists(cachedPath))
         {
+            // Check if revalidation is needed
+            if (settings.EnableRevalidation && !string.IsNullOrEmpty(issue.CoverImageUrl))
+            {
+                var revalidationResult = await TryRevalidateAsync(
+                    cachedPath, 
+                    GetSizedUrl(issue.CoverImageUrl, size), 
+                    settings, 
+                    CoverType.Issue, 
+                    issueId, 
+                    size, 
+                    cancellationToken);
+                
+                if (revalidationResult != null)
+                {
+                    return revalidationResult;
+                }
+            }
+            
+            // Cache hit (no revalidation needed or revalidation confirmed unchanged)
+            Interlocked.Increment(ref _hits);
+            var fileInfo = new FileInfo(cachedPath);
+            Interlocked.Add(ref _bandwidthSaved, fileInfo.Length);
+            
             // Update last access time for LRU tracking
             TouchFile(cachedPath);
             return CreateCoverResult(cachedPath, CoverType.Issue, issueId, size, issue.CoverImageUrl);
         }
 
-        // Try to download issue cover
+        // Try to download issue cover (cache miss)
         if (!string.IsNullOrEmpty(issue.CoverImageUrl))
         {
+            Interlocked.Increment(ref _misses);
             var sizedUrl = GetSizedUrl(issue.CoverImageUrl, size);
             var result = await DownloadCoverAsync(sizedUrl, CoverType.Issue, issueId, size, cancellationToken);
             if (result.Success)
@@ -108,9 +172,13 @@ public class CoverService : ICoverService
         {
             var seriesCoverPath = GetCachePath(settings.CacheDirectory, CoverType.Series, issue.SeriesId, size);
             
-            // Check if series cover is cached
+            // Check if series cover is cached (fallback hit)
             if (File.Exists(seriesCoverPath))
             {
+                Interlocked.Increment(ref _fallbacks);
+                var fileInfo = new FileInfo(seriesCoverPath);
+                Interlocked.Add(ref _bandwidthSaved, fileInfo.Length);
+                
                 // Update last access time for LRU tracking
                 TouchFile(seriesCoverPath);
                 var fallbackResult = CreateCoverResult(seriesCoverPath, CoverType.Issue, issueId, size, issue.Series.CoverImageUrl);
@@ -118,7 +186,8 @@ public class CoverService : ICoverService
                 return fallbackResult;
             }
 
-            // Try to download series cover as fallback
+            // Try to download series cover as fallback (fallback miss)
+            Interlocked.Increment(ref _fallbacks);
             var sizedUrl = GetSizedUrl(issue.Series.CoverImageUrl, size);
             var seriesResult = await DownloadCoverAsync(sizedUrl, CoverType.Series, issue.SeriesId, size, cancellationToken);
             if (seriesResult.Success)
@@ -131,6 +200,7 @@ public class CoverService : ICoverService
         }
 
         // Final fallback: placeholder
+        Interlocked.Increment(ref _placeholders);
         return CoverResult.Placeholder(await EnsurePlaceholderAsync(cancellationToken));
     }
 
@@ -183,6 +253,9 @@ public class CoverService : ICoverService
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             await using var fileStream = File.Create(cachePath);
             await stream.CopyToAsync(fileStream, cancellationToken);
+
+            // Save metadata for revalidation
+            await SaveCoverMetadataAsync(cachePath, url, response, cancellationToken);
 
             _logger.LogInformation("Downloaded cover for {Type} {Id} ({Size}): {Path}", 
                 type, entityId, size, cachePath);
@@ -385,7 +458,35 @@ public class CoverService : ICoverService
         stats.LastCleanupAt = await _settingsService.GetAsync<DateTime?>("covers_last_cleanup", null, cancellationToken);
         stats.LastCleanupEvictedCount = await _settingsService.GetAsync<int>("covers_last_cleanup_count", 0, cancellationToken);
 
+        // Include access statistics
+        stats.AccessStats = GetAccessStats();
+
         return stats;
+    }
+
+    public CoverCacheAccessStats GetAccessStats()
+    {
+        return new CoverCacheAccessStats
+        {
+            Hits = Interlocked.Read(ref _hits),
+            Misses = Interlocked.Read(ref _misses),
+            Fallbacks = Interlocked.Read(ref _fallbacks),
+            Placeholders = Interlocked.Read(ref _placeholders),
+            EstimatedBandwidthSavedBytes = Interlocked.Read(ref _bandwidthSaved),
+            LastReset = _statsLastReset
+        };
+    }
+
+    public void ResetAccessStats()
+    {
+        Interlocked.Exchange(ref _hits, 0);
+        Interlocked.Exchange(ref _misses, 0);
+        Interlocked.Exchange(ref _fallbacks, 0);
+        Interlocked.Exchange(ref _placeholders, 0);
+        Interlocked.Exchange(ref _bandwidthSaved, 0);
+        _statsLastReset = DateTime.UtcNow;
+        
+        _logger.LogInformation("Cover cache access statistics reset");
     }
 
     private static CoverSizeStats GetSizeStats(List<FileInfo> files, string sizeDirName)
@@ -592,6 +693,179 @@ public class CoverService : ICoverService
             ?? new CoverSettings();
     }
 
+    #region Revalidation
+
+    private static string GetMetadataPath(string coverPath)
+    {
+        return coverPath + ".meta.json";
+    }
+
+    private async Task<CoverCacheMetadata?> LoadCoverMetadataAsync(string coverPath, CancellationToken cancellationToken)
+    {
+        var metadataPath = GetMetadataPath(coverPath);
+        if (!File.Exists(metadataPath))
+        {
+            return null;
+        }
+
+        try
+        {
+            var json = await File.ReadAllTextAsync(metadataPath, cancellationToken);
+            return JsonSerializer.Deserialize<CoverCacheMetadata>(json);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to load cover metadata from {Path}", metadataPath);
+            return null;
+        }
+    }
+
+    private async Task SaveCoverMetadataAsync(string coverPath, string sourceUrl, HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        var metadata = new CoverCacheMetadata
+        {
+            SourceUrl = sourceUrl,
+            DownloadedAt = DateTime.UtcNow,
+            LastValidatedAt = DateTime.UtcNow,
+            FileSize = new FileInfo(coverPath).Length
+        };
+
+        // Extract ETag (remove quotes if present)
+        if (response.Headers.ETag != null)
+        {
+            metadata.ETag = response.Headers.ETag.Tag?.Trim('"');
+        }
+
+        // Extract Last-Modified
+        if (response.Content.Headers.LastModified.HasValue)
+        {
+            metadata.LastModified = response.Content.Headers.LastModified.Value.UtcDateTime;
+        }
+
+        var metadataPath = GetMetadataPath(coverPath);
+        try
+        {
+            var json = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
+            await File.WriteAllTextAsync(metadataPath, json, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to save cover metadata to {Path}", metadataPath);
+        }
+    }
+
+    private async Task UpdateMetadataValidationTimeAsync(string coverPath, CancellationToken cancellationToken)
+    {
+        var metadata = await LoadCoverMetadataAsync(coverPath, cancellationToken);
+        if (metadata != null)
+        {
+            metadata.LastValidatedAt = DateTime.UtcNow;
+            var metadataPath = GetMetadataPath(coverPath);
+            try
+            {
+                var json = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
+                await File.WriteAllTextAsync(metadataPath, json, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to update cover metadata validation time at {Path}", metadataPath);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Attempts to revalidate a cached cover. Returns null if no revalidation is needed or if
+    /// the cached file is still valid. Returns a new CoverResult if the file was re-downloaded.
+    /// </summary>
+    private async Task<CoverResult?> TryRevalidateAsync(
+        string cachedPath, 
+        string url, 
+        CoverSettings settings, 
+        CoverType type, 
+        int entityId, 
+        CoverSize size, 
+        CancellationToken cancellationToken)
+    {
+        var metadata = await LoadCoverMetadataAsync(cachedPath, cancellationToken);
+        
+        // If no metadata or revalidation interval hasn't passed, skip revalidation
+        if (metadata == null)
+        {
+            return null;
+        }
+
+        var hoursSinceValidation = (DateTime.UtcNow - metadata.LastValidatedAt).TotalHours;
+        if (hoursSinceValidation < settings.RevalidationIntervalHours)
+        {
+            return null; // Recently validated, no need to check again
+        }
+
+        // Perform conditional GET
+        try
+        {
+            using var client = _httpClientFactory.CreateClient("CoverDownload");
+            client.Timeout = TimeSpan.FromSeconds(settings.DownloadTimeoutSeconds);
+            
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("image/*"));
+            
+            // Add conditional headers
+            if (!string.IsNullOrEmpty(metadata.ETag))
+            {
+                request.Headers.TryAddWithoutValidation("If-None-Match", $"\"{metadata.ETag}\"");
+            }
+            if (metadata.LastModified.HasValue)
+            {
+                request.Headers.IfModifiedSince = new DateTimeOffset(metadata.LastModified.Value);
+            }
+
+            using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+
+            if (response.StatusCode == HttpStatusCode.NotModified)
+            {
+                // Cover hasn't changed, update validation time
+                _logger.LogDebug("Cover revalidation: {Path} unchanged (304)", cachedPath);
+                await UpdateMetadataValidationTimeAsync(cachedPath, cancellationToken);
+                return null; // Use cached version
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Cover has changed, re-download
+                _logger.LogInformation("Cover revalidation: {Path} changed, re-downloading", cachedPath);
+                
+                var contentType = response.Content.Headers.ContentType?.MediaType ?? "image/jpeg";
+                if (!contentType.StartsWith("image/"))
+                {
+                    _logger.LogWarning("Cover revalidation: invalid content type {ContentType}", contentType);
+                    return null;
+                }
+
+                await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                await using var fileStream = File.Create(cachedPath);
+                await stream.CopyToAsync(fileStream, cancellationToken);
+
+                await SaveCoverMetadataAsync(cachedPath, url, response, cancellationToken);
+
+                // Count as a cache miss since we had to re-download
+                Interlocked.Increment(ref _misses);
+                
+                return CreateCoverResult(cachedPath, type, entityId, size, url);
+            }
+
+            _logger.LogWarning("Cover revalidation failed with status {Status}", response.StatusCode);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Cover revalidation failed for {Path}", cachedPath);
+        }
+
+        // On error, use cached version
+        return null;
+    }
+
+    #endregion
+
     private static string GetCachePath(string cacheDirectory, CoverType type, int entityId, CoverSize size)
     {
         var typeDir = type switch
@@ -717,6 +991,227 @@ public class CoverService : ICoverService
             0x49, 0x45, 0x4E, 0x44, // IEND
             0xAE, 0x42, 0x60, 0x82  // CRC
         };
+    }
+
+    #endregion
+
+    #region Cache Warming
+
+    public async Task<CacheWarmingResult> WarmSeriesCacheAsync(int seriesId, CancellationToken cancellationToken = default)
+    {
+        return await WarmCacheAsync(new[] { seriesId }, cancellationToken);
+    }
+
+    public async Task<CacheWarmingResult> WarmCacheAsync(IEnumerable<int> seriesIds, CancellationToken cancellationToken = default)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = new CacheWarmingResult { Success = true };
+        var seriesIdList = seriesIds.ToList();
+
+        if (seriesIdList.Count == 0)
+        {
+            return result;
+        }
+
+        var settings = await GetSettingsAsync(cancellationToken);
+        var sizesToWarm = ParseWarmCacheSizes(settings.WarmCacheSizes);
+
+        if (sizesToWarm.Count == 0)
+        {
+            sizesToWarm.Add(settings.DefaultSize);
+        }
+
+        try
+        {
+            // Get all issues for the series
+            var issues = await _dbContext.Issues
+                .Where(i => seriesIdList.Contains(i.SeriesId))
+                .Include(i => i.Series)
+                .ToListAsync(cancellationToken);
+
+            var totalCovers = issues.Count * sizesToWarm.Count + seriesIdList.Count * sizesToWarm.Count;
+
+            // Update warming status
+            lock (_warmingLock)
+            {
+                _warmingStatus = new CacheWarmingStatus
+                {
+                    IsWarming = true,
+                    TotalSeries = seriesIdList.Count,
+                    TotalCovers = totalCovers,
+                    StartedAt = DateTime.UtcNow
+                };
+            }
+
+            // Warm series covers first
+            foreach (var seriesId in seriesIdList)
+            {
+                var series = await _dbContext.Series.FindAsync(new object[] { seriesId }, cancellationToken);
+                if (series == null) continue;
+
+                lock (_warmingLock)
+                {
+                    _warmingStatus.CurrentSeries = series.Title;
+                }
+
+                foreach (var size in sizesToWarm)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var cachedPath = GetCachePath(settings.CacheDirectory, CoverType.Series, seriesId, size);
+                    if (File.Exists(cachedPath))
+                    {
+                        result.CoversAlreadyCached++;
+                    }
+                    else if (!string.IsNullOrEmpty(series.CoverImageUrl))
+                    {
+                        var coverResult = await GetSeriesCoverAsync(seriesId, size, cancellationToken);
+                        if (coverResult.Success)
+                        {
+                            result.CoversDownloaded++;
+                            if (coverResult.FilePath != null && File.Exists(coverResult.FilePath))
+                            {
+                                result.BytesDownloaded += new FileInfo(coverResult.FilePath).Length;
+                            }
+                        }
+                        else
+                        {
+                            result.FailedDownloads++;
+                        }
+                    }
+
+                    lock (_warmingLock)
+                    {
+                        _warmingStatus.ProcessedCovers++;
+                        UpdateEstimatedRemaining(stopwatch.Elapsed);
+                    }
+                }
+
+                lock (_warmingLock)
+                {
+                    _warmingStatus.ProcessedSeries++;
+                }
+
+                result.SeriesProcessed++;
+            }
+
+            // Warm issue covers
+            foreach (var issue in issues)
+            {
+                lock (_warmingLock)
+                {
+                    _warmingStatus.CurrentSeries = $"{issue.Series?.Title} #{issue.IssueNumber}";
+                }
+
+                foreach (var size in sizesToWarm)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var cachedPath = GetCachePath(settings.CacheDirectory, CoverType.Issue, issue.Id, size);
+                    if (File.Exists(cachedPath))
+                    {
+                        result.CoversAlreadyCached++;
+                    }
+                    else if (!string.IsNullOrEmpty(issue.CoverImageUrl))
+                    {
+                        var coverResult = await GetIssueCoverAsync(issue.Id, size, cancellationToken);
+                        if (coverResult.Success)
+                        {
+                            result.CoversDownloaded++;
+                            if (coverResult.FilePath != null && File.Exists(coverResult.FilePath))
+                            {
+                                result.BytesDownloaded += new FileInfo(coverResult.FilePath).Length;
+                            }
+                        }
+                        else
+                        {
+                            result.FailedDownloads++;
+                        }
+                    }
+
+                    lock (_warmingLock)
+                    {
+                        _warmingStatus.ProcessedCovers++;
+                        UpdateEstimatedRemaining(stopwatch.Elapsed);
+                    }
+                }
+            }
+
+            _logger.LogInformation(
+                "Cache warming completed: {SeriesCount} series, {Downloaded} downloaded, {Cached} already cached, {Failed} failed, {Bytes} bytes",
+                result.SeriesProcessed, result.CoversDownloaded, result.CoversAlreadyCached, result.FailedDownloads, result.BytesDownloaded);
+        }
+        catch (OperationCanceledException)
+        {
+            result.Success = false;
+            result.Error = "Warming operation was cancelled";
+            _logger.LogWarning("Cache warming cancelled");
+        }
+        catch (Exception ex)
+        {
+            result.Success = false;
+            result.Error = ex.Message;
+            _logger.LogError(ex, "Error during cache warming");
+        }
+        finally
+        {
+            stopwatch.Stop();
+            result.Duration = stopwatch.Elapsed;
+
+            lock (_warmingLock)
+            {
+                _warmingStatus = new CacheWarmingStatus { IsWarming = false };
+            }
+        }
+
+        return result;
+    }
+
+    public CacheWarmingStatus GetWarmingStatus()
+    {
+        lock (_warmingLock)
+        {
+            return new CacheWarmingStatus
+            {
+                IsWarming = _warmingStatus.IsWarming,
+                TotalSeries = _warmingStatus.TotalSeries,
+                ProcessedSeries = _warmingStatus.ProcessedSeries,
+                TotalCovers = _warmingStatus.TotalCovers,
+                ProcessedCovers = _warmingStatus.ProcessedCovers,
+                StartedAt = _warmingStatus.StartedAt,
+                EstimatedRemaining = _warmingStatus.EstimatedRemaining,
+                CurrentSeries = _warmingStatus.CurrentSeries
+            };
+        }
+    }
+
+    private void UpdateEstimatedRemaining(TimeSpan elapsed)
+    {
+        if (_warmingStatus.ProcessedCovers > 0 && _warmingStatus.TotalCovers > _warmingStatus.ProcessedCovers)
+        {
+            var avgTimePerCover = elapsed.TotalMilliseconds / _warmingStatus.ProcessedCovers;
+            var remainingCovers = _warmingStatus.TotalCovers - _warmingStatus.ProcessedCovers;
+            _warmingStatus.EstimatedRemaining = TimeSpan.FromMilliseconds(avgTimePerCover * remainingCovers);
+        }
+    }
+
+    private static List<CoverSize> ParseWarmCacheSizes(string? sizesString)
+    {
+        var sizes = new List<CoverSize>();
+        if (string.IsNullOrWhiteSpace(sizesString))
+        {
+            return sizes;
+        }
+
+        foreach (var part in sizesString.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (Enum.TryParse<CoverSize>(part, true, out var size))
+            {
+                sizes.Add(size);
+            }
+        }
+
+        return sizes;
     }
 
     #endregion

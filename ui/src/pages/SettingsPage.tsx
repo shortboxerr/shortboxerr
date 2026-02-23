@@ -665,6 +665,12 @@ function LoggingSettingsSection() {
     httpRequestBodyLogging: false,
     fullStackTraces: false,
     retentionDays: 30,
+    compressOldLogs: true,
+    compressLogsOlderThanDays: 1,
+  });
+
+  const compressMutation = useMutation({
+    mutationFn: api.triggerLogCompression,
   });
 
   // Update local state when settings load
@@ -809,6 +815,59 @@ function LoggingSettingsSection() {
 
       <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
         <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: 'var(--text-primary)' }}>
+          Log Compression
+        </h4>
+
+        <SettingsField 
+          label="Compress Old Logs" 
+          description="Automatically compress rotated log files to save disk space"
+        >
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={localSettings.compressOldLogs}
+              onChange={(e) => setLocalSettings({ ...localSettings, compressOldLogs: e.target.checked })}
+              style={{ width: '18px', height: '18px' }}
+            />
+            <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Enabled</span>
+          </label>
+        </SettingsField>
+
+        <SettingsField 
+          label="Compress After (Days)" 
+          description="Compress logs older than this many days"
+        >
+          <input
+            type="number"
+            className="input"
+            style={{ width: '100px' }}
+            min={1}
+            max={30}
+            value={localSettings.compressLogsOlderThanDays}
+            onChange={(e) => setLocalSettings({ ...localSettings, compressLogsOlderThanDays: parseInt(e.target.value) || 1 })}
+            disabled={!localSettings.compressOldLogs}
+          />
+        </SettingsField>
+
+        <div style={{ marginTop: '12px' }}>
+          <button
+            className="btn btn-secondary"
+            style={{ fontSize: '13px' }}
+            onClick={() => compressMutation.mutate()}
+            disabled={compressMutation.isPending}
+          >
+            {compressMutation.isPending ? 'Compressing...' : 'Compress Now'}
+          </button>
+          {compressMutation.isSuccess && (
+            <span style={{ marginLeft: '12px', color: 'var(--accent-success)', fontSize: '13px' }}>
+              Compressed {compressMutation.data?.filesCompressed ?? 0} files, saved {((compressMutation.data?.bytesSaved ?? 0) / 1024).toFixed(1)} KB
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+        <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: 'var(--text-primary)' }}>
           Advanced Logging (Debug)
         </h4>
 
@@ -889,6 +948,12 @@ function CoverCacheSettingsSection() {
     refetchInterval: 30000,
   });
 
+  const { data: detailedStats } = useQuery({
+    queryKey: ['detailedCoverCacheStats'],
+    queryFn: api.getDetailedCoverCacheStats,
+    refetchInterval: 30000,
+  });
+
   const updateMutation = useMutation({
     mutationFn: api.updateCoverCacheSettings,
     onSuccess: () => {
@@ -906,6 +971,14 @@ function CoverCacheSettingsSection() {
     mutationFn: api.triggerCoverCacheCleanup,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['coverCacheStats'] });
+      queryClient.invalidateQueries({ queryKey: ['detailedCoverCacheStats'] });
+    },
+  });
+
+  const resetStatsMutation = useMutation({
+    mutationFn: api.resetCoverAccessStats,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['detailedCoverCacheStats'] });
     },
   });
 
@@ -919,6 +992,10 @@ function CoverCacheSettingsSection() {
     downloadAllSizes: false,
     maxConcurrentDownloads: 3,
     downloadTimeoutSeconds: 30,
+    warmCacheOnSeriesAdd: false,
+    warmCacheSizes: 'Medium',
+    enableRevalidation: true,
+    revalidationIntervalHours: 168,
   });
 
   useEffect(() => {
@@ -933,6 +1010,10 @@ function CoverCacheSettingsSection() {
         downloadAllSizes: settings.downloadAllSizes,
         maxConcurrentDownloads: settings.maxConcurrentDownloads,
         downloadTimeoutSeconds: settings.downloadTimeoutSeconds,
+        warmCacheOnSeriesAdd: settings.warmCacheOnSeriesAdd ?? false,
+        warmCacheSizes: settings.warmCacheSizes ?? 'Medium',
+        enableRevalidation: settings.enableRevalidation ?? true,
+        revalidationIntervalHours: settings.revalidationIntervalHours ?? 168,
       });
     }
   }, [settings]);
@@ -1026,6 +1107,88 @@ function CoverCacheSettingsSection() {
         </div>
       )}
 
+      {/* Access Statistics (Hit/Miss) */}
+      {detailedStats?.accessStats && (
+        <div style={{
+          background: 'var(--bg-tertiary)',
+          borderRadius: 'var(--radius-md)',
+          padding: '16px',
+          marginBottom: '20px',
+        }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            marginBottom: '12px'
+          }}>
+            <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+              Cache Performance
+            </div>
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => resetStatsMutation.mutate()}
+              disabled={resetStatsMutation.isPending}
+              title="Reset access statistics"
+            >
+              {resetStatsMutation.isPending ? 'Resetting...' : 'Reset Stats'}
+            </button>
+          </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+            gap: '16px',
+          }}>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Hit Ratio</div>
+              <div style={{ fontSize: '18px', fontWeight: 600, color: 
+                detailedStats.accessStats.hitRatio >= 0.8 ? 'var(--accent-success)' :
+                detailedStats.accessStats.hitRatio >= 0.5 ? 'var(--accent-warning)' :
+                'var(--accent-danger)'
+              }}>
+                {(detailedStats.accessStats.hitRatio * 100).toFixed(1)}%
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Requests</div>
+              <div style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                {detailedStats.accessStats.totalRequests.toLocaleString()}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Hits</div>
+              <div style={{ fontSize: '18px', fontWeight: 600, color: 'var(--accent-success)' }}>
+                {detailedStats.accessStats.hits.toLocaleString()}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Misses</div>
+              <div style={{ fontSize: '18px', fontWeight: 600, color: 'var(--accent-warning)' }}>
+                {detailedStats.accessStats.misses.toLocaleString()}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Fallbacks</div>
+              <div style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                {detailedStats.accessStats.fallbacks.toLocaleString()}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Bandwidth Saved</div>
+              <div style={{ fontSize: '18px', fontWeight: 600, color: 'var(--accent-info)' }}>
+                {formatBytes(detailedStats.accessStats.estimatedBandwidthSavedBytes)}
+              </div>
+            </div>
+          </div>
+          <div style={{ 
+            marginTop: '8px', 
+            fontSize: '11px', 
+            color: 'var(--text-muted)'
+          }}>
+            Since: {new Date(detailedStats.accessStats.lastReset).toLocaleString()}
+          </div>
+        </div>
+      )}
+
       <SettingsField
         label="Maximum Cache Size (MB)"
         description="Maximum disk space for cached cover images (10-10240 MB)"
@@ -1115,6 +1278,85 @@ function CoverCacheSettingsSection() {
           <option value="Medium">Medium</option>
           <option value="Large">Large</option>
         </select>
+      </SettingsField>
+
+      <div style={{ 
+        marginTop: '24px', 
+        marginBottom: '16px',
+        paddingTop: '16px',
+        borderTop: '1px solid var(--border-color)',
+      }}>
+        <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '16px' }}>
+          Cache Warming
+        </div>
+      </div>
+
+      <SettingsField
+        label="Warm Cache on Series Add"
+        description="Automatically pre-fetch covers when a series is added"
+      >
+        <label className="toggle">
+          <input
+            type="checkbox"
+            checked={localSettings.warmCacheOnSeriesAdd}
+            onChange={(e) => setLocalSettings({ ...localSettings, warmCacheOnSeriesAdd: e.target.checked })}
+          />
+          <span className="toggle-slider" />
+        </label>
+      </SettingsField>
+
+      <SettingsField
+        label="Warm Cache Sizes"
+        description="Comma-separated list of sizes to warm (Thumb, Small, Medium, Large)"
+      >
+        <input
+          type="text"
+          className="input"
+          style={{ width: '200px' }}
+          value={localSettings.warmCacheSizes}
+          onChange={(e) => setLocalSettings({ ...localSettings, warmCacheSizes: e.target.value })}
+          placeholder="Medium,Thumb"
+        />
+      </SettingsField>
+
+      <div style={{ 
+        marginTop: '24px', 
+        marginBottom: '16px',
+        paddingTop: '16px',
+        borderTop: '1px solid var(--border-color)',
+      }}>
+        <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '16px' }}>
+          Revalidation
+        </div>
+      </div>
+
+      <SettingsField
+        label="Enable Revalidation"
+        description="Use ETag/Last-Modified headers to check if covers changed"
+      >
+        <label className="toggle">
+          <input
+            type="checkbox"
+            checked={localSettings.enableRevalidation}
+            onChange={(e) => setLocalSettings({ ...localSettings, enableRevalidation: e.target.checked })}
+          />
+          <span className="toggle-slider" />
+        </label>
+      </SettingsField>
+
+      <SettingsField
+        label="Revalidation Interval (Hours)"
+        description="Hours between checking if covers have changed (0-720)"
+      >
+        <input
+          type="number"
+          className="input"
+          style={{ width: '120px' }}
+          min={0}
+          max={720}
+          value={localSettings.revalidationIntervalHours}
+          onChange={(e) => setLocalSettings({ ...localSettings, revalidationIntervalHours: parseInt(e.target.value) || 168 })}
+        />
       </SettingsField>
 
       <div style={{ marginTop: '20px', display: 'flex', gap: '12px' }}>

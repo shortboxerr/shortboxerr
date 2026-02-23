@@ -56,6 +56,13 @@ public static class CoverEndpoints
             .WithOpenApi()
             .Produces<DetailedCoverCacheStats>(200);
 
+        // Reset access statistics
+        group.MapPost("/cache/stats/reset", ResetAccessStats)
+            .WithName("ResetCoverAccessStats")
+            .WithDescription("Resets the cover cache access statistics (hits/misses/etc).")
+            .WithOpenApi()
+            .Produces(204);
+
         // Trigger cache cleanup (LRU eviction + retention policy)
         group.MapPost("/cleanup", TriggerCleanup)
             .WithName("TriggerCoverCacheCleanup")
@@ -83,6 +90,25 @@ public static class CoverEndpoints
             .Produces<CoverResult>(200)
             .Produces(400)
             .Produces(404);
+
+        // Cache warming endpoints
+        group.MapPost("/warm/series/{seriesId:int}", WarmSeriesCache)
+            .WithName("WarmSeriesCoverCache")
+            .WithDescription("Pre-fetches covers for a specific series.")
+            .WithOpenApi()
+            .Produces<CacheWarmingResult>(200);
+
+        group.MapPost("/warm", WarmCache)
+            .WithName("WarmCoverCache")
+            .WithDescription("Pre-fetches covers for multiple series.")
+            .WithOpenApi()
+            .Produces<CacheWarmingResult>(200);
+
+        group.MapGet("/warm/status", GetWarmingStatus)
+            .WithName("GetCoverWarmingStatus")
+            .WithDescription("Gets the status of the current cache warming operation.")
+            .WithOpenApi()
+            .Produces<CacheWarmingStatus>(200);
     }
 
     private static async Task<IResult> GetSeriesCover(
@@ -195,6 +221,12 @@ public static class CoverEndpoints
         return Results.Ok(stats);
     }
 
+    private static IResult ResetAccessStats(ICoverService coverService)
+    {
+        coverService.ResetAccessStats();
+        return Results.NoContent();
+    }
+
     private static async Task<IResult> TriggerCleanup(
         ICoverService coverService,
         CancellationToken cancellationToken)
@@ -250,5 +282,34 @@ public static class CoverEndpoints
 
         return Results.Ok(result);
     }
+
+    private static async Task<IResult> WarmSeriesCache(
+        int seriesId,
+        ICoverService coverService,
+        CancellationToken cancellationToken)
+    {
+        var result = await coverService.WarmSeriesCacheAsync(seriesId, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> WarmCache(
+        [FromBody] WarmCacheRequest request,
+        ICoverService coverService,
+        CancellationToken cancellationToken)
+    {
+        var result = await coverService.WarmCacheAsync(request.SeriesIds, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static IResult GetWarmingStatus(ICoverService coverService)
+    {
+        var status = coverService.GetWarmingStatus();
+        return Results.Ok(status);
+    }
+}
+
+public class WarmCacheRequest
+{
+    public List<int> SeriesIds { get; set; } = new();
 }
 

@@ -160,6 +160,11 @@ public static class DependencyInjection
         services.AddHostedService(provider =>
             provider.GetRequiredService<BackgroundServices.CoverCacheCleanupBackgroundService>());
 
+        // Log compression background service
+        services.AddSingleton<BackgroundServices.LogCompressionBackgroundService>();
+        services.AddHostedService(provider =>
+            provider.GetRequiredService<BackgroundServices.LogCompressionBackgroundService>());
+
         // Notification services
         services.AddScoped<INotificationService, NotificationService>();
         services.AddHttpClient<INotificationProvider, WebhookNotificationProvider>();
