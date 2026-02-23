@@ -314,13 +314,17 @@ export function PullListPage() {
 
   // Sort and deduplicate discovery issues (ComicVine API sometimes returns duplicates)
   const sortDiscoveryIssues = (issues: DiscoverableIssue[]): DiscoverableIssue[] => {
-    // First deduplicate by comicVineIssueId
-    const seen = new Set<number>();
+    // Deduplicate by unique key: volumeId + issueNumber (or issueId if available)
+    // WalkSoftly data has comicVineIssueId=0, so we need a composite key
+    const seen = new Set<string>();
     const unique = issues.filter(issue => {
-      if (seen.has(issue.comicVineIssueId)) {
+      const key = issue.comicVineIssueId > 0 
+        ? `issue:${issue.comicVineIssueId}`
+        : `volume:${issue.comicVineVolumeId}:${issue.issueNumber}`;
+      if (seen.has(key)) {
         return false;
       }
-      seen.add(issue.comicVineIssueId);
+      seen.add(key);
       return true;
     });
     
