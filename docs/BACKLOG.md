@@ -990,7 +990,7 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: Test result parsing ✅
 - [x] **Download client tests** ✅
   - AC: Mock SABnzbd API responses ✅ (21 tests)
-  - AC: Mock NZBGet API responses (deferred - NZBGet not implemented)
+  - AC: Mock NZBGet API responses ✅ (NzbgetClientTests.cs - implemented in EPIC 14.2)
   - AC: Test add/status/remove operations ✅
 - [x] **Integration tests** ✅ (partial)
   - AC: Full flow: search → download → import (deferred - import not implemented)
@@ -1902,7 +1902,7 @@ Full NZBGet support as an alternative to SABnzbd.
     - Settings (12 tests)
     - Priority enum (6 tests)
 
-### 14.3 Torrent Download Client Integration (Sonarr/Radarr Parity) - PARTIAL ✅
+### 14.3 Torrent Download Client Integration (Sonarr/Radarr Parity) ✅ COMPLETED
 Support for torrent-based downloading via popular clients.
 
 **Reference implementations:**
@@ -1910,10 +1910,10 @@ Support for torrent-based downloading via popular clients.
 - Sonarr: `src/NzbDrone.Core/Download/Clients/Transmission/`
 - Sonarr: `src/NzbDrone.Core/Download/Clients/Deluge/`
 
-**Priority order (based on Sonarr/Radarr popularity):**
+**All clients implemented:**
 1. qBittorrent (most popular, excellent API) ✅
-2. Transmission (lightweight, good API) - deferred
-3. Deluge (feature-rich, daemon-based) - deferred
+2. Transmission (lightweight, good API) ✅
+3. Deluge (feature-rich, daemon-based) ✅
 
 - [x] **Torrent client abstraction** ✅
   - AC: Create `ITorrentClient` interface ✅
