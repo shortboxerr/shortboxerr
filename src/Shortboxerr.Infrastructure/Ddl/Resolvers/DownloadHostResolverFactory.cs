@@ -116,6 +116,14 @@ public class DownloadHostResolverFactory : IDownloadHostResolverFactory
         RegisterResolver(new OneFichierResolver(
             _loggerFactory?.CreateLogger<OneFichierResolver>()));
 
+        // Rapidgator - Priority 15 (premium required for downloads)
+        RegisterResolver(new RapidgatorResolver(
+            _loggerFactory?.CreateLogger<RapidgatorResolver>()));
+
+        // Uploaded.net - Priority 16 (premium required for downloads)
+        RegisterResolver(new UploadedResolver(
+            _loggerFactory?.CreateLogger<UploadedResolver>()));
+
         // Zippyshare - Defunct (shut down March 2023)
         // Registered to gracefully detect and skip defunct links
         RegisterResolver(new ZippyshareResolver(
