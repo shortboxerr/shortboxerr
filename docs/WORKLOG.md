@@ -1,5 +1,56 @@
 # Worklog
 
+## Iteration 135 (2026-02-23)
+**Code Quality: Compiler Warning Fixes**
+
+### Summary
+Resolved all compiler warnings in the codebase, bringing the build warning count from 24+ to 0. Focused on nullable reference handling, async patterns, and test assertion style.
+
+### Commits
+1. `fix: resolve compiler warnings for nullable references and async patterns` - All warning fixes
+
+### Warnings Fixed
+
+#### CS8602 - Null Dereference (9 fixes)
+- `ReleaseDayBackgroundService.cs` - Settings null-coalescing
+- `AutoSearchBackgroundService.cs` - Settings null-coalescing
+- `ComicVineRefreshBackgroundService.cs` - Settings null-coalescing (2 locations)
+- `AutoSearchService.cs` - Settings null-coalescing (5 locations)
+
+#### CS8604 - Null Reference Argument (4 fixes)
+- `SensitiveDataDestructuringPolicy.cs` - Skip null dictionary keys
+- `IndexerHealthService.cs` - Default error message
+- `ReadComicOnlineAdapter.cs` - Default hostname
+
+#### CS8601 - Null Reference Assignment (2 fixes)
+- `SabnzbdClient.cs` - Null-forgiving after null check (2 locations)
+
+#### CS1998 - Async Without Await (5 fixes)
+- `PullListService.cs` - Return Task.FromResult
+- `CoverService.cs` - Return Task.FromResult
+- `DdlEndToEndIntegrationTests.cs` - Return Task.CompletedTask (2 tests)
+- `ReadComicOnlineAdapterTests.cs` - Return Task.CompletedTask
+
+#### xUnit2010 - Assertion Style (1 fix)
+- `TorrentImportServiceTests.cs` - Use Assert.Equal with StringComparer
+
+### Files Changed
+- `src/Shortboxerr.Infrastructure/BackgroundServices/ReleaseDayBackgroundService.cs`
+- `src/Shortboxerr.Infrastructure/BackgroundServices/AutoSearchBackgroundService.cs`
+- `src/Shortboxerr.Infrastructure/BackgroundServices/ComicVineRefreshBackgroundService.cs`
+- `src/Shortboxerr.Infrastructure/Search/AutoSearchService.cs`
+- `src/Shortboxerr.Infrastructure/Logging/SensitiveDataDestructuringPolicy.cs`
+- `src/Shortboxerr.Infrastructure/Nzb/IndexerHealthService.cs`
+- `src/Shortboxerr.Infrastructure/Nzb/SabnzbdClient.cs`
+- `src/Shortboxerr.Infrastructure/Ddl/ReadComicOnlineAdapter.cs`
+- `src/Shortboxerr.Infrastructure/PullList/PullListService.cs`
+- `src/Shortboxerr.Infrastructure/Services/CoverService.cs`
+- `tests/Shortboxerr.Tests/DdlEndToEndIntegrationTests.cs`
+- `tests/Shortboxerr.Tests/ReadComicOnlineAdapterTests.cs`
+- `tests/Shortboxerr.Tests/TorrentImportServiceTests.cs`
+
+---
+
 ## Iteration 134 (2026-02-23)
 **Download Client Health Status UI**
 
