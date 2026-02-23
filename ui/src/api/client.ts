@@ -983,10 +983,12 @@ export interface CoverCacheSettings {
 
 export interface CoverCacheStats {
   totalSizeBytes: number;
-  totalFiles: number;
+  totalCovers: number;
   seriesCovers: number;
   issueCovers: number;
-  cacheDirectory: string;
+  editionCovers: number;
+  oldestCover: string | null;
+  newestCover: string | null;
 }
 
 export interface CoverSizeStats {
@@ -1007,21 +1009,14 @@ export interface CoverCacheAccessStats {
   lastReset: string;
 }
 
-export interface DetailedCoverCacheStats {
-  totalSizeBytes: number;
-  totalFiles: number;
-  seriesCovers: number;
-  issueCovers: number;
-  cacheDirectory: string;
-  maxSizeBytes: number;
-  isOverLimit: boolean;
+export interface DetailedCoverCacheStats extends CoverCacheStats {
+  maxCacheSizeBytes: number;
   usagePercent: number;
-  retentionDays: number;
-  cleanupTargetPercent: number;
+  isOverLimit: boolean;
+  bytesOverLimit: number;
+  pendingEvictionCount: number;
   lastCleanupAt: string | null;
   lastCleanupEvictedCount: number;
-  pendingEvictionCount: number;
-  oldestFileDate: string | null;
   bySize: Record<string, CoverSizeStats>;
   accessStats: CoverCacheAccessStats;
 }

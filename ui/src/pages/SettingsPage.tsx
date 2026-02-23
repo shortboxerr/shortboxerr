@@ -1088,7 +1088,7 @@ function CoverCacheSettingsSection() {
           <div>
             <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Files</div>
             <div style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>
-              {cacheStats.totalFiles.toLocaleString()}
+              {cacheStats.totalCovers.toLocaleString()}
             </div>
           </div>
           <div>
