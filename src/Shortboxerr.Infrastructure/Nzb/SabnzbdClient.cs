@@ -569,7 +569,7 @@ public class SabnzbdClient : ISabnzbdClient
         var queryParams = new Dictionary<string, string>
         {
             ["mode"] = mode,
-            ["apikey"] = _settings.ApiKey,
+            ["apikey"] = _settings.ApiKey ?? string.Empty,
             ["output"] = "json"
         };
 
@@ -577,7 +577,10 @@ public class SabnzbdClient : ISabnzbdClient
         {
             foreach (var (key, value) in parameters)
             {
-                queryParams[key] = value;
+                if (value != null)
+                {
+                    queryParams[key] = value;
+                }
             }
         }
 
