@@ -297,7 +297,7 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
 
 ### 8.1 DDL Site Indexers (Comic Discovery)
 
-#### 8.1.1 GetComics.org Adapter (Primary) - PARTIAL ✅
+#### 8.1.1 GetComics.org Adapter (Primary) ✅ COMPLETED
 - [x] **HTML scraping for GetComics** ✅
   - AC: Parse search results page for release links ✅
   - AC: Extract all download host links from release pages ✅
@@ -377,7 +377,7 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
   - AC: Extract confirmation token for large files ✅
   - AC: Support folder links with file listing (detection only - folder download deferred)
 
-#### 8.2.7 Legacy/Additional Hosts - PARTIAL ✅
+#### 8.2.7 Legacy/Additional Hosts ✅ COMPLETED
 - [x] **Zippyshare resolver** ✅ (defunct, graceful handling)
   - AC: Detect and skip defunct links gracefully ✅
   - AC: Returns HostUnavailable with shutdown date info ✅
@@ -2090,7 +2090,7 @@ Ensure proper contrast and accessibility for both light and dark themes.
   - AC: Test with high contrast mode (Windows) - deferred
   - AC: Test keyboard navigation for all interactive elements - deferred
 
-### 14.6 Mylar3 Search Settings Parity - PARTIAL ✅
+### 14.6 Mylar3 Search Settings Parity ✅ COMPLETED
 Ensure full feature parity with Mylar3's search configuration options.
 
 **Reference**: Mylar3 `config.ini` [General] and [DDL] sections
