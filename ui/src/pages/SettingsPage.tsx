@@ -16,7 +16,8 @@ import type {
   EmailProviderSettings, EmailProviderRequest,
   PushoverProviderSettings, PushoverProviderRequest,
   PushbulletProviderSettings, PushbulletProviderRequest,
-  SearchSettings, PreferredQuality
+  SearchSettings, PreferredQuality,
+  DownloadClientHealthStatus, DownloadClientHealthSummary
 } from '../api/client';
 import { useTheme } from '../App';
 
@@ -3450,11 +3451,24 @@ function NzbIndexerModal({
 function DownloadClientsSettings() {
   const [showModal, setShowModal] = useState(false);
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
+  const [checkingHealth, setCheckingHealth] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: clients, isLoading, refetch } = useQuery({
     queryKey: ['downloadclients'],
     queryFn: api.getDownloadClients,
+  });
+
+  const { data: healthStatus, refetch: refetchHealth } = useQuery({
+    queryKey: ['downloadclient-health'],
+    queryFn: api.getDownloadClientHealth,
+    refetchInterval: 60000,
+  });
+
+  const { data: healthSummary, refetch: refetchSummary } = useQuery({
+    queryKey: ['downloadclient-health-summary'],
+    queryFn: api.getDownloadClientHealthSummary,
+    refetchInterval: 60000,
   });
 
   const toggleMutation = useMutation({
@@ -3494,15 +3508,113 @@ function DownloadClientsSettings() {
     handleModalClose();
   };
 
+  const handleCheckHealth = async () => {
+    setCheckingHealth(true);
+    try {
+      await api.checkAllDownloadClientHealth();
+      await refetchHealth();
+      await refetchSummary();
+    } finally {
+      setCheckingHealth(false);
+    }
+  };
+
+  const getHealthColor = (state: DownloadClientHealthStatus['state']) => {
+    switch (state) {
+      case 'Healthy': return 'var(--accent-success)';
+      case 'Degraded': return 'var(--accent-warning)';
+      case 'Unavailable': return 'var(--accent-error)';
+      case 'Offline': return 'var(--accent-danger)';
+      default: return 'var(--text-muted)';
+    }
+  };
+
+  const getHealthIcon = (state: DownloadClientHealthStatus['state']) => {
+    switch (state) {
+      case 'Healthy': return <CheckCircle size={14} />;
+      case 'Degraded': return <AlertCircle size={14} />;
+      case 'Unavailable': return <XCircle size={14} />;
+      case 'Offline': return <XCircle size={14} />;
+      default: return <Activity size={14} />;
+    }
+  };
+
+  const getClientHealth = (providerId: number): DownloadClientHealthStatus | undefined => {
+    return healthStatus?.find(h => h.providerId === providerId);
+  };
+
   return (
     <>
+      {/* Health Summary Section */}
+      {healthSummary && healthSummary.enabledClients > 0 && (
+        <SettingsSection title="Download Client Health">
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '16px' }}>
+            <div style={{
+              flex: '1 1 200px',
+              padding: '16px',
+              background: 'var(--bg-tertiary)',
+              borderRadius: 'var(--radius-md)',
+              textAlign: 'center',
+            }}>
+              <div style={{ fontSize: '24px', fontWeight: 600, color: healthSummary.overallHealthPercent >= 80 ? 'var(--accent-success)' : healthSummary.overallHealthPercent >= 50 ? 'var(--accent-warning)' : 'var(--accent-error)' }}>
+                {healthSummary.overallHealthPercent.toFixed(0)}%
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Overall Health</div>
+            </div>
+            <div style={{
+              flex: '1 1 200px',
+              padding: '16px',
+              background: 'var(--bg-tertiary)',
+              borderRadius: 'var(--radius-md)',
+              display: 'flex',
+              justifyContent: 'space-around',
+            }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '18px', fontWeight: 600, color: 'var(--accent-success)' }}>{healthSummary.healthyClients}</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Healthy</div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '18px', fontWeight: 600, color: 'var(--accent-warning)' }}>{healthSummary.degradedClients}</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Degraded</div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '18px', fontWeight: 600, color: 'var(--accent-error)' }}>{healthSummary.unavailableClients + healthSummary.offlineClients}</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Offline</div>
+              </div>
+            </div>
+            {healthSummary.averageDownloadTimeSeconds > 0 && (
+              <div style={{
+                flex: '1 1 200px',
+                padding: '16px',
+                background: 'var(--bg-tertiary)',
+                borderRadius: 'var(--radius-md)',
+                textAlign: 'center',
+              }}>
+                <div style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  {healthSummary.averageDownloadTimeSeconds.toFixed(1)}s
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Avg Download Time</div>
+              </div>
+            )}
+          </div>
+          <button
+            className="btn btn-secondary"
+            onClick={handleCheckHealth}
+            disabled={checkingHealth}
+            style={{ marginBottom: '8px' }}
+          >
+            {checkingHealth ? <><RefreshCw size={14} className="spinning" /> Checking...</> : <><Activity size={14} /> Check Health</>}
+          </button>
+        </SettingsSection>
+      )}
+
       <SettingsSection title="Download Clients">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
             Configure download clients for Usenet (SABnzbd), torrent, or DDL downloads.
           </p>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button className="btn btn-icon" onClick={() => refetch()} title="Refresh">
+            <button className="btn btn-icon" onClick={() => { refetch(); refetchHealth(); refetchSummary(); }} title="Refresh">
               <RefreshCw size={16} />
             </button>
             <button className="btn btn-primary" onClick={handleAdd}>
@@ -3523,12 +3635,84 @@ function DownloadClientsSettings() {
             </div>
           </div>
         ) : (
-          <ProviderTable
-            providers={clients}
-            onToggle={(id, enabled) => toggleMutation.mutate({ id, enabled })}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
+          <div className="data-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Health</th>
+                  <th>Stats</th>
+                  <th>Enabled</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {clients.map((client) => {
+                  const health = getClientHealth(client.id);
+                  return (
+                    <tr key={client.id}>
+                      <td>
+                        <div style={{ fontWeight: 500 }}>{client.name}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{client.implementation}</div>
+                      </td>
+                      <td>{client.type}</td>
+                      <td>
+                        {health ? (
+                          <span style={{ 
+                            display: 'inline-flex', 
+                            alignItems: 'center', 
+                            gap: '4px',
+                            color: getHealthColor(health.state),
+                            fontSize: '13px',
+                          }}>
+                            {getHealthIcon(health.state)}
+                            {health.state}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>—</span>
+                        )}
+                      </td>
+                      <td>
+                        {health && (health.successCount > 0 || health.failureCount > 0) ? (
+                          <div style={{ fontSize: '12px' }}>
+                            <span style={{ color: 'var(--accent-success)' }}>{health.successCount}</span>
+                            {' / '}
+                            <span style={{ color: 'var(--accent-error)' }}>{health.failureCount}</span>
+                            <span style={{ color: 'var(--text-muted)', marginLeft: '4px' }}>
+                              ({health.successRate.toFixed(0)}%)
+                            </span>
+                          </div>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>No data</span>
+                        )}
+                      </td>
+                      <td>
+                        <label className="toggle">
+                          <input
+                            type="checkbox"
+                            checked={client.isEnabled}
+                            onChange={(e) => toggleMutation.mutate({ id: client.id, enabled: e.target.checked })}
+                          />
+                          <span className="toggle-slider" />
+                        </label>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <button className="btn btn-icon btn-sm" onClick={() => handleEdit(client)} title="Edit">
+                            <Edit size={14} />
+                          </button>
+                          <button className="btn btn-icon btn-sm btn-danger" onClick={() => handleDelete(client)} title="Delete">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </SettingsSection>
 

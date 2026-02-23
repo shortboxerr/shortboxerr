@@ -973,6 +973,46 @@ export interface ProviderTestResult {
   latencyMs: number;
 }
 
+export interface DownloadClientHealthStatus {
+  providerId: number;
+  providerName: string;
+  type: string;
+  state: 'Unknown' | 'Healthy' | 'Degraded' | 'Unavailable' | 'Offline';
+  isHealthy: boolean;
+  averageDownloadTimeSeconds: number;
+  lastDownloadTimeSeconds: number | null;
+  successCount: number;
+  failureCount: number;
+  successRate: number;
+  lastSuccessAt: string | null;
+  lastFailureAt: string | null;
+  lastErrorMessage: string | null;
+  consecutiveFailures: number;
+  lastUpdatedAt: string;
+}
+
+export interface DownloadClientHealthSummary {
+  totalClients: number;
+  enabledClients: number;
+  healthyClients: number;
+  degradedClients: number;
+  unavailableClients: number;
+  offlineClients: number;
+  averageDownloadTimeSeconds: number;
+  overallHealthPercent: number;
+  generatedAt: string;
+}
+
+export interface DownloadClientCheckResult {
+  providerId: number;
+  providerName: string;
+  type: string;
+  success: boolean;
+  responseTimeMs: number;
+  errorMessage: string | null;
+  checkedAt: string;
+}
+
 export interface CreateProviderRequest {
   name: string;
   implementation: string;
@@ -1852,6 +1892,35 @@ export const api = {
     return await fetchApi<ProviderTestResult>('/api/v1/providers/test', {
       method: 'POST',
       body: JSON.stringify(request),
+    });
+  },
+
+  // Download Client Health
+  getDownloadClientHealth: async (): Promise<DownloadClientHealthStatus[]> => {
+    try {
+      return await fetchApi<DownloadClientHealthStatus[]>('/api/v1/downloadclients/health');
+    } catch {
+      return [];
+    }
+  },
+
+  getDownloadClientHealthSummary: async (): Promise<DownloadClientHealthSummary | null> => {
+    try {
+      return await fetchApi<DownloadClientHealthSummary>('/api/v1/downloadclients/health/summary');
+    } catch {
+      return null;
+    }
+  },
+
+  checkDownloadClientHealth: async (providerId: number): Promise<DownloadClientCheckResult> => {
+    return await fetchApi<DownloadClientCheckResult>(`/api/v1/downloadclients/health/check/${providerId}`, {
+      method: 'POST',
+    });
+  },
+
+  checkAllDownloadClientHealth: async (): Promise<DownloadClientCheckResult[]> => {
+    return await fetchApi<DownloadClientCheckResult[]>('/api/v1/downloadclients/health/check', {
+      method: 'POST',
     });
   },
 
