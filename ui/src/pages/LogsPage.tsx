@@ -179,11 +179,24 @@ export default function LogsPage() {
   };
 
   return (
-    <div className="logs-page flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-700">
-        <h1 className="text-2xl font-bold text-gray-100">System Logs</h1>
-        <div className="flex items-center gap-2">
+    <div className="logs-page">
+      {/* Compact header with integrated controls */}
+      <div className="logs-toolbar">
+        {/* Top row: Title, source selector, and actions */}
+        <div className="logs-toolbar-primary">
+          <h1 className="logs-title">System Logs</h1>
+          <select
+            className="input logs-source-select"
+            value={selectedFile}
+            onChange={(e) => setSelectedFile(e.target.value)}
+          >
+            <option value="recent">Recent Logs (Live)</option>
+            {logFiles.map((file) => (
+              <option key={file.fileName} value={file.fileName}>
+                {file.fileName} ({file.sizeFormatted})
+              </option>
+            ))}
+          </select>
           <button
             className="btn btn-icon"
             onClick={() => refetchLogs()}
@@ -192,92 +205,65 @@ export default function LogsPage() {
             <RefreshCw size={18} className={contentLoading ? 'animate-spin' : ''} />
           </button>
         </div>
-      </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3 p-4 bg-gray-800/50 border-b border-gray-700">
-        {/* File selector */}
-        <select
-          className="input w-48"
-          value={selectedFile}
-          onChange={(e) => setSelectedFile(e.target.value)}
-        >
-          <option value="recent">Recent Logs (Live)</option>
-          {logFiles.map((file) => (
-            <option key={file.fileName} value={file.fileName}>
-              {file.fileName} ({file.sizeFormatted})
-            </option>
-          ))}
-        </select>
-
-        {/* Level filter */}
-        <select
-          className="input w-36"
-          value={levelFilter}
-          onChange={(e) => setLevelFilter(e.target.value)}
-        >
-          {LOG_LEVELS.map((level) => (
-            <option key={level.value} value={level.value}>
-              {level.label}
-            </option>
-          ))}
-        </select>
-
-        {/* Search */}
-        <div className="relative flex-grow max-w-xs">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            className="input pl-9 w-full"
-            placeholder="Search logs..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        {/* Line count */}
-        <select
-          className="input w-28"
-          value={lineCount}
-          onChange={(e) => setLineCount(Number(e.target.value))}
-        >
-          <option value={100}>100 lines</option>
-          <option value={250}>250 lines</option>
-          <option value={500}>500 lines</option>
-          <option value={1000}>1000 lines</option>
-          <option value={5000}>5000 lines</option>
-        </select>
-
-        {/* Auto-scroll toggle */}
-        <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={autoScroll}
-            onChange={(e) => setAutoScroll(e.target.checked)}
-            className="rounded border-gray-600 bg-gray-700 text-blue-500"
-          />
-          Auto-scroll
-        </label>
-      </div>
-
-      {/* Stats bar */}
-      {logContent && (
-        <div className="flex items-center gap-4 px-4 py-2 bg-gray-900/50 text-xs text-gray-400 border-b border-gray-700">
-          <span>Total: {logContent.totalLines.toLocaleString()} lines</span>
-          {(levelFilter || searchTerm) && (
-            <span>Filtered: {logContent.filteredLines.toLocaleString()} lines</span>
+        {/* Bottom row: Filters in a compact grid */}
+        <div className="logs-toolbar-filters">
+          <div className="logs-filter-group">
+            <select
+              className="input"
+              value={levelFilter}
+              onChange={(e) => setLevelFilter(e.target.value)}
+            >
+              {LOG_LEVELS.map((level) => (
+                <option key={level.value} value={level.value}>
+                  {level.label}
+                </option>
+              ))}
+            </select>
+            <select
+              className="input"
+              value={lineCount}
+              onChange={(e) => setLineCount(Number(e.target.value))}
+            >
+              <option value={100}>100</option>
+              <option value={250}>250</option>
+              <option value={500}>500</option>
+              <option value={1000}>1k</option>
+              <option value={5000}>5k</option>
+            </select>
+            <label className="logs-autoscroll">
+              <input
+                type="checkbox"
+                checked={autoScroll}
+                onChange={(e) => setAutoScroll(e.target.checked)}
+              />
+              <span>Auto</span>
+            </label>
+          </div>
+          <div className="logs-search-wrapper">
+            <Search size={14} className="logs-search-icon" />
+            <input
+              type="text"
+              className="input logs-search-input"
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          {logContent && (
+            <div className="logs-stats">
+              <span>{logContent.returnedLines.toLocaleString()}</span>
+              <span className="logs-stats-separator">/</span>
+              <span className="logs-stats-total">{logContent.totalLines.toLocaleString()}</span>
+            </div>
           )}
-          <span>Showing: {logContent.returnedLines.toLocaleString()} lines</span>
         </div>
-      )}
+      </div>
 
       {/* Log content */}
       <div
         ref={logContainerRef}
-        className="flex-grow overflow-auto bg-gray-900"
-        style={{ 
-          fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace'
-        }}
+        className="logs-scroll-container"
       >
         {contentLoading && !logContent ? (
           <div className="flex items-center justify-center h-32 text-gray-400">
@@ -309,7 +295,7 @@ export default function LogsPage() {
               ))}
             </div>
             {/* Bottom spacer for scroll padding */}
-            <div style={{ height: '80px' }} />
+            <div className="logs-bottom-padding" />
           </div>
         )}
       </div>

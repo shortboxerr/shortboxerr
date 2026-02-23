@@ -3397,6 +3397,204 @@ tr.selected {
    Logs Page Styles
    =========================================== */
 
+/* Logs page layout */
+.logs-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.logs-scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #111827;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.logs-bottom-padding {
+  height: 64px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .logs-bottom-padding {
+    height: 32px;
+  }
+}
+
+/* Compact toolbar */
+.logs-toolbar {
+  background: rgba(31, 41, 55, 0.5);
+  border-bottom: 1px solid rgba(75, 85, 99, 0.5);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.logs-toolbar-primary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logs-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f3f4f6;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.logs-source-select {
+  flex: 1;
+  max-width: 220px;
+  min-width: 140px;
+}
+
+.logs-toolbar-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.logs-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.logs-filter-group .input {
+  width: auto;
+  min-width: 90px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.logs-filter-group select.input {
+  padding-right: 28px;
+}
+
+.logs-autoscroll {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #9ca3af;
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(55, 65, 81, 0.5);
+  border: 1px solid rgba(75, 85, 99, 0.5);
+}
+
+.logs-autoscroll:hover {
+  background: rgba(55, 65, 81, 0.8);
+}
+
+.logs-autoscroll input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+
+.logs-search-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 120px;
+  max-width: 200px;
+}
+
+.logs-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  pointer-events: none;
+}
+
+.logs-search-input {
+  width: 100%;
+  padding-left: 32px !important;
+  font-size: 13px;
+}
+
+.logs-stats {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  color: #6b7280;
+  padding: 6px 10px;
+  background: rgba(17, 24, 39, 0.5);
+  border-radius: 6px;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.logs-stats span:first-child {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.logs-stats-separator {
+  color: #4b5563;
+}
+
+.logs-stats-total {
+  color: #6b7280;
+}
+
+/* Mobile logs toolbar */
+@media (max-width: 640px) {
+  .logs-toolbar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .logs-title {
+    font-size: 1.1rem;
+  }
+
+  .logs-source-select {
+    max-width: none;
+    flex: 1;
+  }
+
+  .logs-toolbar-filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 6px;
+  }
+
+  .logs-filter-group {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 6px;
+  }
+
+  .logs-filter-group .input {
+    min-width: unset;
+  }
+
+  .logs-search-wrapper {
+    grid-column: 1 / 3;
+    max-width: none;
+  }
+
+  .logs-stats {
+    margin-left: 0;
+  }
+}
+
 /* Desktop log layout */
 .log-line-desktop {
   display: grid;
@@ -3423,8 +3621,8 @@ tr.selected {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: #6b7280;
-  border-bottom: 1px solid rgba(75, 85, 99, 0.5);
-  background-color: rgba(31, 41, 55, 0.5);
+  border-bottom: 1px solid rgba(75, 85, 99, 0.6);
+  background-color: rgba(31, 41, 55, 0.85);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -3503,31 +3701,6 @@ tr.selected {
 
   .log-header-row {
     display: none;
-  }
-
-  /* Logs toolbar mobile */
-  .logs-page .input {
-    width: 100% !important;
-    min-width: unset !important;
-  }
-
-  .logs-page .flex-wrap {
-    flex-direction: column;
-    align-items: stretch !important;
-  }
-
-  .logs-page .flex-wrap > * {
-    width: 100%;
-  }
-
-  .logs-page .flex-wrap .relative {
-    max-width: none !important;
-  }
-
-  /* Log files list mobile */
-  .logs-page .flex-wrap.gap-2 {
-    flex-direction: row;
-    flex-wrap: wrap;
   }
 }
 
