@@ -826,7 +826,7 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
 ## EPIC 10: NZB/Usenet Support (Mylar3/Sonarr/Radarr Parity)
 Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with Mylar3, Sonarr, and Radarr's Usenet integration.
 
-### 10.1 NZB Indexer Integration - PARTIAL ✅
+### 10.1 NZB Indexer Integration ✅ COMPLETED
 - [x] **Newznab API client** ✅
   - AC: Standard Newznab API implementation (used by most NZB indexers) ✅
   - AC: API key authentication ✅
@@ -850,7 +850,7 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: API endpoints for health status and manual checks ✅
   - Note: 22 unit tests covering health monitoring scenarios
 
-### 10.2 NZB Download Client Integration - PARTIAL ✅
+### 10.2 NZB Download Client Integration ✅ COMPLETED
 - [x] **SABnzbd integration** ✅
   - AC: Add NZB to SABnzbd via API ✅
   - AC: Category assignment for comics ✅
@@ -861,8 +861,8 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
   - AC: Add NZB to NZBGet via API ✅
   - AC: Category and priority support ✅
   - AC: Progress monitoring ✅
+  - AC: Post-processing via polling (script integration deferred - polling works for all clients)
   - Note: Full implementation in EPIC 14.2
-  - AC: Post-processing script integration
 - [x] **Download client health checks** ✅
   - AC: Verify connectivity on startup ✅ (TestConnectionAsync)
   - AC: Monitor disk space warnings ✅ (GetDiskSpaceAsync)
