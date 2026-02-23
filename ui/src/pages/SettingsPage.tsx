@@ -574,6 +574,8 @@ function GeneralSettings() {
 
       <LoggingSettingsSection />
 
+      <CoverCacheSettingsSection />
+
       {/* Reset API Key Confirmation Modal */}
       {showResetConfirm && (
         <div style={{
@@ -864,6 +866,273 @@ function LoggingSettingsSection() {
         >
           <Save size={16} />
           {updateMutation.isPending ? 'Saving...' : 'Save Logging Settings'}
+        </button>
+      </div>
+    </SettingsSection>
+  );
+}
+
+// ============== COVER CACHE SETTINGS ==============
+
+function CoverCacheSettingsSection() {
+  const queryClient = useQueryClient();
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ['coverCacheSettings'],
+    queryFn: api.getCoverCacheSettings,
+  });
+
+  const { data: cacheStats } = useQuery({
+    queryKey: ['coverCacheStats'],
+    queryFn: api.getCoverCacheStats,
+    refetchInterval: 30000,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: api.updateCoverCacheSettings,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['coverCacheSettings'] });
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    },
+    onError: () => {
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    },
+  });
+
+  const cleanupMutation = useMutation({
+    mutationFn: api.triggerCoverCacheCleanup,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['coverCacheStats'] });
+    },
+  });
+
+  const [localSettings, setLocalSettings] = useState({
+    maxCacheSizeMb: 500,
+    retentionDays: 0,
+    cleanupTargetPercent: 80,
+    cleanupIntervalHours: 24,
+    autoCleanupEnabled: true,
+    defaultSize: 'Medium',
+    downloadAllSizes: false,
+    maxConcurrentDownloads: 3,
+    downloadTimeoutSeconds: 30,
+  });
+
+  useEffect(() => {
+    if (settings) {
+      setLocalSettings({
+        maxCacheSizeMb: settings.maxCacheSizeMb,
+        retentionDays: settings.retentionDays,
+        cleanupTargetPercent: settings.cleanupTargetPercent,
+        cleanupIntervalHours: settings.cleanupIntervalHours,
+        autoCleanupEnabled: settings.autoCleanupEnabled,
+        defaultSize: settings.defaultSize,
+        downloadAllSizes: settings.downloadAllSizes,
+        maxConcurrentDownloads: settings.maxConcurrentDownloads,
+        downloadTimeoutSeconds: settings.downloadTimeoutSeconds,
+      });
+    }
+  }, [settings]);
+
+  const handleSave = () => {
+    setSaveStatus('saving');
+    updateMutation.mutate(localSettings);
+  };
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+  };
+
+  if (isLoading) {
+    return (
+      <SettingsSection title="Cover Cache">
+        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          Loading cover cache settings...
+        </div>
+      </SettingsSection>
+    );
+  }
+
+  return (
+    <SettingsSection title="Cover Cache">
+      {saveStatus !== 'idle' && (
+        <div style={{
+          padding: '8px 12px',
+          marginBottom: '16px',
+          borderRadius: 'var(--radius-sm)',
+          fontSize: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          background: saveStatus === 'saving' ? 'var(--bg-tertiary)' :
+                     saveStatus === 'saved' ? 'rgba(92, 184, 92, 0.1)' :
+                     'rgba(217, 83, 79, 0.1)',
+          border: `1px solid ${
+            saveStatus === 'saving' ? 'var(--border-color)' :
+            saveStatus === 'saved' ? 'var(--accent-success)' :
+            'var(--accent-danger)'
+          }`,
+        }}>
+          {saveStatus === 'saving' && 'Saving changes...'}
+          {saveStatus === 'saved' && <><CheckCircle size={14} /> Settings saved</>}
+          {saveStatus === 'error' && <><XCircle size={14} /> Failed to save settings</>}
+        </div>
+      )}
+
+      {/* Cache Statistics */}
+      {cacheStats && (
+        <div style={{
+          background: 'var(--bg-tertiary)',
+          borderRadius: 'var(--radius-md)',
+          padding: '16px',
+          marginBottom: '20px',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+          gap: '16px',
+        }}>
+          <div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Size</div>
+            <div style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>
+              {formatBytes(cacheStats.totalSizeBytes)}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Files</div>
+            <div style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>
+              {cacheStats.totalFiles.toLocaleString()}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Limit</div>
+            <div style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>
+              {localSettings.maxCacheSizeMb} MB
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Usage</div>
+            <div style={{ fontSize: '18px', fontWeight: 600, color: 
+              cacheStats.totalSizeBytes > localSettings.maxCacheSizeMb * 1024 * 1024 * 0.9 ? 'var(--accent-warning)' : 'var(--accent-success)'
+            }}>
+              {Math.round((cacheStats.totalSizeBytes / (localSettings.maxCacheSizeMb * 1024 * 1024)) * 100)}%
+            </div>
+          </div>
+        </div>
+      )}
+
+      <SettingsField
+        label="Maximum Cache Size (MB)"
+        description="Maximum disk space for cached cover images (10-10240 MB)"
+      >
+        <input
+          type="number"
+          className="input"
+          style={{ width: '120px' }}
+          min={10}
+          max={10240}
+          value={localSettings.maxCacheSizeMb}
+          onChange={(e) => setLocalSettings({ ...localSettings, maxCacheSizeMb: parseInt(e.target.value) || 500 })}
+        />
+      </SettingsField>
+
+      <SettingsField
+        label="Retention Days"
+        description="Days to keep cached covers (0 = indefinite)"
+      >
+        <input
+          type="number"
+          className="input"
+          style={{ width: '120px' }}
+          min={0}
+          max={365}
+          value={localSettings.retentionDays}
+          onChange={(e) => setLocalSettings({ ...localSettings, retentionDays: parseInt(e.target.value) || 0 })}
+        />
+      </SettingsField>
+
+      <SettingsField
+        label="Cleanup Target (%)"
+        description="When cleaning up, reduce cache to this percentage of max"
+      >
+        <input
+          type="number"
+          className="input"
+          style={{ width: '120px' }}
+          min={50}
+          max={95}
+          value={localSettings.cleanupTargetPercent}
+          onChange={(e) => setLocalSettings({ ...localSettings, cleanupTargetPercent: parseInt(e.target.value) || 80 })}
+        />
+      </SettingsField>
+
+      <SettingsField
+        label="Cleanup Interval (Hours)"
+        description="How often to run background cleanup (0 = disabled)"
+      >
+        <input
+          type="number"
+          className="input"
+          style={{ width: '120px' }}
+          min={0}
+          max={168}
+          value={localSettings.cleanupIntervalHours}
+          onChange={(e) => setLocalSettings({ ...localSettings, cleanupIntervalHours: parseInt(e.target.value) || 24 })}
+        />
+      </SettingsField>
+
+      <SettingsField
+        label="Automatic Cleanup"
+        description="Automatically clean up cache when limit is exceeded"
+      >
+        <label className="toggle">
+          <input
+            type="checkbox"
+            checked={localSettings.autoCleanupEnabled}
+            onChange={(e) => setLocalSettings({ ...localSettings, autoCleanupEnabled: e.target.checked })}
+          />
+          <span className="toggle-slider" />
+        </label>
+      </SettingsField>
+
+      <SettingsField
+        label="Default Cover Size"
+        description="Size to download when not specified"
+      >
+        <select
+          className="input"
+          style={{ width: '150px' }}
+          value={localSettings.defaultSize}
+          onChange={(e) => setLocalSettings({ ...localSettings, defaultSize: e.target.value })}
+        >
+          <option value="Thumb">Thumb</option>
+          <option value="Small">Small</option>
+          <option value="Medium">Medium</option>
+          <option value="Large">Large</option>
+        </select>
+      </SettingsField>
+
+      <div style={{ marginTop: '20px', display: 'flex', gap: '12px' }}>
+        <button
+          className="btn btn-primary"
+          onClick={handleSave}
+          disabled={updateMutation.isPending}
+        >
+          <Save size={16} />
+          {updateMutation.isPending ? 'Saving...' : 'Save Settings'}
+        </button>
+        <button
+          className="btn btn-secondary"
+          onClick={() => cleanupMutation.mutate()}
+          disabled={cleanupMutation.isPending}
+        >
+          <RotateCcw size={16} />
+          {cleanupMutation.isPending ? 'Cleaning...' : 'Run Cleanup Now'}
         </button>
       </div>
     </SettingsSection>

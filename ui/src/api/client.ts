@@ -867,6 +867,34 @@ export interface LoggingSettings {
   retentionDays: number;
 }
 
+export interface CoverCacheSettings {
+  cacheDirectory: string;
+  retentionDays: number;
+  maxCacheSizeMb: number;
+  cleanupTargetPercent: number;
+  cleanupIntervalHours: number;
+  autoCleanupEnabled: boolean;
+  defaultSize: string;
+  downloadAllSizes: boolean;
+  maxConcurrentDownloads: number;
+  downloadTimeoutSeconds: number;
+}
+
+export interface CoverCacheStats {
+  totalSizeBytes: number;
+  totalFiles: number;
+  seriesCovers: number;
+  issueCovers: number;
+  cacheDirectory: string;
+}
+
+export interface CoverCleanupResult {
+  success: boolean;
+  filesRemoved: number;
+  bytesFreed: number;
+  message?: string;
+}
+
 export interface NamingToken {
   token: string;
   description: string;
@@ -1582,6 +1610,43 @@ export const api = {
     return await fetchApi<UiSettings>('/api/v1/settings/ui', {
       method: 'PUT',
       body: JSON.stringify(merged),
+    });
+  },
+
+  // Cover Cache Settings
+  getCoverCacheSettings: async (): Promise<CoverCacheSettings> => {
+    try {
+      return await fetchApi<CoverCacheSettings>('/api/v1/settings/covers');
+    } catch {
+      return {
+        cacheDirectory: 'covers',
+        retentionDays: 0,
+        maxCacheSizeMb: 500,
+        cleanupTargetPercent: 80,
+        cleanupIntervalHours: 24,
+        autoCleanupEnabled: true,
+        defaultSize: 'Medium',
+        downloadAllSizes: false,
+        maxConcurrentDownloads: 3,
+        downloadTimeoutSeconds: 30,
+      };
+    }
+  },
+
+  updateCoverCacheSettings: async (settings: Partial<CoverCacheSettings>): Promise<CoverCacheSettings> => {
+    return await fetchApi<CoverCacheSettings>('/api/v1/settings/covers', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+  },
+
+  getCoverCacheStats: async (): Promise<CoverCacheStats> => {
+    return await fetchApi<CoverCacheStats>('/api/v1/covers/cache/stats');
+  },
+
+  triggerCoverCacheCleanup: async (): Promise<CoverCleanupResult> => {
+    return await fetchApi<CoverCleanupResult>('/api/v1/covers/cleanup', {
+      method: 'POST',
     });
   },
 

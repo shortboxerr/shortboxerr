@@ -9,6 +9,17 @@ public static class SettingsEndpoints
         var group = app.MapGroup("/api/v1/settings")
             .WithTags("Settings");
 
+        // Cover Cache Settings
+        group.MapGet("/covers", GetCoverSettings)
+            .WithName("GetCoverSettings")
+            .WithOpenApi()
+            .Produces<CoverCacheSettingsResponse>(200);
+
+        group.MapPut("/covers", UpdateCoverSettings)
+            .WithName("UpdateCoverSettings")
+            .WithOpenApi()
+            .Produces<CoverCacheSettingsResponse>(200);
+
         // UI Settings
         group.MapGet("/ui", GetUiSettings)
             .WithName("GetUiSettings")
@@ -97,6 +108,102 @@ public static class SettingsEndpoints
             .WithOpenApi()
             .Produces(204)
             .Produces(404);
+    }
+
+    private static async Task<IResult> GetCoverSettings(ISettingsService settingsService, CancellationToken cancellationToken)
+    {
+        var settings = await settingsService.GetAsync<CoverSettings>("covers", new CoverSettings(), cancellationToken)
+            ?? new CoverSettings();
+
+        return Results.Ok(new CoverCacheSettingsResponse
+        {
+            CacheDirectory = settings.CacheDirectory,
+            RetentionDays = settings.RetentionDays,
+            MaxCacheSizeMb = settings.MaxCacheSizeBytes / (1024 * 1024),
+            CleanupTargetPercent = settings.CleanupTargetPercent,
+            CleanupIntervalHours = settings.CleanupIntervalHours,
+            AutoCleanupEnabled = settings.AutoCleanupEnabled,
+            DefaultSize = settings.DefaultSize.ToString(),
+            DownloadAllSizes = settings.DownloadAllSizes,
+            MaxConcurrentDownloads = settings.MaxConcurrentDownloads,
+            DownloadTimeoutSeconds = settings.DownloadTimeoutSeconds
+        });
+    }
+
+    private static async Task<IResult> UpdateCoverSettings(
+        CoverCacheSettingsRequest request,
+        ISettingsService settingsService,
+        CancellationToken cancellationToken)
+    {
+        // Validate max cache size (10MB - 10GB)
+        if (request.MaxCacheSizeMb.HasValue && (request.MaxCacheSizeMb < 10 || request.MaxCacheSizeMb > 10240))
+        {
+            return Results.BadRequest(new { error = "MaxCacheSizeMb must be between 10 and 10240 (10GB)." });
+        }
+
+        // Validate cleanup target percent (50-95%)
+        if (request.CleanupTargetPercent.HasValue && (request.CleanupTargetPercent < 50 || request.CleanupTargetPercent > 95))
+        {
+            return Results.BadRequest(new { error = "CleanupTargetPercent must be between 50 and 95." });
+        }
+
+        // Validate cleanup interval (0-168 hours = 1 week)
+        if (request.CleanupIntervalHours.HasValue && (request.CleanupIntervalHours < 0 || request.CleanupIntervalHours > 168))
+        {
+            return Results.BadRequest(new { error = "CleanupIntervalHours must be between 0 and 168." });
+        }
+
+        // Validate retention days (0-365)
+        if (request.RetentionDays.HasValue && (request.RetentionDays < 0 || request.RetentionDays > 365))
+        {
+            return Results.BadRequest(new { error = "RetentionDays must be between 0 and 365." });
+        }
+
+        // Get existing settings
+        var settings = await settingsService.GetAsync<CoverSettings>("covers", new CoverSettings(), cancellationToken)
+            ?? new CoverSettings();
+
+        // Update only provided fields
+        if (!string.IsNullOrEmpty(request.CacheDirectory))
+            settings.CacheDirectory = request.CacheDirectory;
+        if (request.RetentionDays.HasValue)
+            settings.RetentionDays = request.RetentionDays.Value;
+        if (request.MaxCacheSizeMb.HasValue)
+            settings.MaxCacheSizeBytes = request.MaxCacheSizeMb.Value * 1024 * 1024;
+        if (request.CleanupTargetPercent.HasValue)
+            settings.CleanupTargetPercent = request.CleanupTargetPercent.Value;
+        if (request.CleanupIntervalHours.HasValue)
+            settings.CleanupIntervalHours = request.CleanupIntervalHours.Value;
+        if (request.AutoCleanupEnabled.HasValue)
+            settings.AutoCleanupEnabled = request.AutoCleanupEnabled.Value;
+        if (!string.IsNullOrEmpty(request.DefaultSize))
+        {
+            if (Enum.TryParse<CoverSize>(request.DefaultSize, true, out var size))
+                settings.DefaultSize = size;
+        }
+        if (request.DownloadAllSizes.HasValue)
+            settings.DownloadAllSizes = request.DownloadAllSizes.Value;
+        if (request.MaxConcurrentDownloads.HasValue)
+            settings.MaxConcurrentDownloads = Math.Clamp(request.MaxConcurrentDownloads.Value, 1, 10);
+        if (request.DownloadTimeoutSeconds.HasValue)
+            settings.DownloadTimeoutSeconds = Math.Clamp(request.DownloadTimeoutSeconds.Value, 5, 120);
+
+        // Save settings
+        await settingsService.SetAsync("covers", settings, cancellationToken);
+
+        return Results.Ok(new CoverCacheSettingsResponse
+        {
+            CacheDirectory = settings.CacheDirectory,
+            RetentionDays = settings.RetentionDays,
+            MaxCacheSizeMb = settings.MaxCacheSizeBytes / (1024 * 1024),
+            CleanupTargetPercent = settings.CleanupTargetPercent,
+            CleanupIntervalHours = settings.CleanupIntervalHours,
+            AutoCleanupEnabled = settings.AutoCleanupEnabled,
+            DefaultSize = settings.DefaultSize.ToString(),
+            DownloadAllSizes = settings.DownloadAllSizes,
+            MaxConcurrentDownloads = settings.MaxConcurrentDownloads,
+            DownloadTimeoutSeconds = settings.DownloadTimeoutSeconds
+        });
     }
 
     private static async Task<IResult> GetUiSettings(ISettingsService settingsService, CancellationToken cancellationToken)
@@ -496,4 +603,71 @@ public class LoggingSettings
     /// Number of days to retain log files before auto-cleanup
     /// </summary>
     public int RetentionDays { get; set; } = 30;
+}
+
+public class CoverCacheSettingsRequest
+{
+    public string? CacheDirectory { get; set; }
+    public int? RetentionDays { get; set; }
+    public long? MaxCacheSizeMb { get; set; }
+    public int? CleanupTargetPercent { get; set; }
+    public int? CleanupIntervalHours { get; set; }
+    public bool? AutoCleanupEnabled { get; set; }
+    public string? DefaultSize { get; set; }
+    public bool? DownloadAllSizes { get; set; }
+    public int? MaxConcurrentDownloads { get; set; }
+    public int? DownloadTimeoutSeconds { get; set; }
+}
+
+public class CoverCacheSettingsResponse
+{
+    /// <summary>
+    /// Directory where covers are cached.
+    /// </summary>
+    public string CacheDirectory { get; set; } = "covers";
+
+    /// <summary>
+    /// Number of days to keep cached covers (0 = indefinite).
+    /// </summary>
+    public int RetentionDays { get; set; } = 0;
+
+    /// <summary>
+    /// Maximum cache size in megabytes (0 = unlimited).
+    /// </summary>
+    public long MaxCacheSizeMb { get; set; } = 500;
+
+    /// <summary>
+    /// Target cache size after cleanup as percentage of max.
+    /// </summary>
+    public int CleanupTargetPercent { get; set; } = 80;
+
+    /// <summary>
+    /// Interval in hours for background cache cleanup (0 = disabled).
+    /// </summary>
+    public int CleanupIntervalHours { get; set; } = 24;
+
+    /// <summary>
+    /// Whether automatic cleanup is enabled.
+    /// </summary>
+    public bool AutoCleanupEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Default size to download (Thumb, Small, Medium, Large).
+    /// </summary>
+    public string DefaultSize { get; set; } = "Medium";
+
+    /// <summary>
+    /// Whether to download all sizes when fetching a cover.
+    /// </summary>
+    public bool DownloadAllSizes { get; set; } = false;
+
+    /// <summary>
+    /// Maximum concurrent downloads.
+    /// </summary>
+    public int MaxConcurrentDownloads { get; set; } = 3;
+
+    /// <summary>
+    /// Timeout for cover downloads in seconds.
+    /// </summary>
+    public int DownloadTimeoutSeconds { get; set; } = 30;
 }

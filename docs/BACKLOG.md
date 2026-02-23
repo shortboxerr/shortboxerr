@@ -794,7 +794,7 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: Enforce `RetentionDays` setting via background cleanup ✅
   - AC: Background service for periodic cache cleanup ✅
   - AC: API endpoint to trigger manual cleanup: POST /api/v1/covers/cleanup ✅
-  - AC: Settings UI for cache size limit configuration (deferred to frontend)
+  - AC: Settings UI for cache size limit configuration ✅ (Iteration 117)
 
 - [ ] **Cache warming** (deferred)
   - AC: Optionally pre-fetch covers when series added

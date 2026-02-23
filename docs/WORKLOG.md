@@ -1,5 +1,47 @@
 # Worklog
 
+## Iteration 117 (2026-02-17)
+**EPIC 9.13: Cover Cache Settings UI**
+
+### Summary
+Implemented the Settings UI for cover cache configuration (previously deferred from EPIC 9.13). Added API endpoints and frontend UI to manage cover cache size, cleanup intervals, and retention policies.
+
+### Commits
+1. `feat(settings): add cover cache settings API and UI`
+
+### Deliverables
+
+#### Backend API (SettingsEndpoints.cs)
+- `GET /api/v1/settings/covers` - Get cover cache settings
+- `PUT /api/v1/settings/covers` - Update cover cache settings
+- Validation: max cache size (10-10240 MB), cleanup percent (50-95%), interval (0-168 hours)
+
+#### Frontend API Client (client.ts)
+- `getCoverCacheSettings()` - Fetch current settings
+- `updateCoverCacheSettings()` - Save settings
+- `getCoverCacheStats()` - Get cache statistics
+- `triggerCoverCacheCleanup()` - Manual cleanup trigger
+
+#### Settings UI (SettingsPage.tsx)
+- New "Cover Cache" section in General Settings tab
+- Cache statistics display: total size, file count, usage percentage
+- Configurable settings:
+  - Maximum cache size (MB)
+  - Retention days (0 = indefinite)
+  - Cleanup target percentage
+  - Cleanup interval (hours)
+  - Automatic cleanup toggle
+  - Default cover size (Thumb/Small/Medium/Large)
+- "Run Cleanup Now" button for manual cache management
+
+### Files Changed
+- `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` - Added cover settings endpoints
+- `ui/src/api/client.ts` - Added cover cache API types and methods
+- `ui/src/pages/SettingsPage.tsx` - Added CoverCacheSettingsSection component
+- `docs/BACKLOG.md` - Marked EPIC 9.13 cache settings UI as completed
+
+---
+
 ## Iteration 116 (2026-02-17)
 **EPIC 9: ComicVine Integration - UI Completion & Backlog Cleanup**
 
