@@ -1082,7 +1082,7 @@ Track upcoming comic releases and automate wanted list management. Must achieve 
   - Note: 8 unit tests added
 
 ### 11.4 Pull List Notifications ✅ COMPLETED
-In-app notifications and webhook providers fully implemented. Additional channels (email, Pushover) are future enhancements.
+In-app notifications and external notification providers fully implemented including webhooks, email, Pushover, and Pushbullet.
 
 - [x] **In-app notifications (notification center)** ✅
   - AC: Notification entity with types (Info, Success, Warning, Error, NewRelease, Grabbed, WeeklySummary, Health, Update) ✅
@@ -1153,7 +1153,16 @@ In-app notifications and webhook providers fully implemented. Additional channel
   - AC: API endpoints: CRUD for /api/v1/notifications/email-providers ✅
   - AC: Test endpoint: POST /api/v1/notifications/email-providers/test ✅
   - AC: Settings UI for managing email providers ✅ (Iteration 131)
-- [ ] **Pushover/Pushbullet support** (future)
+- [x] **Pushover/Pushbullet support** ✅ (Iteration 133)
+  - AC: Pushover provider with API token/user key authentication ✅
+  - AC: Pushover priority levels (-2 to 2) including emergency with retry/expire ✅
+  - AC: Pushover device targeting and sound selection ✅
+  - AC: Pushbullet provider with access token authentication ✅
+  - AC: Pushbullet device, channel, and email targeting ✅
+  - AC: Full CRUD API endpoints for both providers ✅
+  - AC: Test endpoints for connection validation ✅
+  - AC: Settings UI for both providers ✅
+  - AC: 46 unit tests covering provider functionality ✅
 
 ### 11.9 Pull List UX Improvements ✅ COMPLETED
 - [x] **Empty state improvements** ✅
@@ -2595,9 +2604,9 @@ Pull list data doesn't match Mylar3's for the same week.
 11. **15.13 NewznabClient User-Agent Rejection** - ✅ COMPLETED (Iteration 129)
 12. **15.14 EF Core Query Splitting** - ✅ COMPLETED (Iteration 130)
 
-### P5 - Medium (Log Quality)
-13. **15.15 Download Client Error Log Noise** - READY
-14. **15.16 Background Service Graceful Degradation** - READY
+### P5 - Medium (Log Quality) ✅ ALL COMPLETED (Iteration 132)
+13. **15.15 Download Client Error Log Noise** - ✅ COMPLETED (Iteration 132)
+14. **15.16 Background Service Graceful Degradation** - ✅ COMPLETED (Iteration 132)
 
 ### 15.15 Download Client Error Log Noise ✅ COMPLETED (Iteration 132)
 Download clients log at ERROR level when server is unreachable, causing log spam in dev/test environments.

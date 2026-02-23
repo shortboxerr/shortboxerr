@@ -1,5 +1,50 @@
 # Worklog
 
+## Iteration 133 (2026-02-17)
+**EPIC 11.4: Pushover and Pushbullet Notification Providers**
+
+### Summary
+Added push notification support via Pushover and Pushbullet services, completing the notification provider ecosystem. Both providers include full CRUD APIs, test endpoints, settings UI, and unit tests.
+
+### Commits
+1. `fix(ui): align CoverCacheStats types with backend API` - Fixed Settings page blank render
+2. `feat(notifications): add Pushover and Pushbullet providers` - Backend implementation
+3. `test(notifications): add unit tests for Pushover and Pushbullet providers` - 46 unit tests
+4. `feat(ui): add Pushover and Pushbullet settings UI` - Frontend components
+
+### Deliverables
+
+#### Pushover Provider
+- Settings class with API token, user key, devices, priority, sound, retry/expire
+- Provider implementation with validation and send functionality
+- Full CRUD API endpoints (`/api/v1/notifications/pushover-providers`)
+- Test endpoint for connection validation
+- Settings UI with priority selection, device targeting, sound options
+
+#### Pushbullet Provider
+- Settings class with access token, device ID, channel tag, email targeting
+- Provider implementation with note/link push types
+- Full CRUD API endpoints (`/api/v1/notifications/pushbullet-providers`)
+- Test endpoint for connection validation
+- Settings UI with targeting options
+
+#### Unit Tests
+- 23 tests for Pushover provider (validation, send, test, settings)
+- 23 tests for Pushbullet provider (validation, send, test, settings)
+
+### Files Changed
+- `src/Shortboxerr.Core/Notifications/INotificationProvider.cs` - Added PushoverProviderSettings, PushbulletProviderSettings
+- `src/Shortboxerr.Infrastructure/Notifications/PushoverNotificationProvider.cs` - New provider
+- `src/Shortboxerr.Infrastructure/Notifications/PushbulletNotificationProvider.cs` - New provider
+- `src/Shortboxerr.Infrastructure/DependencyInjection.cs` - Registered new providers
+- `src/Shortboxerr.Api/Endpoints/NotificationEndpoints.cs` - Added provider endpoints
+- `tests/Shortboxerr.Tests/PushoverNotificationProviderTests.cs` - New test file
+- `tests/Shortboxerr.Tests/PushbulletNotificationProviderTests.cs` - New test file
+- `ui/src/api/client.ts` - Added types and API methods
+- `ui/src/pages/SettingsPage.tsx` - Added provider sections and modals
+
+---
+
 ## Iteration 132 (2026-02-23)
 **EPIC 15.15 & 15.16: Download Client Error Log Noise & Graceful Degradation**
 

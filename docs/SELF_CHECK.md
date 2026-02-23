@@ -2,9 +2,9 @@
 
 ## Summary
 
-Iteration 132 completed: Fixed download client error log noise and added graceful degradation for background services when no clients are configured.
+Iteration 133 completed: Added Pushover and Pushbullet push notification providers with full backend, API, UI, and tests.
 
-## Recent Iterations (128-132)
+## Recent Iterations (128-133)
 
 | Iteration | Feature | Status |
 |-----------|---------|--------|
@@ -13,29 +13,40 @@ Iteration 132 completed: Fixed download client error log noise and added gracefu
 | 130 | EF Core Query Splitting | ✅ |
 | 131 | Email Provider Settings UI | ✅ |
 | 132 | Download Client Log Noise & Graceful Degradation | ✅ |
+| 133 | Pushover & Pushbullet Notification Providers | ✅ |
 
-## Iteration 132 Details
+## Iteration 133 Details
 
-### Issues Addressed
-1. **15.15 Download Client Error Log Noise** - SabnzbdClient logging at ERROR level every minute when unreachable
-2. **15.16 Background Service Graceful Degradation** - NzbImportBackgroundService polling when no client configured
+### Features Implemented
+1. **Pushover Notification Provider**
+   - API token and user key authentication
+   - Priority levels (-2 to 2, including emergency)
+   - Device targeting, custom sounds
+   - Retry/expire settings for emergency priority
+   - Full CRUD API endpoints
+   - Settings UI with all options
 
-### Changes Made
-1. Added `IsConfigured` property to `INzbDownloadClient` interface
-2. Implemented smart logging: WARN on first failure, DEBUG on subsequent
-3. Return empty results when client not configured (no errors)
-4. Background service checks for configured clients before processing
-5. Reduced polling interval to 5 minutes when no clients configured
-6. 12 new unit tests for configuration checking
+2. **Pushbullet Notification Provider**
+   - Access token authentication
+   - Device, channel, and email targeting
+   - Note and link push types
+   - Full CRUD API endpoints
+   - Settings UI with targeting options
+
+3. **CoverCacheStats Fix**
+   - Fixed type mismatch between frontend and backend
+   - Changed `totalFiles` to `totalCovers` to match backend
 
 ### Files Changed
-- `src/Shortboxerr.Core/Nzb/INzbDownloadClient.cs`
-- `src/Shortboxerr.Core/Nzb/ISabnzbdClient.cs`
-- `src/Shortboxerr.Core/Nzb/INzbgetClient.cs`
-- `src/Shortboxerr.Infrastructure/Nzb/SabnzbdClient.cs`
-- `src/Shortboxerr.Infrastructure/Nzb/NzbgetClient.cs`
-- `src/Shortboxerr.Infrastructure/BackgroundServices/NzbImportBackgroundService.cs`
-- `tests/Shortboxerr.Tests/SabnzbdClientTests.cs`
+- `src/Shortboxerr.Core/Notifications/INotificationProvider.cs`
+- `src/Shortboxerr.Infrastructure/Notifications/PushoverNotificationProvider.cs` (new)
+- `src/Shortboxerr.Infrastructure/Notifications/PushbulletNotificationProvider.cs` (new)
+- `src/Shortboxerr.Infrastructure/DependencyInjection.cs`
+- `src/Shortboxerr.Api/Endpoints/NotificationEndpoints.cs`
+- `tests/Shortboxerr.Tests/PushoverNotificationProviderTests.cs` (new)
+- `tests/Shortboxerr.Tests/PushbulletNotificationProviderTests.cs` (new)
+- `ui/src/api/client.ts`
+- `ui/src/pages/SettingsPage.tsx`
 
 ## Server Configuration
 
@@ -54,6 +65,15 @@ Iteration 132 completed: Fixed download client error log noise and added gracefu
 | 15.15 Download Client Log Noise | ✅ | 132 |
 | 15.16 Background Service Graceful Degradation | ✅ | 132 |
 
+## Notification Providers - Complete
+
+| Provider | Backend | API | UI | Tests |
+|----------|---------|-----|-----|-------|
+| Webhook | ✅ | ✅ | ✅ | ✅ |
+| Email (SMTP) | ✅ | ✅ | ✅ | - |
+| Pushover | ✅ | ✅ | ✅ | ✅ (23) |
+| Pushbullet | ✅ | ✅ | ✅ | ✅ (23) |
+
 ## Remaining Backlog Items
 
 ### Research Tasks
@@ -64,15 +84,16 @@ Iteration 132 completed: Fixed download client error log noise and added gracefu
 - EPIC 12.4: Rate limit awareness
 
 ### Future Features
-- EPIC 11.4: Pushover/Pushbullet notifications
 - EPIC 16: E2E Testing Infrastructure
 - Download client health check endpoint (deferred from 15.16)
 
 ## Validation
 
 - [x] Build succeeds (24 warnings, 0 errors)
-- [x] All 34 SabnzbdClient tests passing (12 new)
-- [x] IsConfigured property on download clients
-- [x] Background service skips when no clients configured
+- [x] All 46 push notification provider tests passing
+- [x] TypeScript compilation passes
+- [x] Pushover provider with all settings
+- [x] Pushbullet provider with all settings
+- [x] Settings UI sections for both providers
 - [x] BACKLOG.md updated
 - [x] WORKLOG.md updated
