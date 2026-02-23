@@ -603,7 +603,7 @@ public class CoverService : ICoverService
         return await EnforceCacheLimitInternalAsync(settings, files, cancellationToken);
     }
 
-    private async Task<CoverCleanupResult> EnforceCacheLimitInternalAsync(
+    private Task<CoverCleanupResult> EnforceCacheLimitInternalAsync(
         CoverSettings settings, 
         List<FileInfo> files, 
         CancellationToken cancellationToken)
@@ -612,7 +612,7 @@ public class CoverService : ICoverService
 
         if (settings.MaxCacheSizeBytes <= 0)
         {
-            return result; // No limit configured
+            return Task.FromResult(result); // No limit configured
         }
 
         var currentSize = files.Sum(f => f.Length);
@@ -621,7 +621,7 @@ public class CoverService : ICoverService
         if (currentSize <= settings.MaxCacheSizeBytes)
         {
             result.SizeAfter = currentSize;
-            return result; // Under limit
+            return Task.FromResult(result); // Under limit
         }
 
         // Calculate target size (cleanup to target percent of max)
@@ -664,7 +664,7 @@ public class CoverService : ICoverService
         _logger.LogInformation("LRU eviction completed: evicted {Count} covers, freed {Bytes} bytes", 
             result.EvictedByLru, freedBytes);
 
-        return result;
+        return Task.FromResult(result);
     }
 
     public string GetPlaceholderPath()

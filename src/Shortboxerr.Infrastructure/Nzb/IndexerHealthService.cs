@@ -262,7 +262,7 @@ public class IndexerHealthService : IIndexerHealthService
             }
             else
             {
-                await RecordFailureAsync(indexer.Id, result.Message, isRateLimited, cancellationToken);
+                await RecordFailureAsync(indexer.Id, result.Message ?? "Unknown error", isRateLimited, cancellationToken);
             }
 
             return new IndexerHealthCheckResult

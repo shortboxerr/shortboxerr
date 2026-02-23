@@ -33,7 +33,9 @@ public class SensitiveDataDestructuringPolicy : IDestructuringPolicy
             var maskedDict = new Dictionary<object, object?>();
             foreach (System.Collections.DictionaryEntry entry in dict)
             {
-                var key = entry.Key?.ToString() ?? "";
+                if (entry.Key is null) continue;
+                
+                var key = entry.Key.ToString() ?? "";
                 var val = entry.Value;
 
                 if (IsSensitiveKey(key))

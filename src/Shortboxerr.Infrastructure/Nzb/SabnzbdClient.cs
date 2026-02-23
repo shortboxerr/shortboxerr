@@ -137,7 +137,8 @@ public class SabnzbdClient : ISabnzbdClient
 
             if (!string.IsNullOrEmpty(options.PostProcessingScript ?? _settings.PostProcessingScript))
             {
-                parameters["script"] = options.PostProcessingScript ?? _settings.PostProcessingScript;
+                // Null-forgiving is safe here since we just checked IsNullOrEmpty
+                parameters["script"] = (options.PostProcessingScript ?? _settings.PostProcessingScript)!;
             }
 
             foreach (var param in parameters)
@@ -199,7 +200,8 @@ public class SabnzbdClient : ISabnzbdClient
 
             if (!string.IsNullOrEmpty(options.PostProcessingScript ?? _settings.PostProcessingScript))
             {
-                parameters["script"] = options.PostProcessingScript ?? _settings.PostProcessingScript;
+                // Null-forgiving is safe here since we just checked IsNullOrEmpty
+                parameters["script"] = (options.PostProcessingScript ?? _settings.PostProcessingScript)!;
             }
 
             var response = await CallApiAsync<SabnzbdAddResponse>("addurl", parameters, cancellationToken);

@@ -735,7 +735,7 @@ public partial class ReadComicOnlineAdapter : BaseDdlSiteAdapter
             }
         }
 
-        return links.OrderBy(l => GetHostPriority(l.HostName)).ToList();
+        return links.OrderBy(l => GetHostPriority(l.HostName ?? "")).ToList();
     }
 
     private DdlCandidate CreateCandidate(string releaseTitle, string releaseUrl, DdlParsedInfo parsed)

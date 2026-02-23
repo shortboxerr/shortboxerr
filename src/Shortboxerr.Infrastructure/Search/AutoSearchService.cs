@@ -145,7 +145,7 @@ public class AutoSearchService : IAutoSearchService
         }
         
         var results = new List<AutoSearchResult>();
-        var settings = await _settingsService.GetAsync<SearchSettings>(SearchSettings.SettingsKey, new(), cancellationToken);
+        var settings = await _settingsService.GetAsync<SearchSettings>(SearchSettings.SettingsKey, new(), cancellationToken) ?? new SearchSettings();
         
         foreach (var issue in wantedIssues)
         {
@@ -210,7 +210,7 @@ public class AutoSearchService : IAutoSearchService
             _logger.LogInformation("Starting auto-search for {Count} issues", searchableIssues.Count);
             
             var results = new List<AutoSearchResult>();
-            var settings = await _settingsService.GetAsync<SearchSettings>(SearchSettings.SettingsKey, new(), cancellationToken);
+            var settings = await _settingsService.GetAsync<SearchSettings>(SearchSettings.SettingsKey, new(), cancellationToken) ?? new SearchSettings();
             
             foreach (var issue in searchableIssues)
             {
@@ -252,7 +252,7 @@ public class AutoSearchService : IAutoSearchService
 
     public async Task<IReadOnlyList<WantedIssueInfo>> GetSearchableIssuesAsync(int? limit = null, CancellationToken cancellationToken = default)
     {
-        var settings = await _settingsService.GetAsync<SearchSettings>(SearchSettings.SettingsKey, new(), cancellationToken);
+        var settings = await _settingsService.GetAsync<SearchSettings>(SearchSettings.SettingsKey, new(), cancellationToken) ?? new SearchSettings();
         
         // Calculate the threshold for re-searching stale issues
         var staleThreshold = settings.StaleSearchThresholdDays > 0
@@ -292,7 +292,7 @@ public class AutoSearchService : IAutoSearchService
 
     public async Task<AutoSearchStatus> GetStatusAsync(CancellationToken cancellationToken = default)
     {
-        var settings = await _settingsService.GetAsync<SearchSettings>(SearchSettings.SettingsKey, new(), cancellationToken);
+        var settings = await _settingsService.GetAsync<SearchSettings>(SearchSettings.SettingsKey, new(), cancellationToken) ?? new SearchSettings();
         
         var wantedCount = await _dbContext.Issues
             .CountAsync(i => i.Status == IssueStatus.Wanted, cancellationToken);

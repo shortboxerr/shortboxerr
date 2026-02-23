@@ -77,8 +77,8 @@ public class ReleaseDayBackgroundService : BackgroundService
         var settingsService = scope.ServiceProvider.GetRequiredService<ISettingsService>();
         var pullListService = scope.ServiceProvider.GetRequiredService<IPullListService>();
 
-        // Get pull list settings
-        var settings = await settingsService.GetAsync<PullListSettings>("pulllist", new(), cancellationToken);
+        // Get pull list settings (null-coalesce for safety even though we provide a default)
+        var settings = await settingsService.GetAsync<PullListSettings>("pulllist", new(), cancellationToken) ?? new PullListSettings();
 
         // Check if auto-add is enabled
         if (!settings.AutoAddToWanted)

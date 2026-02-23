@@ -85,8 +85,8 @@ public class AutoSearchBackgroundService : BackgroundService
         var settingsService = scope.ServiceProvider.GetRequiredService<ISettingsService>();
         var autoSearchService = scope.ServiceProvider.GetRequiredService<IAutoSearchService>();
 
-        // Get search settings
-        var settings = await settingsService.GetAsync<SearchSettings>(SearchSettings.SettingsKey, new(), cancellationToken);
+        // Get search settings (null-coalesce for safety even though we provide a default)
+        var settings = await settingsService.GetAsync<SearchSettings>(SearchSettings.SettingsKey, new(), cancellationToken) ?? new SearchSettings();
 
         // Check if auto-search is enabled
         if (!settings.AutoSearchEnabled)

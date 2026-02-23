@@ -397,7 +397,7 @@ public class DdlEndToEndIntegrationTests : IDisposable
     #region Download Flow Tests
 
     [Fact]
-    public async Task E2E_DownloadWithMockedFile_Success()
+    public Task E2E_DownloadWithMockedFile_Success()
     {
         // Arrange
         var fileContent = new byte[1024 * 1024]; // 1MB mock file
@@ -413,10 +413,12 @@ public class DdlEndToEndIntegrationTests : IDisposable
 
         // Assert - service instantiation works
         Assert.NotNull(downloadService);
+        
+        return Task.CompletedTask;
     }
 
     [Fact]
-    public async Task E2E_DownloadService_TracksActiveDownloads()
+    public Task E2E_DownloadService_TracksActiveDownloads()
     {
         // Arrange
         var mockResolverFactory = new Mock<IDownloadHostResolverFactory>();
@@ -430,6 +432,8 @@ public class DdlEndToEndIntegrationTests : IDisposable
         Assert.NotNull(activeDownloads);
         Assert.NotNull(history);
         Assert.Empty(activeDownloads); // No active downloads initially
+        
+        return Task.CompletedTask;
     }
 
     [Fact]

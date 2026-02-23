@@ -491,7 +491,7 @@ public class PullListService : IPullListService
         }
     }
 
-    private async Task<List<PullListIssue>> ProcessSeriesMonitoringAsync(
+    private Task<List<PullListIssue>> ProcessSeriesMonitoringAsync(
         Series series,
         CancellationToken cancellationToken)
     {
@@ -499,6 +499,8 @@ public class PullListService : IPullListService
 
         foreach (var issue in series.Issues.Where(i => i.Status == IssueStatus.Missing))
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            
             var shouldAdd = series.MonitoringMode switch
             {
                 SeriesMonitoringMode.AllIssues => true,
@@ -531,7 +533,7 @@ public class PullListService : IPullListService
             }
         }
 
-        return addedIssues;
+        return Task.FromResult(addedIssues);
     }
 
     #endregion

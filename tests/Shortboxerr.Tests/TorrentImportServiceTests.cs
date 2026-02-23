@@ -470,7 +470,7 @@ public class TorrentImportServiceTests
             Category = "comics"
         };
 
-        Assert.True(string.Equals(settings.Category, status.Category, StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(settings.Category, status.Category, StringComparer.OrdinalIgnoreCase);
     }
 
     #endregion

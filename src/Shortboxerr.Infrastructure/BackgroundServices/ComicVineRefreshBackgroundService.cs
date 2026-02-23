@@ -109,7 +109,7 @@ public class ComicVineRefreshBackgroundService : BackgroundService
         }
 
         var pullListSettings = await pullListService.GetSettingsAsync(cancellationToken) ?? new PullListSettings();
-        var comicVineSettings = await settingsService.GetAsync<ComicVineSettings>("comicvine", new(), cancellationToken);
+        var comicVineSettings = await settingsService.GetAsync<ComicVineSettings>("comicvine", new(), cancellationToken) ?? new ComicVineSettings();
         
         // Track the setting for change detection
         _lastKnownPastWeeksToShow = pullListSettings.PastWeeksToShow;
@@ -186,8 +186,8 @@ public class ComicVineRefreshBackgroundService : BackgroundService
         var settingsService = scope.ServiceProvider.GetRequiredService<ISettingsService>();
         var comicVineClient = scope.ServiceProvider.GetRequiredService<IComicVineClient>();
         
-        // Get ComicVine settings
-        var settings = await settingsService.GetAsync<ComicVineSettings>("comicvine", new(), cancellationToken);
+        // Get ComicVine settings (null-coalesce for safety even though we provide a default)
+        var settings = await settingsService.GetAsync<ComicVineSettings>("comicvine", new(), cancellationToken) ?? new ComicVineSettings();
         
         // Check if discovery refresh is enabled
         if (!settings.DiscoveryRefreshEnabled)

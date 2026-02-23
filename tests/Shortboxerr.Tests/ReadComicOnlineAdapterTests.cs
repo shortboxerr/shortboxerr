@@ -345,7 +345,7 @@ public class ReadComicOnlineAdapterTests
     #region Integration-Style Tests with Mocked HTTP
 
     [Fact]
-    public async Task SearchAsync_WithValidResponse_ReturnsCandidates()
+    public Task SearchAsync_WithValidResponse_ReturnsCandidates()
     {
         // Arrange
         var mockHandler = new Mock<HttpMessageHandler>();
@@ -384,6 +384,8 @@ public class ReadComicOnlineAdapterTests
 
         // Assert
         Assert.Equal(2, candidates.Count);
+        
+        return Task.CompletedTask;
     }
 
     [Fact]
