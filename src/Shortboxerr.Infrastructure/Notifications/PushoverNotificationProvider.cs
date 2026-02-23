@@ -16,6 +16,11 @@ public class PushoverNotificationProvider : INotificationProvider
     private const string PushoverApiUrl = "https://api.pushover.net/1/messages.json";
     private const string PushoverValidateUrl = "https://api.pushover.net/1/users/validate.json";
     
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+    
     public string ProviderType => "Pushover";
     public string DisplayName => "Pushover";
     
@@ -152,7 +157,7 @@ public class PushoverNotificationProvider : INotificationProvider
             
             if (response.IsSuccessStatusCode)
             {
-                var result = JsonSerializer.Deserialize<PushoverResponse>(responseBody);
+                var result = JsonSerializer.Deserialize<PushoverResponse>(responseBody, JsonOptions);
                 if (result?.Status == 1)
                 {
                     _logger?.LogInformation("Pushover notification sent successfully: {Request}", result.Request);
@@ -206,7 +211,7 @@ public class PushoverNotificationProvider : INotificationProvider
             using var response = await _httpClient.PostAsync(PushoverValidateUrl, content, cancellationToken);
             
             var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
-            var result = JsonSerializer.Deserialize<PushoverValidateResponse>(responseBody);
+            var result = JsonSerializer.Deserialize<PushoverValidateResponse>(responseBody, JsonOptions);
             
             if (result?.Status == 1)
             {
