@@ -134,9 +134,9 @@ public static class DependencyInjection
 
         // Background services
         services.AddHostedService<BackgroundServices.MetadataRefreshBackgroundService>();
-        services.AddSingleton<BackgroundServices.ComicVineRefreshBackgroundService>();
+        services.AddSingleton<BackgroundServices.DiscoveryRefreshBackgroundService>();
         services.AddHostedService(provider => 
-            provider.GetRequiredService<BackgroundServices.ComicVineRefreshBackgroundService>());
+            provider.GetRequiredService<BackgroundServices.DiscoveryRefreshBackgroundService>());
         services.AddSingleton<BackgroundServices.ReleaseDayBackgroundService>();
         services.AddHostedService(provider => 
             provider.GetRequiredService<BackgroundServices.ReleaseDayBackgroundService>());

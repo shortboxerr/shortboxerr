@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Shortboxerr.Core.Caching;
 using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Core.Entities;
 using Shortboxerr.Core.PullList;
@@ -588,9 +589,51 @@ public static class PullListEndpoints
 
         #region Discovery Refresh
 
+        // DELETE /api/v1/pulllist/discovery/cache - clear all discovery cache and trigger refresh
+        group.MapDelete("/discovery/cache", async (
+            [FromQuery] bool refresh,
+            [FromServices] ShortboxerrDbContext dbContext,
+            [FromServices] ICacheService cacheService,
+            [FromServices] Infrastructure.BackgroundServices.DiscoveryRefreshBackgroundService refreshService,
+            CancellationToken cancellationToken) =>
+        {
+            // Clear database cache
+            var deletedCount = await dbContext.CachedDiscoveryWeeks.ExecuteDeleteAsync(cancellationToken);
+            
+            // Clear memory cache
+            var memoryCacheCleared = cacheService.RemoveByPrefix(CacheKeys.PullListDiscovery);
+            
+            var result = new 
+            { 
+                Success = true, 
+                DatabaseEntriesDeleted = deletedCount,
+                MemoryCacheEntriesCleared = memoryCacheCleared,
+                Message = $"Cleared {deletedCount} database entries and {memoryCacheCleared} memory cache entries"
+            };
+            
+            // Optionally trigger refresh to repopulate
+            if (refresh)
+            {
+                await refreshService.TriggerRefreshAsync(cancellationToken);
+                return Results.Ok(new 
+                { 
+                    result.Success,
+                    result.DatabaseEntriesDeleted,
+                    result.MemoryCacheEntriesCleared,
+                    RefreshTriggered = true,
+                    Message = result.Message + ". Refresh triggered."
+                });
+            }
+            
+            return Results.Ok(result);
+        })
+        .WithName("ClearDiscoveryCache")
+        .WithDescription("Clears all cached discovery data from database and memory. Set refresh=true to immediately repopulate.")
+        .Produces<object>(200);
+
         // POST /api/v1/pulllist/discovery/refresh - trigger manual discovery refresh
         group.MapPost("/discovery/refresh", async (
-            [FromServices] Infrastructure.BackgroundServices.ComicVineRefreshBackgroundService refreshService,
+            [FromServices] Infrastructure.BackgroundServices.DiscoveryRefreshBackgroundService refreshService,
             CancellationToken cancellationToken) =>
         {
             await refreshService.TriggerRefreshAsync(cancellationToken);

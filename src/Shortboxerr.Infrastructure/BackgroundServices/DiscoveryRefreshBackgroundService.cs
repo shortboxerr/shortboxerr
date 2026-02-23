@@ -10,30 +10,37 @@ using Shortboxerr.Infrastructure.Persistence;
 namespace Shortboxerr.Infrastructure.BackgroundServices;
 
 /// <summary>
-/// Background service that periodically refreshes ComicVine discovery data.
+/// Background service that periodically refreshes pull list discovery data.
 /// Ensures fresh release schedules are available for automation (auto-add to wanted list)
 /// even when users don't visit the UI.
 /// 
 /// This provides Mylar3 parity - Mylar3 refreshes its weekly releases every ~4 hours.
+/// 
+/// Data Sources (in order of preference):
+/// 1. WalkSoftly aggregator (https://walksoftly.itsaninja.party) - weekly release schedules
+/// 2. ComicVine (fallback) - if WalkSoftly is unavailable
+/// 
+/// Note: Like Mylar3, we use WalkSoftly for RELEASE SCHEDULES only.
+/// Metadata (series info, descriptions, images) comes from ComicVine via the metadata refresh service.
 /// 
 /// On startup, this service pre-populates the cache for:
 /// - Current week
 /// - Past weeks (based on PastWeeksToShow setting)
 /// - Upcoming weeks (based on DiscoveryRefreshWeeksAhead setting)
 /// </summary>
-public class ComicVineRefreshBackgroundService : BackgroundService
+public class DiscoveryRefreshBackgroundService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<ComicVineRefreshBackgroundService> _logger;
+    private readonly ILogger<DiscoveryRefreshBackgroundService> _logger;
     private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(15); // Check every 15 mins
     private readonly TimeSpan _betweenWeeksDelay = TimeSpan.FromSeconds(3); // Delay between fetching weeks
     private DateTime _lastRefresh = DateTime.MinValue;
     private int _lastKnownPastWeeksToShow = 0; // Track setting changes
     private bool _initialCachePopulationDone = false;
 
-    public ComicVineRefreshBackgroundService(
+    public DiscoveryRefreshBackgroundService(
         IServiceProvider serviceProvider,
-        ILogger<ComicVineRefreshBackgroundService> logger)
+        ILogger<DiscoveryRefreshBackgroundService> logger)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
@@ -41,7 +48,7 @@ public class ComicVineRefreshBackgroundService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("ComicVine discovery refresh background service starting. Check interval: {Interval}", _checkInterval);
+        _logger.LogInformation("Discovery refresh background service starting. Check interval: {Interval}", _checkInterval);
 
         // Initial delay to allow application to fully start and migrations to run
         _logger.LogDebug("Waiting 30 seconds before initial cache population");
@@ -61,20 +68,20 @@ public class ComicVineRefreshBackgroundService : BackgroundService
                     _initialCachePopulationDone = true;
                 }
 
-                _logger.LogDebug("Starting ComicVine discovery refresh check");
+                _logger.LogDebug("Starting Discovery refresh check");
                 await CheckAndRefreshAsync(stoppingToken);
                 consecutiveErrors = 0; // Reset on success
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
                 // Expected during shutdown
-                _logger.LogDebug("ComicVine discovery refresh cancelled due to shutdown");
+                _logger.LogDebug("Discovery refresh cancelled due to shutdown");
                 break;
             }
             catch (Exception ex)
             {
                 consecutiveErrors++;
-                _logger.LogError(ex, "Error in ComicVine discovery refresh background service (attempt {Attempt})", consecutiveErrors);
+                _logger.LogError(ex, "Error in Discovery refresh background service (attempt {Attempt})", consecutiveErrors);
                 
                 if (consecutiveErrors >= 3)
                 {
@@ -82,11 +89,11 @@ public class ComicVineRefreshBackgroundService : BackgroundService
                 }
             }
 
-            _logger.LogDebug("Next ComicVine discovery refresh check in {Interval}", _checkInterval);
+            _logger.LogDebug("Next Discovery refresh check in {Interval}", _checkInterval);
             await Task.Delay(_checkInterval, stoppingToken);
         }
 
-        _logger.LogInformation("ComicVine discovery refresh background service stopping");
+        _logger.LogInformation("Discovery refresh background service stopping");
     }
 
     /// <summary>
@@ -101,11 +108,10 @@ public class ComicVineRefreshBackgroundService : BackgroundService
         var pullListService = scope.ServiceProvider.GetRequiredService<IPullListService>();
         var dbContext = scope.ServiceProvider.GetRequiredService<ShortboxerrDbContext>();
         
-        // Check if ComicVine is configured
+        // Check if ComicVine is configured (needed for fallback if WalkSoftly fails)
         if (!await comicVineClient.IsConfiguredAsync(cancellationToken))
         {
-            _logger.LogWarning("ComicVine API is not configured, skipping initial cache population");
-            return;
+            _logger.LogWarning("ComicVine API is not configured - WalkSoftly will be used exclusively, no fallback available");
         }
 
         var pullListSettings = await pullListService.GetSettingsAsync(cancellationToken) ?? new PullListSettings();
@@ -159,7 +165,7 @@ public class ComicVineRefreshBackgroundService : BackgroundService
             {
                 _logger.LogDebug("Populating cache for week of {Date}", weekStart);
                 
-                // This will fetch from ComicVine and persist to database
+                // This will fetch from WalkSoftly (or ComicVine fallback) and persist to database
                 await pullListService.GetWeeklyDiscoveryAsync(weekStart, null, cancellationToken);
                 populatedCount++;
                 
@@ -196,11 +202,10 @@ public class ComicVineRefreshBackgroundService : BackgroundService
             return;
         }
 
-        // Check if ComicVine is configured
+        // Note: We proceed even if ComicVine isn't configured since WalkSoftly is our primary source
         if (!await comicVineClient.IsConfiguredAsync(cancellationToken))
         {
-            _logger.LogDebug("ComicVine API is not configured, skipping discovery refresh");
-            return;
+            _logger.LogDebug("ComicVine API is not configured - using WalkSoftly as sole data source");
         }
 
         var pullListService = scope.ServiceProvider.GetRequiredService<IPullListService>();
@@ -238,7 +243,7 @@ public class ComicVineRefreshBackgroundService : BackgroundService
             return;
         }
 
-        _logger.LogInformation("Starting scheduled ComicVine discovery refresh");
+        _logger.LogInformation("Starting scheduled Discovery refresh");
 
         var weeksToRefresh = settings.DiscoveryRefreshWeeksAhead;
         var successCount = 0;
@@ -254,7 +259,7 @@ public class ComicVineRefreshBackgroundService : BackgroundService
             {
                 _logger.LogDebug("Refreshing discovery for week of {Date} (Active tier - always refresh)", targetDate);
                 
-                // Force refresh by calling the service (which will fetch from ComicVine)
+                // Force refresh by calling the service (which will fetch from WalkSoftly/ComicVine)
                 // The cache will be updated as part of the fetch
                 await pullListService.GetWeeklyDiscoveryAsync(targetDate, null, cancellationToken);
                 successCount++;
@@ -321,7 +326,7 @@ public class ComicVineRefreshBackgroundService : BackgroundService
         await settingsService.SetAsync("comicvine_discovery_last_refresh", _lastRefresh, cancellationToken);
         
         _logger.LogInformation(
-            "ComicVine discovery refresh completed: {Success} weeks refreshed, {Skipped} skipped, {Errors} errors",
+            "Discovery refresh completed: {Success} weeks refreshed, {Skipped} skipped, {Errors} errors",
             successCount, skippedCount, errorCount);
     }
 
@@ -367,7 +372,7 @@ public class ComicVineRefreshBackgroundService : BackgroundService
     /// </summary>
     public async Task TriggerRefreshAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Manual ComicVine discovery refresh triggered");
+        _logger.LogInformation("Manual Discovery refresh triggered");
         
         // Reset the last refresh time to force immediate refresh
         _lastRefresh = DateTime.MinValue;

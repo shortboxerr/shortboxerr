@@ -10,20 +10,20 @@ using Xunit;
 
 namespace Shortboxerr.Tests;
 
-public class ComicVineRefreshBackgroundServiceTests
+public class DiscoveryRefreshBackgroundServiceTests
 {
     private readonly Mock<ISettingsService> _mockSettingsService;
     private readonly Mock<IComicVineClient> _mockComicVineClient;
     private readonly Mock<IPullListService> _mockPullListService;
-    private readonly Mock<ILogger<ComicVineRefreshBackgroundService>> _mockLogger;
+    private readonly Mock<ILogger<DiscoveryRefreshBackgroundService>> _mockLogger;
     private readonly ServiceProvider _serviceProvider;
 
-    public ComicVineRefreshBackgroundServiceTests()
+    public DiscoveryRefreshBackgroundServiceTests()
     {
         _mockSettingsService = new Mock<ISettingsService>();
         _mockComicVineClient = new Mock<IComicVineClient>();
         _mockPullListService = new Mock<IPullListService>();
-        _mockLogger = new Mock<ILogger<ComicVineRefreshBackgroundService>>();
+        _mockLogger = new Mock<ILogger<DiscoveryRefreshBackgroundService>>();
 
         // Default setup for GetSettingsAsync to return valid settings
         _mockPullListService
@@ -45,7 +45,7 @@ public class ComicVineRefreshBackgroundServiceTests
             .Setup(s => s.GetAsync<ComicVineSettings>("comicvine", It.IsAny<ComicVineSettings>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ComicVineSettings { DiscoveryRefreshEnabled = false });
 
-        var service = new ComicVineRefreshBackgroundService(_serviceProvider, _mockLogger.Object);
+        var service = new DiscoveryRefreshBackgroundService(_serviceProvider, _mockLogger.Object);
 
         // Act
         await service.TriggerRefreshAsync();
@@ -57,26 +57,36 @@ public class ComicVineRefreshBackgroundServiceTests
     }
 
     [Fact]
-    public async Task TriggerRefreshAsync_WhenApiNotConfigured_DoesNotRefresh()
+    public async Task TriggerRefreshAsync_WhenComicVineNotConfigured_StillRefreshesUsingWalkSoftly()
     {
-        // Arrange
+        // Arrange - WalkSoftly is primary source, so refresh should proceed even without ComicVine
+        var settings = new ComicVineSettings 
+        { 
+            DiscoveryRefreshEnabled = true,
+            DiscoveryRefreshWeeksAhead = 2
+        };
+        
         _mockSettingsService
             .Setup(s => s.GetAsync<ComicVineSettings>("comicvine", It.IsAny<ComicVineSettings>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ComicVineSettings { DiscoveryRefreshEnabled = true });
+            .ReturnsAsync(settings);
 
         _mockComicVineClient
             .Setup(c => c.IsConfiguredAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
+            .ReturnsAsync(false);  // ComicVine not configured
+        
+        _mockPullListService
+            .Setup(p => p.GetWeeklyDiscoveryAsync(It.IsAny<DateTime>(), It.IsAny<DiscoveryFilter>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WeeklyDiscoveryList());
 
-        var service = new ComicVineRefreshBackgroundService(_serviceProvider, _mockLogger.Object);
+        var service = new DiscoveryRefreshBackgroundService(_serviceProvider, _mockLogger.Object);
 
         // Act
         await service.TriggerRefreshAsync();
 
-        // Assert
+        // Assert - Should still refresh using WalkSoftly as primary source
         _mockPullListService.Verify(
             p => p.GetWeeklyDiscoveryAsync(It.IsAny<DateTime>(), It.IsAny<DiscoveryFilter>(), It.IsAny<CancellationToken>()),
-            Times.Never);
+            Times.AtLeastOnce);
     }
 
     [Fact]
@@ -107,7 +117,7 @@ public class ComicVineRefreshBackgroundServiceTests
             .Setup(s => s.SetAsync("comicvine_discovery_last_refresh", It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var service = new ComicVineRefreshBackgroundService(_serviceProvider, _mockLogger.Object);
+        var service = new DiscoveryRefreshBackgroundService(_serviceProvider, _mockLogger.Object);
 
         // Act
         await service.TriggerRefreshAsync();
@@ -147,7 +157,7 @@ public class ComicVineRefreshBackgroundServiceTests
             .Setup(c => c.IsConfiguredAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var service = new ComicVineRefreshBackgroundService(_serviceProvider, _mockLogger.Object);
+        var service = new DiscoveryRefreshBackgroundService(_serviceProvider, _mockLogger.Object);
 
         // Act
         await service.TriggerRefreshAsync();
@@ -187,7 +197,7 @@ public class ComicVineRefreshBackgroundServiceTests
             .Setup(s => s.SetAsync("comicvine_discovery_last_refresh", It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var service = new ComicVineRefreshBackgroundService(_serviceProvider, _mockLogger.Object);
+        var service = new DiscoveryRefreshBackgroundService(_serviceProvider, _mockLogger.Object);
 
         // Act
         await service.TriggerRefreshAsync();
@@ -224,7 +234,7 @@ public class ComicVineRefreshBackgroundServiceTests
             .Setup(s => s.SetAsync("comicvine_discovery_last_refresh", It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var service = new ComicVineRefreshBackgroundService(_serviceProvider, _mockLogger.Object);
+        var service = new DiscoveryRefreshBackgroundService(_serviceProvider, _mockLogger.Object);
 
         // Act
         await service.TriggerRefreshAsync();
@@ -267,7 +277,7 @@ public class ComicVineRefreshBackgroundServiceTests
             .Setup(s => s.SetAsync("comicvine_discovery_last_refresh", It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var service = new ComicVineRefreshBackgroundService(_serviceProvider, _mockLogger.Object);
+        var service = new DiscoveryRefreshBackgroundService(_serviceProvider, _mockLogger.Object);
 
         // Act
         await service.TriggerRefreshAsync();
