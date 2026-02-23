@@ -1,5 +1,30 @@
 # Worklog
 
+## Iteration 122 (2026-02-17)
+**EPIC 9: Wanted Page Search All**
+
+### Summary
+Wired up the existing "Search All" button on the Wanted page to trigger a global search for all wanted issues. Added API client method for the trigger endpoint.
+
+### Commits
+1. `feat(ui): wire up search all button on wanted page`
+
+### Deliverables
+
+#### API Client
+- Added `searchAllWanted()` method calling `/api/v1/search/auto/trigger`
+
+#### Wanted Page
+- Wired up Search All button to call searchAllWanted mutation
+- Shows spinner during search
+- Toast notifications for results
+
+### Files Changed
+- `ui/src/api/client.ts` - Added searchAllWanted method
+- `ui/src/pages/WantedPage.tsx` - Added mutation and wired button
+
+---
+
 ## Iteration 121 (2026-02-17)
 **EPIC 9: Search All Wanted Button**
 

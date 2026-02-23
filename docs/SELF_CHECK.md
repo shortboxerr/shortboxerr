@@ -1,4 +1,4 @@
-# Self Check - Iteration 121
+# Self Check - Iteration 122
 
 ## Checklist Status
 
@@ -13,29 +13,26 @@
 
 ## Implementation Details
 
-### Feature: Search All Wanted Button
+### Feature: Search All Button on Wanted Page
 
-**Location**: Series detail page header toolbar
+**Previous State**: Button existed but was not functional
+
+**Current State**: Button triggers global search for all wanted issues
 
 ### Changes Made
 
-1. **searchAllWanted mutation** - Calls `api.searchSeriesWanted(seriesId)`
-2. **handleSearchAllWanted handler** - Triggers the mutation
-3. **Search All Wanted button** - Added to series header toolbar
-   - Shows Search icon normally
-   - Shows Loader2 spinner during search
-   - Toast notifications for results
+1. **API Client** - Added `searchAllWanted()` method
+2. **WantedPage** - Added mutation and handler, wired up button
 
 ### User Flow
 
-1. Navigate to a series detail page
-2. Click the Search icon (first button in toolbar)
-3. System searches for all wanted issues in the series
+1. Navigate to Wanted page
+2. Click "Search All" button
+3. System searches for all wanted issues globally
 4. Toast notification shows results
 
 ### Validation
 
 - [x] Frontend builds successfully
-- [x] Button appears in series header
-- [x] Spinner shows during search
-- [x] Appropriate toast messages for success/no results/error
+- [x] Button shows spinner during search
+- [x] Toast notifications for success/no results/error

@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { Search, RefreshCw, Download, BookOpen, Library } from 'lucide-react';
+import { Search, RefreshCw, Download, BookOpen, Library, Loader2 } from 'lucide-react';
 import { api } from '../api/client';
-
-// WantedItem interface is used implicitly through the API response
+import { useToast } from '../components/Toast';
 
 type WantedTab = 'issues' | 'collections';
 
@@ -15,6 +14,7 @@ export function WantedPage() {
     typeFromUrl === 'collections' ? 'collections' : 'issues'
   );
   const [search, setSearch] = useState('');
+  const toast = useToast();
 
   const handleTabChange = (newTab: WantedTab) => {
     setTab(newTab);
@@ -32,6 +32,29 @@ export function WantedPage() {
     queryFn: () => api.getWanted({ type: tab, search }),
   });
 
+  // Search all wanted issues mutation
+  const searchAllWanted = useMutation({
+    mutationFn: async () => {
+      return api.searchAllWanted();
+    },
+    onSuccess: (result) => {
+      if (result.totalSearched === 0) {
+        toast.info('No wanted issues to search');
+      } else if (result.successCount > 0) {
+        toast.success(`Found downloads for ${result.successCount} of ${result.totalSearched} issues`);
+      } else {
+        toast.warning(`Searched ${result.totalSearched} issues - no results found`);
+      }
+    },
+    onError: () => {
+      toast.error('Search failed');
+    },
+  });
+
+  const handleSearchAllWanted = () => {
+    searchAllWanted.mutate();
+  };
+
   const items = wanted?.items ?? [];
 
   return (
@@ -39,8 +62,12 @@ export function WantedPage() {
       <header className="page-header">
         <h1 className="page-title">Wanted</h1>
         <div className="toolbar-group">
-          <button className="btn btn-primary">
-            <Search size={16} />
+          <button 
+            className="btn btn-primary" 
+            onClick={handleSearchAllWanted}
+            disabled={searchAllWanted.isPending}
+          >
+            {searchAllWanted.isPending ? <Loader2 size={16} className="spinning" /> : <Search size={16} />}
             Search All
           </button>
         </div>

@@ -726,6 +726,7 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: Buttons show current state (disabled when already in that state) ✅
   - AC: "Search" button for wanted/missing issues ✅ (Iteration 119-120)
   - AC: "Search All Wanted" button in series header ✅ (Iteration 121)
+  - AC: "Search All" button on Wanted page ✅ (Iteration 122)
   - Note: "Edit" button deferred (issue metadata editing not implemented)
 
 - [x] **Status indicators** ✅
