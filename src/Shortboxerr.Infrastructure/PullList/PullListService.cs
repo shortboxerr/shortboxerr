@@ -890,9 +890,12 @@ public class PullListService : IPullListService
         CancellationToken cancellationToken)
     {
         // Calculate week number for WalkSoftly
+        // WalkSoftly uses week numbers that are 1 less than ISO 8601
+        // e.g., WalkSoftly week 8 has ship date 2026-02-25, while ISO week 9 contains Feb 25
         var releaseDay = weekStart.AddDays((int)DayOfWeek.Wednesday);
         var cal = CultureInfo.InvariantCulture.Calendar;
-        var weekNumber = cal.GetWeekOfYear(releaseDay, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+        var isoWeek = cal.GetWeekOfYear(releaseDay, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+        var weekNumber = isoWeek - 1;  // WalkSoftly week = ISO week - 1
         var year = releaseDay.Year;
 
         // Try WalkSoftly first if enabled
