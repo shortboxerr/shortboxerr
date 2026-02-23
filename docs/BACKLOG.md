@@ -2477,6 +2477,27 @@ Full Mylar3-style Series-Annual Integration where annual series (e.g., "Batman A
 4. Linked annual issues display which series they came from.
 5. For existing libraries: Settings > Annual Handling > "Link Existing Annual Series" scans and links series added before this feature.
 
+### 15.11 Default User-Agent Header for HTTP Requests ✅ COMPLETED
+External sites return errors when User-Agent header is missing or invalid.
+
+**Implemented in Iteration 128:**
+- Created `HttpClientDefaults` static class with centralized User-Agent configuration
+- Configured all HttpClient instances via `ConfigureAll<HttpClientFactoryOptions>` in DI
+- User-Agent format: "Shortboxerr/x.y.z (+https://github.com/shortboxerr/shortboxerr)"
+- 9 unit tests verify correct configuration
+
+- [x] **Ensure all HTTP clients send proper User-Agent**
+  - AC: Default User-Agent header set on all HttpClient instances (e.g., "Shortboxerr/0.1.0") ✅
+  - AC: User-Agent includes application name and version ✅
+  - AC: Configurable User-Agent override in settings (per-provider or global) (deferred - individual clients can still override)
+  - AC: Verify ComicVine, DDL sites, and indexer requests include User-Agent ✅
+  - AC: Log warning if User-Agent is missing from outgoing requests (deferred - not needed with default set)
+
+- [x] **HttpClient configuration**
+  - AC: Configure default headers in `DependencyInjection.cs` for named HttpClients ✅
+  - AC: Review existing HttpClient registrations for missing User-Agent ✅
+  - AC: Add integration test to verify User-Agent is sent ✅
+
 ### 15.9 Pull List Data Accuracy (Mylar3 Parity Investigation)
 Pull list data doesn't match Mylar3's for the same week.
 
@@ -2523,6 +2544,9 @@ Pull list data doesn't match Mylar3's for the same week.
 ### P3 - Medium (Feature Parity) ✅ COMPLETED
 7. **15.3 Forthcoming Releases View** - ✅ COMPLETED (verified Iteration 098 - was already implemented)
 8. **15.8 Pull List Data Accuracy Investigation** - Deferred (requires research, non-blocking)
+
+### P4 - High (Integration Issues) ✅ COMPLETED
+9. **15.11 Default User-Agent Header** - ✅ COMPLETED (Iteration 128)
 
 ---
 

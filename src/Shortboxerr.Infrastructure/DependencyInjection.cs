@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Shortboxerr.Core.Caching;
 using Shortboxerr.Core.ComicVine;
@@ -26,6 +27,7 @@ using Shortboxerr.Infrastructure.Services;
 using Shortboxerr.Core.Activity;
 using Shortboxerr.Core.Search;
 using Shortboxerr.Infrastructure.Activity;
+using Shortboxerr.Infrastructure.Http;
 
 namespace Shortboxerr.Infrastructure;
 
@@ -57,6 +59,19 @@ public static class DependencyInjection
                 options.EnableSensitiveDataLogging();
                 options.EnableDetailedErrors();
             }
+        });
+
+        // Configure default User-Agent for all HttpClient instances
+        // This ensures external sites receive a proper User-Agent header
+        services.ConfigureAll<HttpClientFactoryOptions>(options =>
+        {
+            options.HttpClientActions.Add(client =>
+            {
+                if (!client.DefaultRequestHeaders.Contains("User-Agent"))
+                {
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd(HttpClientDefaults.UserAgent);
+                }
+            });
         });
 
         // Services

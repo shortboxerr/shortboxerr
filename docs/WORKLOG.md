@@ -1,5 +1,41 @@
 # Worklog
 
+## Iteration 128 (2026-02-17)
+**EPIC 15.11: Default User-Agent Header for HTTP Requests**
+
+### Summary
+Fixed missing User-Agent headers that were causing errors from external sites. All HttpClient instances now automatically include a proper User-Agent header identifying the application.
+
+### Commits
+1. `fix(http): add default User-Agent header to all HttpClient instances`
+
+### Deliverables
+
+#### HttpClientDefaults Class
+- New static class in `Shortboxerr.Infrastructure.Http` namespace
+- Provides centralized default User-Agent configuration
+- Format: "Shortboxerr/x.y.z (+https://github.com/shortboxerr/shortboxerr)"
+- Includes version from assembly metadata
+- Also defines default timeout constants
+
+#### HttpClient Configuration
+- Uses `ConfigureAll<HttpClientFactoryOptions>` to apply User-Agent to all clients
+- Automatically applied to all named and typed HttpClients
+- Only sets User-Agent if not already present (allows overrides)
+- Applied to: RssFeedService, ComicVineClient, NewznabClient, SabnzbdClient, CoverDownload, WebhookNotificationProvider
+
+#### Unit Tests
+- 9 tests covering User-Agent format, content, and application
+- Tests verify both default and named HttpClients receive header
+- Tests verify expected format matches specification
+
+### Files Changed
+- `src/Shortboxerr.Infrastructure/Http/HttpClientDefaults.cs` - New defaults class
+- `src/Shortboxerr.Infrastructure/DependencyInjection.cs` - Configure all HttpClients
+- `tests/Shortboxerr.Tests/HttpClientDefaultsTests.cs` - 9 unit tests
+
+---
+
 ## Iteration 127 (2026-02-17)
 **EPIC 11.4: Email Notifications (SMTP)**
 

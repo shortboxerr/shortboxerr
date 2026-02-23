@@ -2,28 +2,34 @@
 
 ## Summary
 
-All actionable items from the backlog have been implemented. The remaining items are either:
-- Deferred with explicit dependencies
-- Future/larger undertakings requiring separate planning
-- Research/investigation tasks
+Iteration 128 completed: Fixed missing User-Agent headers on HTTP requests that were causing errors from external sites.
 
-## Recent Iterations (117-123)
+## Recent Iterations (124-128)
 
 | Iteration | Feature | Status |
 |-----------|---------|--------|
-| 117 | Cover Cache Settings UI | ✅ |
-| 118 | Toast Notification System | ✅ |
-| 119 | Search Button - Cover View | ✅ |
-| 120 | Search Button - List View | ✅ |
-| 121 | Search All Wanted - Series Header | ✅ |
-| 122 | Search All - Wanted Page Global | ✅ |
-| 123 | Per-Issue Search - Wanted Page | ✅ |
+| 124 | Calendar View Enhancement | ✅ |
+| 125 | Cache Statistics, Warming, Revalidation | ✅ |
+| 126 | Compressed Archive of Rotated Logs | ✅ |
+| 127 | Email Notifications (SMTP) | ✅ |
+| 128 | Default User-Agent Header | ✅ |
 
-## Search Functionality - Complete
+## Iteration 128 Details
 
-Search buttons are now available across all relevant UI locations:
-- **Series Detail Page**: Cover view cards, List view rows, Header "Search All Wanted" button
-- **Wanted Page**: "Search All" header button, Per-row search for individual issues
+### Changes Made
+- Created `HttpClientDefaults` class with centralized User-Agent configuration
+- Configured all HttpClient instances via `ConfigureAll<HttpClientFactoryOptions>`
+- User-Agent format: "Shortboxerr/x.y.z (+https://github.com/shortboxerr/shortboxerr)"
+- Added 9 unit tests for User-Agent configuration
+
+### Files Changed
+- `src/Shortboxerr.Infrastructure/Http/HttpClientDefaults.cs` (new)
+- `src/Shortboxerr.Infrastructure/DependencyInjection.cs` (modified)
+- `tests/Shortboxerr.Tests/HttpClientDefaultsTests.cs` (new)
+
+### Tests
+- All 9 new tests passing
+- Verifies User-Agent format, content, and application to HttpClients
 
 ## Server Configuration
 
@@ -34,25 +40,24 @@ Search buttons are now available across all relevant UI locations:
 
 ## Remaining Backlog Items (Deferred)
 
-### Dependencies Required
-- Usenet/NZB integration (DDL)
-- Automation tests (EPIC 4)
-- Download client failover
+### External Dependencies
+- EPIC 8: Usenet/NZB integration from DDL sites
+- EPIC 12.4: Rate limit awareness
 
 ### Future Features
-- Calendar view enhancement (new page)
-- Additional notification channels (email, Pushover)
-- E2E test infrastructure
+- EPIC 11.4: Pushover/Pushbullet notifications
+- EPIC 11.7: Automation tests
+- EPIC 14.4: Accessibility testing
+- EPIC 14.6: Provider-specific timeout/User-Agent settings
+- EPIC 16: E2E Testing Infrastructure
 
 ### Research Tasks
-- Mylar3 pull list source investigation
-- ComicVine release date accuracy
-- Publisher filtering differences
+- EPIC 15.9: Mylar3 pull list data accuracy investigation
 
 ## Validation
 
-- [x] All search features implemented
-- [x] Toast notifications working
-- [x] Cover cache settings functional
-- [x] Servers running on correct ports
-- [x] Frontend accessible on 0.0.0.0:8585
+- [x] Build succeeds (24 warnings, 0 errors)
+- [x] All new tests passing (9/9)
+- [x] HttpClient User-Agent configured
+- [x] BACKLOG.md updated
+- [x] WORKLOG.md updated
