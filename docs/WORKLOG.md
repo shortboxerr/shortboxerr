@@ -1,5 +1,39 @@
 # Worklog
 
+## Iteration 118 (2026-02-17)
+**EPIC 15: Toast Notification System**
+
+### Summary
+Implemented a global toast notification system and integrated it with issue status changes, metadata refresh, and series deletion. This completes the deferred "Toast/notification confirming change" item from EPIC 15.
+
+### Commits
+1. `feat(ui): add toast notification system for status changes`
+
+### Deliverables
+
+#### Toast Component (ui/src/components/Toast.tsx)
+- `ToastProvider` context for global toast management
+- `useToast` hook with convenience methods: `success()`, `error()`, `warning()`, `info()`
+- Auto-dismissing toasts with configurable duration (default: 3 seconds)
+- Manual dismiss button
+- Animated entry/exit transitions
+- Color-coded borders based on toast type
+- Stacked toast display in bottom-right corner
+
+#### Integration Points
+- **Issue status changes**: Shows success/error toast when marking issues as Wanted/Skipped
+- **Metadata refresh**: Shows toast on refresh complete or error
+- **Series deletion**: Shows toast before navigation
+- **Bulk operations**: Shows count of affected issues in toast message
+
+### Files Changed
+- `ui/src/components/Toast.tsx` - New toast notification component
+- `ui/src/App.tsx` - Added ToastProvider wrapper
+- `ui/src/pages/SeriesDetailPage.tsx` - Integrated toasts with mutations
+- `docs/BACKLOG.md` - Marked toast notification item complete
+
+---
+
 ## Iteration 117 (2026-02-17)
 **EPIC 9.13: Cover Cache Settings UI**
 

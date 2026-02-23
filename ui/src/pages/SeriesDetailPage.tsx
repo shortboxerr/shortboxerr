@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import type { Issue, IssueStatus, SeriesPullListSettingsDto, SeriesMatchCandidate } from '../api/client';
+import { useToast } from '../components/Toast';
 
 type ViewMode = 'cover' | 'list';
 type SortKey = 'issueNumber' | 'releaseDate' | 'status' | 'title';
@@ -20,6 +21,7 @@ export function SeriesDetailPage() {
   const seriesId = parseInt(id ?? '0', 10);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const toast = useToast();
 
   // Load UI settings for view preference
   const { data: uiSettings } = useQuery({
@@ -85,7 +87,7 @@ export function SeriesDetailPage() {
     mutationFn: async ({ issueIds, status }: { issueIds: number[]; status: IssueStatus }) => {
       return api.bulkUpdateIssueStatus(issueIds, status);
     },
-    onSuccess: async () => {
+    onSuccess: async (_, variables) => {
       // Use the refetch functions directly from the query hooks
       await Promise.all([
         refetchIssues(),
@@ -97,6 +99,21 @@ export function SeriesDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['pulllist', 'week'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       setSelectedIssues(new Set());
+      
+      // Show success toast
+      const count = variables.issueIds.length;
+      const statusLabel = variables.status === 'Wanted' ? 'wanted' : 'skipped';
+      toast.success(count === 1 
+        ? `Issue marked as ${statusLabel}` 
+        : `${count} issues marked as ${statusLabel}`
+      );
+    },
+    onError: (_, variables) => {
+      const count = variables.issueIds.length;
+      toast.error(count === 1 
+        ? 'Failed to update issue status' 
+        : `Failed to update ${count} issues`
+      );
     },
   });
 
@@ -134,6 +151,10 @@ export function SeriesDetailPage() {
       // Invalidate series and issues queries to refetch updated data
       queryClient.invalidateQueries({ queryKey: ['series', seriesId] });
       queryClient.invalidateQueries({ queryKey: ['series', seriesId, 'issues'] });
+      toast.success('Metadata refreshed from ComicVine');
+    },
+    onError: () => {
+      toast.error('Failed to refresh metadata');
     },
   });
 
@@ -147,7 +168,11 @@ export function SeriesDetailPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['series'] });
       await queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      toast.success('Series deleted');
       navigate('/series');
+    },
+    onError: () => {
+      toast.error('Failed to delete series');
     },
   });
 

@@ -1,75 +1,61 @@
-# Self-Check: Iteration 117
+# Self-Check: Iteration 118
 
 ## Checklist
 - [x] Code compiles without errors
 - [x] Frontend builds successfully
-- [x] BACKLOG.md updated (EPIC 9.13 cache settings UI)
+- [x] BACKLOG.md updated (EPIC 15 toast notification)
 - [x] WORKLOG.md updated
-- [x] Code committed with conventional commit message
-- [x] Servers restarted and verified
+- [ ] Code committed with conventional commit message
+- [ ] Servers restarted and verified
 
 ## Implementation Status
 
-### EPIC 9.13: Cover Cache Settings UI ✅ COMPLETED
+### EPIC 15: Toast Notification System ✅ COMPLETED
 
 | AC | Status | Notes |
 |----|--------|-------|
-| Settings UI for cache size limit configuration | ✅ | Full implementation with stats display |
+| Toast/notification confirming change | ✅ | Full implementation with ToastProvider |
 
 ## Implementation Details
 
-### Backend API Endpoints
+### Toast Component Architecture
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/v1/settings/covers` | GET | Get cover cache settings |
-| `/api/v1/settings/covers` | PUT | Update cover cache settings |
+**ToastProvider** (ui/src/components/Toast.tsx):
+- Context-based global toast management
+- `useToast()` hook for any component to show toasts
+- Methods: `success()`, `error()`, `warning()`, `info()`, `showToast()`
+- Auto-dismiss with configurable duration
+- Stacked display with animation
 
-### Request/Response Types
+**Toast Item Features:**
+- Color-coded left border (success=green, error=red, warning=yellow, info=blue)
+- Icon per type (CheckCircle, XCircle, AlertCircle, Info)
+- Manual dismiss button
+- CSS animations for enter/exit
 
-**CoverCacheSettingsResponse:**
-- `cacheDirectory` - Directory where covers are cached
-- `retentionDays` - Days to keep covers (0 = indefinite)
-- `maxCacheSizeMb` - Maximum cache size in MB
-- `cleanupTargetPercent` - Target size after cleanup (%)
-- `cleanupIntervalHours` - Background cleanup interval
-- `autoCleanupEnabled` - Enable automatic cleanup
-- `defaultSize` - Default cover size (Thumb/Small/Medium/Large)
-- `downloadAllSizes` - Download all sizes when fetching
-- `maxConcurrentDownloads` - Max concurrent downloads
-- `downloadTimeoutSeconds` - Download timeout
+### Integration Points
 
-### Frontend Components
-
-**CoverCacheSettingsSection** in SettingsPage.tsx:
-- Cache statistics panel showing:
-  - Total size (formatted bytes)
-  - Total file count
-  - Configured limit
-  - Usage percentage with color-coded warning
-- Editable settings:
-  - Max cache size (10-10240 MB)
-  - Retention days (0-365)
-  - Cleanup target percent (50-95%)
-  - Cleanup interval (0-168 hours)
-  - Auto-cleanup toggle
-  - Default size dropdown
-- Action buttons:
-  - Save Settings
-  - Run Cleanup Now
+| Location | Trigger | Toast Message |
+|----------|---------|---------------|
+| SeriesDetailPage | Issue status change | "Issue marked as wanted/skipped" or "X issues marked as wanted/skipped" |
+| SeriesDetailPage | Status change error | "Failed to update issue status" |
+| SeriesDetailPage | Metadata refresh | "Metadata refreshed from ComicVine" |
+| SeriesDetailPage | Refresh error | "Failed to refresh metadata" |
+| SeriesDetailPage | Series deleted | "Series deleted" |
+| SeriesDetailPage | Delete error | "Failed to delete series" |
 
 ### Files Changed
 
 | File | Change |
 |------|--------|
-| `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` | Added GET/PUT endpoints for cover settings |
-| `ui/src/api/client.ts` | Added CoverCacheSettings types and API methods |
-| `ui/src/pages/SettingsPage.tsx` | Added CoverCacheSettingsSection component |
-| `docs/BACKLOG.md` | Marked EPIC 9.13 item complete |
+| `ui/src/components/Toast.tsx` | New toast notification component |
+| `ui/src/App.tsx` | Added ToastProvider wrapper |
+| `ui/src/pages/SeriesDetailPage.tsx` | Added useToast and integrated with mutations |
+| `docs/BACKLOG.md` | Marked toast item complete |
 
 ## Validation
 
-- [x] Backend compiles: `dotnet build` successful
+- [x] Backend compiles: No changes to backend
 - [x] Frontend compiles: `npm run build` successful
-- [ ] API endpoint responds: GET /api/v1/settings/covers
-- [ ] UI displays correctly in browser
+- [ ] Toast appears on issue status change
+- [ ] Toast appears on metadata refresh

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Layout } from './components/Layout';
+import { ToastProvider } from './components/Toast';
 import { Dashboard } from './pages/Dashboard';
 import { SeriesPage } from './pages/SeriesPage';
 import { SeriesDetailPage } from './pages/SeriesDetailPage';
@@ -116,24 +117,26 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Layout />}>
-              <Route index element={<Dashboard />} />
-              <Route path="series" element={<SeriesPage />} />
-              <Route path="series/:id" element={<SeriesDetailPage />} />
-              <Route path="collections" element={<CollectionsPage />} />
-              <Route path="collections/:id" element={<EditionDetailPage />} />
-              <Route path="wanted" element={<WantedPage />} />
-              <Route path="pulllist" element={<PullListPage />} />
-              <Route path="activity" element={<ActivityPage />} />
-              <Route path="history" element={<HistoryPage />} />
-              <Route path="import" element={<ManualImportPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="logs" element={<LogsPage />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
+        <ToastProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Layout />}>
+                <Route index element={<Dashboard />} />
+                <Route path="series" element={<SeriesPage />} />
+                <Route path="series/:id" element={<SeriesDetailPage />} />
+                <Route path="collections" element={<CollectionsPage />} />
+                <Route path="collections/:id" element={<EditionDetailPage />} />
+                <Route path="wanted" element={<WantedPage />} />
+                <Route path="pulllist" element={<PullListPage />} />
+                <Route path="activity" element={<ActivityPage />} />
+                <Route path="history" element={<HistoryPage />} />
+                <Route path="import" element={<ManualImportPage />} />
+                <Route path="settings" element={<SettingsPage />} />
+                <Route path="logs" element={<LogsPage />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </ToastProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

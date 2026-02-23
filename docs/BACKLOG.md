@@ -2356,7 +2356,7 @@ Fix Applied:
 
 - [x] **Visual status feedback**
   - AC: Status badge updates immediately on toggle ✅ (cache invalidation fixed)
-  - AC: Toast/notification confirming change - Not implemented (deferred)
+  - AC: Toast/notification confirming change ✅ (Iteration 118 - ToastProvider)
   - AC: Optimistic UI update (don't wait for server response) ✅ (via mutation)
 
 - [x] **Bulk status changes**
