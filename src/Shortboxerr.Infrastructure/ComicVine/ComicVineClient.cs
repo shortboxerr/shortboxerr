@@ -367,6 +367,229 @@ public class ComicVineClient : IComicVineClient
         }
     }
 
+    public async Task<ComicVineSearchResult<ComicVineIssue>> GetIssuesByIdsAsync(
+        IEnumerable<int> issueIds,
+        CancellationToken cancellationToken = default)
+    {
+        var idList = issueIds.Distinct().ToList();
+
+        if (idList.Count == 0)
+        {
+            return new ComicVineSearchResult<ComicVineIssue>
+            {
+                Success = true,
+                Results = new List<ComicVineIssue>(),
+                TotalResults = 0,
+                NumberOfPageResults = 0
+            };
+        }
+
+        // Check cache first - return any already cached issues
+        var cachedIssues = new List<ComicVineIssue>();
+        var uncachedIds = new List<int>();
+
+        foreach (var id in idList)
+        {
+            var cacheKey = $"cv:issue:{id}";
+            if (_cache.TryGetValue(cacheKey, out ComicVineResult<ComicVineIssue>? cached) && cached?.Data != null)
+            {
+                cachedIssues.Add(cached.Data);
+            }
+            else
+            {
+                uncachedIds.Add(id);
+            }
+        }
+
+        // If all issues were cached, return immediately
+        if (uncachedIds.Count == 0)
+        {
+            _logger.LogDebug("ComicVine batch cache HIT: all {Count} issues found in cache", idList.Count);
+            return new ComicVineSearchResult<ComicVineIssue>
+            {
+                Success = true,
+                Results = cachedIssues,
+                TotalResults = cachedIssues.Count,
+                NumberOfPageResults = cachedIssues.Count
+            };
+        }
+
+        _logger.LogDebug("ComicVine batch: {CacheHits} cached, {CacheMisses} need fetching",
+            cachedIssues.Count, uncachedIds.Count);
+
+        var apiKey = await GetApiKeyAsync(cancellationToken);
+        if (string.IsNullOrEmpty(apiKey))
+        {
+            return new ComicVineSearchResult<ComicVineIssue>
+            {
+                Success = false,
+                Error = "ComicVine API key not configured"
+            };
+        }
+
+        try
+        {
+            var allResults = new List<ComicVineIssue>(cachedIssues);
+
+            // Fetch uncached issues in batches (max 100 per request, using ID filter)
+            const int batchSize = 100;
+            foreach (var batch in uncachedIds.Chunk(batchSize))
+            {
+                // ComicVine filter syntax: id:123|456|789
+                var idFilter = string.Join("|", batch);
+                var url = $"issues/?api_key={apiKey}&format=json&filter=id:{idFilter}&limit={batch.Length}";
+                var response = await MakeRequestAsync<ComicVineApiResponse<List<ComicVineApiIssue>>>(url, cancellationToken);
+
+                if (response.StatusCode == 1 && response.Results != null)
+                {
+                    foreach (var apiIssue in response.Results)
+                    {
+                        var issue = MapIssue(apiIssue);
+                        allResults.Add(issue);
+
+                        // Cache individual issues
+                        var cacheKey = $"cv:issue:{issue.Id}";
+                        var result = new ComicVineResult<ComicVineIssue>
+                        {
+                            Success = true,
+                            StatusCode = 1,
+                            Data = issue
+                        };
+                        _cache.Set(cacheKey, result, TimeSpan.FromHours(24));
+                    }
+                }
+            }
+
+            return new ComicVineSearchResult<ComicVineIssue>
+            {
+                Success = true,
+                Results = allResults,
+                TotalResults = allResults.Count,
+                NumberOfPageResults = allResults.Count
+            };
+        }
+        catch (ComicVineRateLimitException)
+        {
+            return new ComicVineSearchResult<ComicVineIssue>
+            {
+                Success = false,
+                Error = "Rate limit exceeded",
+                Results = cachedIssues // Return any cached results we have
+            };
+        }
+    }
+
+    public async Task<ComicVineSearchResult<ComicVineVolume>> GetVolumesByIdsAsync(
+        IEnumerable<int> volumeIds,
+        CancellationToken cancellationToken = default)
+    {
+        var idList = volumeIds.Distinct().ToList();
+
+        if (idList.Count == 0)
+        {
+            return new ComicVineSearchResult<ComicVineVolume>
+            {
+                Success = true,
+                Results = new List<ComicVineVolume>(),
+                TotalResults = 0,
+                NumberOfPageResults = 0
+            };
+        }
+
+        // Check cache first
+        var cachedVolumes = new List<ComicVineVolume>();
+        var uncachedIds = new List<int>();
+
+        foreach (var id in idList)
+        {
+            var cacheKey = $"cv:volume:{id}";
+            if (_cache.TryGetValue(cacheKey, out ComicVineResult<ComicVineVolume>? cached) && cached?.Data != null)
+            {
+                cachedVolumes.Add(cached.Data);
+            }
+            else
+            {
+                uncachedIds.Add(id);
+            }
+        }
+
+        // If all volumes were cached, return immediately
+        if (uncachedIds.Count == 0)
+        {
+            _logger.LogDebug("ComicVine batch cache HIT: all {Count} volumes found in cache", idList.Count);
+            return new ComicVineSearchResult<ComicVineVolume>
+            {
+                Success = true,
+                Results = cachedVolumes,
+                TotalResults = cachedVolumes.Count,
+                NumberOfPageResults = cachedVolumes.Count
+            };
+        }
+
+        _logger.LogDebug("ComicVine batch: {CacheHits} cached, {CacheMisses} need fetching",
+            cachedVolumes.Count, uncachedIds.Count);
+
+        var apiKey = await GetApiKeyAsync(cancellationToken);
+        if (string.IsNullOrEmpty(apiKey))
+        {
+            return new ComicVineSearchResult<ComicVineVolume>
+            {
+                Success = false,
+                Error = "ComicVine API key not configured"
+            };
+        }
+
+        try
+        {
+            var allResults = new List<ComicVineVolume>(cachedVolumes);
+
+            // Fetch uncached volumes in batches using ID filter
+            const int batchSize = 100;
+            foreach (var batch in uncachedIds.Chunk(batchSize))
+            {
+                var idFilter = string.Join("|", batch);
+                var url = $"volumes/?api_key={apiKey}&format=json&filter=id:{idFilter}&limit={batch.Length}";
+                var response = await MakeRequestAsync<ComicVineApiResponse<List<ComicVineApiVolume>>>(url, cancellationToken);
+
+                if (response.StatusCode == 1 && response.Results != null)
+                {
+                    foreach (var apiVolume in response.Results)
+                    {
+                        var volume = MapVolume(apiVolume);
+                        allResults.Add(volume);
+
+                        // Cache individual volumes
+                        var cacheKey = $"cv:volume:{volume.Id}";
+                        var result = new ComicVineResult<ComicVineVolume>
+                        {
+                            Success = true,
+                            StatusCode = 1,
+                            Data = volume
+                        };
+                        _cache.Set(cacheKey, result, TimeSpan.FromHours(24));
+                    }
+                }
+            }
+
+            return new ComicVineSearchResult<ComicVineVolume>
+            {
+                Success = true,
+                Results = allResults,
+                TotalResults = allResults.Count,
+                NumberOfPageResults = allResults.Count
+            };
+        }
+        catch (ComicVineRateLimitException)
+        {
+            return new ComicVineSearchResult<ComicVineVolume>
+            {
+                Success = false,
+                Error = "Rate limit exceeded",
+                Results = cachedVolumes // Return any cached results we have
+            };
+        }
+    }
+
     public async Task<ComicVineSearchResult<ComicVineIssue>> GetVolumeIssuesAsync(
         int volumeId,
         int page = 1,

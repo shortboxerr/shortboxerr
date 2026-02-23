@@ -43,6 +43,27 @@ public interface IComicVineClient
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets multiple issues by their IDs in a single batched request.
+    /// More efficient than multiple GetIssueAsync calls when fetching many issues.
+    /// </summary>
+    /// <param name="issueIds">Collection of ComicVine issue IDs to fetch.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Dictionary mapping issue IDs to their data (null if not found).</returns>
+    Task<ComicVineSearchResult<ComicVineIssue>> GetIssuesByIdsAsync(
+        IEnumerable<int> issueIds,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets multiple volumes by their IDs in a single batched request.
+    /// </summary>
+    /// <param name="volumeIds">Collection of ComicVine volume IDs to fetch.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Search result containing the volumes found.</returns>
+    Task<ComicVineSearchResult<ComicVineVolume>> GetVolumesByIdsAsync(
+        IEnumerable<int> volumeIds,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets all issues for a volume (series).
     /// </summary>
     Task<ComicVineSearchResult<ComicVineIssue>> GetVolumeIssuesAsync(
