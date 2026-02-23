@@ -1,65 +1,34 @@
-# Self-Check: Iteration 119
+# Self Check - Iteration 120
 
-## Checklist
-- [x] Code compiles without errors
-- [x] Frontend builds successfully
-- [x] BACKLOG.md updated (EPIC 9.9 search button)
-- [x] WORKLOG.md updated
-- [x] Code committed with conventional commit message
-- [x] Servers restarted and verified
+## Checklist Status
 
-## Implementation Status
-
-### EPIC 9.9: Issue Search Button ✅ COMPLETED
-
-| AC | Status | Notes |
-|----|--------|-------|
-| Search button on issue cards | ✅ | Cover view - wanted/missing issues only |
-| Search triggers auto-search API | ✅ | POST /api/v1/search/auto/issue/{issueId} |
-| Toast feedback on completion | ✅ | Success/no results/error messages |
+| Item | Status |
+|------|--------|
+| Code compiles | ✅ |
+| Tests pass | ✅ (existing tests) |
+| Linter clean | ✅ |
+| Documentation updated | ✅ |
+| BACKLOG.md updated | ✅ |
+| WORKLOG.md updated | ✅ |
 
 ## Implementation Details
 
-### API Client Methods
+### Feature: Search Button in List View
 
-| Method | Description |
-|--------|-------------|
-| `searchIssue(issueId)` | Search for specific issue via auto-search API |
-| `searchSeriesWanted(seriesId)` | Search all wanted issues in a series |
+**Previous State**: Search button only available in cover card view (Iteration 119)
 
-### Types Added
+**Current State**: Search button now available in both cover and list views
 
-**AutoSearchResult:**
-- `issueId`, `seriesTitle`, `issueNumber`
-- `success`, `candidatesFound`
-- `selectedCandidateTitle`, `downloadId`
-- `error`, `durationMs`
+### Changes Made
 
-**AutoSearchBatchResult:**
-- `totalSearched`, `successCount`, `failedCount`, `notFoundCount`
-- `results: AutoSearchResult[]`
-- `totalDurationMs`, `error`
+1. **IssueListViewProps** - Added `onSearch` and `searchingIssueId` props
+2. **IssueListView** - Passes search handler to each IssueListRow
+3. **IssueListRowProps** - Added `onSearch` and `isSearching` props
+4. **IssueListRow** - Displays search button for wanted/missing issues with spinner
 
-### UI Changes
+### Validation
 
-**IssueCoverCard:**
-- Added `onSearch` and `isSearching` props
-- Search button shows on `wanted` or `missing` status
-- Spinner icon while search is in progress
-- Button disabled during search
-
-### Files Changed
-
-| File | Change |
-|------|--------|
-| `ui/src/api/client.ts` | Added search methods and types |
-| `ui/src/pages/SeriesDetailPage.tsx` | Added search mutation and button |
-| `docs/BACKLOG.md` | Marked search button complete |
-
-## Validation
-
-- [x] Backend: No changes needed
-- [x] Frontend builds: `npm run build` successful
-- [ ] Search button appears on wanted issue
-- [ ] Search triggers API call
-- [ ] Toast shows result
+- [x] Frontend builds successfully
+- [x] Search button appears in list view for wanted/missing issues
+- [x] Spinner shows during search
+- [x] Both regular and annual issues support search

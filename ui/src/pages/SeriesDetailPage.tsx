@@ -675,7 +675,9 @@ export function SeriesDetailPage() {
                       onSort={toggleSort}
                       onMarkWanted={handleMarkAsWanted}
                       onMarkSkipped={handleMarkAsSkipped}
+                      onSearch={handleSearchIssue}
                       isUpdating={updateIssueStatus.isPending}
+                      searchingIssueId={searchIssue.isPending ? searchIssue.variables : undefined}
                     />
                   )}
 
@@ -825,7 +827,9 @@ export function SeriesDetailPage() {
                       onSort={toggleSort}
                       onMarkWanted={handleMarkAsWanted}
                       onMarkSkipped={handleMarkAsSkipped}
+                      onSearch={handleSearchIssue}
                       isUpdating={updateIssueStatus.isPending}
+                      searchingIssueId={searchIssue.isPending ? searchIssue.variables : undefined}
                       showHeader={false}
                     />
                   )}
@@ -1433,13 +1437,15 @@ interface IssueListViewProps {
   onSort: (key: SortKey) => void;
   onMarkWanted: (ids: number[]) => void;
   onMarkSkipped: (ids: number[]) => void;
+  onSearch: (issueId: number) => void;
   isUpdating: boolean;
+  searchingIssueId?: number;
   showHeader?: boolean;
 }
 
 function IssueListView({ 
   issues, selectedIds, onSelect, onToggleSelectAll, allSelected, someSelected,
-  sortKey, sortDir, onSort, onMarkWanted, onMarkSkipped, isUpdating, showHeader = true 
+  sortKey, sortDir, onSort, onMarkWanted, onMarkSkipped, onSearch, isUpdating, searchingIssueId, showHeader = true 
 }: IssueListViewProps) {
   const SortIcon = sortDir === 'asc' ? SortAsc : SortDesc;
   const selectAllRef = useRef<HTMLInputElement>(null);
@@ -1491,7 +1497,9 @@ function IssueListView({
               onSelect={() => onSelect(issue.id)}
               onMarkWanted={() => onMarkWanted([issue.id])}
               onMarkSkipped={() => onMarkSkipped([issue.id])}
+              onSearch={() => onSearch(issue.id)}
               isUpdating={isUpdating}
+              isSearching={searchingIssueId === issue.id}
             />
           ))}
         </tbody>
@@ -1507,10 +1515,12 @@ interface IssueListRowProps {
   onSelect: () => void;
   onMarkWanted: () => void;
   onMarkSkipped: () => void;
+  onSearch: () => void;
   isUpdating: boolean;
+  isSearching: boolean;
 }
 
-function IssueListRow({ issue, selected, onSelect, onMarkWanted, onMarkSkipped, isUpdating }: IssueListRowProps) {
+function IssueListRow({ issue, selected, onSelect, onMarkWanted, onMarkSkipped, onSearch, isUpdating, isSearching }: IssueListRowProps) {
   const status = getIssueStatus(issue);
   const statusLabels: Record<string, string> = {
     owned: 'Owned',
@@ -1582,6 +1592,17 @@ function IssueListRow({ issue, selected, onSelect, onMarkWanted, onMarkSkipped, 
             >
               <ExternalLink size={14} />
             </a>
+          )}
+          {/* Search button - available for wanted/missing issues */}
+          {(status === 'wanted' || status === 'missing') && (
+            <button 
+              className="btn btn-icon btn-sm" 
+              onClick={(e) => { e.stopPropagation(); onSearch(); }}
+              disabled={isSearching}
+              title="Search for this issue"
+            >
+              {isSearching ? <Loader2 size={14} className="spinning" /> : <Search size={14} />}
+            </button>
           )}
           {/* Status toggle buttons - Mylar3 parity: can mark ANY issue as Wanted/Skipped */}
           {/* Marking an owned issue as Wanted triggers a re-search (replace/upgrade) */}

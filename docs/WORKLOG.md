@@ -1,5 +1,30 @@
 # Worklog
 
+## Iteration 120 (2026-02-17)
+**EPIC 9: Issue Search Button - List View**
+
+### Summary
+Extended the Search button feature to the list view. Iteration 119 only added search to cover cards; this iteration completes the feature by adding it to the list view as well.
+
+### Commits
+1. `feat(ui): add search button to issue list view`
+
+### Deliverables
+
+#### IssueListView Component Updates
+- Added `onSearch` and `searchingIssueId` props
+- Passes search handler to IssueListRow
+
+#### IssueListRow Component Updates
+- Added `onSearch` and `isSearching` props
+- Search button shows for wanted/missing issues
+- Spinner while search is in progress
+
+### Files Changed
+- `ui/src/pages/SeriesDetailPage.tsx` - Updated IssueListView and IssueListRow
+
+---
+
 ## Iteration 119 (2026-02-17)
 **EPIC 9: Issue Search Button**
 
