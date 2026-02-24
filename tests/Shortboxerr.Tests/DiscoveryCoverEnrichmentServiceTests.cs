@@ -65,15 +65,15 @@ public class DiscoveryCoverEnrichmentServiceTests
             IssueCount = 1
         });
 
-        // Create fallback entry tracking the LOCG cover
+        // Create fallback entry tracking the Metron cover
         dbContext.FallbackCoverEntries.Add(new FallbackCoverEntry
         {
             ComicVineIssueId = issueId,
             ComicVineVolumeId = 100,
             SeriesName = "Test Series",
             IssueNumber = "1",
-            FallbackCoverUrl = "https://locg.example.com/cover.jpg",
-            FallbackSource = "LeagueOfComicGeeks",
+            FallbackCoverUrl = "https://metron.cloud/media/issue/cover.jpg",
+            FallbackSource = "Metron",
             CreatedAt = DateTime.UtcNow.AddDays(-7),
             LastChecked = null,
             WeekStart = weekStart
@@ -137,8 +137,8 @@ public class DiscoveryCoverEnrichmentServiceTests
             ComicVineVolumeId = 100,
             SeriesName = "Test Series",
             IssueNumber = "1",
-            FallbackCoverUrl = "https://locg.example.com/cover.jpg",
-            FallbackSource = "LeagueOfComicGeeks",
+            FallbackCoverUrl = "https://metron.cloud/media/issue/cover.jpg",
+            FallbackSource = "Metron",
             CreatedAt = DateTime.UtcNow.AddDays(-7),
             LastChecked = DateTime.UtcNow.AddDays(-1), // Checked yesterday
             WeekStart = weekStart
@@ -186,8 +186,8 @@ public class DiscoveryCoverEnrichmentServiceTests
             ComicVineVolumeId = 100,
             SeriesName = "Test Series",
             IssueNumber = "1",
-            FallbackCoverUrl = "https://locg.example.com/cover.jpg",
-            FallbackSource = "LeagueOfComicGeeks",
+            FallbackCoverUrl = "https://metron.cloud/media/issue/cover.jpg",
+            FallbackSource = "Metron",
             CreatedAt = DateTime.UtcNow.AddDays(-14),
             LastChecked = null,
             WeekStart = weekStart
@@ -225,7 +225,7 @@ public class DiscoveryCoverEnrichmentServiceTests
     }
 
     [Fact]
-    public async Task TrackFallbackCover_CreatesEntry_ForLocgCover()
+    public async Task TrackFallbackCover_CreatesEntry_ForMetronCover()
     {
         // Arrange
         var (dbContext, serviceProvider) = CreateTestContext();
@@ -246,8 +246,8 @@ public class DiscoveryCoverEnrichmentServiceTests
             100,
             "Test Series",
             "1",
-            "https://locg.example.com/cover.jpg",
-            CoverSource.LeagueOfComicGeeks,
+            "https://metron.cloud/media/issue/cover.jpg",
+            CoverSource.Metron,
             weekStart,
             CancellationToken.None
         })!;
@@ -260,7 +260,7 @@ public class DiscoveryCoverEnrichmentServiceTests
         Assert.Equal(12345, entry.ComicVineIssueId);
         Assert.Equal("Test Series", entry.SeriesName);
         Assert.Equal("1", entry.IssueNumber);
-        Assert.Equal("LeagueOfComicGeeks", entry.FallbackSource);
+        Assert.Equal("Metron", entry.FallbackSource);
     }
 
     [Fact]
@@ -286,7 +286,7 @@ public class DiscoveryCoverEnrichmentServiceTests
             "Test Series",
             "1",
             "https://comicvine.example.com/volume-cover.jpg",
-            CoverSource.ComicVineVolume, // Volume cover, not LOCG
+            CoverSource.ComicVineVolume, // Volume cover, not Metron
             weekStart,
             CancellationToken.None
         })!;
@@ -310,8 +310,8 @@ public class DiscoveryCoverEnrichmentServiceTests
             ComicVineVolumeId = 100,
             SeriesName = "Test Series",
             IssueNumber = "1",
-            FallbackCoverUrl = "https://locg.example.com/cover.jpg",
-            FallbackSource = "LeagueOfComicGeeks",
+            FallbackCoverUrl = "https://metron.cloud/media/issue/cover.jpg",
+            FallbackSource = "Metron",
             CreatedAt = DateTime.UtcNow.AddDays(-14),
             LastChecked = null,
             WeekStart = weekStart

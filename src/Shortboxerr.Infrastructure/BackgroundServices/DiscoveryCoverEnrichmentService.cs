@@ -15,12 +15,12 @@ namespace Shortboxerr.Infrastructure.BackgroundServices;
 /// 
 /// WalkSoftly data doesn't include cover images, so this service periodically:
 /// 1. Scans cached discovery weeks for issues missing cover images
-/// 2. Tries LOCG for issue-specific covers first (via CoverFallbackService)
+/// 2. Tries Metron for issue-specific covers first (via CoverFallbackService)
 /// 3. Falls back to ComicVine volume (series) covers
 /// 4. Updates the cached data with the enriched cover URLs
 /// 
 /// Priority:
-/// 1. LOCG issue-specific cover (via CoverFallbackService)
+/// 1. Metron issue-specific cover (via CoverFallbackService with CV ID lookup)
 /// 2. ComicVine volume cover (final fallback)
 /// 
 /// This runs independently of the main discovery refresh to avoid rate limiting
@@ -102,17 +102,17 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         }
 
         var totalEnriched = 0;
-        var locgHits = 0;
+        var metronHits = 0;
         var volumeHits = 0;
 
         foreach (var cachedWeek in cachedWeeks)
         {
             try
             {
-                var (enrichedCount, locgCount, volumeCount) = await EnrichCachedWeekAsync(
+                var (enrichedCount, metronCount, volumeCount) = await EnrichCachedWeekAsync(
                     cachedWeek, comicVineClient, coverFallbackService, dbContext, cancellationToken);
                 totalEnriched += enrichedCount;
-                locgHits += locgCount;
+                metronHits += metronCount;
                 volumeHits += volumeCount;
             }
             catch (Exception ex)
@@ -126,12 +126,12 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         if (totalEnriched > 0)
         {
             _logger.LogInformation(
-                "Cover enrichment complete: enriched {Count} issues ({LocgHits} from LOCG, {VolumeHits} from volume covers) across {Weeks} weeks",
-                totalEnriched, locgHits, volumeHits, cachedWeeks.Count);
+                "Cover enrichment complete: enriched {Count} issues ({MetronHits} from Metron, {VolumeHits} from volume covers) across {Weeks} weeks",
+                totalEnriched, metronHits, volumeHits, cachedWeeks.Count);
         }
     }
 
-    private async Task<(int enrichedCount, int locgCount, int volumeCount)> EnrichCachedWeekAsync(
+    private async Task<(int enrichedCount, int metronCount, int volumeCount)> EnrichCachedWeekAsync(
         Core.Entities.CachedDiscoveryWeek cachedWeek,
         IComicVineClient comicVineClient,
         ICoverFallbackService coverFallbackService,
@@ -195,7 +195,7 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         }
 
         var enrichedCount = 0;
-        var locgCount = 0;
+        var metronCount = 0;
         var volumeCount = 0;
 
         foreach (var issue in issues.Where(i => i.Image == null && i.Volume?.Id > 0))
@@ -209,12 +209,25 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
                 volumeCoverUrl = volumeImage.MediumUrl ?? volumeImage.SmallUrl;
             }
 
-            var fallbackResult = await coverFallbackService.GetCoverAsync(
-                seriesName,
-                issueNumber,
-                null, // Publisher not available in cached issue data
-                volumeCoverUrl,
-                cancellationToken);
+            // Try Metron with ComicVine ID if available (preferred - exact match)
+            CoverFallbackResult fallbackResult;
+            if (issue.Id > 0)
+            {
+                fallbackResult = await coverFallbackService.GetCoverByCvIdAsync(
+                    issue.Id,
+                    volumeCoverUrl,
+                    cancellationToken);
+            }
+            else
+            {
+                // Fall back to series name/issue number search
+                fallbackResult = await coverFallbackService.GetCoverAsync(
+                    seriesName,
+                    issueNumber,
+                    null,
+                    volumeCoverUrl,
+                    cancellationToken);
+            }
 
             if (fallbackResult.Success && !string.IsNullOrEmpty(fallbackResult.CoverUrl))
             {
@@ -226,11 +239,11 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
                 };
                 enrichedCount++;
 
-                if (fallbackResult.Source == CoverSource.LeagueOfComicGeeks)
+                if (fallbackResult.Source == CoverSource.Metron)
                 {
-                    locgCount++;
+                    metronCount++;
                     
-                    // Track LOCG covers for future ComicVine refresh checks
+                    // Track Metron covers for future ComicVine refresh checks
                     await TrackFallbackCoverAsync(
                         dbContext,
                         issue.Id,
@@ -256,11 +269,11 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             await dbContext.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation(
-                "Week {WeekStart}: enriched {Count} issues ({Locg} LOCG, {Volume} volume)",
-                cachedWeek.WeekStart, enrichedCount, locgCount, volumeCount);
+                "Week {WeekStart}: enriched {Count} issues ({Metron} Metron, {Volume} volume)",
+                cachedWeek.WeekStart, enrichedCount, metronCount, volumeCount);
         }
 
-        return (enrichedCount, locgCount, volumeCount);
+        return (enrichedCount, metronCount, volumeCount);
     }
 
     /// <summary>
@@ -444,7 +457,7 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
 
     /// <summary>
     /// Tracks an issue that is using a fallback cover.
-    /// Called when LOCG provides a cover during enrichment.
+    /// Called when Metron provides a cover during enrichment.
     /// </summary>
     internal async Task TrackFallbackCoverAsync(
         ShortboxerrDbContext dbContext,
@@ -457,8 +470,8 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         DateTime weekStart,
         CancellationToken cancellationToken)
     {
-        // Only track LOCG covers (not volume covers, which are a different type of fallback)
-        if (source != CoverSource.LeagueOfComicGeeks)
+        // Only track Metron covers (not volume covers, which are a different type of fallback)
+        if (source != CoverSource.Metron)
         {
             return;
         }

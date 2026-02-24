@@ -155,8 +155,9 @@ public static class DependencyInjection
         // WalkSoftly client for pull list data (Mylar3 parity)
         services.AddHttpClient<Core.WalkSoftly.IWalkSoftlyClient, WalkSoftly.WalkSoftlyClient>();
 
-        // League of Comic Geeks client for cover image fallback (unofficial API - see BACKLOG.md 11.13)
-        services.AddHttpClient<Core.LeagueOfComicGeeks.ILeagueOfComicGeeksClient, LeagueOfComicGeeks.LeagueOfComicGeeksClient>();
+        // Metron client for cover image fallback (official API with ComicVine ID mapping)
+        services.Configure<Core.Metron.MetronSettings>(options => { }); // Defaults, override via config
+        services.AddHttpClient<Core.Metron.IMetronClient, Metron.MetronClient>();
 
         // Cover fallback service for enrichment when ComicVine doesn't have issue covers
         services.AddScoped<Core.Services.ICoverFallbackService, Services.CoverFallbackService>();

@@ -5,7 +5,7 @@ namespace Shortboxerr.Core.Services;
 /// 
 /// Priority hierarchy:
 /// 1. ComicVine issue-specific cover (primary, source of truth)
-/// 2. League of Comic Geeks issue cover (unofficial fallback)
+/// 2. Metron issue cover via ComicVine ID lookup (official API, preferred fallback)
 /// 3. ComicVine volume/series cover (final fallback)
 /// 
 /// This service should only be invoked when the primary ComicVine issue cover is missing.
@@ -13,7 +13,21 @@ namespace Shortboxerr.Core.Services;
 public interface ICoverFallbackService
 {
     /// <summary>
+    /// Gets a cover image for an issue using ComicVine ID for direct Metron lookup.
+    /// This is the preferred method as it provides exact matching via Metron's cv_id field.
+    /// </summary>
+    /// <param name="comicVineIssueId">ComicVine issue ID for direct Metron lookup</param>
+    /// <param name="volumeCoverUrl">ComicVine volume cover URL as final fallback</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Result containing cover URL and source information</returns>
+    Task<CoverFallbackResult> GetCoverByCvIdAsync(
+        int comicVineIssueId,
+        string? volumeCoverUrl = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets a cover image for an issue, querying fallback sources if the primary source has no cover.
+    /// Falls back to series name/issue number search if ComicVine ID is not available.
     /// </summary>
     /// <param name="seriesName">Series name for searching alternate sources</param>
     /// <param name="issueNumber">Issue number for searching alternate sources</param>
@@ -90,8 +104,8 @@ public enum CoverSource
     /// <summary>ComicVine issue-specific cover (primary).</summary>
     ComicVineIssue = 1,
 
-    /// <summary>League of Comic Geeks issue cover (fallback).</summary>
-    LeagueOfComicGeeks = 2,
+    /// <summary>Metron issue cover via ComicVine ID lookup (official API fallback).</summary>
+    Metron = 2,
 
     /// <summary>Marvel API cover (Marvel comics only).</summary>
     MarvelApi = 3,
@@ -111,8 +125,8 @@ public class CoverFallbackStats
     /// <summary>Requests fulfilled by ComicVine issue cover.</summary>
     public long ComicVineIssueHits { get; set; }
 
-    /// <summary>Requests fulfilled by LOCG.</summary>
-    public long LocgHits { get; set; }
+    /// <summary>Requests fulfilled by Metron via ComicVine ID lookup.</summary>
+    public long MetronHits { get; set; }
 
     /// <summary>Requests fulfilled by Marvel API.</summary>
     public long MarvelApiHits { get; set; }
