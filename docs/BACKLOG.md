@@ -534,7 +534,7 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
   - AC: Fetch: issue number, title, release date, description
   - AC: Fetch: cover date vs. store date (match Mylar3 behavior)
   - AC: Fetch: story arc associations
-  - AC: Fetch: character/team appearances (optional, configurable) - DEFERRED
+  - AC: Fetch: character/team appearances (optional, configurable) - Foundation complete (DTOs + Entities)
 - [x] **Special issues handling (Mylar3 parity)**
   - AC: Annuals linked to parent series
   - AC: One-shots handling
@@ -1413,7 +1413,7 @@ Based on EPIC 15.9 research findings: Mylar3 uses WalkSoftly aggregator for pull
   - AC: Configurable ignored publishers list in PullListSettings ✅
   - AC: Wildcard support for publisher matching (e.g., "*Manga*") ✅
   - AC: Apply filter at data retrieval level ✅
-  - AC: Settings UI for managing ignored publishers ← READY (settings available, needs UI)
+  - AC: Settings UI for managing ignored publishers ✅
 
 - [x] **Status indicators and diagnostics** ✅
   - AC: Log data source info (WalkSoftly vs ComicVine) ✅
@@ -1551,18 +1551,21 @@ League of Comic Geeks has **NO official API**. Analysis of existing libraries (p
   - AC: Integrated with DiscoveryCoverEnrichmentService background task ✅
   - Note: 10 unit tests in CoverFallbackServiceTests.cs
 
-- [ ] **Background cover refresh** ← READY (Priority 4)
-  - AC: Extend existing background service to periodically check for ComicVine cover updates
-  - AC: When ComicVine cover becomes available, update the issue and clear fallback cache entry
-  - AC: Track last-checked timestamp to avoid redundant API calls
-  - AC: Run weekly to check if ComicVine has caught up
+- [x] **Background cover refresh** ✅ COMPLETED (Iteration 147)
+  - AC: Extend existing background service to periodically check for ComicVine cover updates ✅
+  - AC: When ComicVine cover becomes available, update the issue and clear fallback cache entry ✅
+  - AC: Track last-checked timestamp to avoid redundant API calls ✅
+  - AC: Run weekly to check if ComicVine has caught up ✅
+  - Note: Added FallbackCoverEntry entity, tracking via TrackFallbackCoverAsync, and RefreshFallbackCoversFromComicVineAsync
+  - Note: 6 unit tests in DiscoveryCoverEnrichmentServiceTests.cs
 
-- [ ] **Unit tests** ← READY (Priority 5)
-  - AC: Test fallback priority order
-  - AC: Test cache behavior
-  - AC: Test ComicVine cover replacement clears fallback
-  - AC: Mock external API responses
-  - AC: Test graceful degradation when LOCG structure changes
+- [x] **Unit tests** ✅ COMPLETED (Iteration 147)
+  - AC: Test fallback priority order ✅
+  - AC: Test cache behavior ✅
+  - AC: Test ComicVine cover replacement clears fallback ✅
+  - AC: Mock external API responses ✅
+  - AC: Test graceful degradation when LOCG structure changes ✅
+  - Note: 17 tests in CoverFallbackServiceTests.cs + 6 tests in DiscoveryCoverEnrichmentServiceTests.cs
 
 ### 11.12 Show Upcoming Releases on Series View (WalkSoftly Integration) ✅ COMPLETED
 
@@ -2073,12 +2076,12 @@ Track and prioritize completion of deferred items across all EPICs.
 | **P5 - Now Actionable** |||||
 | ~~21~~ | ~~Request batching (ComicVine)~~ | 12 | M | L | ✅ Completed |
 | ~~22~~ | ~~Rate limit awareness~~ | 12 | M | L | ✅ Already implemented |
-| 23 | Character/team appearances | 9 | M | L | ← READY |
+| 23 | Character/team appearances | 9 | M | L | ✅ Foundation complete (Iteration 147) |
 | 24 | Usenet/NZB from DDL sites | 8 | M | L | ← READY |
 | 25 | Folder download (Dropbox/Drive) | 8 | M | L | ← READY |
 | 26 | Distributed cache pub/sub | 12 | L | L | ← READY (optional) |
-| 27 | Automation tests | 11 | L | M | ← READY (deps met) |
-| 28 | Full integration tests | 10 | L | M | ← READY (deps met) |
+| ~~27~~ | ~~Automation tests~~ | 11 | L | M | ✅ Completed (see 11.7) |
+| ~~28~~ | ~~Full integration tests~~ | 10 | L | M | ✅ Completed (329+ tests exist) |
 
 **Legend:**
 - **Effort**: S = Small (< 1 day), M = Medium (1-3 days), L = Large (> 3 days)

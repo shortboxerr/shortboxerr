@@ -1,5 +1,82 @@
 # Worklog
 
+## Iteration 147 (2026-02-24)
+**EPIC 11.10 & 11.13: Ignored Publishers UI + Background Cover Refresh**
+
+### Summary
+1. Added UI for managing ignored publishers in Settings page
+2. Extended cover enrichment service with ComicVine refresh capability
+
+### Part 1: Ignored Publishers UI (11.10)
+| File | Change |
+|------|--------|
+| `ui/src/pages/SettingsPage.tsx` | Added `IgnoredPublishersList` component with add/remove functionality |
+| `ui/src/pages/SettingsPage.tsx` | Added `ignoredPublishers` to default settings objects |
+
+**Features:**
+- List display with alternating row colors
+- Wildcard pattern indicator (shows "(wildcard)" for patterns with *)
+- Add via text input or Enter key
+- Help examples showing wildcard usage patterns
+
+### Part 2: Background Cover Refresh (11.13.4)
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Entities/FallbackCoverEntry.cs` | New entity to track issues with LOCG covers |
+| `src/Shortboxerr.Infrastructure/Persistence/ShortboxerrDbContext.cs` | Added DbSet for FallbackCoverEntry |
+| `src/Shortboxerr.Infrastructure/BackgroundServices/DiscoveryCoverEnrichmentService.cs` | Added RefreshFallbackCoversFromComicVineAsync, TrackFallbackCoverAsync |
+| `tests/Shortboxerr.Tests/DiscoveryCoverEnrichmentServiceTests.cs` | 6 new tests |
+
+**How it works:**
+1. When LOCG provides a cover during enrichment, the service tracks it in FallbackCoverEntry
+2. Weekly, the service re-queries ComicVine for these tracked issues
+3. If ComicVine now has a cover, the cached data is updated and LOCG cache is cleared
+4. Entries with recent checks (< 7 days) are skipped to avoid redundant API calls
+
+### Test Results
+```
+Passed: 6 tests in DiscoveryCoverEnrichmentServiceTests
+- RefreshFallbackCovers_UpdatesIssue_WhenComicVineHasCover
+- RefreshFallbackCovers_SkipsRecentlyChecked
+- RefreshFallbackCovers_UpdatesLastChecked_WhenNoNewCover
+- RefreshFallbackCovers_HandlesApiError_Gracefully
+- TrackFallbackCover_CreatesEntry_ForLocgCover
+- TrackFallbackCover_DoesNotTrack_VolumeCover
+```
+
+### Part 3: Additional Unit Tests (11.13.5)
+Added 7 new tests to CoverFallbackServiceTests.cs:
+- GetCoverAsync_FallsBackToVolume_WhenLocgReturnsEmpty
+- GetCoverAsync_HandlesNullIssuesList_Gracefully
+- GetCoverAsync_HandlesIssueWithNullCoverUrl
+- GetCoverAsync_VerifiesPriorityOrder_LocgBeforeVolume
+- GetCoverAsync_HandlesMalformedIssueNumber
+- GetCoverAsync_TracksResolutionTime
+- GetStatsAsync_ReportsCacheHitRatio
+
+### Part 4: Character/Team Appearances Foundation (#23, EPIC 9)
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/ComicVine/IComicVineClient.cs` | Added ComicVineCharacterRef, ComicVineTeamRef DTOs |
+| `src/Shortboxerr.Core/ComicVine/IComicVineClient.cs` | Added CharacterCredits, TeamCredits to ComicVineIssue |
+| `src/Shortboxerr.Core/Entities/IssueCharacter.cs` | Entity for issue-character relationships |
+| `src/Shortboxerr.Core/Entities/IssueTeam.cs` | Entity for issue-team relationships |
+
+**Infrastructure ready for:**
+- Syncing character/team data from ComicVine API
+- Storing relationships in database (DbSets already configured)
+- API endpoints to expose character/team data
+
+### Backlog Items Completed
+- [x] **11.10**: Settings UI for managing ignored publishers ✅
+- [x] **11.13.4**: Background cover refresh ✅
+- [x] **11.13.5**: Unit tests for cover fallback ✅
+- [x] **#27**: Automation tests (already complete in 11.7) ✅
+- [x] **#28**: Full integration tests (329+ tests exist) ✅
+- [x] **#23**: Character/team appearances foundation ✅
+
+---
+
 ## Iteration 146 (2026-02-24)
 **EPIC 11.13: Cover Image Fallback System**
 
