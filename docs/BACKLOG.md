@@ -1501,14 +1501,14 @@ Implement the cover image fallback system based on research from 11.11. When Com
 3. Marvel API cover (Marvel comics only, optional)
 4. ComicVine volume/series cover (final fallback)
 
-**⚠️ LOCG DEPRECATION NOTICE (2026-02-24):**
+**🗑️ LOCG REMOVAL NOTICE (2026-02-24):**
 
-The LOCG implementation has been **deprecated** in favor of Metron. Research findings:
+The LOCG implementation will be **removed** and replaced with Metron. Research findings:
 
 | Source | Official API | CV ID Mapping | All Publishers | Rate Limits | Recommendation |
 |--------|-------------|---------------|----------------|-------------|----------------|
 | **Metron** | Yes ✅ | Yes ✅ | Yes ✅ | 30/min, 10k/day | **RECOMMENDED** |
-| LOCG | No ❌ | No ❌ | Yes | Unknown | **DEPRECATED** |
+| LOCG | No ❌ | No ❌ | Yes | Unknown | **TO BE REMOVED** |
 | Marvel | Yes ✅ | No | Marvel only | 3k/day | Optional |
 
 **Why Metron over LOCG:**
@@ -1525,29 +1525,19 @@ GET /api/issue/?cv_id={comicVineIssueId}
 ```
 Returns issue with cover image URL directly - eliminates fuzzy matching errors.
 
-**ORIGINAL LOCG IMPLEMENTATION (DEPRECATED):**
+**LOCG IMPLEMENTATION (TO BE REMOVED):**
 
-League of Comic Geeks has **NO official API**. Analysis of existing libraries (pruizlezcano/comicgeeks, maruf99/comicgeeks) reveals:
+League of Comic Geeks has **NO official API**. The implementation used unofficial HTML scraping which is inherently fragile:
 - Internal endpoint: `https://leagueofcomicgeeks.com/comic/get_comics`
 - Returns JSON: `{count: N, list: "<HTML content>"}`
-- HTML must be parsed with BeautifulSoup/Cheerio
-- Cover URLs: `https://s3.amazonaws.com/comicgeeks/comics/covers/large-{locg_issue_id}.jpg`
-- **Challenge**: LOCG has its own IDs, no ComicVine mapping. Must search by title and fuzzy-match.
-- **Risk**: Unofficial approach could break if site changes
+- Required fuzzy matching (no ComicVine ID mapping)
+- Could break at any time if site structure changes
 
 **Implementation Items:**
-- [x] **League of Comic Geeks client integration** ✅ COMPLETED but DEPRECATED (Iteration 146)
-  - AC: Create `ILeagueOfComicGeeksClient` interface ✅
-  - AC: Implement client using HTML parsing patterns (AngleSharp) ✅
-  - AC: Internal endpoint: `/comic/get_comics?list=search&title={query}&list_option=series` ✅
-  - AC: Parse HTML `list` field from JSON response to extract issue data ✅
-  - AC: Extract S3 cover image URLs (`https://s3.amazonaws.com/comicgeeks/comics/covers/large-{id}.jpg`) ✅
-  - AC: Parse series name + issue number from issue titles ✅
-  - AC: Cache responses locally with 24-hour TTL ✅
-  - AC: Conservative rate limiting (2s delay between requests) ✅
-  - AC: Graceful degradation on parse errors (site structure may change) ✅
-  - Note: 14 unit tests added (LeagueOfComicGeeksClientTests.cs)
-  - **⚠️ DEPRECATED**: Replace with Metron (see 11.14)
+- [x] ~~**League of Comic Geeks client integration**~~ → TO BE REMOVED (see 11.14)
+  - Was implemented in Iteration 146 but will be removed in favor of Metron
+  - Files to remove: `ILeagueOfComicGeeksClient.cs`, `LeagueOfComicGeeksClient.cs`, `LeagueOfComicGeeksClientTests.cs`
+  - Remove `CoverSource.LeagueOfComicGeeks` enum value
 
 - [ ] **Marvel API client integration** ← READY (Priority 3, Marvel-only, Optional)
   - AC: Create `IMarvelApiClient` interface  
@@ -1558,18 +1548,18 @@ League of Comic Geeks has **NO official API**. Analysis of existing libraries (p
   - AC: Cache responses locally with 24-hour TTL
   - AC: Respect Marvel rate limits (3000 calls/day)
 
-- [x] **Cover fallback service** ✅ COMPLETED (Iteration 146) - NEEDS UPDATE for Metron
+- [x] **Cover fallback service** ✅ COMPLETED (Iteration 146) - NEEDS REFACTOR for Metron
   - AC: Create `ICoverFallbackService` that queries sources in priority order ✅
-  - AC: Priority order: LOCG → ComicVine volume (final fallback) ✅
+  - AC: Priority order: LOCG → ComicVine volume (final fallback) ✅ → **Will change to Metron**
   - AC: Only query fallback sources when ComicVine issue cover is missing ✅
   - AC: Log which source provided the cover (CoverSource enum) ✅
   - AC: Return null if all sources fail (UI uses series cover) ✅
   - AC: Track success rate per source (CoverFallbackStats) ✅
-  - AC: Fuzzy matching for series name + issue number ✅
+  - AC: Fuzzy matching for series name + issue number ✅ → **No longer needed with Metron**
   - AC: 24-hour cache with clear capability ✅
   - AC: Integrated with DiscoveryCoverEnrichmentService background task ✅
   - Note: 10 unit tests in CoverFallbackServiceTests.cs
-  - **⚠️ UPDATE NEEDED**: Replace LOCG with Metron (see 11.14)
+  - **🔄 REFACTOR NEEDED**: Remove LOCG, add Metron (see 11.14)
 
 - [x] **Background cover refresh** ✅ COMPLETED (Iteration 147)
   - AC: Extend existing background service to periodically check for ComicVine cover updates ✅
@@ -1589,7 +1579,7 @@ League of Comic Geeks has **NO official API**. Analysis of existing libraries (p
 
 ### 11.14 Metron Integration for Backup Covers ← READY (HIGH PRIORITY)
 
-Replace LOCG with Metron as the primary backup cover source. Metron has an official API with direct ComicVine ID mapping, eliminating the fragile fuzzy-matching approach.
+Remove LOCG and implement Metron as the backup cover source. Metron has an official API with direct ComicVine ID mapping, eliminating the fragile fuzzy-matching approach used by LOCG.
 
 **Research Summary (2026-02-24):**
 - **API Base URL**: `https://metron.cloud/api/`
@@ -1632,11 +1622,13 @@ Replace LOCG with Metron as the primary backup cover source. Metron has an offic
 
 - [ ] **Update CoverFallbackService** ← READY (Priority 1)
   - AC: Add `CoverSource.Metron` to enum
-  - AC: Replace LOCG lookup with Metron lookup
+  - AC: Remove `CoverSource.LeagueOfComicGeeks` from enum
+  - AC: Remove LOCG client dependency injection
+  - AC: Add Metron client to priority order
   - AC: Priority order: Metron (via CV ID) → ComicVine volume
   - AC: Pass ComicVine issue ID to Metron for direct lookup
-  - AC: Update stats tracking for Metron hits
-  - AC: Keep LOCG as disabled fallback (for migration period)
+  - AC: Update stats tracking (remove LOCG, add Metron)
+  - AC: Remove fuzzy matching logic (no longer needed)
 
 - [ ] **Settings UI for Metron** ← READY (Priority 2)
   - AC: Add Metron section to Settings > General or new Metadata tab
@@ -1645,12 +1637,15 @@ Replace LOCG with Metron as the primary backup cover source. Metron has an offic
   - AC: Enable/disable toggle
   - AC: Show rate limit status
 
-- [ ] **Deprecate LOCG integration** ← READY (Priority 3)
-  - AC: Add deprecation warning in code comments
-  - AC: Make LOCG disabled by default
-  - AC: Remove LOCG from default priority order
-  - AC: Keep code for users who may have it working
-  - AC: Document migration path in release notes
+- [ ] **Remove LOCG integration entirely** ← READY (Priority 1)
+  - AC: Delete `src/Shortboxerr.Core/LeagueOfComicGeeks/ILeagueOfComicGeeksClient.cs`
+  - AC: Delete `src/Shortboxerr.Infrastructure/LeagueOfComicGeeks/LeagueOfComicGeeksClient.cs`
+  - AC: Delete `tests/Shortboxerr.Tests/LeagueOfComicGeeksClientTests.cs`
+  - AC: Remove LOCG from DependencyInjection.cs
+  - AC: Remove LOCG references from CoverFallbackService
+  - AC: Update CoverFallbackServiceTests to remove LOCG mocks
+  - AC: Remove `CoverSource.LeagueOfComicGeeks` enum value
+  - AC: Remove LOCG-related stats fields from `CoverFallbackStats`
 
 - [ ] **Unit tests for Metron client** ← READY (Priority 1)
   - AC: Test direct CV ID lookup
