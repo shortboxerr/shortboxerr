@@ -453,10 +453,15 @@ public static class SettingsEndpoints
     }
 
     private static async Task<IResult> TestMetronConnection(
-        IMetronClient metronClient,
+        ISettingsService settingsService,
+        IHttpClientFactory httpClientFactory,
         CancellationToken cancellationToken)
     {
-        if (!metronClient.IsConfigured)
+        // Load settings from database (not from DI-injected client which may have stale settings)
+        var settings = await settingsService.GetAsync<MetronSettings>("metron", new MetronSettings(), cancellationToken)
+            ?? new MetronSettings();
+
+        if (!settings.IsConfigured)
         {
             return Results.Ok(new MetronTestResponse
             {
@@ -465,15 +470,50 @@ public static class SettingsEndpoints
             });
         }
 
-        var isAvailable = await metronClient.IsAvailableAsync(cancellationToken);
-
-        return Results.Ok(new MetronTestResponse
+        try
         {
-            Success = isAvailable,
-            Message = isAvailable 
-                ? "Successfully connected to Metron API" 
-                : "Failed to connect to Metron API. Check credentials and network."
-        });
+            using var httpClient = httpClientFactory.CreateClient();
+            httpClient.BaseAddress = new Uri("https://metron.cloud/api/");
+            httpClient.Timeout = TimeSpan.FromSeconds(10);
+            
+            // Set Basic Auth header
+            var credentials = Convert.ToBase64String(
+                System.Text.Encoding.ASCII.GetBytes($"{settings.Username}:{settings.Password}"));
+            httpClient.DefaultRequestHeaders.Authorization = 
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", credentials);
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Shortboxerr/1.0");
+
+            // Make a simple authenticated request to verify credentials
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(5));
+            
+            var response = await httpClient.GetAsync("publisher/?page_size=1", cts.Token);
+            var isAvailable = response.IsSuccessStatusCode;
+
+            return Results.Ok(new MetronTestResponse
+            {
+                Success = isAvailable,
+                Message = isAvailable 
+                    ? "Successfully connected to Metron API" 
+                    : $"Failed to connect to Metron API. Status: {(int)response.StatusCode} {response.ReasonPhrase}"
+            });
+        }
+        catch (TaskCanceledException)
+        {
+            return Results.Ok(new MetronTestResponse
+            {
+                Success = false,
+                Message = "Connection timed out. Check network connectivity."
+            });
+        }
+        catch (HttpRequestException ex)
+        {
+            return Results.Ok(new MetronTestResponse
+            {
+                Success = false,
+                Message = $"Connection failed: {ex.Message}"
+            });
+        }
     }
 
     private static async Task<IResult> GetFolderSettings(ISettingsService settingsService, CancellationToken cancellationToken)
