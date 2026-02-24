@@ -342,6 +342,18 @@ public class ComicVineIssue
     public List<ComicVineStoryArcRef> StoryArcs { get; set; } = new();
 
     /// <summary>
+    /// Characters appearing in this issue.
+    /// Note: Only populated when detailed issue data is fetched (not in list queries).
+    /// </summary>
+    public List<ComicVineCharacterRef> CharacterCredits { get; set; } = new();
+
+    /// <summary>
+    /// Teams appearing in this issue.
+    /// Note: Only populated when detailed issue data is fetched (not in list queries).
+    /// </summary>
+    public List<ComicVineTeamRef> TeamCredits { get; set; } = new();
+
+    /// <summary>
     /// Associated images (variant covers, promotional images, etc.).
     /// </summary>
     public List<ComicVineAssociatedImage> AssociatedImages { get; set; } = new();
@@ -462,6 +474,29 @@ public class ComicVineStoryArcRef
     public int Id { get; set; }
     public string Name { get; set; } = "";
     public string? ApiDetailUrl { get; set; }
+}
+
+/// <summary>
+/// Reference to a character appearing in an issue.
+/// </summary>
+public class ComicVineCharacterRef
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public string? RealName { get; set; }
+    public string? ApiDetailUrl { get; set; }
+    public string? SiteDetailUrl { get; set; }
+}
+
+/// <summary>
+/// Reference to a team appearing in an issue.
+/// </summary>
+public class ComicVineTeamRef
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public string? ApiDetailUrl { get; set; }
+    public string? SiteDetailUrl { get; set; }
 }
 
 /// <summary>
