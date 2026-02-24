@@ -1655,6 +1655,34 @@ Remove LOCG and implement Metron as the backup cover source. Metron has an offic
   - AC: Test caching behavior
   - AC: Mock HTTP responses
 
+### 11.15 Hide Internal Data Source Names from UI ← READY
+
+Internal data sources (WalkSoftly, Metron, etc.) should not be exposed in customer-facing UI. Users should see generic labels like "Release Schedule" or "Cover Service" rather than specific third-party service names.
+
+**Rationale:**
+- Third-party services may change or be replaced without user impact
+- Reduces confusion for users who don't need to know implementation details
+- Avoids potential issues if service names are trademarked or change
+
+**Implementation Items:**
+- [ ] **Audit UI for data source references** ← READY
+  - AC: Search all `.tsx` files for "WalkSoftly", "Metron", "LOCG" references
+  - AC: Search API response DTOs for exposed source names
+  - AC: Document all locations where internal names are visible
+
+- [ ] **Replace with generic labels in UI** ← READY
+  - AC: Replace "WalkSoftly" with "Release Schedule" or similar in any UI text
+  - AC: Replace "Metron" with "Cover Service" or similar if exposed
+  - AC: Use generic terms in error messages (e.g., "Release data unavailable" not "WalkSoftly unavailable")
+  - AC: Keep specific names in logs (for debugging) but not in user-facing text
+
+- [ ] **Review API responses** ← READY
+  - AC: Ensure `dataSource` or similar fields use generic values if exposed to UI
+  - AC: Internal logging can still use specific names
+  - AC: Document any API fields that expose source names
+
+---
+
 ### 11.12 Show Upcoming Releases on Series View (WalkSoftly Integration) ✅ COMPLETED
 
 When WalkSoftly reports an upcoming issue (e.g., Absolute Wonder Woman #17) that ComicVine hasn't yet indexed, the series detail view now displays this upcoming release.
