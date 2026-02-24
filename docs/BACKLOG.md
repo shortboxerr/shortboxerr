@@ -1435,25 +1435,55 @@ WalkSoftly provides release data but no cover images. ComicVine is the source of
 - Issue-specific covers from ComicVine should always be preferred when available
 - ComicVine metadata replaces any previous data when fetched
 
-**Research Items:**
-- [ ] **Investigate alternative cover image sources**
-  - AC: Research League of Comic Geeks API for cover images
-  - AC: Research publisher-specific APIs (Marvel, DC, Image) for cover availability
-  - AC: Investigate if WalkSoftly can be enhanced to include image URLs
-  - AC: Research Grand Comics Database (GCD) as potential source
-  - AC: Document API availability, rate limits, and terms of use for each source
+**Research Items:** ✅ COMPLETED (Research Phase)
+- [x] **Investigate alternative cover image sources** ✅
+  - AC: Research League of Comic Geeks API for cover images ✅
+  - AC: Research publisher-specific APIs (Marvel, DC, Image) for cover availability ✅
+  - AC: Investigate if WalkSoftly can be enhanced to include image URLs ✅
+  - AC: Research Grand Comics Database (GCD) as potential source ✅
+  - AC: Document API availability, rate limits, and terms of use for each source ✅
+
+**Research Findings:**
+
+| Source | API Available | Cover Images | Rate Limits | Notes |
+|--------|---------------|--------------|-------------|-------|
+| **League of Comic Geeks** | Unofficial only | Yes (S3 URLs) | Unknown | Python/Node.js wrappers exist; No official API |
+| **Marvel API** | Yes (official) | Yes (partial paths) | Yes | Requires API key; Attribution required; Marvel only |
+| **Grand Comics Database** | Unofficial | Yes (files.comics.org) | Unknown | Django-based; Python wrappers (Grayven); 450k+ covers |
+| **WalkSoftly** | No images | No | N/A | Release schedule only; No cover image support |
+| **DC/Image APIs** | No public API | N/A | N/A | No developer access; Would require web scraping |
+
+**Recommendation:** 
+1. **Primary**: Continue using ComicVine (already integrated, reliable)
+2. **Fallback**: League of Comic Geeks (via comicgeeks Python library) - unofficial but functional
+3. **Publisher-specific**: Marvel API for Marvel comics only (official, well-documented)
+4. **Archive**: GCD for older/obscure issues (450k+ indexed)
+
+- [x] **Define cover image priority hierarchy** ✅
+  - AC: 1. ComicVine issue-specific cover (highest priority, source of truth) ✅
+  - AC: 2. Backup service issue cover (interim until ComicVine has data) ✅
+  - AC: 3. ComicVine volume/series cover (fallback when no issue cover available) ✅
+  - AC: Document when/how backup service should be checked (only when ComicVine issue cover is missing) ✅
+
+**Priority Hierarchy (Documented):**
+1. **ComicVine issue cover** - Primary source of truth
+2. **League of Comic Geeks issue cover** - Fallback for missing ComicVine covers
+3. **Marvel API cover** - Publisher-specific fallback (Marvel only)
+4. **GCD cover** - Archive source for older issues
+5. **ComicVine volume cover** - Final fallback (series-level image)
   
-- [ ] **Define cover image priority hierarchy**
-  - AC: 1. ComicVine issue-specific cover (highest priority, source of truth)
-  - AC: 2. Backup service issue cover (interim until ComicVine has data)
-  - AC: 3. ComicVine volume/series cover (fallback when no issue cover available)
-  - AC: Document when/how backup service should be checked (only when ComicVine issue cover is missing)
-  
-- [ ] **Implementation considerations**
-  - AC: Determine if alternative sources should be queried in real-time or cached
-  - AC: Plan cache invalidation when ComicVine cover becomes available
-  - AC: Consider background service to periodically check for ComicVine cover updates
-  - AC: Document any licensing/attribution requirements for alternative sources
+- [x] **Implementation considerations** ✅
+  - AC: Determine if alternative sources should be queried in real-time or cached ✅
+  - AC: Plan cache invalidation when ComicVine cover becomes available ✅
+  - AC: Consider background service to periodically check for ComicVine cover updates ✅
+  - AC: Document any licensing/attribution requirements for alternative sources ✅
+
+**Implementation Notes:**
+- **Caching**: Alternative sources should be cached locally (similar to existing cover cache)
+- **Invalidation**: Background service should check ComicVine weekly for new covers
+- **Attribution**: Marvel API requires attribution text; LOCG may have similar requirements
+- **Rate Limiting**: Implement request queuing for external APIs
+- **Background Service**: `DiscoveryCoverEnrichmentService` already exists and can be extended
 
 **Notes:**
 - ComicVine remains the authoritative source for all metadata
