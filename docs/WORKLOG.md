@@ -1,5 +1,221 @@
 # Worklog
 
+## Iteration 146 (2026-02-24)
+**EPIC 11.13: League of Comic Geeks Client Integration**
+
+### Summary
+Implemented the League of Comic Geeks client for cover image fallback. This is part of the cover image fallback system to provide interim cover images when ComicVine doesn't have issue-specific covers yet.
+
+### Architectural Notes
+- **No official API**: LOCG has no public API; this uses unofficial HTML scraping patterns
+- Internal endpoint: `https://leagueofcomicgeeks.com/comic/get_comics`
+- Response format: JSON with HTML in the `list` field
+- Cover URLs: `https://s3.amazonaws.com/comicgeeks/comics/covers/large-{id}.jpg`
+- Graceful degradation implemented for when site structure changes
+
+### Files Created
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Core/LeagueOfComicGeeks/ILeagueOfComicGeeksClient.cs` | Interface and DTOs |
+| `src/Shortboxerr.Infrastructure/LeagueOfComicGeeks/LeagueOfComicGeeksClient.cs` | HTTP client with HTML parsing |
+| `tests/Shortboxerr.Tests/LeagueOfComicGeeksClientTests.cs` | 14 unit tests |
+
+### Key Implementation Details
+- Uses AngleSharp for HTML parsing (added as NuGet dependency)
+- 24-hour cache TTL for search results (minimize scraping)
+- 2-second minimum delay between requests (rate limiting)
+- Parses issue name, series name, publisher, cover URL, price, pull count, rating
+- Generates fallback cover URLs when image element is missing
+- Handles JSON parse errors and HTML structure changes gracefully
+
+### Tests Added
+| Category | Tests |
+|----------|-------|
+| Search functionality | 8 |
+| Weekly releases | 2 |
+| Availability check | 2 |
+| Error handling | 2 |
+| **Total** | **14** |
+
+---
+
+## Iteration 145 (2026-02-24)
+**EPIC 16.3 & 16.4: Background Automation & API Integration Tests**
+
+### Summary
+Completed E2E test coverage for background services and API integration endpoints. Total E2E test count is now 115 tests across 8 test files.
+
+### Test Files Created
+| File | Tests | Coverage |
+|------|-------|----------|
+| `tests/e2e/tests/api-integration.spec.ts` | 26 | Health, ComicVine, series, pull list, settings, logs, indexers, DDL |
+| `tests/e2e/tests/background-services.spec.ts` | 19 | Metadata refresh, discovery, auto-search, health services, calendar, notifications |
+
+### API Integration Tests (16.4)
+- Health endpoint validation
+- System status endpoint
+- ComicVine rate limit tracking
+- Series list and search endpoints
+- Pull list and discovery endpoints
+- Settings endpoints (general, UI)
+- Activity endpoint
+- Calendar endpoint
+- Download client status
+- Indexer endpoints
+- DDL site endpoints
+- Logs endpoints
+- Error handling
+- Response headers
+
+### Background Automation Tests (16.3)
+- System status and health
+- Metadata refresh service
+- Discovery refresh service
+- Auto-search service settings
+- Indexer health service
+- Site health service
+- Cover cache service
+- Download monitoring
+- Calendar service
+- Notification service
+- ComicVine sync service
+
+---
+
+## Iteration 144 (2026-02-24)
+**EPIC 16.2 continued: Issue Management E2E Tests**
+
+### Summary
+Added E2E tests for issue management workflows. Total E2E test count increased to 70 tests.
+
+### Test File Created
+- `tests/e2e/tests/issue-management.spec.ts` (12 tests)
+
+### Coverage
+- Wanted page header and structure
+- View mode toggle
+- Issue display (cards/empty state)
+- Issue status management
+- View mode switching
+- Filtering options
+- Sorting options
+- Bulk operations
+- Issue card interactions
+- Pagination controls
+- Issue search functionality
+
+---
+
+## Iteration 143 (2026-02-24)
+**EPIC 11.13 Backlog Item & Rate Limit Awareness (12.4)**
+
+### Summary
+Created backlog item for cover image fallback implementation based on research from 11.11. Verified rate limit awareness (12.4) was already implemented.
+
+### Changes
+- Added EPIC 11.13 "Cover Image Fallback Implementation" to backlog
+  - League of Comic Geeks client integration
+  - Marvel API client integration (optional)
+  - Cover fallback service
+  - Background cover refresh
+  - Unit tests
+- Marked 12.4 Rate limit awareness as complete (already implemented)
+  - ComicVine rate limit endpoint: GET /api/v1/comicvine/ratelimit
+  - 80% threshold warning with backoff
+  - WaitForRateLimitAsync in ComicVineClient
+
+---
+
+## Iteration 142 (2026-02-24)
+**EPIC 16.5: UI Smoke Tests**
+
+### Summary
+Added comprehensive UI smoke tests for settings pages and error state handling. Total E2E test count is now 58 tests across 5 test files.
+
+### Test Files Created
+| File | Tests | Coverage |
+|------|-------|----------|
+| `tests/e2e/tests/settings.spec.ts` | 9 | Settings page, tabs, forms, toggle interaction, validation |
+| `tests/e2e/tests/error-states.spec.ts` | 13 | 404 handling, empty states, loading, validation, responsive |
+
+### Settings Tests
+- Settings page header and structure
+- Settings tabs or sections presence
+- Form inputs detection
+- Tab navigation
+- General settings access
+- Toggle switch interaction
+- Save button detection
+- Input validation
+- Required field indicators
+
+### Error State Tests
+- 404 error handling for non-existent series
+- Invalid route handling
+- Empty states for wanted page
+- Empty states for activity page
+- Search with no matches
+- Loading state indicators
+- Network error handling (slow API)
+- XSS prevention in search
+- Invalid week navigation handling
+- Mobile responsive design (375px)
+- Navigation adaptation on mobile
+- Tablet responsive design (768px)
+
+### Test Distribution
+| File | Tests |
+|------|-------|
+| smoke.spec.ts | 10 |
+| series.spec.ts | 13 |
+| pulllist.spec.ts | 13 |
+| settings.spec.ts | 9 |
+| error-states.spec.ts | 13 |
+| **Total** | **58** |
+
+---
+
+## Iteration 141 (2026-02-24)
+**EPIC 16.2: User Workflow Tests**
+
+### Summary
+Added comprehensive E2E test coverage for series management and pull list workflows. Total E2E test count is now 36 tests across 3 test files.
+
+### Test Files Created
+| File | Tests | Coverage |
+|------|-------|----------|
+| `tests/e2e/tests/series.spec.ts` | 13 | Series list, search, view toggle, filters, sort, navigation, add flow |
+| `tests/e2e/tests/pulllist.spec.ts` | 13 | Pull list page, week navigation, filtering, issue cards, add flow |
+
+### Series Management Tests
+- Series list display with header and search
+- Search functionality (typing, results update)
+- View toggle controls (cover/list)
+- Filter and sort controls
+- Navigation between list and detail pages
+- Add Series button and modal interaction
+- Series detail page sections
+
+### Pull List Tests
+- Pull list header and week navigation
+- View mode controls
+- Release count display
+- Next/previous week navigation
+- View mode toggling
+- Publisher filter presence
+- Issue cards display (covers, info)
+- Add button for discoverable issues
+
+### Test Execution
+```bash
+cd tests/e2e
+npm test                          # All 36 tests
+npx playwright test series.spec   # 13 series tests
+npx playwright test pulllist.spec # 13 pull list tests
+```
+
+---
+
 ## Iteration 140 (2026-02-24)
 **EPIC 16.1: E2E Test Framework Setup**
 

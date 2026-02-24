@@ -155,6 +155,9 @@ public static class DependencyInjection
         // WalkSoftly client for pull list data (Mylar3 parity)
         services.AddHttpClient<Core.WalkSoftly.IWalkSoftlyClient, WalkSoftly.WalkSoftlyClient>();
 
+        // League of Comic Geeks client for cover image fallback (unofficial API - see BACKLOG.md 11.13)
+        services.AddHttpClient<Core.LeagueOfComicGeeks.ILeagueOfComicGeeksClient, LeagueOfComicGeeks.LeagueOfComicGeeksClient>();
+
         // NZB/Usenet services
         services.AddHttpClient<INewznabClient, NewznabClient>();
         services.AddScoped<INzbIndexerProvider, NzbIndexerProvider>();

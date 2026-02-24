@@ -1,44 +1,40 @@
-# Self Check - Iteration 140
+# Self Check - Iteration 146
 
 ## Summary
-**EPIC 16.1: E2E Test Framework Setup** - Completed
+**EPIC 11.13: League of Comic Geeks Client Integration** - Completed
 
-Set up Playwright E2E test framework with 10 smoke tests covering all major application pages.
+Implemented the LOCG client for cover image fallback when ComicVine doesn't have issue covers.
 
 ## Recent Iterations
-- **140**: E2E Test Framework Setup (EPIC 16.1)
-- **139**: Show Upcoming Releases on Series View (EPIC 11.12)
-- **138**: WalkSoftly Pull List Integration (EPIC 11.10)
-- **137**: Pull List Data Accuracy Investigation (EPIC 15.9)
-- **136**: Telegram Notification Provider
+- **146**: League of Comic Geeks Client Integration (EPIC 11.13)
+- **145**: Background Automation & API Integration Tests (EPIC 16.3 & 16.4)
+- **144**: Issue Management E2E Tests (EPIC 16.2 continued)
+- **143**: Cover Fallback Backlog & Rate Limit Verification (EPIC 11.13 & 12.4)
+- **142**: UI Smoke Tests (EPIC 16.5)
 
 ## Implementation Checklist
-- [x] Playwright npm package setup
-- [x] TypeScript configuration
-- [x] Playwright config (baseURL, browser, reporters)
-- [x] Smoke tests for all major pages
-- [x] Test fixtures structure
-- [x] npm scripts for running tests
-- [x] Browser dependencies installation
+- [x] ILeagueOfComicGeeksClient interface
+- [x] LeagueOfComicGeeksClient implementation with AngleSharp HTML parsing
+- [x] Rate limiting (2s delay between requests)
+- [x] Caching (24-hour TTL)
+- [x] Graceful degradation for site changes
+- [x] DI registration
+- [x] Unit tests (14 tests)
 - [x] Documentation updates
 
-## Test Results
+## Unit Test Results
 ```
-Running 10 tests using 1 worker
-
-  ✓  1 [chromium] › smoke.spec.ts › Dashboard › loads successfully (466ms)
-  ✓  2 [chromium] › smoke.spec.ts › Dashboard › shows main content sections (426ms)
-  ✓  3 [chromium] › smoke.spec.ts › Series Page › loads series list (392ms)
-  ✓  4 [chromium] › smoke.spec.ts › Pull List Page › loads pull list (534ms)
-  ✓  5 [chromium] › smoke.spec.ts › Settings Page › loads settings page (391ms)
-  ✓  6 [chromium] › smoke.spec.ts › Wanted Page › loads wanted issues list (371ms)
-  ✓  7 [chromium] › smoke.spec.ts › Calendar Page › loads calendar view (323ms)
-  ✓  8 [chromium] › smoke.spec.ts › Activity/History Page › loads activity log (402ms)
-  ✓  9 [chromium] › smoke.spec.ts › Navigation › can navigate between main pages (747ms)
-  ✓ 10 [chromium] › smoke.spec.ts › Theme Toggle › page has theme attribute (353ms)
-
-10 passed (5.6s)
+Passed!  - Failed:     0, Passed:    14, Skipped:     0, Total:    14
 ```
+
+## Test Coverage (LOCG Client)
+| Category | Tests |
+|----------|-------|
+| Search functionality | 8 |
+| Weekly releases | 2 |
+| Availability check | 2 |
+| Error handling | 2 |
+| **Total** | **14** |
 
 ## Build Health
 ```
@@ -48,22 +44,33 @@ Build succeeded.
 ```
 
 ## New Files
-- `tests/e2e/package.json`
-- `tests/e2e/tsconfig.json`
-- `tests/e2e/playwright.config.ts`
-- `tests/e2e/tests/smoke.spec.ts`
-- `tests/e2e/tests/fixtures/test-data.ts`
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Core/LeagueOfComicGeeks/ILeagueOfComicGeeksClient.cs` | Interface and DTOs |
+| `src/Shortboxerr.Infrastructure/LeagueOfComicGeeks/LeagueOfComicGeeksClient.cs` | Implementation |
+| `tests/Shortboxerr.Tests/LeagueOfComicGeeksClientTests.cs` | Unit tests |
 
 ## Modified Files
-- `docs/BACKLOG.md` - Marked 16.1 complete
-- `docs/WORKLOG.md` - Added iteration 140
+| File | Changes |
+|------|---------|
+| `src/Shortboxerr.Infrastructure/Shortboxerr.Infrastructure.csproj` | Added AngleSharp package |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Registered LOCG client |
+| `docs/BACKLOG.md` | Updated EPIC 11.13 with architectural notes |
+| `docs/WORKLOG.md` | Added Iteration 146 |
 
-## npm Scripts Added
-| Script | Description |
-|--------|-------------|
-| `npm test` | Run all tests |
-| `npm run test:headed` | Run with visible browser |
-| `npm run test:ui` | Playwright UI mode |
-| `npm run test:debug` | Debug mode |
-| `npm run test:smoke` | Run smoke tests only |
-| `npm run test:report` | Show HTML report |
+## Backlog Items Completed This Session
+1. **EPIC 11.12**: Show Upcoming Releases on Series View ✅
+2. **EPIC 16.1**: E2E Test Framework Setup ✅
+3. **EPIC 11.11**: Alternative Cover Image Sources (research phase) ✅
+4. **EPIC 16.2**: User Workflow Tests (series, pull list, issue management) ✅
+5. **EPIC 16.5**: UI Smoke Tests ✅
+6. **EPIC 12.4**: Rate Limit Awareness ✅
+7. **EPIC 16.3**: Background Automation Tests ✅
+8. **EPIC 16.4**: API Integration Tests ✅
+9. **EPIC 11.13.1**: League of Comic Geeks Client Integration ✅
+
+## Remaining EPIC 11.13 Items
+- [ ] Marvel API client integration (Priority 2)
+- [ ] Cover fallback service (Priority 3)
+- [ ] Background cover refresh (Priority 4)
+- [ ] Unit tests for fallback service (Priority 5)
