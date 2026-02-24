@@ -1,3 +1,5 @@
+using Shortboxerr.Core.Services;
+
 namespace Shortboxerr.Core.ComicVine;
 
 /// <summary>
@@ -560,8 +562,9 @@ public class ComicVineImage
 public class ComicVineSettings
 {
     /// <summary>
-    /// ComicVine API key.
+    /// ComicVine API key (encrypted at rest).
     /// </summary>
+    [SensitiveCredential]
     public string ApiKey { get; set; } = "";
 
     /// <summary>

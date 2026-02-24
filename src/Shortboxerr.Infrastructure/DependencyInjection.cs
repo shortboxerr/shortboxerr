@@ -78,6 +78,7 @@ public static class DependencyInjection
         services.AddSingleton<IFilenameParser, FilenameParser>();
         services.AddScoped<IStagingService, StagingService>();
         services.AddSingleton<IDecisionEngine, DecisionEngine>();
+        services.AddSingleton<ICredentialEncryptionService, CredentialEncryptionService>();
         services.AddScoped<ISettingsService, SettingsService>();
         services.AddScoped<ISetupStatusService, SetupStatusService>();
         services.AddScoped<ISearchSettingsService, SearchSettingsService>();

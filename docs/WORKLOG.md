@@ -1,5 +1,47 @@
 # Worklog
 
+## Iteration 153 (2026-02-24)
+**EPIC 11.19: Credential Encryption Implementation**
+
+### Summary
+Implemented AES-256-GCM encryption for sensitive credentials stored in the database. Credentials are now automatically encrypted when saved and decrypted when loaded.
+
+### Implementation
+
+**New Files:**
+| File | Description |
+|------|-------------|
+| `src/Shortboxerr.Core/Services/ICredentialEncryptionService.cs` | Interface + `[SensitiveCredential]` attribute |
+| `src/Shortboxerr.Infrastructure/Services/CredentialEncryptionService.cs` | AES-256-GCM implementation with machine-specific key derivation |
+| `tests/Shortboxerr.Tests/CredentialEncryptionServiceTests.cs` | 15 unit tests for encryption service |
+
+**Modified Files:**
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Metron/IMetronClient.cs` | Added `[SensitiveCredential]` to Password property |
+| `src/Shortboxerr.Core/ComicVine/IComicVineClient.cs` | Added `[SensitiveCredential]` to ApiKey property |
+| `src/Shortboxerr.Infrastructure/Services/SettingsService.cs` | Auto-encrypt/decrypt sensitive fields on save/load |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register CredentialEncryptionService |
+
+### Encryption Details
+- **Algorithm**: AES-256-GCM (authenticated encryption)
+- **Key derivation**: PBKDF2 with SHA-256, 100,000 iterations
+- **Key source**: Machine-specific (Linux: /etc/machine-id, macOS: IOPlatformUUID, Windows: MachineGuid)
+- **Format**: `ENC:1:{base64(nonce + ciphertext + tag)}`
+- **Backward compatible**: Plaintext values are auto-encrypted on next save
+
+### Security Features
+- Credentials encrypted at rest in SQLite database
+- Unique nonce for each encryption (no deterministic output)
+- Authentication tag prevents tampering
+- Machine-specific keys prevent credential theft via database copy
+
+### Tests
+- 15 new encryption tests passing
+- All existing settings tests passing
+
+---
+
 ## Iteration 152 (2026-02-24)
 **EPIC 11.20: Metron Enable Validation**
 

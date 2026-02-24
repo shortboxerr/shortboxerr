@@ -1,3 +1,5 @@
+using Shortboxerr.Core.Services;
+
 namespace Shortboxerr.Core.Metron;
 
 /// <summary>
@@ -201,7 +203,8 @@ public class MetronSettings
     /// <summary>Metron username.</summary>
     public string? Username { get; set; }
 
-    /// <summary>Metron password.</summary>
+    /// <summary>Metron password (encrypted at rest).</summary>
+    [SensitiveCredential]
     public string? Password { get; set; }
 
     /// <summary>Cache TTL in hours (default: 24 hours).</summary>

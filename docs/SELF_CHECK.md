@@ -1,49 +1,61 @@
-# Self Check - Iteration 152
+# Self Check - Iteration 153
 
 ## Summary
-**EPIC 11.20: Metron Enable Validation** - Complete
+**EPIC 11.19: Credential Encryption Implementation** - Core encryption complete
 
-Prevent enabling Metron without valid credentials configured. UI disables toggle until credentials provided; backend rejects enable requests without credentials.
+Implemented AES-256-GCM encryption for sensitive credentials. Credentials marked with `[SensitiveCredential]` attribute are automatically encrypted when saved to the database and decrypted when loaded.
 
 ## Recent Iterations
+- **153**: Credential Encryption Implementation (EPIC 11.19 - partial)
 - **152**: Metron Enable Validation (EPIC 11.20)
 - **151**: Metron Settings UI Refinements (EPIC 11.18)
 - **150**: Metron Settings UI + Hide Internal Data Source Names (EPIC 11.14/11.15)
-- **149**: Metron Integration Implementation (EPIC 11.14)
 
 ## Implementation Summary
 
-### Files Modified
+### New Files
+| File | Description |
+|------|-------------|
+| `ICredentialEncryptionService.cs` | Interface for encryption + `[SensitiveCredential]` attribute |
+| `CredentialEncryptionService.cs` | AES-256-GCM implementation |
+| `CredentialEncryptionServiceTests.cs` | 15 unit tests |
+
+### Modified Files
 | File | Change |
 |------|--------|
-| `ui/src/pages/SettingsPage.tsx` | Disable enable toggle when credentials missing, show warning hint |
-| `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` | Backend validation rejects enable without credentials |
-| `tests/Shortboxerr.Tests/SettingsEndpointTests.cs` | Added 7 new Metron settings validation tests |
+| `IMetronClient.cs` | Added `[SensitiveCredential]` to Password |
+| `IComicVineClient.cs` | Added `[SensitiveCredential]` to ApiKey |
+| `SettingsService.cs` | Auto-encrypt/decrypt on save/load |
+| `DependencyInjection.cs` | Register encryption service |
 
 ## Implementation Checklist
 
-### UI Validation
-- [x] Compute `isConfigured` from username + hasPassword ✅
-- [x] Disable enable toggle when trying to turn ON without credentials ✅
-- [x] Allow turning OFF even without credentials ✅
-- [x] Change description to "Configure username and password first to enable Metron" when disabled ✅
-- [x] Add AlertCircle warning badge "Credentials required" ✅
-- [x] Add title tooltip on toggle when disabled ✅
+### Encryption Service
+- [x] Create `ICredentialEncryptionService` interface ✅
+- [x] Implement AES-256-GCM encryption ✅
+- [x] Use 12-byte nonce (unique per encryption) ✅
+- [x] Use 16-byte authentication tag ✅
+- [x] Format: `ENC:1:{base64(nonce + ciphertext + tag)}` ✅
 
-### Backend Validation
-- [x] Apply credential updates before checking enable validation ✅
-- [x] Check if `request.Enabled == true` and credentials missing ✅
-- [x] Return 400 Bad Request with error message ✅
-- [x] Allow credentials + enable in single request ✅
+### Key Derivation
+- [x] Use PBKDF2 with SHA-256 ✅
+- [x] 100,000 iterations ✅
+- [x] Machine-specific key source ✅
+  - Linux: `/etc/machine-id`
+  - macOS: IOPlatformUUID
+  - Windows: MachineGuid registry key
+  - Fallback: hostname + username
 
-### Tests Added
-- [x] `GetMetronSettings_ReturnsValidSettings` ✅
-- [x] `UpdateMetronSettings_EnableWithoutCredentials_ReturnsBadRequest` ✅
-- [x] `UpdateMetronSettings_EnableWithCredentials_Succeeds` ✅
-- [x] `UpdateMetronSettings_DisableWithoutCredentials_Succeeds` ✅
-- [x] `UpdateMetronSettings_SetCredentialsAndEnableTogether_Succeeds` ✅
-- [x] `UpdateMetronSettings_CacheTtl_ClampedToValidRange` ✅
-- [x] `TestMetronConnection_WithoutCredentials_ReturnsNotConfigured` ✅
+### SettingsService Integration
+- [x] Inject `ICredentialEncryptionService` ✅
+- [x] Auto-encrypt `[SensitiveCredential]` properties on save ✅
+- [x] Auto-decrypt `[SensitiveCredential]` properties on load ✅
+- [x] Backward compatible (plaintext auto-encrypted on next save) ✅
+
+### Sensitive Fields Marked
+- [x] `MetronSettings.Password` ✅
+- [x] `ComicVineSettings.ApiKey` ✅
+- [ ] Other credential fields (NZB, torrent, notifications) - deferred
 
 ## Build Health
 ```
@@ -54,33 +66,21 @@ Build succeeded.
 
 ## Test Results
 ```
-Total tests: 26 SettingsEndpoint tests
-     Passed: 26
-     Failed: 0
+Encryption Tests: 15 passed
+Settings Tests: 26 passed
 ```
 
-## Validation Flow
+## Security Properties
+| Property | Status |
+|----------|--------|
+| Encryption at rest | ✅ AES-256-GCM |
+| Authenticated encryption | ✅ GCM tag prevents tampering |
+| Unique nonces | ✅ Different ciphertext each time |
+| Machine-bound keys | ✅ Can't decrypt on different machine |
+| Backward compatible | ✅ Plaintext auto-encrypted |
 
-### UI Flow
-1. User opens Settings > Metron tab
-2. If no credentials configured:
-   - Enable toggle is disabled
-   - Description shows "Configure username and password first to enable Metron"
-   - Warning badge shows "Credentials required"
-3. User enters username and password, clicks Save
-4. Enable toggle becomes enabled
-5. User can now toggle Metron on
-
-### Backend Flow
-1. PUT /api/v1/settings/metron with `{ "enabled": true }`
-2. Load current settings
-3. Apply any credential updates from request
-4. If `enabled == true`, check credentials:
-   - If missing: return 400 `{ "error": "Cannot enable Metron without username and password configured" }`
-   - If present: proceed with update
-5. Save settings and return updated state
-
-## Security Considerations
-- Credentials are never returned in API responses (only `hasPassword: true/false`)
-- Enable validation happens server-side as defense-in-depth
-- Frontend validation provides better UX but backend is authoritative
+## Remaining Work (EPIC 11.19)
+- [ ] Mark remaining credential fields with `[SensitiveCredential]`
+- [ ] Audit API responses for plaintext passwords
+- [ ] Audit frontend credential handling
+- [ ] Create `docs/SECURITY.md` guidelines

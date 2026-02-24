@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
@@ -9,10 +10,12 @@ namespace Shortboxerr.Infrastructure.Services;
 
 /// <summary>
 /// Implementation of ISettingsService that persists settings to the database.
+/// Automatically encrypts/decrypts properties marked with [SensitiveCredential].
 /// </summary>
 public class SettingsService : ISettingsService
 {
     private readonly ShortboxerrDbContext _context;
+    private readonly ICredentialEncryptionService _encryptionService;
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -43,9 +46,10 @@ public class SettingsService : ISettingsService
     private const string ApiKeyLastUsedAtKey = "security.apiKeyLastUsedAt";
     private const string ApiKeyEnabledKey = "security.apiKeyEnabled";
 
-    public SettingsService(ShortboxerrDbContext context)
+    public SettingsService(ShortboxerrDbContext context, ICredentialEncryptionService encryptionService)
     {
         _context = context;
+        _encryptionService = encryptionService;
     }
 
     public async Task<string?> GetAsync(string key, CancellationToken cancellationToken = default)
@@ -73,7 +77,13 @@ public class SettingsService : ISettingsService
                 return bool.TryParse(value, out var boolVal) ? (T)(object)boolVal : defaultValue;
 
             // Handle complex types with JSON deserialization
-            return JsonSerializer.Deserialize<T>(value, JsonOptions);
+            var result = JsonSerializer.Deserialize<T>(value, JsonOptions);
+            
+            // Decrypt sensitive credential fields
+            if (result != null)
+                DecryptSensitiveFields(result);
+            
+            return result;
         }
         catch
         {
@@ -115,7 +125,16 @@ public class SettingsService : ISettingsService
         else if (typeof(T) == typeof(int) || typeof(T) == typeof(bool))
             stringValue = value?.ToString() ?? "";
         else
-            stringValue = JsonSerializer.Serialize(value, JsonOptions);
+        {
+            // Create a copy to avoid modifying the original object
+            var valueCopy = JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(value, JsonOptions), JsonOptions);
+            
+            // Encrypt sensitive credential fields before storing
+            if (valueCopy != null)
+                EncryptSensitiveFields(valueCopy);
+            
+            stringValue = JsonSerializer.Serialize(valueCopy, JsonOptions);
+        }
 
         await SetAsync(key, stringValue, cancellationToken);
     }
@@ -292,6 +311,60 @@ public class SettingsService : ISettingsService
         var prefix = apiKey[..8];
         var suffix = apiKey[^4..];
         return $"{prefix}...{suffix}";
+    }
+
+    /// <summary>
+    /// Encrypts all string properties marked with [SensitiveCredential] attribute.
+    /// </summary>
+    private void EncryptSensitiveFields<T>(T obj)
+    {
+        if (obj == null) return;
+
+        var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.PropertyType == typeof(string) && 
+                        p.GetCustomAttribute<SensitiveCredentialAttribute>() != null &&
+                        p.CanRead && p.CanWrite);
+
+        foreach (var property in properties)
+        {
+            var value = property.GetValue(obj) as string;
+            if (!string.IsNullOrEmpty(value) && !_encryptionService.IsEncrypted(value))
+            {
+                var encrypted = _encryptionService.Encrypt(value);
+                property.SetValue(obj, encrypted);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Decrypts all string properties marked with [SensitiveCredential] attribute.
+    /// </summary>
+    private void DecryptSensitiveFields<T>(T obj)
+    {
+        if (obj == null) return;
+
+        var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.PropertyType == typeof(string) && 
+                        p.GetCustomAttribute<SensitiveCredentialAttribute>() != null &&
+                        p.CanRead && p.CanWrite);
+
+        foreach (var property in properties)
+        {
+            var value = property.GetValue(obj) as string;
+            if (!string.IsNullOrEmpty(value) && _encryptionService.IsEncrypted(value))
+            {
+                try
+                {
+                    var decrypted = _encryptionService.Decrypt(value);
+                    property.SetValue(obj, decrypted);
+                }
+                catch
+                {
+                    // If decryption fails (e.g., migrated from different machine),
+                    // leave the value as-is - it will need to be re-entered
+                }
+            }
+        }
     }
 }
 
