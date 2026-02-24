@@ -18,15 +18,17 @@ import type {
   PushbulletProviderSettings, PushbulletProviderRequest,
   TelegramProviderSettings, TelegramProviderRequest,
   SearchSettings, PreferredQuality,
-  DownloadClientHealthStatus
+  DownloadClientHealthStatus,
+  MetronTestResult
 } from '../api/client';
 import { useTheme } from '../App';
 
-type SettingsTab = 'general' | 'indexers' | 'download' | 'notifications' | 'import' | 'ui' | 'security' | 'comicvine' | 'pulllist' | 'search' | 'annuals';
+type SettingsTab = 'general' | 'indexers' | 'download' | 'notifications' | 'import' | 'ui' | 'security' | 'comicvine' | 'metron' | 'pulllist' | 'search' | 'annuals';
 
 const tabs: { id: SettingsTab; icon: React.ElementType; label: string }[] = [
   { id: 'general', icon: Settings, label: 'General' },
   { id: 'comicvine', icon: Database, label: 'ComicVine' },
+  { id: 'metron', icon: Globe, label: 'Cover Service' },
   { id: 'pulllist', icon: Calendar, label: 'Pull List' },
   { id: 'annuals', icon: FileText, label: 'Annual Handling' },
   { id: 'search', icon: Search, label: 'Search' },
@@ -102,6 +104,7 @@ export function SettingsPage() {
           <div style={{ flex: 1 }}>
             {activeTab === 'general' && <GeneralSettings />}
             {activeTab === 'comicvine' && <ComicVineSettingsTab />}
+            {activeTab === 'metron' && <MetronSettingsTab />}
             {activeTab === 'pulllist' && <PullListSettingsTab />}
             {activeTab === 'annuals' && <AnnualHandlingSettingsTab />}
             {activeTab === 'search' && <SearchSettingsTab />}
@@ -2122,6 +2125,257 @@ function SearchSettingsTab() {
   );
 }
 
+// ============== METRON SETTINGS (COVER SERVICE) ==============
+
+function MetronSettingsTab() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [testResult, setTestResult] = useState<MetronTestResult | null>(null);
+  const [isTesting, setIsTesting] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ['metronSettings'],
+    queryFn: api.getMetronSettings,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: api.updateMetronSettings,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['metronSettings'] });
+      setPassword('');
+    },
+  });
+
+  const handleTestConnection = async () => {
+    setIsTesting(true);
+    setTestResult(null);
+    try {
+      // If there are unsaved credentials, save them first
+      if (username.trim() || password.trim()) {
+        await api.updateMetronSettings({ 
+          username: username.trim() || undefined,
+          password: password.trim() || undefined,
+        });
+        queryClient.invalidateQueries({ queryKey: ['metronSettings'] });
+        setUsername('');
+        setPassword('');
+      }
+      const result = await api.testMetronConnection();
+      setTestResult(result);
+    } catch (e) {
+      setTestResult({
+        success: false,
+        message: e instanceof Error ? e.message : 'Connection test failed',
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  const handleSaveCredentials = () => {
+    const updates: Record<string, unknown> = {};
+    if (username.trim()) updates.username = username.trim();
+    if (password.trim()) updates.password = password.trim();
+    if (Object.keys(updates).length > 0) {
+      updateMutation.mutate(updates);
+      setUsername('');
+      setPassword('');
+    }
+  };
+
+  const handleToggleEnabled = () => {
+    updateMutation.mutate({ enabled: !settings?.enabled });
+  };
+
+  if (isLoading) {
+    return <div className="loading"><div className="spinner" /></div>;
+  }
+
+  return (
+    <>
+      <SettingsSection title="Cover Service">
+        <div style={{ 
+          padding: '12px',
+          background: 'var(--bg-tertiary)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '16px',
+          fontSize: '13px',
+          color: 'var(--text-muted)'
+        }}>
+          This service provides backup cover images when the primary metadata source is missing covers.
+          Registration is free at{' '}
+          <a 
+            href="https://metron.cloud/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}
+          >
+            metron.cloud <ExternalLink size={12} style={{ verticalAlign: 'middle' }} />
+          </a>
+        </div>
+
+        <SettingsField label="Enable Cover Service" description="Enable backup cover lookups when primary source has no cover">
+          <label className="toggle-switch">
+            <input
+              type="checkbox"
+              checked={settings?.enabled ?? false}
+              onChange={handleToggleEnabled}
+              disabled={updateMutation.isPending}
+            />
+            <span className="toggle-slider"></span>
+          </label>
+        </SettingsField>
+
+        <SettingsField 
+          label="Username" 
+          description="Your cover service account username"
+        >
+          {settings?.username && (
+            <div style={{ 
+              marginBottom: '8px',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <span style={{ color: 'var(--text-muted)' }}>Current:</span>
+              <code style={{ 
+                fontFamily: 'var(--font-mono)', 
+                background: 'var(--bg-tertiary)',
+                padding: '4px 8px',
+                borderRadius: 'var(--radius-sm)',
+              }}>
+                {settings.username}
+              </code>
+            </div>
+          )}
+          <input
+            className="input"
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder={settings?.username ? 'Enter new username to replace' : 'Enter username'}
+            style={{ maxWidth: '300px' }}
+          />
+        </SettingsField>
+
+        <SettingsField 
+          label="Password" 
+          description="Your cover service account password"
+        >
+          {settings?.hasPassword && (
+            <div style={{ 
+              marginBottom: '8px',
+              fontSize: '13px',
+              color: 'var(--text-muted)'
+            }}>
+              <CheckCircle size={14} style={{ verticalAlign: 'middle', marginRight: '4px', color: 'var(--accent-success)' }} />
+              Password is configured
+            </div>
+          )}
+          <input
+            className="input"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={settings?.hasPassword ? 'Enter new password to replace' : 'Enter password'}
+            style={{ maxWidth: '300px' }}
+          />
+        </SettingsField>
+
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '16px' }}>
+          <button
+            className="btn btn-primary"
+            onClick={handleSaveCredentials}
+            disabled={(!username.trim() && !password.trim()) || updateMutation.isPending}
+          >
+            <Save size={16} />
+            Save Credentials
+          </button>
+
+          {(settings?.hasPassword || password.trim()) && (
+            <button
+              className="btn btn-secondary"
+              onClick={handleTestConnection}
+              disabled={isTesting}
+            >
+              {isTesting ? (
+                <><div className="spinner" style={{ width: '14px', height: '14px' }} /> Testing...</>
+              ) : (
+                <><Play size={16} /> Test Connection</>
+              )}
+            </button>
+          )}
+        </div>
+
+        {testResult && (
+          <div style={{ 
+            marginTop: '12px',
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px',
+            color: testResult.success ? 'var(--accent-success)' : 'var(--accent-danger)',
+            fontSize: '13px'
+          }}>
+            {testResult.success ? <CheckCircle size={16} /> : <XCircle size={16} />}
+            {testResult.message}
+          </div>
+        )}
+      </SettingsSection>
+
+      <SettingsSection title="Rate Limiting">
+        <SettingsField 
+          label="Max Requests Per Minute" 
+          description="Maximum API requests per minute (service limit is 30)"
+        >
+          <input
+            className="input"
+            type="number"
+            min={1}
+            max={30}
+            value={settings?.maxRequestsPerMinute ?? 30}
+            onChange={(e) => updateMutation.mutate({ maxRequestsPerMinute: Number(e.target.value) })}
+            style={{ width: '100px' }}
+          />
+        </SettingsField>
+      </SettingsSection>
+
+      <SettingsSection title="Caching">
+        <SettingsField 
+          label="Cache TTL (Hours)" 
+          description="How long to cache cover lookups (1-168 hours)"
+        >
+          <input
+            className="input"
+            type="number"
+            min={1}
+            max={168}
+            value={settings?.cacheTtlHours ?? 24}
+            onChange={(e) => updateMutation.mutate({ cacheTtlHours: Number(e.target.value) })}
+            style={{ width: '100px' }}
+          />
+        </SettingsField>
+
+        <SettingsField 
+          label="Request Timeout (Seconds)" 
+          description="Timeout for API requests (5-120 seconds)"
+        >
+          <input
+            className="input"
+            type="number"
+            min={5}
+            max={120}
+            value={settings?.timeoutSeconds ?? 30}
+            onChange={(e) => updateMutation.mutate({ timeoutSeconds: Number(e.target.value) })}
+            style={{ width: '100px' }}
+          />
+        </SettingsField>
+      </SettingsSection>
+    </>
+  );
+}
+
 // ============== PULL LIST SETTINGS ==============
 
 function PullListSettingsTab() {
@@ -2324,7 +2578,7 @@ function PullListSettingsTab() {
               style={{ width: '18px', height: '18px', cursor: 'pointer' }}
             />
             <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
-              Display upcoming releases from WalkSoftly on individual series pages
+              Display upcoming releases from the release schedule on individual series pages
             </span>
           </label>
         </SettingsField>

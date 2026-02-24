@@ -553,7 +553,7 @@ public static class PullListEndpoints
                     Notes = new[]
                     {
                         "ComicVine may have delays (up to 4+ days) in updating new releases",
-                        "Mylar3 uses WalkSoftly aggregator which may have fresher data",
+                        "External release schedules may have fresher data than ComicVine",
                         "Library pull list only shows issues from monitored series",
                         "Discovery shows ALL ComicVine issues for the week"
                     }

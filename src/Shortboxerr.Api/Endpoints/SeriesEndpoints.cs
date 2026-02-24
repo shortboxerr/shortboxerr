@@ -500,7 +500,7 @@ public static class SeriesEndpoints
         })
         .WithName("ResetSeriesStatusOverride");
 
-        // GET upcoming releases for a series (from WalkSoftly cache)
+        // GET upcoming releases for a series (from release schedule cache)
         group.MapGet("/{id:int}/upcoming", async (
             int id,
             IPullListService pullListService,
@@ -515,7 +515,7 @@ public static class SeriesEndpoints
             return Results.Ok(result);
         })
         .WithName("GetSeriesUpcomingReleases")
-        .WithDescription("Gets upcoming releases from WalkSoftly cache that haven't been indexed by ComicVine yet")
+        .WithDescription("Gets upcoming releases from the release schedule cache that haven't been indexed by ComicVine yet")
         .Produces<SeriesUpcomingReleasesResult>(200)
         .Produces(404);
     }

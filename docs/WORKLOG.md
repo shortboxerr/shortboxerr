@@ -1,5 +1,48 @@
 # Worklog
 
+## Iteration 150 (2026-02-24)
+**EPIC 11.14: Metron Settings UI + EPIC 11.15: Hide Internal Data Source Names**
+
+### Summary
+Added Settings UI for Metron (backup cover service) and removed internal data source names (WalkSoftly, Metron) from all customer-facing UI.
+
+### Implementation
+
+**Files Modified:**
+| File | Change |
+|------|--------|
+| `ui/src/api/client.ts` | Added Metron settings API types and functions |
+| `ui/src/pages/SettingsPage.tsx` | Added "Cover Service" settings tab for Metron configuration |
+| `ui/src/pages/SeriesDetailPage.tsx` | Replaced "from WalkSoftly" with "Upcoming" badge |
+| `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | Updated API description to use generic "release schedule" |
+| `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` | Updated diagnostic notes to use generic language |
+
+### Metron Settings UI Features
+- Enable/disable toggle for backup cover service
+- Username/password configuration fields
+- "Test Connection" button to verify credentials
+- Rate limiting configuration (max 30 requests/minute)
+- Cache TTL configuration (1-168 hours)
+- Request timeout configuration (5-120 seconds)
+- Link to metron.cloud for registration
+
+### UI Changes for Data Source Hiding
+| Location | Before | After |
+|----------|--------|-------|
+| SeriesDetailPage.tsx (upcoming badge) | "from WalkSoftly" | "Upcoming" |
+| SettingsPage.tsx (pull list setting) | "from WalkSoftly" | "from the release schedule" |
+| API descriptions | "WalkSoftly cache" | "release schedule cache" |
+
+### Notes
+- Internal API field names (walkSoftlyVolumeId, etc.) retained for backward compatibility
+- Logging still uses specific service names for debugging
+- Metron.cloud link kept in settings (users need to register there)
+
+### Tests
+- 34 related tests passing
+
+---
+
 ## Iteration 149 (2026-02-24)
 **EPIC 11.14: Metron Integration Implementation**
 

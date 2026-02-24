@@ -830,7 +830,7 @@ export function SeriesDetailPage() {
                       borderRadius: '10px',
                       marginLeft: '8px'
                     }}>
-                      from WalkSoftly
+                      Upcoming
                     </span>
                   </div>
                   

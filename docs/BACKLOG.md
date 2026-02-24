@@ -1,5 +1,31 @@
 # Backlog
 
+## Quick Navigation
+
+| Status | EPIC | Description |
+|:------:|------|-------------|
+| ✅ | [EPIC 0](#epic-0-repo-skeleton-foundation--completed) | Repo Skeleton (Foundation) |
+| ✅ | [EPIC 1](#epic-1-domain--persistence-minimum-data-model--completed) | Domain + Persistence |
+| ✅ | [EPIC 2](#epic-2-import-pipeline-mylar3-like--completed) | Import Pipeline |
+| ✅ | [EPIC 3](#epic-3-decisionengine-mylar3-like-selection--completed) | DecisionEngine |
+| ✅ | [EPIC 4](#epic-4-indexers--download-clients-arr-like-shape--completed) | Indexers + Download Clients |
+| ✅ | [EPIC 5](#epic-5-ui-arr-like-ui--completed) | UI (Arr-like) |
+| ✅ | [EPIC 6](#epic-6-settings-persistence--ui-enhancements--completed) | Settings & UI Enhancements |
+| ✅ | [EPIC 7](#epic-7-mylar3-migration-behavioral-parity-setup--completed) | Mylar3 Migration |
+| ✅ | [EPIC 8](#epic-8-ddl-site-adapters--download-hosts-mylar3-parity--completed) | DDL Site Adapters |
+| 🔄 | [EPIC 9](#epic-9-comicvine-integration-mylar3-parity--in-progress) | ComicVine Integration |
+| ✅ | [EPIC 10](#epic-10-nzbusenet-support-mylar3sonarradarr-parity--completed) | NZB/Usenet Support |
+| 🔄 | [EPIC 11](#epic-11-weekly-pull-list-mylar3-parity--in-progress) | Weekly Pull List |
+| 🔄 | [EPIC 12](#epic-12-performance--caching-strategy--in-progress) | Performance & Caching |
+| 📋 | [EPIC 13](#epic-13-logging--diagnostics-mylar3sonarradarr-parity--planned) | Logging & Diagnostics |
+| 📋 | [EPIC 14](#epic-14-future-enhancements--planned) | Future Enhancements |
+| ✅ | [EPIC 15](#epic-15-ui-bug-fixes--improvements--completed) | UI Bug Fixes |
+| ✅ | [EPIC 16](#epic-16-end-to-end-testing-infrastructure--completed) | E2E Testing Infrastructure |
+
+**Legend:** ✅ Completed | 🔄 In Progress | 📋 Planned
+
+---
+
 ## EPIC 0: Repo Skeleton (FOUNDATION) ✅ COMPLETED
 - [x] Create .NET solution structure:
   - src/Shortboxerr.Api
@@ -38,7 +64,7 @@
 - [x] Explanation report surfaced to API
 - [x] Golden test harness skeleton
 
-## EPIC 4: Indexers + Download Clients (ARR-LIKE SHAPE)
+## EPIC 4: Indexers + Download Clients (ARR-LIKE SHAPE) ✅ COMPLETED
 
 ### 4.1 Provider Abstractions ✅ COMPLETED
 - [x] **IProvider interface**: Base abstraction for all provider types
@@ -224,7 +250,7 @@ Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests sec
   - AC: Series and Collections pages display data correctly instead of blank pages
   - AC: Helper function toPagedResult() converts between API and UI formats
 
-## EPIC 6: Settings Persistence & UI Enhancements
+## EPIC 6: Settings Persistence & UI Enhancements ✅ COMPLETED
 - [x] **Theme persistence** ✅
   - AC: Save selected theme (dark/light/system) to database
   - AC: Load theme preference on app start
@@ -292,7 +318,7 @@ Address edge cases documented in `ddl_parsing_golden.json` aspirationalTests sec
 - Optional metadata sync from ComicVine after import
 - 10 unit tests covering all scenarios
 
-## EPIC 8: DDL Site Adapters & Download Hosts (Mylar3 Parity)
+## EPIC 8: DDL Site Adapters & Download Hosts (Mylar3 Parity) ✅ COMPLETED
 Implement real DDL site adapters and download host resolvers matching Mylar3's supported providers.
 
 ### 8.1 DDL Site Indexers (Comic Discovery)
@@ -437,7 +463,7 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
 
 ---
 
-## EPIC 9: ComicVine Integration (Mylar3 Parity)
+## EPIC 9: ComicVine Integration (Mylar3 Parity) 🔄 IN PROGRESS
 ComicVine is the primary metadata source for comic series, issues, and collections. Must achieve behavioral parity with Mylar3's ComicVine integration.
 
 ### 9.1 ComicVine API Client ✅ COMPLETED
@@ -834,7 +860,7 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
 
 ---
 
-## EPIC 10: NZB/Usenet Support (Mylar3/Sonarr/Radarr Parity)
+## EPIC 10: NZB/Usenet Support (Mylar3/Sonarr/Radarr Parity) ✅ COMPLETED
 Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with Mylar3, Sonarr, and Radarr's Usenet integration.
 
 ### 10.1 NZB Indexer Integration ✅ COMPLETED
@@ -1016,7 +1042,7 @@ Usenet (NZB) support for comic acquisition. Must achieve behavioral parity with 
 
 ---
 
-## EPIC 11: Weekly Pull List (Mylar3 Parity)
+## EPIC 11: Weekly Pull List (Mylar3 Parity) 🔄 IN PROGRESS
 Track upcoming comic releases and automate wanted list management. Must achieve full behavioral parity with Mylar3's weekly pull list functionality.
 
 ### 11.1 Release Date Tracking ✅ COMPLETED
@@ -1383,7 +1409,7 @@ Implement background refresh service to match Mylar3's ComicVine synchronization
   - AC: Multi-series weekly pull list generation ✅ (2 tests)
   - AC: UI calendar interaction (manual testing complete)
 
-### 11.10 WalkSoftly Pull List Integration (Mylar3 Data Source Parity) ✅ COMPLETED (Iteration 138)
+### 11.16 WalkSoftly Pull List Integration (Mylar3 Data Source Parity) ✅ COMPLETED (Iteration 138)
 Based on EPIC 15.9 research findings: Mylar3 uses WalkSoftly aggregator for pull list data, which provides fresher/more complete release data than direct ComicVine queries. ComicVine has known delays (up to 4+ days) for new release information.
 
 **Data Source**: `https://walksoftly.itsaninja.party/newcomics.php`
@@ -1427,7 +1453,7 @@ Based on EPIC 15.9 research findings: Mylar3 uses WalkSoftly aggregator for pull
   - AC: Cache handling ✅
   - AC: Integration with existing PullListService ✅
 
-### 11.11 Discovery Cover Image Enrichment (Research)
+### 11.17 Discovery Cover Image Enrichment (Research)
 WalkSoftly provides release data but no cover images. ComicVine is the source of truth for metadata and covers, but new issues may not have covers uploaded yet (especially for same-week releases). Research alternative cover image sources for interim display.
 
 **Current Behavior:**
@@ -1632,12 +1658,12 @@ Remove LOCG and implement Metron as the backup cover source. Metron has an offic
   - AC: Remove fuzzy matching logic (no longer needed) - kept for search fallback ✅
   - Note: Added `GetCoverByCvIdAsync` for direct CV ID lookups
 
-- [ ] **Settings UI for Metron** ← READY (Priority 2)
-  - AC: Add Metron section to Settings > General or new Metadata tab
-  - AC: Username/password fields (stored encrypted)
-  - AC: "Test Connection" button
-  - AC: Enable/disable toggle
-  - AC: Show rate limit status
+- [x] **Settings UI for Metron** ✅ COMPLETED (Iteration 150)
+  - AC: Add Metron section to Settings > General or new Metadata tab ✅ (added as "Cover Service" tab)
+  - AC: Username/password fields (stored encrypted) ✅
+  - AC: "Test Connection" button ✅
+  - AC: Enable/disable toggle ✅
+  - AC: Show rate limit status ✅ (configurable max requests/minute)
 
 - [x] **Remove LOCG integration entirely** ✅ COMPLETED (Iteration 149)
   - AC: Delete `src/Shortboxerr.Core/LeagueOfComicGeeks/ILeagueOfComicGeeksClient.cs` ✅
@@ -1658,7 +1684,7 @@ Remove LOCG and implement Metron as the backup cover source. Metron has an offic
   - AC: Mock HTTP responses ✅
   - Note: 18 tests in MetronClientTests.cs
 
-### 11.15 Hide Internal Data Source Names from UI ← READY
+### 11.15 Hide Internal Data Source Names from UI ✅ COMPLETED (Iteration 150)
 
 Internal data sources (WalkSoftly, Metron, etc.) should not be exposed in customer-facing UI. Users should see generic labels like "Release Schedule" or "Cover Service" rather than specific third-party service names.
 
@@ -1668,21 +1694,21 @@ Internal data sources (WalkSoftly, Metron, etc.) should not be exposed in custom
 - Avoids potential issues if service names are trademarked or change
 
 **Implementation Items:**
-- [ ] **Audit UI for data source references** ← READY
-  - AC: Search all `.tsx` files for "WalkSoftly", "Metron", "LOCG" references
-  - AC: Search API response DTOs for exposed source names
-  - AC: Document all locations where internal names are visible
+- [x] **Audit UI for data source references** ✅ COMPLETED (Iteration 150)
+  - AC: Search all `.tsx` files for "WalkSoftly", "Metron", "LOCG" references ✅
+  - AC: Search API response DTOs for exposed source names ✅
+  - AC: Document all locations where internal names are visible ✅
 
-- [ ] **Replace with generic labels in UI** ← READY
-  - AC: Replace "WalkSoftly" with "Release Schedule" or similar in any UI text
-  - AC: Replace "Metron" with "Cover Service" or similar if exposed
-  - AC: Use generic terms in error messages (e.g., "Release data unavailable" not "WalkSoftly unavailable")
-  - AC: Keep specific names in logs (for debugging) but not in user-facing text
+- [x] **Replace with generic labels in UI** ✅ COMPLETED (Iteration 150)
+  - AC: Replace "WalkSoftly" with "Release Schedule" or similar in any UI text ✅ (SeriesDetailPage: "Upcoming", SettingsPage: "release schedule")
+  - AC: Replace "Metron" with "Cover Service" or similar if exposed ✅ (Settings tab labeled "Cover Service")
+  - AC: Use generic terms in error messages (e.g., "Release data unavailable" not "WalkSoftly unavailable") ✅ (no error messages used service names)
+  - AC: Keep specific names in logs (for debugging) but not in user-facing text ✅
 
-- [ ] **Review API responses** ← READY
-  - AC: Ensure `dataSource` or similar fields use generic values if exposed to UI
-  - AC: Internal logging can still use specific names
-  - AC: Document any API fields that expose source names
+- [x] **Review API responses** ✅ COMPLETED (Iteration 150)
+  - AC: Ensure `dataSource` or similar fields use generic values if exposed to UI ✅
+  - AC: Internal logging can still use specific names ✅
+  - AC: Document any API fields that expose source names ✅ (walkSoftlyVolumeId/walkSoftlyIssueId retained for API compatibility, not exposed in UI)
 
 ---
 
@@ -1733,7 +1759,7 @@ When WalkSoftly reports an upcoming issue (e.g., Absolute Wonder Woman #17) that
 
 ---
 
-## EPIC 12: Performance & Caching Strategy
+## EPIC 12: Performance & Caching Strategy 🔄 IN PROGRESS
 
 ### Overview
 Implement comprehensive caching to minimize database queries and external API calls, improving responsiveness and reducing load on ComicVine API.
@@ -1931,7 +1957,7 @@ Different caching behavior based on whether a week is "active" (before/on releas
 
 ---
 
-## EPIC 13: Logging & Diagnostics (Mylar3/Sonarr/Radarr Parity)
+## EPIC 13: Logging & Diagnostics (Mylar3/Sonarr/Radarr Parity) 📋 PLANNED
 
 Comprehensive logging system for troubleshooting, monitoring, and operational visibility. Must achieve behavioral parity with Mylar3, Sonarr, and Radarr logging capabilities.
 
@@ -2151,7 +2177,7 @@ Comprehensive logging system for troubleshooting, monitoring, and operational vi
 
 ---
 
-## EPIC 14: Future Enhancements
+## EPIC 14: Future Enhancements 📋 PLANNED
 
 ### 14.1 Deferred Items Completion Tracking ✅ AUDITED
 Track and prioritize completion of deferred items across all EPICs.
@@ -2555,7 +2581,7 @@ Ensure full feature parity with Mylar3's search configuration options.
 
 ---
 
-## EPIC 15: UI Bug Fixes & Improvements
+## EPIC 15: UI Bug Fixes & Improvements ✅ COMPLETED
 
 Critical bug fixes and usability improvements identified through testing.
 
@@ -2949,29 +2975,29 @@ Pull list data doesn't match Mylar3's for the same week.
 
 ---
 
-## EPIC 15 Implementation Priority
+### 15.18 Implementation Priority Summary
 
-### P1 - Critical (Data Accuracy) ✅ ALL COMPLETED
+#### P1 - Critical (Data Accuracy) ✅ ALL COMPLETED
 1. **15.6 Wanted View Empty State** - ✅ COMPLETED (Iteration 096)
 2. **15.1 Dashboard Statistics Accuracy** - ✅ COMPLETED (Iteration 096)
 3. **15.2 "This Week" Section Accuracy** - ✅ COMPLETED (Iteration 096)
 
-### P2 - High (Usability) ✅ ALL COMPLETED
+#### P2 - High (Usability) ✅ ALL COMPLETED
 4. **15.7 Issue Status Toggle from Series View** - ✅ COMPLETED (Iteration 097 - verified existing)
 5. **15.4 Issue Overlay Button Visibility** - ✅ COMPLETED (Iteration 097)
 6. **15.5 Click Issue to Open ComicVine** - ✅ COMPLETED (Iteration 097)
 
-### P3 - Medium (Feature Parity) ✅ COMPLETED
+#### P3 - Medium (Feature Parity) ✅ COMPLETED
 7. **15.3 Forthcoming Releases View** - ✅ COMPLETED (verified Iteration 098 - was already implemented)
 8. **15.8 Pull List Data Accuracy Investigation** - Deferred (requires research, non-blocking)
 
-### P4 - High (Integration Issues)
+#### P4 - High (Integration Issues) ✅ ALL COMPLETED
 9. **15.11 Default User-Agent Header** - ✅ COMPLETED (Iteration 128)
 10. **15.12 SabnzbdClient Constructor Ambiguity** - ✅ COMPLETED (Iteration 129)
 11. **15.13 NewznabClient User-Agent Rejection** - ✅ COMPLETED (Iteration 129)
 12. **15.14 EF Core Query Splitting** - ✅ COMPLETED (Iteration 130)
 
-### P5 - Medium (Log Quality) ✅ ALL COMPLETED (Iteration 132)
+#### P5 - Medium (Log Quality) ✅ ALL COMPLETED (Iteration 132)
 13. **15.15 Download Client Error Log Noise** - ✅ COMPLETED (Iteration 132)
 14. **15.16 Background Service Graceful Degradation** - ✅ COMPLETED (Iteration 132)
 
@@ -3030,7 +3056,7 @@ Build produced 24+ compiler warnings for nullable reference handling and async p
 
 ---
 
-## EPIC 16: End-to-End Testing Infrastructure
+## EPIC 16: End-to-End Testing Infrastructure ✅ COMPLETED
 
 Comprehensive E2E test suite to exercise all user workflows, background automation, and integration points.
 

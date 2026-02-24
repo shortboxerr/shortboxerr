@@ -1274,6 +1274,30 @@ export interface ComicVineRateLimitStatus {
   timeUntilReset: string;
 }
 
+// Metron Settings (backup cover source)
+export interface MetronSettings {
+  enabled: boolean;
+  username: string;
+  hasPassword: boolean;
+  cacheTtlHours: number;
+  timeoutSeconds: number;
+  maxRequestsPerMinute: number;
+}
+
+export interface MetronSettingsUpdate {
+  enabled?: boolean;
+  username?: string;
+  password?: string;
+  cacheTtlHours?: number;
+  timeoutSeconds?: number;
+  maxRequestsPerMinute?: number;
+}
+
+export interface MetronTestResult {
+  success: boolean;
+  message: string;
+}
+
 export interface ComicVineSearchResult<T> {
   success: boolean;
   error: string | null;
@@ -2243,6 +2267,33 @@ export const api = {
     return await fetchApi<ComicVineSearchResult<ComicVineIssue>>(
       `/api/v1/comicvine/volumes/${volumeId}/issues?page=${page}&limit=${limit}`
     );
+  },
+
+  // Metron (backup cover source)
+  getMetronSettings: async (): Promise<MetronSettings> => {
+    try {
+      return await fetchApi<MetronSettings>('/api/v1/settings/metron');
+    } catch {
+      return {
+        enabled: false,
+        username: '',
+        hasPassword: false,
+        cacheTtlHours: 24,
+        timeoutSeconds: 30,
+        maxRequestsPerMinute: 30,
+      };
+    }
+  },
+
+  updateMetronSettings: async (settings: MetronSettingsUpdate): Promise<MetronSettings> => {
+    return await fetchApi<MetronSettings>('/api/v1/settings/metron', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+  },
+
+  testMetronConnection: async (): Promise<MetronTestResult> => {
+    return await fetchApi<MetronTestResult>('/api/v1/settings/metron/test', { method: 'POST' });
   },
 
   // Series Metadata (ComicVine integration)
