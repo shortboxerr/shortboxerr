@@ -1,3 +1,4 @@
+using Shortboxerr.Core.Metron;
 using Shortboxerr.Core.Services;
 
 namespace Shortboxerr.Api.Endpoints;
@@ -58,6 +59,25 @@ public static class SettingsEndpoints
             .WithDescription("Triggers immediate compression of old log files")
             .WithOpenApi()
             .Produces<LogCompressionResponse>(200);
+
+        // Metron Settings (backup cover source)
+        group.MapGet("/metron", GetMetronSettings)
+            .WithName("GetMetronSettings")
+            .WithDescription("Get Metron API configuration for backup cover lookups")
+            .WithOpenApi()
+            .Produces<MetronSettingsResponse>(200);
+
+        group.MapPut("/metron", UpdateMetronSettings)
+            .WithName("UpdateMetronSettings")
+            .WithDescription("Update Metron API configuration")
+            .WithOpenApi()
+            .Produces<MetronSettingsResponse>(200);
+
+        group.MapPost("/metron/test", TestMetronConnection)
+            .WithName("TestMetronConnection")
+            .WithDescription("Test Metron API connection with current credentials")
+            .WithOpenApi()
+            .Produces<MetronTestResponse>(200);
 
         // Folder Settings (convenience endpoints)
         group.MapGet("/folders", GetFolderSettings)
@@ -369,6 +389,80 @@ public static class SettingsEndpoints
         {
             FilesCompressed = result.FilesCompressed,
             BytesSaved = result.BytesSaved
+        });
+    }
+
+    private static async Task<IResult> GetMetronSettings(ISettingsService settingsService, CancellationToken cancellationToken)
+    {
+        var settings = await settingsService.GetAsync<MetronSettings>("metron", new MetronSettings(), cancellationToken)
+            ?? new MetronSettings();
+
+        return Results.Ok(new MetronSettingsResponse
+        {
+            Enabled = settings.Enabled,
+            Username = settings.Username ?? "",
+            HasPassword = !string.IsNullOrEmpty(settings.Password),
+            CacheTtlHours = settings.CacheTtlHours,
+            TimeoutSeconds = settings.TimeoutSeconds,
+            MaxRequestsPerMinute = settings.MaxRequestsPerMinute
+        });
+    }
+
+    private static async Task<IResult> UpdateMetronSettings(
+        MetronSettingsRequest request,
+        ISettingsService settingsService,
+        CancellationToken cancellationToken)
+    {
+        var settings = await settingsService.GetAsync<MetronSettings>("metron", new MetronSettings(), cancellationToken)
+            ?? new MetronSettings();
+
+        if (request.Enabled.HasValue)
+            settings.Enabled = request.Enabled.Value;
+        if (!string.IsNullOrEmpty(request.Username))
+            settings.Username = request.Username;
+        if (!string.IsNullOrEmpty(request.Password))
+            settings.Password = request.Password;
+        if (request.CacheTtlHours.HasValue)
+            settings.CacheTtlHours = Math.Clamp(request.CacheTtlHours.Value, 1, 168);
+        if (request.TimeoutSeconds.HasValue)
+            settings.TimeoutSeconds = Math.Clamp(request.TimeoutSeconds.Value, 5, 120);
+        if (request.MaxRequestsPerMinute.HasValue)
+            settings.MaxRequestsPerMinute = Math.Clamp(request.MaxRequestsPerMinute.Value, 1, 30);
+
+        await settingsService.SetAsync("metron", settings, cancellationToken);
+
+        return Results.Ok(new MetronSettingsResponse
+        {
+            Enabled = settings.Enabled,
+            Username = settings.Username ?? "",
+            HasPassword = !string.IsNullOrEmpty(settings.Password),
+            CacheTtlHours = settings.CacheTtlHours,
+            TimeoutSeconds = settings.TimeoutSeconds,
+            MaxRequestsPerMinute = settings.MaxRequestsPerMinute
+        });
+    }
+
+    private static async Task<IResult> TestMetronConnection(
+        IMetronClient metronClient,
+        CancellationToken cancellationToken)
+    {
+        if (!metronClient.IsConfigured)
+        {
+            return Results.Ok(new MetronTestResponse
+            {
+                Success = false,
+                Message = "Metron credentials not configured. Please set username and password."
+            });
+        }
+
+        var isAvailable = await metronClient.IsAvailableAsync(cancellationToken);
+
+        return Results.Ok(new MetronTestResponse
+        {
+            Success = isAvailable,
+            Message = isAvailable 
+                ? "Successfully connected to Metron API" 
+                : "Failed to connect to Metron API. Check credentials and network."
         });
     }
 
@@ -767,4 +861,92 @@ public class LogCompressionResponse
     /// Total bytes saved by compression.
     /// </summary>
     public long BytesSaved { get; set; }
+}
+
+/// <summary>
+/// Request to update Metron settings.
+/// </summary>
+public class MetronSettingsRequest
+{
+    /// <summary>
+    /// Whether Metron integration is enabled.
+    /// </summary>
+    public bool? Enabled { get; set; }
+
+    /// <summary>
+    /// Metron username.
+    /// </summary>
+    public string? Username { get; set; }
+
+    /// <summary>
+    /// Metron password.
+    /// </summary>
+    public string? Password { get; set; }
+
+    /// <summary>
+    /// Cache TTL in hours (1-168).
+    /// </summary>
+    public int? CacheTtlHours { get; set; }
+
+    /// <summary>
+    /// Request timeout in seconds (5-120).
+    /// </summary>
+    public int? TimeoutSeconds { get; set; }
+
+    /// <summary>
+    /// Maximum requests per minute (1-30, Metron limit is 30).
+    /// </summary>
+    public int? MaxRequestsPerMinute { get; set; }
+}
+
+/// <summary>
+/// Response containing Metron settings.
+/// </summary>
+public class MetronSettingsResponse
+{
+    /// <summary>
+    /// Whether Metron integration is enabled.
+    /// </summary>
+    public bool Enabled { get; set; }
+
+    /// <summary>
+    /// Metron username.
+    /// </summary>
+    public string Username { get; set; } = "";
+
+    /// <summary>
+    /// Whether a password is configured (never returns actual password).
+    /// </summary>
+    public bool HasPassword { get; set; }
+
+    /// <summary>
+    /// Cache TTL in hours.
+    /// </summary>
+    public int CacheTtlHours { get; set; }
+
+    /// <summary>
+    /// Request timeout in seconds.
+    /// </summary>
+    public int TimeoutSeconds { get; set; }
+
+    /// <summary>
+    /// Maximum requests per minute.
+    /// </summary>
+    public int MaxRequestsPerMinute { get; set; }
+}
+
+/// <summary>
+/// Response from Metron connection test.
+/// </summary>
+public class MetronTestResponse
+{
+    /// <summary>
+    /// Whether the connection test was successful.
+    /// </summary>
+    public bool Success { get; set; }
+
+    /// <summary>
+    /// Message describing the test result.
+    /// </summary>
+    public string Message { get; set; } = "";
 }
