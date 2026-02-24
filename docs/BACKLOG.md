@@ -1947,6 +1947,88 @@ The existing `DiscoveryCoverEnrichmentService` already handles Metron cover enri
 
 ---
 
+### 11.23 Metron Cover Caching Parity ← READY
+
+Metron covers should be stored using the same file-based caching mechanism as ComicVine covers. Currently, Metron covers are stored as URLs in the cached discovery JSON but not downloaded to the local cover cache.
+
+**Current State:**
+- ComicVine covers: Downloaded and cached to disk (`/config/covers/`)
+- Metron covers: Stored as URLs in `CachedDiscoveryWeek.IssuesJson` (not downloaded)
+
+**Problem:**
+- Metron cover URLs may expire or change
+- No local caching means repeated external requests for the same cover
+- Inconsistent caching strategy between cover sources
+
+**Implementation Items:**
+- [ ] **Download and cache Metron covers** ← READY
+  - AC: When Metron provides a cover URL, download it to the same cover cache used by ComicVine
+  - AC: Store using consistent naming: `metron_{metronIssueId}.jpg` or similar
+  - AC: Update `CoverService` to handle Metron cover source
+  - AC: Set appropriate TTL (same as ComicVine covers or shorter since they're fallback)
+
+- [ ] **Track cover source in cache metadata** ← READY
+  - AC: Add `Source` field to cover cache metadata (ComicVine, Metron, Placeholder)
+  - AC: When ComicVine cover becomes available, overwrite Metron cached cover
+  - AC: Log cover source transitions for debugging
+
+- [ ] **Update enrichment service** ← READY
+  - AC: `DiscoveryCoverEnrichmentService` downloads Metron covers to disk cache
+  - AC: Update `issue.Image` to point to local cached cover path (not external Metron URL)
+  - AC: Handle download failures gracefully (fall back to series cover)
+
+**Benefits:**
+- Consistent cover serving (all from local cache)
+- No dependency on external Metron URLs after initial download
+- Better offline support
+- Unified cache management and cleanup
+
+---
+
+### 11.24 Enrichment Tracking for Cover Sources ← READY
+
+Track which issues need cover enrichment to avoid unnecessary Metron API calls. Currently, enrichment runs against all issues missing covers without checking if they already have authoritative ComicVine data.
+
+**Current State:**
+- `DiscoveryCoverEnrichmentService` processes all issues where `issue.Image == null`
+- No tracking of whether an issue *should* have a ComicVine cover (just not loaded yet) vs *cannot* have one (not indexed yet)
+- `FallbackCoverEntry` only tracks issues that received Metron covers
+
+**Problem:**
+- Wastes Metron API quota querying for issues that ComicVine hasn't indexed yet
+- Re-queries Metron for same issues on every enrichment run
+- No way to distinguish "needs enrichment" from "enrichment attempted, no cover found"
+
+**Implementation Items:**
+- [ ] **Add enrichment status tracking** ← READY
+  - AC: Add `EnrichmentStatus` field to cached issue data (None, Pending, Enriched, NotFound, HasComicVineCover)
+  - AC: `HasComicVineCover` = issue already has authoritative cover from ComicVine
+  - AC: `Enriched` = cover was fetched from Metron
+  - AC: `NotFound` = Metron was queried but no cover found (don't retry for X days)
+  - AC: `Pending` = needs enrichment attempt
+
+- [ ] **Skip issues with authoritative covers** ← READY
+  - AC: If issue already has ComicVine cover (`issue.Image != null` from original discovery), mark as `HasComicVineCover`
+  - AC: Never attempt Metron enrichment for issues with `HasComicVineCover` status
+  - AC: When checking ComicVine for updates, if cover now available, update status
+
+- [ ] **Track failed enrichment attempts** ← READY
+  - AC: If Metron returns no results for an issue, mark as `NotFound` with timestamp
+  - AC: Don't retry `NotFound` issues for configurable period (default: 7 days)
+  - AC: Add `LastEnrichmentAttempt` timestamp to avoid rapid retries
+
+- [ ] **Optimize enrichment queries** ← READY
+  - AC: Only query Metron for issues with status `Pending` or `None`
+  - AC: Batch issues needing enrichment to minimize API calls
+  - AC: Log stats: "Skipped X issues (have CV cover), Y issues (recently checked), processing Z issues"
+
+**Benefits:**
+- Reduces Metron API usage significantly
+- Faster enrichment runs (skip known-good or recently-failed issues)
+- Better visibility into enrichment progress
+
+---
+
 ## EPIC 12: Performance & Caching Strategy 🔄 IN PROGRESS
 
 ### Overview
