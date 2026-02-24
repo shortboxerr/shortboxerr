@@ -1,5 +1,52 @@
 # Worklog
 
+## Iteration 139 (2026-02-24)
+**EPIC 11.12: Show Upcoming Releases on Series View (WalkSoftly Integration)**
+
+### Summary
+Implemented feature to display upcoming releases from WalkSoftly on the series detail page. When WalkSoftly reports an upcoming issue that ComicVine hasn't indexed yet (e.g., Absolute Wonder Woman #17 when only #16 is in ComicVine), the series view now shows this in an "Upcoming" section.
+
+### Features
+- **Backend Service**: `GetSeriesUpcomingReleasesAsync()` in PullListService
+  - Queries cached WalkSoftly data for releases matching series title + publisher
+  - Filters to only show issues with numbers higher than max local issue
+  - Excludes issues already in local database
+  - Title normalization for case-insensitive matching
+- **API Endpoint**: `GET /api/v1/series/{id}/upcoming?weeksAhead=4`
+  - Returns upcoming releases with issue number, release date, timing info
+  - Uses series cover as fallback image
+- **Frontend UI**: "Upcoming" section in SeriesDetailPage
+  - Distinctive styling (dashed border, info color, "Upcoming" badge)
+  - Shows release timing ("Tomorrow", "In 3 days", etc.)
+  - Supports both cover and list view modes
+
+### Bug Fixes (in same session)
+- **Duplicate Series Key Error**: Fixed `ToDictionaryAsync` crash when duplicate ComicVineIds exist
+  - Changed to use `GroupBy` before `ToDictionary` for defensive coding
+- **Library Matching by Title**: Added title+publisher fallback when WalkSoftly provides incorrect volume IDs
+  - Fixes issue where Absolute Wonder Woman showed as "not in library" despite being added
+- **Missing CSS Variable**: Added `--accent` variable definition to both dark and light themes
+  - Fixed invisible "Add Issue" button on pull list page
+
+### Files Changed
+- `src/Shortboxerr.Core/PullList/IPullListService.cs` - New models (SeriesUpcomingReleasesResult, UpcomingRelease)
+- `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` - GetSeriesUpcomingReleasesAsync implementation
+- `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` - New endpoint
+- `ui/src/api/client.ts` - API client function + TypeScript interfaces
+- `ui/src/pages/SeriesDetailPage.tsx` - Upcoming releases UI section
+- `ui/src/App.css` - Added `--accent` CSS variable
+- `tests/Shortboxerr.Tests/PullListServiceTests.cs` - 6 new unit tests
+
+### Tests Added
+- `GetSeriesUpcomingReleasesAsync_ReturnsEmptyForUnknownSeries`
+- `GetSeriesUpcomingReleasesAsync_ReturnsUpcomingReleasesFromCache`
+- `GetSeriesUpcomingReleasesAsync_ExcludesIssuesAlreadyInLibrary`
+- `GetSeriesUpcomingReleasesAsync_ExcludesOlderIssueNumbers`
+- `GetSeriesUpcomingReleasesAsync_MatchesByTitleCaseInsensitive`
+- `GetSeriesUpcomingReleasesAsync_ExcludesPublisherMismatch`
+
+---
+
 ## Iteration 138 (2026-02-23)
 **EPIC 11.10: WalkSoftly Pull List Integration**
 

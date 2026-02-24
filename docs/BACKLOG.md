@@ -1426,6 +1426,82 @@ Based on EPIC 15.9 research findings: Mylar3 uses WalkSoftly aggregator for pull
   - AC: Cache handling ✅
   - AC: Integration with existing PullListService ✅
 
+### 11.11 Discovery Cover Image Enrichment (Research)
+WalkSoftly provides release data but no cover images. ComicVine is the source of truth for metadata and covers, but new issues may not have covers uploaded yet (especially for same-week releases). Research alternative cover image sources for interim display.
+
+**Current Behavior:**
+- WalkSoftly releases have no cover images
+- We enrich with ComicVine volume (series) covers as fallback
+- Issue-specific covers from ComicVine should always be preferred when available
+- ComicVine metadata replaces any previous data when fetched
+
+**Research Items:**
+- [ ] **Investigate alternative cover image sources**
+  - AC: Research League of Comic Geeks API for cover images
+  - AC: Research publisher-specific APIs (Marvel, DC, Image) for cover availability
+  - AC: Investigate if WalkSoftly can be enhanced to include image URLs
+  - AC: Research Grand Comics Database (GCD) as potential source
+  - AC: Document API availability, rate limits, and terms of use for each source
+  
+- [ ] **Define cover image priority hierarchy**
+  - AC: 1. ComicVine issue-specific cover (highest priority, source of truth)
+  - AC: 2. Backup service issue cover (interim until ComicVine has data)
+  - AC: 3. ComicVine volume/series cover (fallback when no issue cover available)
+  - AC: Document when/how backup service should be checked (only when ComicVine issue cover is missing)
+  
+- [ ] **Implementation considerations**
+  - AC: Determine if alternative sources should be queried in real-time or cached
+  - AC: Plan cache invalidation when ComicVine cover becomes available
+  - AC: Consider background service to periodically check for ComicVine cover updates
+  - AC: Document any licensing/attribution requirements for alternative sources
+
+**Notes:**
+- ComicVine remains the authoritative source for all metadata
+- Alternative image sources are only for interim display until ComicVine data is available
+- Must ensure any alternative images are replaced when ComicVine provides the official cover
+
+### 11.12 Show Upcoming Releases on Series View (WalkSoftly Integration) ✅ COMPLETED
+
+When WalkSoftly reports an upcoming issue (e.g., Absolute Wonder Woman #17) that ComicVine hasn't yet indexed, the series detail view now displays this upcoming release.
+
+**Implemented:**
+- Series view shows "Upcoming" section with releases from WalkSoftly cache
+- Upcoming issues have distinctive styling (dashed border, "Upcoming" badge, info color)
+- Display includes release date and timing (e.g., "Tomorrow", "In 3 days")
+- Uses series cover as placeholder when no issue cover is available
+- Automatic transition when ComicVine catches up (excluded from upcoming once in local DB)
+
+**Implementation Items:**
+- [x] **Cross-reference WalkSoftly releases with series** ✅
+  - AC: When loading series detail, query WalkSoftly cache for releases matching the series title ✅
+  - AC: Match by series title (normalized) and publisher to handle WalkSoftly's potentially incorrect volume IDs ✅
+  - AC: Only show WalkSoftly issues with issue numbers higher than the max ComicVine issue number ✅
+  - Note: Implemented in `PullListService.GetSeriesUpcomingReleasesAsync()`
+  
+- [x] **Create "upcoming issue" UI representation** ✅
+  - AC: Display upcoming issues in the issues list with an "Upcoming" or "Unreleased" badge ✅
+  - AC: Show release date prominently ✅
+  - AC: Use placeholder cover (or series cover as fallback) ✅
+  - AC: Disable actions that require ComicVine metadata (e.g., detailed view) ✅
+  - AC: Sort upcoming issues at the end or in their natural numeric position ✅
+  - Note: Added "Upcoming" section to SeriesDetailPage.tsx with cover and list views
+  
+- [x] **Handle transition when ComicVine catches up** ✅
+  - AC: When metadata refresh finds the issue in ComicVine, replace placeholder with full data ✅
+  - AC: Preserve any user intent (if user marked upcoming as "wanted", carry that forward) ✅
+  - Note: Automatic - issues are filtered out of upcoming once they exist in local DB
+  
+- [ ] **Settings and configuration** (deferred - not required for MVP)
+  - AC: Option to show/hide upcoming releases on series view (default: show)
+  - AC: Limit how far in the future to show (e.g., releases within next 4 weeks)
+  - Note: Currently defaults to 4 weeks ahead; settings can be added later
+
+**Tests:**
+- 6 unit tests covering title matching, publisher filtering, issue number filtering, case insensitivity
+
+**API Endpoint:**
+- GET /api/v1/series/{id}/upcoming?weeksAhead=4
+
 ---
 
 ## EPIC 12: Performance & Caching Strategy

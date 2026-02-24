@@ -1365,6 +1365,31 @@ export interface SeriesAnnualsResponse {
   annuals: Issue[];
 }
 
+// Response from the series upcoming releases endpoint (WalkSoftly integration)
+export interface SeriesUpcomingReleasesResult {
+  seriesId: number;
+  seriesTitle: string;
+  releases: UpcomingRelease[];
+  totalCount: number;
+  maxLocalIssueNumber: number | null;
+  weeksSearched: number;
+}
+
+// An upcoming release from WalkSoftly not yet in ComicVine
+export interface UpcomingRelease {
+  issueNumber: number;
+  issueNumberText: string | null;
+  releaseDate: string;
+  publisher: string | null;
+  coverImageUrl: string | null;
+  walkSoftlyVolumeId: number | null;
+  walkSoftlyIssueId: number | null;
+  isAnnual: boolean;
+  isSpecial: boolean;
+  daysUntilRelease: number;
+  releaseTiming: string;
+}
+
 // Result from linking existing annual series to parents
 export interface AnnualLinkingResult {
   success: boolean;
@@ -1600,6 +1625,23 @@ export const api = {
     } catch (error) {
       console.error('Failed to fetch series annuals:', error);
       return { seriesId, seriesTitle: '', totalAnnuals: 0, linkedAnnualSeriesCount: 0, annuals: [] };
+    }
+  },
+
+  // Get upcoming releases for a series from WalkSoftly cache (not yet in ComicVine)
+  getSeriesUpcomingReleases: async (seriesId: number, weeksAhead = 4): Promise<SeriesUpcomingReleasesResult> => {
+    try {
+      return await fetchApi<SeriesUpcomingReleasesResult>(`/api/v1/series/${seriesId}/upcoming?weeksAhead=${weeksAhead}`);
+    } catch (error) {
+      console.error('Failed to fetch upcoming releases:', error);
+      return {
+        seriesId,
+        seriesTitle: '',
+        releases: [],
+        totalCount: 0,
+        maxLocalIssueNumber: null,
+        weeksSearched: weeksAhead,
+      };
     }
   },
   
@@ -2408,7 +2450,10 @@ export const api = {
   addSeriesFromDiscovery: async (
     comicVineVolumeId: number,
     markIssueWantedComicVineId?: number,
-    monitoringMode: SeriesMonitoringMode = 'FutureIssues'
+    monitoringMode: SeriesMonitoringMode = 'FutureIssues',
+    expectedPublisher?: string,
+    seriesTitle?: string,
+    expectedIssueNumber?: number
   ): Promise<AddFromDiscoveryResult> => {
     return fetchApi<AddFromDiscoveryResult>('/api/v1/pulllist/discover/add-series', {
       method: 'POST',
@@ -2416,6 +2461,9 @@ export const api = {
         comicVineVolumeId,
         markIssueWantedComicVineId,
         monitoringMode,
+        expectedPublisher,
+        seriesTitle,
+        expectedIssueNumber,
       }),
     });
   },

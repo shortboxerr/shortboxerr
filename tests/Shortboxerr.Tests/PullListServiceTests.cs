@@ -1423,4 +1423,284 @@ public class PullListServiceTests : IDisposable
     }
 
     #endregion
+
+    #region GetSeriesUpcomingReleasesAsync Tests
+
+    [Fact]
+    public async Task GetSeriesUpcomingReleasesAsync_ReturnsEmptyForUnknownSeries()
+    {
+        // Arrange
+        var nonExistentSeriesId = 9999;
+
+        // Act
+        var result = await _service.GetSeriesUpcomingReleasesAsync(nonExistentSeriesId);
+
+        // Assert
+        Assert.Equal("Unknown", result.SeriesTitle);
+        Assert.Empty(result.Releases);
+    }
+
+    [Fact]
+    public async Task GetSeriesUpcomingReleasesAsync_ReturnsUpcomingReleasesFromCache()
+    {
+        // Arrange
+        var series = new Series
+        {
+            Title = "Absolute Wonder Woman",
+            Publisher = "DC Comics",
+            ComicVineId = 160511,
+            Monitored = true
+        };
+        series.Issues.Add(new Issue { IssueNumber = 15m, ComicVineId = 1001 });
+        series.Issues.Add(new Issue { IssueNumber = 16m, ComicVineId = 1002 });
+        _dbContext.Series.Add(series);
+
+        // Add cached discovery week with upcoming issue #17
+        var weekStart = DateTime.UtcNow.Date;
+        while (weekStart.DayOfWeek != DayOfWeek.Sunday)
+            weekStart = weekStart.AddDays(-1);
+
+        var cachedIssues = new List<ComicVineIssue>
+        {
+            new ComicVineIssue
+            {
+                Id = 0, // Not in ComicVine yet
+                IssueNumber = "17",
+                Publisher = "DC Comics",
+                Volume = new ComicVineVolumeRef { Id = 169087, Name = "Absolute Wonder Woman" },
+                StoreDate = weekStart.AddDays(3) // Wednesday
+            }
+        };
+
+        _dbContext.CachedDiscoveryWeeks.Add(new CachedDiscoveryWeek
+        {
+            WeekStart = weekStart,
+            IssuesJson = System.Text.Json.JsonSerializer.Serialize(cachedIssues),
+            LastRefreshed = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddHours(1),
+            IssueCount = 1
+        });
+        await _dbContext.SaveChangesAsync();
+
+        // Act
+        var result = await _service.GetSeriesUpcomingReleasesAsync(series.Id);
+
+        // Assert
+        Assert.Equal("Absolute Wonder Woman", result.SeriesTitle);
+        Assert.Single(result.Releases);
+        Assert.Equal(17m, result.Releases[0].IssueNumber);
+        Assert.Equal("DC Comics", result.Releases[0].Publisher);
+        Assert.Equal(16m, result.MaxLocalIssueNumber);
+    }
+
+    [Fact]
+    public async Task GetSeriesUpcomingReleasesAsync_ExcludesIssuesAlreadyInLibrary()
+    {
+        // Arrange
+        var series = new Series
+        {
+            Title = "Batman",
+            Publisher = "DC Comics",
+            ComicVineId = 12345,
+            Monitored = true
+        };
+        series.Issues.Add(new Issue { IssueNumber = 100m, ComicVineId = 5001 });
+        series.Issues.Add(new Issue { IssueNumber = 101m, ComicVineId = 5002 });
+        series.Issues.Add(new Issue { IssueNumber = 102m, ComicVineId = 5003 }); // Already have #102
+        _dbContext.Series.Add(series);
+
+        var weekStart = DateTime.UtcNow.Date;
+        while (weekStart.DayOfWeek != DayOfWeek.Sunday)
+            weekStart = weekStart.AddDays(-1);
+
+        var cachedIssues = new List<ComicVineIssue>
+        {
+            new ComicVineIssue
+            {
+                Id = 5003, // Same as local issue - should be excluded
+                IssueNumber = "102",
+                Publisher = "DC Comics",
+                Volume = new ComicVineVolumeRef { Id = 12345, Name = "Batman" },
+                StoreDate = weekStart.AddDays(3)
+            },
+            new ComicVineIssue
+            {
+                Id = 0, // Not in DB yet
+                IssueNumber = "103",
+                Publisher = "DC Comics",
+                Volume = new ComicVineVolumeRef { Id = 12345, Name = "Batman" },
+                StoreDate = weekStart.AddDays(3)
+            }
+        };
+
+        _dbContext.CachedDiscoveryWeeks.Add(new CachedDiscoveryWeek
+        {
+            WeekStart = weekStart,
+            IssuesJson = System.Text.Json.JsonSerializer.Serialize(cachedIssues),
+            LastRefreshed = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddHours(1),
+            IssueCount = 2
+        });
+        await _dbContext.SaveChangesAsync();
+
+        // Act
+        var result = await _service.GetSeriesUpcomingReleasesAsync(series.Id);
+
+        // Assert - only #103 should be returned (102 is already in library)
+        Assert.Single(result.Releases);
+        Assert.Equal(103m, result.Releases[0].IssueNumber);
+    }
+
+    [Fact]
+    public async Task GetSeriesUpcomingReleasesAsync_ExcludesOlderIssueNumbers()
+    {
+        // Arrange
+        var series = new Series
+        {
+            Title = "Spider-Man",
+            Publisher = "Marvel",
+            ComicVineId = 99999,
+            Monitored = true
+        };
+        series.Issues.Add(new Issue { IssueNumber = 50m });
+        _dbContext.Series.Add(series);
+
+        var weekStart = DateTime.UtcNow.Date;
+        while (weekStart.DayOfWeek != DayOfWeek.Sunday)
+            weekStart = weekStart.AddDays(-1);
+
+        var cachedIssues = new List<ComicVineIssue>
+        {
+            new ComicVineIssue
+            {
+                Id = 0,
+                IssueNumber = "48", // Older than max (50) - should be excluded
+                Publisher = "Marvel",
+                Volume = new ComicVineVolumeRef { Id = 99999, Name = "Spider-Man" },
+                StoreDate = weekStart.AddDays(3)
+            },
+            new ComicVineIssue
+            {
+                Id = 0,
+                IssueNumber = "51", // Newer than max (50) - should be included
+                Publisher = "Marvel",
+                Volume = new ComicVineVolumeRef { Id = 99999, Name = "Spider-Man" },
+                StoreDate = weekStart.AddDays(3)
+            }
+        };
+
+        _dbContext.CachedDiscoveryWeeks.Add(new CachedDiscoveryWeek
+        {
+            WeekStart = weekStart,
+            IssuesJson = System.Text.Json.JsonSerializer.Serialize(cachedIssues),
+            LastRefreshed = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddHours(1),
+            IssueCount = 2
+        });
+        await _dbContext.SaveChangesAsync();
+
+        // Act
+        var result = await _service.GetSeriesUpcomingReleasesAsync(series.Id);
+
+        // Assert - only #51 should be returned
+        Assert.Single(result.Releases);
+        Assert.Equal(51m, result.Releases[0].IssueNumber);
+    }
+
+    [Fact]
+    public async Task GetSeriesUpcomingReleasesAsync_MatchesByTitleCaseInsensitive()
+    {
+        // Arrange
+        var series = new Series
+        {
+            Title = "The Amazing Spider-Man", // Title with "The"
+            Publisher = "Marvel",
+            ComicVineId = 88888,
+            Monitored = true
+        };
+        series.Issues.Add(new Issue { IssueNumber = 10m });
+        _dbContext.Series.Add(series);
+
+        var weekStart = DateTime.UtcNow.Date;
+        while (weekStart.DayOfWeek != DayOfWeek.Sunday)
+            weekStart = weekStart.AddDays(-1);
+
+        var cachedIssues = new List<ComicVineIssue>
+        {
+            new ComicVineIssue
+            {
+                Id = 0,
+                IssueNumber = "11",
+                Publisher = "Marvel",
+                Volume = new ComicVineVolumeRef { Id = 88888, Name = "THE AMAZING SPIDER-MAN" }, // Uppercase
+                StoreDate = weekStart.AddDays(3)
+            }
+        };
+
+        _dbContext.CachedDiscoveryWeeks.Add(new CachedDiscoveryWeek
+        {
+            WeekStart = weekStart,
+            IssuesJson = System.Text.Json.JsonSerializer.Serialize(cachedIssues),
+            LastRefreshed = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddHours(1),
+            IssueCount = 1
+        });
+        await _dbContext.SaveChangesAsync();
+
+        // Act
+        var result = await _service.GetSeriesUpcomingReleasesAsync(series.Id);
+
+        // Assert - should match despite case difference
+        Assert.Single(result.Releases);
+        Assert.Equal(11m, result.Releases[0].IssueNumber);
+    }
+
+    [Fact]
+    public async Task GetSeriesUpcomingReleasesAsync_ExcludesPublisherMismatch()
+    {
+        // Arrange
+        var series = new Series
+        {
+            Title = "Absolute Wonder Woman",
+            Publisher = "DC Comics", // US publisher
+            ComicVineId = 160511,
+            Monitored = true
+        };
+        series.Issues.Add(new Issue { IssueNumber = 16m });
+        _dbContext.Series.Add(series);
+
+        var weekStart = DateTime.UtcNow.Date;
+        while (weekStart.DayOfWeek != DayOfWeek.Sunday)
+            weekStart = weekStart.AddDays(-1);
+
+        var cachedIssues = new List<ComicVineIssue>
+        {
+            new ComicVineIssue
+            {
+                Id = 0,
+                IssueNumber = "17",
+                Publisher = "Urban Comics", // French publisher - different from local
+                Volume = new ComicVineVolumeRef { Id = 169087, Name = "Absolute Wonder Woman" },
+                StoreDate = weekStart.AddDays(3)
+            }
+        };
+
+        _dbContext.CachedDiscoveryWeeks.Add(new CachedDiscoveryWeek
+        {
+            WeekStart = weekStart,
+            IssuesJson = System.Text.Json.JsonSerializer.Serialize(cachedIssues),
+            LastRefreshed = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddHours(1),
+            IssueCount = 1
+        });
+        await _dbContext.SaveChangesAsync();
+
+        // Act
+        var result = await _service.GetSeriesUpcomingReleasesAsync(series.Id);
+
+        // Assert - should be excluded due to publisher mismatch
+        Assert.Empty(result.Releases);
+    }
+
+    #endregion
 }

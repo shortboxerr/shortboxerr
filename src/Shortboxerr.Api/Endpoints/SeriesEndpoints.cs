@@ -499,6 +499,25 @@ public static class SeriesEndpoints
             });
         })
         .WithName("ResetSeriesStatusOverride");
+
+        // GET upcoming releases for a series (from WalkSoftly cache)
+        group.MapGet("/{id:int}/upcoming", async (
+            int id,
+            IPullListService pullListService,
+            int weeksAhead = 4,
+            CancellationToken cancellationToken = default) =>
+        {
+            var result = await pullListService.GetSeriesUpcomingReleasesAsync(id, weeksAhead, cancellationToken);
+            
+            if (result.SeriesTitle == "Unknown")
+                return Results.NotFound(new { message = $"Series {id} not found" });
+            
+            return Results.Ok(result);
+        })
+        .WithName("GetSeriesUpcomingReleases")
+        .WithDescription("Gets upcoming releases from WalkSoftly cache that haven't been indexed by ComicVine yet")
+        .Produces<SeriesUpcomingReleasesResult>(200)
+        .Produces(404);
     }
 }
 

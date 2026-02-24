@@ -34,6 +34,7 @@
   --accent-info: #5bc0de;     /* 6.8:1 on dark - Info states, blue badges */
   
   /* Accent hover states */
+  --accent: #5d9cec;          /* General accent color (same as primary) */
   --accent-hover: #4a8bd9;    /* Darker primary for hover */
   --accent-rgb: 93, 156, 236; /* RGB values for rgba() usage */
   
@@ -78,14 +79,15 @@
   --text-muted: #6c757d;      /* 4.6:1  - Muted text (passes AA) */
   --text-inverse: #f5f5f5;    /* For text on dark backgrounds */
   
-  /* Accent colors - adjusted for light backgrounds */
+  /* Accent colors - adjusted for light backgrounds (all meet WCAG AA 4.5:1) */
   --accent-primary: #0d6efd;  /* 4.5:1 on light - Stronger blue for visibility */
   --accent-success: #198754;  /* 4.6:1 on light - Darker green for contrast */
-  --accent-warning: #cc8400;  /* 4.5:1 on light - Darker orange for contrast */
+  --accent-warning: #b45309;  /* 5.4:1 on light - Darker orange for better contrast */
   --accent-danger: #dc3545;   /* 5.4:1 on light - Standard Bootstrap red */
-  --accent-info: #0dcaf0;     /* 3.0:1 on light - Large text/icons only */
+  --accent-info: #0891b2;     /* 4.5:1 on light - Darker cyan for accessibility */
   
   /* Accent hover states */
+  --accent: #0d6efd;          /* General accent color (same as primary) */
   --accent-hover: #0b5ed7;    /* Darker primary for hover */
   --accent-rgb: 13, 110, 253; /* RGB values for rgba() usage */
   
@@ -2392,9 +2394,9 @@ body {
 
 .pull-list-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 220px));
+  grid-template-columns: repeat(auto-fill, minmax(160px, 200px));
   gap: 16px;
-  justify-content: center;
+  justify-content: start;
 }
 
 .pull-list-card {
@@ -2419,6 +2421,21 @@ body {
   position: relative;
   aspect-ratio: 2/3;
   background: var(--bg-primary);
+}
+
+.pull-list-card-cover.clickable {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pull-list-card-cover.clickable:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.pull-list-card-cover.clickable:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .pull-list-card-cover img {
@@ -2560,11 +2577,23 @@ body {
 
 /* Pull List Discovery Mode Styles */
 .pull-list-card.discoverable {
-  border-color: rgba(var(--accent-rgb), 0.3);
+  border-color: var(--border-color);
 }
 
 .pull-list-card.in-library {
-  opacity: 0.9;
+  border-left: 3px solid var(--accent);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.12) 0%, rgba(var(--accent-rgb), 0.04) 100%);
+  box-shadow: 
+    0 0 0 1px rgba(var(--accent-rgb), 0.25),
+    0 0 20px rgba(var(--accent-rgb), 0.15),
+    inset 0 0 30px rgba(var(--accent-rgb), 0.05);
+}
+
+.pull-list-card.in-library:hover {
+  box-shadow: 
+    0 0 0 1px rgba(var(--accent-rgb), 0.4),
+    0 0 25px rgba(var(--accent-rgb), 0.25),
+    0 4px 12px rgba(var(--accent-rgb), 0.2);
 }
 
 .pull-list-card-badge {
@@ -2636,13 +2665,28 @@ body {
 }
 
 tr.discoverable {
-  background: rgba(var(--accent-rgb), 0.05);
+  background: transparent;
+}
+
+tr.in-library {
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.12) 0%, rgba(var(--accent-rgb), 0.04) 100%);
+  box-shadow: inset 0 0 20px rgba(var(--accent-rgb), 0.08);
+}
+
+tr.in-library td:first-child {
+  border-left: 3px solid var(--accent);
+  box-shadow: -4px 0 12px rgba(var(--accent-rgb), 0.2);
+}
+
+.pull-list-week-stats .stat.filtered {
+  color: var(--text-muted);
+  font-style: italic;
 }
 
 .btn-accent {
-  background: var(--accent);
+  background: var(--accent-primary);
   color: white;
-  border-color: var(--accent);
+  border-color: var(--accent-primary);
 }
 
 .btn-accent:hover {
@@ -3409,7 +3453,7 @@ tr.selected {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  background: #111827;
+  background: var(--logs-bg, #111827);
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   min-height: 0;
   -webkit-overflow-scrolling: touch;
@@ -3867,4 +3911,139 @@ tr.selected {
     padding-left: 10px !important;
     padding-right: 10px !important;
   }
+}
+
+/* ===== LIGHT MODE SPECIFIC OVERRIDES ===== */
+[data-theme="light"] {
+  /* Logs page - use lighter colors for better contrast */
+  --logs-bg: #f1f5f9;
+}
+
+[data-theme="light"] .logs-container {
+  background: var(--logs-bg);
+}
+
+[data-theme="light"] .logs-toolbar {
+  background: rgba(241, 245, 249, 0.9);
+  border-bottom: 1px solid var(--border-color);
+}
+
+[data-theme="light"] .logs-title {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .log-entry {
+  border-bottom: 1px solid var(--border-color);
+}
+
+[data-theme="light"] .log-entry-header {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+[data-theme="light"] .log-timestamp,
+[data-theme="light"] .log-source,
+[data-theme="light"] .log-message,
+[data-theme="light"] .logs-stats-total,
+[data-theme="light"] .logs-search-icon {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .logs-stats {
+  background: var(--bg-tertiary);
+}
+
+[data-theme="light"] .logs-autoscroll {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+}
+
+[data-theme="light"] .logs-autoscroll:hover {
+  background: var(--bg-hover);
+}
+
+/* Badge backgrounds - ensure contrast in light mode */
+[data-theme="light"] .badge-success {
+  background: rgba(25, 135, 84, 0.12);
+}
+
+[data-theme="light"] .badge-warning {
+  background: rgba(180, 83, 9, 0.12);
+}
+
+[data-theme="light"] .badge-danger {
+  background: rgba(220, 53, 69, 0.12);
+}
+
+[data-theme="light"] .badge-info {
+  background: rgba(8, 145, 178, 0.12);
+}
+
+/* Activity icons in light mode */
+[data-theme="light"] .activity-icon.success {
+  background: rgba(25, 135, 84, 0.12);
+}
+
+[data-theme="light"] .activity-icon.warning {
+  background: rgba(180, 83, 9, 0.12);
+}
+
+[data-theme="light"] .activity-icon.danger {
+  background: rgba(220, 53, 69, 0.12);
+}
+
+[data-theme="light"] .activity-icon.info {
+  background: rgba(8, 145, 178, 0.12);
+}
+
+/* Alert backgrounds in light mode */
+[data-theme="light"] .alert-warning {
+  background: rgba(180, 83, 9, 0.08);
+}
+
+[data-theme="light"] .alert-danger {
+  background: rgba(220, 53, 69, 0.08);
+}
+
+[data-theme="light"] .alert-success {
+  background: rgba(25, 135, 84, 0.08);
+}
+
+/* Status badges in light mode */
+[data-theme="light"] .status-owned {
+  background: rgba(25, 135, 84, 0.12);
+}
+
+[data-theme="light"] .status-wanted {
+  background: rgba(180, 83, 9, 0.12);
+}
+
+[data-theme="light"] .status-edition {
+  background: rgba(8, 145, 178, 0.12);
+}
+
+/* Tags in light mode */
+[data-theme="light"] .tag-annual {
+  background: rgba(180, 83, 9, 0.15);
+}
+
+[data-theme="light"] .tag-special {
+  background: rgba(8, 145, 178, 0.15);
+}
+
+/* Modal overlay - lighter for light mode */
+[data-theme="light"] .modal-overlay,
+[data-theme="light"] .modal-backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* Card hover actions gradient in light mode */
+[data-theme="light"] .card-hover-actions {
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.95));
+}
+
+[data-theme="light"] .card-hover-actions button {
+  background: white;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
 }

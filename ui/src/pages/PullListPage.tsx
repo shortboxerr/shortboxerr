@@ -10,7 +10,6 @@ import {
   Eye,
   List,
   Grid,
-  Filter,
   Plus,
   BookPlus,
   Library,
@@ -19,14 +18,10 @@ import {
   ArrowDown,
   ArrowUpDown,
   AlertTriangle,
-  Settings,
-  BookOpen,
-  Link as LinkIcon
+  Settings
 } from 'lucide-react';
 import { api } from '../api/client';
 import type { 
-  WeeklyPullList, 
-  PullListIssue, 
   IssueStatus, 
   WeeklyDiscoveryList, 
   DiscoverableIssue,
@@ -36,9 +31,9 @@ import { Link, useNavigate } from 'react-router-dom';
 
 type ViewMode = 'week' | 'upcoming' | 'past';
 type DisplayMode = 'list' | 'grid';
-type SourceMode = 'library' | 'discover';
 type SortColumn = 'series' | 'issue' | 'publisher' | 'release' | 'status';
 type SortDirection = 'asc' | 'desc';
+type PullListFilter = 'all' | 'pullList' | 'new';
 
 interface AddSeriesModalProps {
   issue: DiscoverableIssue;
@@ -111,12 +106,9 @@ export function PullListPage() {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [displayMode, setDisplayMode] = useState<DisplayMode>('list');
-  const [sourceMode, setSourceMode] = useState<SourceMode>('library');
   const [weekOffset, setWeekOffset] = useState(0);
-  const [selectedIssues, setSelectedIssues] = useState<Set<number>>(new Set());
-  const [statusFilter, setStatusFilter] = useState<IssueStatus | 'all'>('all');
   const [addSeriesIssue, setAddSeriesIssue] = useState<DiscoverableIssue | null>(null);
-  const [discoveryFilter, setDiscoveryFilter] = useState<'all' | 'new' | 'inLibrary'>('all');
+  const [pullListFilter, setPullListFilter] = useState<PullListFilter>('all');
   const [sortColumn, setSortColumn] = useState<SortColumn>('series');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
@@ -157,47 +149,52 @@ export function PullListPage() {
     return date.toISOString().split('T')[0];
   }, [weekOffset]);
 
-  // Library mode queries - use weekDate in query key for consistent caching
-  // Cache for 30 minutes to match backend ComicVine cache - release schedules rarely change
-  const { data: thisWeek, isLoading: thisWeekLoading, isFetching: thisWeekFetching, refetch: refetchThisWeek } = useQuery({
-    queryKey: ['pulllist', 'week', weekDate],
-    queryFn: ({ queryKey }) => {
-      const date = queryKey[2] as string;
-      return api.getPullListWeek(date);
-    },
-    enabled: viewMode === 'week' && sourceMode === 'library',
-    staleTime: 30 * 60 * 1000, // 30 minutes - matches backend cache, release schedules rarely change
-  });
-
-  const { data: upcoming, isLoading: upcomingLoading } = useQuery({
-    queryKey: ['pulllist', 'upcoming'],
-    queryFn: () => api.getPullListUpcoming(4),
-    enabled: viewMode === 'upcoming' && sourceMode === 'library',
-    staleTime: 30 * 60 * 1000, // 30 minutes
-  });
-
-  const { data: past, isLoading: pastLoading } = useQuery({
-    queryKey: ['pulllist', 'past'],
-    queryFn: () => api.getPullListPast(4),
-    enabled: viewMode === 'past' && sourceMode === 'library',
-    staleTime: 30 * 60 * 1000, // 30 minutes - past releases don't change
-  });
-
-  // Discovery mode queries - use weekDate from queryKey to avoid closure issues
-  // Cache for 30 minutes - ComicVine release data is set weeks in advance and rarely changes
+  // Discovery query - always fetch all releases, filter client-side
+  // Cache for 30 minutes - release data is set weeks in advance and rarely changes
   const { data: discovery, isLoading: discoveryLoading, isFetching: discoveryFetching, refetch: refetchDiscovery } = useQuery({
-    queryKey: ['pulllist', 'discovery', weekDate, discoveryFilter],
+    queryKey: ['pulllist', 'discovery', weekDate],
     queryFn: async ({ queryKey }) => {
       const date = queryKey[2] as string;
-      const filterType = queryKey[3] as string;
-      const filter = {
-        inLibraryOnly: filterType === 'inLibrary' ? true : undefined,
-        newOnly: filterType === 'new' ? true : undefined,
-      };
-      return api.getWeeklyDiscoveryByDate(date, filter);
+      return api.getWeeklyDiscoveryByDate(date, {});
     },
-    enabled: sourceMode === 'discover',
+    enabled: viewMode === 'week',
     staleTime: 30 * 60 * 1000, // 30 minutes - matches backend cache duration
+  });
+
+  // Upcoming weeks (for multi-week views)
+  const { data: upcomingDiscovery, isLoading: upcomingLoading } = useQuery({
+    queryKey: ['pulllist', 'discovery', 'upcoming'],
+    queryFn: async () => {
+      const weeks = [];
+      for (let i = 1; i <= 4; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() + (i * 7));
+        const dateStr = date.toISOString().split('T')[0];
+        const data = await api.getWeeklyDiscoveryByDate(dateStr, {});
+        weeks.push(data);
+      }
+      return weeks;
+    },
+    enabled: viewMode === 'upcoming',
+    staleTime: 30 * 60 * 1000,
+  });
+
+  // Past weeks
+  const { data: pastDiscovery, isLoading: pastLoading } = useQuery({
+    queryKey: ['pulllist', 'discovery', 'past'],
+    queryFn: async () => {
+      const weeks = [];
+      for (let i = 1; i <= 4; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() - (i * 7));
+        const dateStr = date.toISOString().split('T')[0];
+        const data = await api.getWeeklyDiscoveryByDate(dateStr, {});
+        weeks.push(data);
+      }
+      return weeks;
+    },
+    enabled: viewMode === 'past',
+    staleTime: 30 * 60 * 1000,
   });
 
   const { data: stats } = useQuery({
@@ -228,15 +225,6 @@ export function PullListPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pulllist'] }),
   });
 
-  const bulkUpdate = useMutation({
-    mutationFn: ({ issueIds, status }: { issueIds: number[]; status: IssueStatus }) =>
-      api.bulkUpdateIssueStatus(issueIds, status),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pulllist'] });
-      setSelectedIssues(new Set());
-    },
-  });
-
   // Discovery mode mutations
   const addIssueOneOff = useMutation({
     mutationFn: (comicVineIssueId: number) => api.addIssueOneOff(comicVineIssueId),
@@ -244,21 +232,30 @@ export function PullListPage() {
   });
 
   const addSeriesFromDiscovery = useMutation({
-    mutationFn: ({ comicVineVolumeId, markIssueWantedComicVineId, monitoringMode }: {
+    mutationFn: ({ comicVineVolumeId, markIssueWantedComicVineId, monitoringMode, expectedPublisher, seriesTitle, expectedIssueNumber }: {
       comicVineVolumeId: number;
       markIssueWantedComicVineId?: number;
       monitoringMode: SeriesMonitoringMode;
-    }) => api.addSeriesFromDiscovery(comicVineVolumeId, markIssueWantedComicVineId, monitoringMode),
+      expectedPublisher?: string;
+      seriesTitle?: string;
+      expectedIssueNumber?: number;
+    }) => api.addSeriesFromDiscovery(comicVineVolumeId, markIssueWantedComicVineId, monitoringMode, expectedPublisher, seriesTitle, expectedIssueNumber),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pulllist'] });
       setAddSeriesIssue(null);
     },
   });
 
-  // Filter issues by status (library mode)
-  const filterIssues = (issues: PullListIssue[]) => {
-    if (statusFilter === 'all') return issues;
-    return issues.filter(i => i.status === statusFilter);
+  // Filter discovery issues by pull list status
+  const filterDiscoveryIssues = (issues: DiscoverableIssue[]) => {
+    switch (pullListFilter) {
+      case 'pullList':
+        return issues.filter(i => i.isInLibrary);
+      case 'new':
+        return issues.filter(i => !i.isInLibrary);
+      default:
+        return issues;
+    }
   };
 
   // Toggle sort column/direction
@@ -281,38 +278,8 @@ export function PullListPage() {
       : <ArrowDown size={14} className="sort-icon active" />;
   };
 
-  // Sort library issues
-  const sortIssues = (issues: PullListIssue[]): PullListIssue[] => {
-    return [...issues].sort((a, b) => {
-      let comparison = 0;
-      
-      switch (sortColumn) {
-        case 'series':
-          comparison = (a.seriesTitle || '').localeCompare(b.seriesTitle || '');
-          // Secondary sort by issue number
-          if (comparison === 0) {
-            comparison = a.issueNumber - b.issueNumber;
-          }
-          break;
-        case 'issue':
-          comparison = a.issueNumber - b.issueNumber;
-          break;
-        case 'publisher':
-          comparison = (a.publisher || '').localeCompare(b.publisher || '');
-          break;
-        case 'release':
-          comparison = (a.storeDate || '').localeCompare(b.storeDate || '');
-          break;
-        case 'status':
-          comparison = (a.status || '').localeCompare(b.status || '');
-          break;
-      }
-      
-      return sortDirection === 'asc' ? comparison : -comparison;
-    });
-  };
-
   // Sort and deduplicate discovery issues (ComicVine API sometimes returns duplicates)
+  // When showing all releases, library items sort to top for visibility
   const sortDiscoveryIssues = (issues: DiscoverableIssue[]): DiscoverableIssue[] => {
     // Deduplicate by unique key: volumeId + issueNumber (or issueId if available)
     // WalkSoftly data has comicVineIssueId=0, so we need a composite key
@@ -329,6 +296,12 @@ export function PullListPage() {
     });
     
     return unique.sort((a, b) => {
+      // Primary: Library items first when showing all releases
+      if (pullListFilter === 'all') {
+        if (a.isInLibrary && !b.isInLibrary) return -1;
+        if (!a.isInLibrary && b.isInLibrary) return 1;
+      }
+      
       let comparison = 0;
       
       switch (sortColumn) {
@@ -358,20 +331,14 @@ export function PullListPage() {
   };
 
   // Use isFetching (not just isLoading) to show spinner when navigating between weeks
-  // This prevents showing stale cached data while a new request is in flight
-  const isLoading = sourceMode === 'discover' 
+  const isLoading = viewMode === 'week' 
     ? (discoveryLoading || discoveryFetching)
-    : viewMode === 'week' ? (thisWeekLoading || thisWeekFetching) : 
-      viewMode === 'upcoming' ? upcomingLoading : pastLoading;
+    : viewMode === 'upcoming' ? upcomingLoading : pastLoading;
 
   // Handle manual refresh with timestamp tracking
   const handleManualRefresh = () => {
     setLastRefresh(new Date());
-    if (sourceMode === 'discover') {
-      refetchDiscovery();
-    } else {
-      refetchThisWeek();
-    }
+    refetchDiscovery();
   };
 
   // Format relative time for last refresh
@@ -388,180 +355,67 @@ export function PullListPage() {
 
   // Render empty state based on configuration status
   const renderEmptyState = () => {
-    if (sourceMode === 'discover') {
-      // All Releases empty state
-      if (configStatus && !configStatus.isComicVineConfigured) {
-        return (
-          <div className="empty-state">
-            <AlertTriangle size={48} className="text-warning" />
-            <div className="empty-state-title">ComicVine API Not Configured</div>
-            <div className="empty-state-text">
-              Configure your ComicVine API key to discover new releases.
-            </div>
-            <button 
-              className="btn btn-primary mt-3"
-              onClick={() => navigate('/settings?tab=comicvine')}
-            >
-              <Settings size={16} />
-              Configure ComicVine
-            </button>
-          </div>
-        );
-      }
+    if (configStatus && !configStatus.isComicVineConfigured) {
       return (
         <div className="empty-state">
-          <Calendar size={48} />
-          <div className="empty-state-title">No Releases Found</div>
+          <AlertTriangle size={48} className="text-warning" />
+          <div className="empty-state-title">ComicVine API Not Configured</div>
           <div className="empty-state-text">
-            No comics are releasing during this week, or the ComicVine API may be temporarily unavailable.
+            Configure your ComicVine API key to discover new releases.
           </div>
           <button 
-            className="btn btn-secondary mt-3"
-            onClick={handleManualRefresh}
+            className="btn btn-primary mt-3"
+            onClick={() => navigate('/settings?tab=comicvine')}
           >
-            <RefreshCw size={16} />
-            Refresh from ComicVine
+            <Settings size={16} />
+            Configure ComicVine
           </button>
         </div>
       );
     }
 
-    // My Pull List empty state - based on configuration status
-    if (configStatus) {
-      switch (configStatus.actionType) {
-        case 'ConfigureApiKey':
-          return (
-            <div className="empty-state">
-              <AlertTriangle size={48} className="text-warning" />
-              <div className="empty-state-title">ComicVine API Not Configured</div>
-              <div className="empty-state-text">
-                Configure your ComicVine API key to enable release tracking and discovery.
-              </div>
-              <div className="empty-state-actions">
-                <button 
-                  className="btn btn-primary"
-                  onClick={() => navigate('/settings?tab=comicvine')}
-                >
-                  <Settings size={16} />
-                  Configure ComicVine
-                </button>
-              </div>
-            </div>
-          );
-        
-        case 'AddSeries':
-          return (
-            <div className="empty-state">
-              <BookOpen size={48} />
-              <div className="empty-state-title">No Series in Library</div>
-              <div className="empty-state-text">
-                Add your first series to start tracking releases.
-              </div>
-              <div className="empty-state-actions">
-                <button 
-                  className="btn btn-primary"
-                  onClick={() => navigate('/series')}
-                >
-                  <Plus size={16} />
-                  Add Series
-                </button>
-                <button 
-                  className="btn btn-secondary"
-                  onClick={() => setSourceMode('discover')}
-                >
-                  <Globe size={16} />
-                  Try All Releases
-                </button>
-              </div>
-            </div>
-          );
-        
-        case 'MatchSeries':
-          return (
-            <div className="empty-state">
-              <LinkIcon size={48} />
-              <div className="empty-state-title">Series Not Matched</div>
-              <div className="empty-state-text">
-                Match your series to ComicVine to track release dates.
-              </div>
-              <div className="empty-state-actions">
-                <button 
-                  className="btn btn-primary"
-                  onClick={() => navigate('/series')}
-                >
-                  <LinkIcon size={16} />
-                  Match Series
-                </button>
-                <button 
-                  className="btn btn-secondary"
-                  onClick={() => setSourceMode('discover')}
-                >
-                  <Globe size={16} />
-                  Try All Releases
-                </button>
-              </div>
-            </div>
-          );
-        
-        case 'TryAllReleases':
-          return (
-            <div className="empty-state">
-              <Calendar size={48} />
-              <div className="empty-state-title">No Releases This Week</div>
-              <div className="empty-state-text">
-                None of your monitored series have releases this week.
-              </div>
-              <div className="empty-state-actions">
-                <button 
-                  className="btn btn-primary"
-                  onClick={() => setSourceMode('discover')}
-                >
-                  <Globe size={16} />
-                  Discover All Releases
-                </button>
-              </div>
-            </div>
-          );
-        
-        default:
-          return (
-            <div className="empty-state">
-              <Calendar size={48} />
-              <div className="empty-state-title">No Releases Found</div>
-              <div className="empty-state-text">
-                Add some series and match them to ComicVine to see upcoming releases.
-              </div>
-              <div className="empty-state-actions">
-                <button 
-                  className="btn btn-secondary"
-                  onClick={() => setSourceMode('discover')}
-                >
-                  <Globe size={16} />
-                  Try All Releases
-                </button>
-              </div>
-            </div>
-          );
-      }
+    if (pullListFilter === 'pullList') {
+      return (
+        <div className="empty-state">
+          <Library size={48} />
+          <div className="empty-state-title">No Pull List Items This Week</div>
+          <div className="empty-state-text">
+            None of your monitored series have releases this week.
+          </div>
+          <div className="empty-state-actions">
+            <button 
+              className="btn btn-primary"
+              onClick={() => setPullListFilter('all')}
+            >
+              <Globe size={16} />
+              View All Releases
+            </button>
+            <button 
+              className="btn btn-secondary"
+              onClick={() => navigate('/series')}
+            >
+              <Plus size={16} />
+              Add Series
+            </button>
+          </div>
+        </div>
+      );
     }
 
-    // Fallback empty state for library mode (when configStatus is not available yet)
     return (
       <div className="empty-state">
         <Calendar size={48} />
         <div className="empty-state-title">No Releases Found</div>
         <div className="empty-state-text">
-          Add some series and match them to ComicVine to see upcoming releases.
+          No comics are releasing during this week, or the API may be temporarily unavailable.
         </div>
-        <div className="empty-state-actions">
-          <button 
-            className="btn btn-secondary"
-            onClick={() => setSourceMode('discover')}
-          >
-            <Globe size={16} />
-            Try All Releases
-          </button>
-        </div>
+        <button 
+          className="btn btn-secondary mt-3"
+          onClick={handleManualRefresh}
+        >
+          <RefreshCw size={16} />
+          Refresh
+        </button>
       </div>
     );
   };
@@ -593,18 +447,6 @@ export function PullListPage() {
     return `${dayOfWeek}, ${dateStr}`;
   };
 
-
-  // Toggle issue selection (library mode)
-  const toggleIssueSelection = (issueId: number) => {
-    const newSelected = new Set(selectedIssues);
-    if (newSelected.has(issueId)) {
-      newSelected.delete(issueId);
-    } else {
-      newSelected.add(issueId);
-    }
-    setSelectedIssues(newSelected);
-  };
-
   // Get status badge
   const getStatusBadge = (status: IssueStatus | null) => {
     if (!status) return null;
@@ -626,14 +468,37 @@ export function PullListPage() {
     }
   };
 
+  // Generate unique key for discovery issues
+  // WalkSoftly data has comicVineIssueId=0, so we need a composite key
+  const getIssueKey = (issue: DiscoverableIssue) => {
+    return issue.comicVineIssueId > 0
+      ? `${weekDate}-issue-${issue.comicVineIssueId}`
+      : `${weekDate}-vol-${issue.comicVineVolumeId}-${issue.issueNumber}`;
+  };
+
   // Render discovery card for grid view
-  // Include weekDate in key to prevent React from confusing items across week transitions
-  const renderDiscoveryCard = (issue: DiscoverableIssue) => (
+  const renderDiscoveryCard = (issue: DiscoverableIssue) => {
+    const handleCoverClick = () => {
+      if (issue.isInLibrary && issue.localSeriesId) {
+        navigate(`/series/${issue.localSeriesId}`);
+      } else if (issue.comicVineVolumeId) {
+        // Open ComicVine page in new tab for items not in library
+        window.open(`https://comicvine.gamespot.com/volume/4050-${issue.comicVineVolumeId}/`, '_blank');
+      }
+    };
+
+    return (
     <div 
-      key={`${weekDate}-${issue.comicVineIssueId}`} 
+      key={getIssueKey(issue)} 
       className={`pull-list-card ${issue.isInLibrary ? 'in-library' : 'discoverable'}`}
     >
-      <div className="pull-list-card-cover">
+      <div 
+        className="pull-list-card-cover clickable"
+        onClick={handleCoverClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === 'Enter' && handleCoverClick()}
+      >
         {issue.coverImageUrl ? (
           <img src={issue.coverImageUrl} alt={`${issue.seriesTitle} #${issue.issueNumber}`} />
         ) : (
@@ -727,11 +592,11 @@ export function PullListPage() {
       </div>
     </div>
   );
+  };
 
   // Render discovery row for list view
-  // Include weekDate in key to prevent React from confusing items across week transitions
   const renderDiscoveryRow = (issue: DiscoverableIssue) => (
-    <tr key={`${weekDate}-${issue.comicVineIssueId}`} className={issue.isInLibrary ? 'in-library' : 'discoverable'}>
+    <tr key={getIssueKey(issue)} className={issue.isInLibrary ? 'in-library' : 'discoverable'}>
       <td>
         {issue.coverImageUrl ? (
           <img 
@@ -823,226 +688,36 @@ export function PullListPage() {
     </tr>
   );
 
-  // Render library issue card for grid view
-  const renderIssueCard = (issue: PullListIssue) => (
-    <div 
-      key={issue.issueId} 
-      className={`pull-list-card ${selectedIssues.has(issue.issueId) ? 'selected' : ''}`}
-      onClick={() => toggleIssueSelection(issue.issueId)}
-    >
-      <div className="pull-list-card-cover">
-        {issue.coverImageUrl ? (
-          <img src={issue.coverImageUrl} alt={`${issue.seriesTitle} #${issue.issueNumber}`} />
-        ) : (
-          <div className="pull-list-card-placeholder">
-            <Calendar size={32} />
-          </div>
-        )}
-        <div className="pull-list-card-status">
-          {getStatusBadge(issue.status)}
-        </div>
-        {(issue.isAnnual || issue.isSpecial) && (
-          <div className="pull-list-card-special">
-            {issue.isAnnual ? 'Annual' : issue.specialType || 'Special'}
-          </div>
-        )}
-      </div>
-      <div className="pull-list-card-info">
-        <Link to={`/series/${issue.seriesId}`} className="pull-list-card-series" onClick={e => e.stopPropagation()}>
-          {issue.seriesTitle}
-        </Link>
-        <div className="pull-list-card-issue">
-          #{issue.issueNumberText || issue.issueNumber}
-          {issue.issueTitle && <span className="pull-list-card-title"> - {issue.issueTitle}</span>}
-        </div>
-        {issue.publisher && <div className="pull-list-card-publisher">{issue.publisher}</div>}
-      </div>
-      <div className="pull-list-card-actions">
-        <button 
-          className="btn btn-icon btn-sm" 
-          title="Mark as Wanted"
-          onClick={(e) => { e.stopPropagation(); markWanted.mutate(issue.issueId); }}
-          disabled={issue.status === 'Wanted'}
-        >
-          <Eye size={14} />
-        </button>
-        <button 
-          className="btn btn-icon btn-sm" 
-          title="Mark as Owned"
-          onClick={(e) => { e.stopPropagation(); markOwned.mutate(issue.issueId); }}
-          disabled={issue.status === 'Owned'}
-        >
-          <Check size={14} />
-        </button>
-        <button 
-          className="btn btn-icon btn-sm" 
-          title="Skip"
-          onClick={(e) => { e.stopPropagation(); markSkipped.mutate(issue.issueId); }}
-          disabled={issue.status === 'Skipped'}
-        >
-          <X size={14} />
-        </button>
-      </div>
-    </div>
-  );
-
-  // Render library issue row for list view
-  const renderIssueRow = (issue: PullListIssue) => (
-    <tr key={issue.issueId} className={selectedIssues.has(issue.issueId) ? 'selected' : ''}>
-      <td>
-        <input 
-          type="checkbox" 
-          checked={selectedIssues.has(issue.issueId)}
-          onChange={() => toggleIssueSelection(issue.issueId)}
-        />
-      </td>
-      <td>
-        {issue.coverImageUrl ? (
-          <img 
-            src={issue.coverImageUrl} 
-            alt="" 
-            className="pull-list-thumb"
-          />
-        ) : (
-          <div className="pull-list-thumb-placeholder">
-            <Calendar size={16} />
-          </div>
-        )}
-      </td>
-      <td>
-        <Link to={`/series/${issue.seriesId}`} className="text-link">
-          {issue.seriesTitle}
-        </Link>
-      </td>
-      <td>
-        #{issue.issueNumberText || issue.issueNumber}
-        {issue.issueTitle && <span className="text-muted"> - {issue.issueTitle}</span>}
-      </td>
-      <td>{issue.publisher || '-'}</td>
-      <td>{issue.storeDate ? formatDate(issue.storeDate) : '-'}</td>
-      <td>{getStatusBadge(issue.status)}</td>
-      <td className="table-actions">
-        <button 
-          className="btn btn-icon btn-sm" 
-          title="Mark as Wanted"
-          onClick={() => markWanted.mutate(issue.issueId)}
-          disabled={issue.status === 'Wanted'}
-        >
-          <Eye size={14} />
-        </button>
-        <button 
-          className="btn btn-icon btn-sm" 
-          title="Mark as Owned"
-          onClick={() => markOwned.mutate(issue.issueId)}
-          disabled={issue.status === 'Owned'}
-        >
-          <Check size={14} />
-        </button>
-        <button 
-          className="btn btn-icon btn-sm" 
-          title="Skip"
-          onClick={() => markSkipped.mutate(issue.issueId)}
-          disabled={issue.status === 'Skipped'}
-        >
-          <X size={14} />
-        </button>
-      </td>
-    </tr>
-  );
-
-  // Render discovery section
-  const renderDiscoverySection = (data: WeeklyDiscoveryList) => (
-    <div className="pull-list-week-section">
-      <div className="pull-list-week-header">
-        <h3>{formatReleaseDay(data.releaseDay)}</h3>
-        <div className="pull-list-week-stats">
-          <span className="stat">{data.totalCount} releases</span>
-          <span className="stat in-library">{data.inLibraryCount} in library</span>
-          <span className="stat new">{data.newCount} new</span>
-        </div>
-      </div>
-      
-      {data.issues.length === 0 ? (
-        <div className="empty-state-small">No releases this week</div>
-      ) : displayMode === 'grid' ? (
-        <div className="pull-list-grid">
-          {sortDiscoveryIssues(data.issues).map(renderDiscoveryCard)}
-        </div>
-      ) : (
-        <div className="table-container">
-          <table className="table">
-            <thead>
-              <tr>
-                <th style={{ width: 50 }}></th>
-                <th className="sortable" onClick={() => handleSort('series')}>
-                  Series {getSortIcon('series')}
-                </th>
-                <th className="sortable" onClick={() => handleSort('issue')}>
-                  Issue {getSortIcon('issue')}
-                </th>
-                <th className="sortable" onClick={() => handleSort('publisher')}>
-                  Publisher {getSortIcon('publisher')}
-                </th>
-                <th className="sortable" onClick={() => handleSort('release')}>
-                  Release {getSortIcon('release')}
-                </th>
-                <th className="sortable" onClick={() => handleSort('status')}>
-                  Status {getSortIcon('status')}
-                </th>
-                <th className="table-actions"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortDiscoveryIssues(data.issues).map(renderDiscoveryRow)}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-
-  // Render library week section
-  const renderWeekSection = (week: WeeklyPullList, index?: number) => {
-    const filtered = filterIssues(week.issues);
-    const sorted = sortIssues(filtered);
+  // Render discovery section with filtering
+  const renderDiscoverySection = (data: WeeklyDiscoveryList) => {
+    const filtered = filterDiscoveryIssues(data.issues);
+    const sorted = sortDiscoveryIssues(filtered);
     
     return (
-      <div key={index ?? 0} className="pull-list-week-section">
+      <div className="pull-list-week-section">
         <div className="pull-list-week-header">
-          <h3>{formatReleaseDay(week.releaseDay)}</h3>
+          <h3>{formatReleaseDay(data.releaseDay)}</h3>
           <div className="pull-list-week-stats">
-            <span className="stat">{sorted.length} issues</span>
-            <span className="stat wanted">{week.wantedCount} wanted</span>
-            <span className="stat owned">{week.ownedCount} owned</span>
+            <span className="stat">{data.totalCount} releases</span>
+            <span className="stat in-library">{data.inLibraryCount} in library</span>
+            <span className="stat new">{data.newCount} new</span>
+            {pullListFilter !== 'all' && (
+              <span className="stat filtered">showing {sorted.length}</span>
+            )}
           </div>
         </div>
         
         {sorted.length === 0 ? (
-          <div className="empty-state-small">No releases this week</div>
+          renderEmptyState()
         ) : displayMode === 'grid' ? (
           <div className="pull-list-grid">
-            {sorted.map(renderIssueCard)}
+            {sorted.map(renderDiscoveryCard)}
           </div>
         ) : (
           <div className="table-container">
             <table className="table">
               <thead>
                 <tr>
-                  <th style={{ width: 40 }}>
-                    <input 
-                      type="checkbox" 
-                      onChange={() => {
-                        const filteredIds = new Set(sorted.map(i => i.issueId));
-                        const allSelected = sorted.every(i => selectedIssues.has(i.issueId));
-                        if (allSelected) {
-                          setSelectedIssues(new Set([...selectedIssues].filter(id => !filteredIds.has(id))));
-                        } else {
-                          setSelectedIssues(new Set([...selectedIssues, ...filteredIds]));
-                        }
-                      }}
-                      checked={sorted.length > 0 && sorted.every(i => selectedIssues.has(i.issueId))}
-                    />
-                  </th>
                   <th style={{ width: 50 }}></th>
                   <th className="sortable" onClick={() => handleSort('series')}>
                     Series {getSortIcon('series')}
@@ -1063,7 +738,7 @@ export function PullListPage() {
                 </tr>
               </thead>
               <tbody>
-                {sorted.map(renderIssueRow)}
+                {sorted.map(renderDiscoveryRow)}
               </tbody>
             </table>
           </div>
@@ -1107,23 +782,31 @@ export function PullListPage() {
       
       <div className="page-content">
         <div className="toolbar">
-          {/* Source mode toggle */}
+          {/* Pull list filter toggle */}
           <div className="toolbar-group btn-group">
             <button 
-              className={`btn ${sourceMode === 'library' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setSourceMode('library')}
-              title="My Pull List - shows issues from your library"
+              className={`btn ${pullListFilter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setPullListFilter('all')}
+              title="All Releases - all comics releasing this week (your pull list highlighted)"
+            >
+              <Globe size={16} />
+              All Releases
+            </button>
+            <button 
+              className={`btn ${pullListFilter === 'pullList' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setPullListFilter('pullList')}
+              title="My Pull List - only comics from your library"
             >
               <Library size={16} />
               My Pull List
             </button>
             <button 
-              className={`btn ${sourceMode === 'discover' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setSourceMode('discover')}
-              title="All Releases - discover all comics releasing this week"
+              className={`btn ${pullListFilter === 'new' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setPullListFilter('new')}
+              title="New to Me - comics not in your library"
             >
-              <Globe size={16} />
-              All Releases
+              <Plus size={16} />
+              New to Me
             </button>
           </div>
 
@@ -1132,7 +815,7 @@ export function PullListPage() {
             <button 
               className="btn btn-icon" 
               onClick={() => {
-                if (sourceMode === 'library' && viewMode !== 'week') {
+                if (viewMode !== 'week') {
                   setViewMode('week');
                 }
                 setWeekOffset(o => o - 1);
@@ -1141,44 +824,34 @@ export function PullListPage() {
             >
               <ChevronLeft size={18} />
             </button>
-            {sourceMode === 'library' ? (
-              <select
-                className="select"
-                value={viewMode === 'week' ? `week:${weekOffset}` : viewMode}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === 'upcoming') {
-                    setViewMode('upcoming');
-                  } else if (val === 'past') {
-                    setViewMode('past');
-                  } else if (val.startsWith('week:')) {
-                    setViewMode('week');
-                    setWeekOffset(parseInt(val.split(':')[1], 10));
-                  }
-                }}
-              >
-                <option value="week:0">This Week</option>
-                {weekOffset !== 0 && viewMode === 'week' && (
-                  <option value={`week:${weekOffset}`}>
-                    {weekOffset > 0 ? `+${weekOffset}` : weekOffset} Week{Math.abs(weekOffset) !== 1 ? 's' : ''}
-                  </option>
-                )}
-                <option value="upcoming">Upcoming (4 weeks)</option>
-                <option value="past">Past (4 weeks)</option>
-              </select>
-            ) : (
-              <button 
-                className="btn btn-secondary"
-                onClick={() => setWeekOffset(0)}
-                disabled={weekOffset === 0}
-              >
-                This Week
-              </button>
-            )}
+            <select
+              className="select"
+              value={viewMode === 'week' ? `week:${weekOffset}` : viewMode}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === 'upcoming') {
+                  setViewMode('upcoming');
+                } else if (val === 'past') {
+                  setViewMode('past');
+                } else if (val.startsWith('week:')) {
+                  setViewMode('week');
+                  setWeekOffset(parseInt(val.split(':')[1], 10));
+                }
+              }}
+            >
+              <option value="week:0">This Week</option>
+              {weekOffset !== 0 && viewMode === 'week' && (
+                <option value={`week:${weekOffset}`}>
+                  {weekOffset > 0 ? `+${weekOffset}` : weekOffset} Week{Math.abs(weekOffset) !== 1 ? 's' : ''}
+                </option>
+              )}
+              <option value="upcoming">Upcoming (4 weeks)</option>
+              <option value="past">Past (4 weeks)</option>
+            </select>
             <button 
               className="btn btn-icon" 
               onClick={() => {
-                if (sourceMode === 'library' && viewMode !== 'week') {
+                if (viewMode !== 'week') {
                   setViewMode('week');
                 }
                 setWeekOffset(o => o + 1);
@@ -1189,75 +862,7 @@ export function PullListPage() {
             </button>
           </div>
 
-          {/* Filters */}
-          <div className="toolbar-group">
-            <Filter size={16} className="text-muted" />
-            {sourceMode === 'library' ? (
-              <select 
-                className="select"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as IssueStatus | 'all')}
-              >
-                <option value="all">All Statuses</option>
-                <option value="Wanted">Wanted</option>
-                <option value="Owned">Owned</option>
-                <option value="Skipped">Skipped</option>
-                <option value="Missing">Missing</option>
-              </select>
-            ) : (
-              <select 
-                className="select"
-                value={discoveryFilter}
-                onChange={(e) => setDiscoveryFilter(e.target.value as 'all' | 'new' | 'inLibrary')}
-              >
-                <option value="all">All Releases</option>
-                <option value="new">New to Me</option>
-                <option value="inLibrary">In My Library</option>
-              </select>
-            )}
-          </div>
-
           <div className="toolbar-spacer" />
-
-          {/* Bulk actions (library mode only) */}
-          {sourceMode === 'library' && selectedIssues.size > 0 && (
-            <div className="toolbar-group">
-              <span className="text-muted">{selectedIssues.size} selected</span>
-              <button 
-                className="btn btn-sm"
-                onClick={() => bulkUpdate.mutate({ 
-                  issueIds: Array.from(selectedIssues), 
-                  status: 'Wanted' 
-                })}
-              >
-                Mark Wanted
-              </button>
-              <button 
-                className="btn btn-sm"
-                onClick={() => bulkUpdate.mutate({ 
-                  issueIds: Array.from(selectedIssues), 
-                  status: 'Owned' 
-                })}
-              >
-                Mark Owned
-              </button>
-              <button 
-                className="btn btn-sm"
-                onClick={() => bulkUpdate.mutate({ 
-                  issueIds: Array.from(selectedIssues), 
-                  status: 'Skipped' 
-                })}
-              >
-                Skip
-              </button>
-              <button 
-                className="btn btn-sm btn-secondary"
-                onClick={() => setSelectedIssues(new Set())}
-              >
-                Clear
-              </button>
-            </div>
-          )}
 
           {/* Display mode toggle - persisted to user settings */}
           <div className="toolbar-group btn-group">
@@ -1297,17 +902,19 @@ export function PullListPage() {
         {/* Content */}
         {isLoading ? (
           <div className="loading"><div className="spinner" /></div>
-        ) : sourceMode === 'discover' && discovery ? (
+        ) : viewMode === 'week' && discovery ? (
           renderDiscoverySection(discovery)
-        ) : sourceMode === 'library' && viewMode === 'week' && thisWeek ? (
-          renderWeekSection(thisWeek)
-        ) : sourceMode === 'library' && viewMode === 'upcoming' && upcoming ? (
+        ) : viewMode === 'upcoming' && upcomingDiscovery ? (
           <div className="pull-list-weeks">
-            {upcoming.map((week, i) => renderWeekSection(week, i))}
+            {upcomingDiscovery.map((week, i) => (
+              <div key={i}>{renderDiscoverySection(week)}</div>
+            ))}
           </div>
-        ) : sourceMode === 'library' && viewMode === 'past' && past ? (
+        ) : viewMode === 'past' && pastDiscovery ? (
           <div className="pull-list-weeks">
-            {past.map((week, i) => renderWeekSection(week, i))}
+            {pastDiscovery.map((week, i) => (
+              <div key={i}>{renderDiscoverySection(week)}</div>
+            ))}
           </div>
         ) : (
           renderEmptyState()
@@ -1324,6 +931,9 @@ export function PullListPage() {
               comicVineVolumeId: addSeriesIssue.comicVineVolumeId,
               markIssueWantedComicVineId: markIssueWanted ? addSeriesIssue.comicVineIssueId : undefined,
               monitoringMode,
+              expectedPublisher: addSeriesIssue.publisher ?? undefined,
+              seriesTitle: addSeriesIssue.seriesTitle,
+              expectedIssueNumber: addSeriesIssue.issueNumber,
             });
           }}
         />

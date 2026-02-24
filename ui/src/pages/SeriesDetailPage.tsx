@@ -247,6 +247,16 @@ export function SeriesDetailPage() {
     enabled: seriesId > 0,
   });
 
+  // Fetch upcoming releases from WalkSoftly (issues not yet in ComicVine)
+  const { data: upcomingData } = useQuery({
+    queryKey: ['series', seriesId, 'upcoming'],
+    queryFn: () => api.getSeriesUpcomingReleases(seriesId, 4),
+    enabled: seriesId > 0,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  const upcomingReleases = upcomingData?.releases ?? [];
+
   const allIssues = issuesData?.items ?? [];
   const allAnnuals = annualsData?.annuals ?? [];
   const linkedAnnualSeriesCount = annualsData?.linkedAnnualSeriesCount ?? 0;
@@ -775,9 +785,154 @@ export function SeriesDetailPage() {
                 </>
               )}
 
+              {/* Upcoming Releases Section (from WalkSoftly, not yet in ComicVine) */}
+              {upcomingReleases.length > 0 && (
+                <div className="upcoming-section" style={{ marginTop: regularIssues.length > 0 ? '32px' : '0' }}>
+                  <div className="section-header" style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px',
+                    marginBottom: '16px',
+                    paddingBottom: '12px',
+                    borderBottom: '1px solid var(--border-color)'
+                  }}>
+                    <Clock size={18} style={{ color: 'var(--accent-info)' }} />
+                    <h3 style={{ 
+                      margin: 0, 
+                      fontSize: '16px', 
+                      fontWeight: 600,
+                      color: 'var(--text-primary)'
+                    }}>
+                      Upcoming
+                    </h3>
+                    <span style={{ 
+                      fontSize: '13px', 
+                      color: 'var(--text-muted)',
+                      marginLeft: '4px'
+                    }}>
+                      ({upcomingReleases.length})
+                    </span>
+                    <span style={{ 
+                      fontSize: '11px', 
+                      color: 'var(--text-muted)',
+                      background: 'var(--bg-secondary)',
+                      padding: '2px 8px',
+                      borderRadius: '10px',
+                      marginLeft: '8px'
+                    }}>
+                      from WalkSoftly
+                    </span>
+                  </div>
+                  
+                  {viewMode === 'cover' ? (
+                    <div className="issues-grid">
+                      {upcomingReleases.map((release) => (
+                        <div 
+                          key={`upcoming-${release.issueNumber}`}
+                          className="issue-card upcoming"
+                          style={{
+                            position: 'relative',
+                            borderRadius: 'var(--radius-md)',
+                            overflow: 'hidden',
+                            background: 'var(--bg-secondary)',
+                            border: '1px dashed var(--accent-info)',
+                            opacity: 0.9,
+                          }}
+                        >
+                          <div className="issue-card-cover" style={{ position: 'relative' }}>
+                            {release.coverImageUrl ? (
+                              <img 
+                                src={release.coverImageUrl} 
+                                alt={`Issue #${release.issueNumber}`}
+                                style={{ width: '100%', aspectRatio: '2/3', objectFit: 'cover', filter: 'grayscale(30%)' }}
+                              />
+                            ) : (
+                              <div 
+                                style={{ 
+                                  width: '100%', 
+                                  aspectRatio: '2/3', 
+                                  background: 'var(--bg-tertiary)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  color: 'var(--text-muted)'
+                                }}
+                              >
+                                <Calendar size={32} />
+                              </div>
+                            )}
+                            <div style={{
+                              position: 'absolute',
+                              top: '8px',
+                              right: '8px',
+                              background: 'var(--accent-info)',
+                              color: 'white',
+                              padding: '2px 8px',
+                              borderRadius: '10px',
+                              fontSize: '10px',
+                              fontWeight: 600,
+                              textTransform: 'uppercase'
+                            }}>
+                              Upcoming
+                            </div>
+                          </div>
+                          <div className="issue-card-info" style={{ padding: '12px' }}>
+                            <div style={{ fontWeight: 600, fontSize: '14px' }}>
+                              #{release.issueNumberText || release.issueNumber}
+                            </div>
+                            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                              <Calendar size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                              {new Date(release.releaseDate).toLocaleDateString()}
+                            </div>
+                            <div style={{ 
+                              fontSize: '11px', 
+                              color: 'var(--accent-info)', 
+                              marginTop: '4px',
+                              fontWeight: 500
+                            }}>
+                              {release.releaseTiming}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="table-container">
+                      <table className="table">
+                        <thead>
+                          <tr>
+                            <th style={{ width: '80px' }}>#</th>
+                            <th>Release Date</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {upcomingReleases.map((release) => (
+                            <tr key={`upcoming-list-${release.issueNumber}`} style={{ opacity: 0.9 }}>
+                              <td style={{ fontWeight: 600 }}>
+                                #{release.issueNumberText || release.issueNumber}
+                              </td>
+                              <td>
+                                <Calendar size={14} style={{ marginRight: '8px', verticalAlign: 'middle', color: 'var(--text-muted)' }} />
+                                {new Date(release.releaseDate).toLocaleDateString()}
+                              </td>
+                              <td>
+                                <span className="badge badge-info">
+                                  {release.releaseTiming}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Annuals Section */}
               {showAnnuals && annualIssues.length > 0 && (
-                <div className="annuals-section" style={{ marginTop: regularIssues.length > 0 ? '32px' : '0' }}>
+                <div className="annuals-section" style={{ marginTop: (regularIssues.length > 0 || upcomingReleases.length > 0) ? '32px' : '0' }}>
                   <div className="section-header" style={{ 
                     display: 'flex', 
                     alignItems: 'center', 

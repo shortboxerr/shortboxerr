@@ -307,6 +307,11 @@ public class ComicVineIssue
     public ComicVineVolumeRef? Volume { get; set; }
 
     /// <summary>
+    /// Publisher name (populated from WalkSoftly or volume lookup).
+    /// </summary>
+    public string? Publisher { get; set; }
+
+    /// <summary>
     /// Cover image URLs.
     /// </summary>
     public ComicVineImage? Image { get; set; }

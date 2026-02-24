@@ -137,6 +137,9 @@ public static class DependencyInjection
         services.AddSingleton<BackgroundServices.DiscoveryRefreshBackgroundService>();
         services.AddHostedService(provider => 
             provider.GetRequiredService<BackgroundServices.DiscoveryRefreshBackgroundService>());
+        services.AddSingleton<BackgroundServices.DiscoveryCoverEnrichmentService>();
+        services.AddHostedService(provider =>
+            provider.GetRequiredService<BackgroundServices.DiscoveryCoverEnrichmentService>());
         services.AddSingleton<BackgroundServices.ReleaseDayBackgroundService>();
         services.AddHostedService(provider => 
             provider.GetRequiredService<BackgroundServices.ReleaseDayBackgroundService>());

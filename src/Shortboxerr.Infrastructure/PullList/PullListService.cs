@@ -917,6 +917,10 @@ public class PullListService : IPullListService
                     wsResult.Releases.Count, filteredReleases.Count);
                 
                 var issues = filteredReleases.Select(ConvertWalkSoftlyToComicVineIssue).ToList();
+                
+                // Enrich WalkSoftly data with volume covers from ComicVine
+                await EnrichWithVolumeCoverImagesAsync(issues, cancellationToken);
+                
                 return (issues, "WalkSoftly");
             }
             
@@ -955,8 +959,74 @@ public class PullListService : IPullListService
                     Name = release.Series 
                 } 
                 : null,
-            Image = null // WalkSoftly doesn't provide images
+            Publisher = release.Publisher, // WalkSoftly provides publisher
+            Image = null // WalkSoftly doesn't provide images; enriched via EnrichWithVolumeCoverImagesAsync
         };
+    }
+
+    /// <summary>
+    /// Enriches issues with volume cover images from ComicVine.
+    /// WalkSoftly data doesn't include cover images, so we fetch volume covers as fallbacks.
+    /// </summary>
+    private async Task EnrichWithVolumeCoverImagesAsync(
+        List<ComicVineIssue> issues,
+        CancellationToken cancellationToken)
+    {
+        // Collect unique volume IDs that need cover images
+        var volumeIds = issues
+            .Where(i => i.Image == null && i.Volume?.Id > 0)
+            .Select(i => i.Volume!.Id)
+            .Distinct()
+            .ToList();
+
+        if (volumeIds.Count == 0)
+        {
+            _logger.LogDebug("No volume IDs need cover enrichment");
+            return;
+        }
+
+        _logger.LogInformation(
+            "Enriching {IssueCount} issues with covers from {VolumeCount} volumes via ComicVine",
+            issues.Count(i => i.Image == null), volumeIds.Count);
+
+        try
+        {
+            // Batch fetch volume details from ComicVine
+            var volumeResult = await _comicVineClient.GetVolumesByIdsAsync(volumeIds, cancellationToken);
+
+            if (!volumeResult.Success || volumeResult.Results == null)
+            {
+                _logger.LogWarning(
+                    "Failed to fetch volume covers from ComicVine: {Error}",
+                    volumeResult.Error ?? "Unknown error");
+                return;
+            }
+
+            // Build lookup of volume ID -> cover image
+            var volumeCoverLookup = volumeResult.Results
+                .Where(v => v.Image != null)
+                .ToDictionary(v => v.Id, v => v.Image!);
+
+            var enrichedCount = 0;
+
+            // Apply volume covers to issues that don't have images
+            foreach (var issue in issues.Where(i => i.Image == null && i.Volume?.Id > 0))
+            {
+                if (volumeCoverLookup.TryGetValue(issue.Volume!.Id, out var volumeImage))
+                {
+                    issue.Image = volumeImage;
+                    enrichedCount++;
+                }
+            }
+
+            _logger.LogInformation(
+                "Enriched {EnrichedCount} of {TotalCount} issues with volume covers",
+                enrichedCount, issues.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error enriching issues with volume covers");
+        }
     }
 
     /// <summary>
@@ -1185,11 +1255,26 @@ public class PullListService : IPullListService
         int comicVineVolumeId,
         int? markIssueWantedComicVineId = null,
         SeriesMonitoringMode monitoringMode = SeriesMonitoringMode.FutureIssues,
+        string? expectedPublisher = null,
+        string? seriesTitle = null,
+        decimal? expectedIssueNumber = null,
         CancellationToken cancellationToken = default)
     {
         try
         {
             _logger.LogInformation("Adding series from discovery with ComicVine Volume ID {VolumeId}", comicVineVolumeId);
+
+            // Validate volume using publisher and issue count signals
+            var resolvedVolumeId = await ResolveCorrectVolumeIdAsync(
+                comicVineVolumeId, expectedPublisher, seriesTitle, expectedIssueNumber, cancellationToken);
+            
+            if (resolvedVolumeId != comicVineVolumeId)
+            {
+                _logger.LogInformation(
+                    "Volume mismatch detected. Resolved volume ID from {OriginalId} to {ResolvedId} for series '{Title}' publisher '{Publisher}' issue #{Issue}",
+                    comicVineVolumeId, resolvedVolumeId, seriesTitle, expectedPublisher, expectedIssueNumber);
+                comicVineVolumeId = resolvedVolumeId;
+            }
 
             // Check if series already exists
             var existingSeries = await _dbContext.Series
@@ -1287,6 +1372,129 @@ public class PullListService : IPullListService
         }
     }
 
+    /// <summary>
+    /// Resolves the correct ComicVine volume ID by validating publisher and issue count.
+    /// WalkSoftly sometimes maps to wrong volumes (e.g., foreign editions).
+    /// Validates using multiple signals:
+    /// 1. Publisher match (e.g., "DC Comics" vs "Urban Comics")
+    /// 2. Issue count plausibility (if expecting issue #17, volume should have ~17+ issues)
+    /// 3. Prefers volumes with more issues when multiple matches exist
+    /// </summary>
+    private async Task<int> ResolveCorrectVolumeIdAsync(
+        int originalVolumeId,
+        string? expectedPublisher,
+        string? seriesTitle,
+        decimal? expectedIssueNumber,
+        CancellationToken cancellationToken)
+    {
+        // If no identifying info provided, use the original ID
+        if (string.IsNullOrWhiteSpace(seriesTitle))
+        {
+            return originalVolumeId;
+        }
+
+        try
+        {
+            // Fetch the volume from ComicVine to validate
+            var volumeResult = await _comicVineClient.GetVolumeAsync(originalVolumeId, cancellationToken);
+            
+            if (!volumeResult.Success || volumeResult.Data == null)
+            {
+                _logger.LogWarning("Could not fetch volume {VolumeId} from ComicVine for validation", originalVolumeId);
+                return originalVolumeId;
+            }
+
+            var cvVolume = volumeResult.Data;
+            var cvPublisher = cvVolume.Publisher?.Name;
+            var cvIssueCount = cvVolume.IssueCount;
+
+            // Check for red flags that indicate wrong volume
+            var publisherMismatch = !string.IsNullOrWhiteSpace(expectedPublisher) &&
+                                    !string.IsNullOrWhiteSpace(cvPublisher) &&
+                                    !cvPublisher.Equals(expectedPublisher, StringComparison.OrdinalIgnoreCase);
+            
+            // Issue count check: if expecting issue #17 but volume only has 1-2 issues, it's likely wrong
+            // Allow some buffer since ComicVine may not have latest issues yet
+            var issueCountImplausible = expectedIssueNumber.HasValue && 
+                                        expectedIssueNumber.Value > 2 &&
+                                        cvIssueCount < (int)(expectedIssueNumber.Value * 0.5m); // Volume has less than half expected issues
+
+            if (!publisherMismatch && !issueCountImplausible)
+            {
+                // Volume looks correct
+                return originalVolumeId;
+            }
+
+            // Log why we're searching for alternatives
+            if (publisherMismatch)
+            {
+                _logger.LogWarning(
+                    "Publisher mismatch for volume {VolumeId}: expected '{ExpectedPublisher}', got '{ActualPublisher}'",
+                    originalVolumeId, expectedPublisher, cvPublisher);
+            }
+            if (issueCountImplausible)
+            {
+                _logger.LogWarning(
+                    "Issue count implausible for volume {VolumeId}: expecting issue #{ExpectedIssue} but volume only has {IssueCount} issues",
+                    originalVolumeId, expectedIssueNumber, cvIssueCount);
+            }
+
+            _logger.LogInformation("Searching for correct volume for '{Title}'...", seriesTitle);
+
+            // Search for volumes with matching title
+            var searchResult = await _comicVineClient.SearchVolumesAsync(seriesTitle, 1, 20, cancellationToken);
+            
+            if (!searchResult.Success || searchResult.Results == null || searchResult.Results.Count == 0)
+            {
+                _logger.LogWarning("No search results for '{Title}', using original volume ID", seriesTitle);
+                return originalVolumeId;
+            }
+
+            // Score each candidate volume
+            var candidates = searchResult.Results
+                .Where(v => v.Name != null && v.Name.Equals(seriesTitle, StringComparison.OrdinalIgnoreCase))
+                .Select(v => new
+                {
+                    Volume = v,
+                    PublisherMatch = !string.IsNullOrWhiteSpace(expectedPublisher) &&
+                                     v.Publisher?.Name != null &&
+                                     v.Publisher.Name.Equals(expectedPublisher, StringComparison.OrdinalIgnoreCase),
+                    PublisherPartialMatch = !string.IsNullOrWhiteSpace(expectedPublisher) &&
+                                            v.Publisher?.Name != null &&
+                                            (v.Publisher.Name.Contains(expectedPublisher, StringComparison.OrdinalIgnoreCase) ||
+                                             expectedPublisher.Contains(v.Publisher.Name, StringComparison.OrdinalIgnoreCase)),
+                    IssueCountPlausible = !expectedIssueNumber.HasValue || 
+                                          v.IssueCount >= (int)(expectedIssueNumber.Value * 0.5m)
+                })
+                .OrderByDescending(c => c.PublisherMatch ? 2 : (c.PublisherPartialMatch ? 1 : 0)) // Prefer exact publisher match
+                .ThenByDescending(c => c.IssueCountPlausible) // Then plausible issue count
+                .ThenByDescending(c => c.Volume.IssueCount) // Then more issues (main series vs variant)
+                .ToList();
+
+            var bestMatch = candidates.FirstOrDefault(c => c.PublisherMatch || c.PublisherPartialMatch || c.IssueCountPlausible);
+            
+            if (bestMatch != null && bestMatch.Volume.Id != originalVolumeId)
+            {
+                _logger.LogInformation(
+                    "Found better volume match: ID {VolumeId} '{VolumeName}' from '{Publisher}' with {IssueCount} issues " +
+                    "(PublisherMatch={PublisherMatch}, IssueCountPlausible={IssueCountPlausible})",
+                    bestMatch.Volume.Id, bestMatch.Volume.Name, bestMatch.Volume.Publisher?.Name, 
+                    bestMatch.Volume.IssueCount, bestMatch.PublisherMatch, bestMatch.IssueCountPlausible);
+                return bestMatch.Volume.Id;
+            }
+
+            _logger.LogWarning(
+                "Could not find better volume for '{Title}' from '{Publisher}' (issue #{Issue}), using original ID {VolumeId}",
+                seriesTitle, expectedPublisher, expectedIssueNumber, originalVolumeId);
+            return originalVolumeId;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error resolving correct volume ID for {VolumeId}, using original", originalVolumeId);
+            return originalVolumeId;
+        }
+    }
+
     public async Task<DiscoveryPublishersResult> GetDiscoveryPublishersAsync(
         DateTime weekOf,
         bool includeComicVineLookup = false,
@@ -1331,9 +1539,11 @@ public class PullListService : IPullListService
         };
 
         // Get all local series with ComicVine IDs and their publishers
+        // Use GroupBy to handle potential duplicates gracefully
         var localSeriesLookup = await _dbContext.Series
             .Where(s => s.ComicVineId != null && !string.IsNullOrEmpty(s.Publisher))
-            .ToDictionaryAsync(s => s.ComicVineId!.Value, s => s.Publisher!, cancellationToken);
+            .GroupBy(s => s.ComicVineId!.Value)
+            .ToDictionaryAsync(g => g.Key, g => g.First().Publisher!, cancellationToken);
 
         // Group issues by volume to count series/issues per publisher
         var volumeGroups = allIssues
@@ -1481,28 +1691,73 @@ public class PullListService : IPullListService
         CancellationToken cancellationToken)
     {
         // Get all local series with ComicVine IDs for matching
+        // Use GroupBy to handle potential duplicates (shouldn't happen, but defensive coding)
         var localSeriesLookup = await _dbContext.Series
             .Where(s => s.ComicVineId != null)
-            .ToDictionaryAsync(s => s.ComicVineId!.Value, s => s, cancellationToken);
+            .GroupBy(s => s.ComicVineId!.Value)
+            .ToDictionaryAsync(g => g.Key, g => g.First(), cancellationToken);
+
+        // Also create a lookup by title + publisher for when WalkSoftly provides incorrect volume IDs
+        // This handles cases like "Absolute Wonder Woman" where WalkSoftly points to the French edition
+        var localSeriesByTitleLookup = await _dbContext.Series
+            .Where(s => !string.IsNullOrEmpty(s.Title))
+            .ToListAsync(cancellationToken);
+        
+        // Create lookup by normalized title -> list of series (for same title, different publishers)
+        var localSeriesByTitle = localSeriesByTitleLookup
+            .GroupBy(s => s.Title.ToUpperInvariant())
+            .ToDictionary(g => g.Key, g => g.ToList());
 
         // Get all local issues with ComicVine IDs for matching
         var localIssueLookup = await _dbContext.Issues
             .Where(i => i.ComicVineId != null)
-            .ToDictionaryAsync(i => i.ComicVineId!.Value, i => i, cancellationToken);
+            .GroupBy(i => i.ComicVineId!.Value)
+            .ToDictionaryAsync(g => g.Key, g => g.First(), cancellationToken);
 
         var discoveryIssues = new List<DiscoverableIssue>();
 
         foreach (var cvIssue in comicVineIssues)
         {
+            // Skip issues with unknown/missing series title - these are incomplete data
+            var seriesTitle = cvIssue.Volume?.Name;
+            if (string.IsNullOrWhiteSpace(seriesTitle))
+            {
+                continue;
+            }
+
             var volumeId = cvIssue.Volume?.Id ?? 0;
             var issueId = cvIssue.Id;
 
-            // Check if in library
-            var isInLibrary = localIssueLookup.ContainsKey(issueId) || 
-                              (volumeId > 0 && localSeriesLookup.ContainsKey(volumeId));
+            // Try to find local series - first by volume ID, then by title+publisher fallback
+            Series? localSeries = null;
             
-            Series? localSeries = volumeId > 0 && localSeriesLookup.TryGetValue(volumeId, out var s) ? s : null;
+            // First: exact ComicVine ID match
+            if (volumeId > 0 && localSeriesLookup.TryGetValue(volumeId, out var seriesByVolume))
+            {
+                localSeries = seriesByVolume;
+            }
+            
+            // Second: title + publisher fallback for when WalkSoftly provides incorrect volume IDs
+            // (e.g., French edition ID instead of English edition)
+            if (localSeries == null && localSeriesByTitle.TryGetValue(seriesTitle.ToUpperInvariant(), out var seriesByTitle))
+            {
+                // If there's only one match, use it
+                if (seriesByTitle.Count == 1)
+                {
+                    localSeries = seriesByTitle[0];
+                }
+                // If multiple, try to match by publisher
+                else if (!string.IsNullOrEmpty(cvIssue.Publisher))
+                {
+                    localSeries = seriesByTitle.FirstOrDefault(s => 
+                        string.Equals(s.Publisher, cvIssue.Publisher, StringComparison.OrdinalIgnoreCase));
+                }
+            }
+            
             Issue? localIssue = localIssueLookup.TryGetValue(issueId, out var i) ? i : null;
+            
+            // Check if in library (issue or series match)
+            var isInLibrary = localIssue != null || localSeries != null;
 
             // Apply filters
             if (filter != null)
@@ -1534,8 +1789,8 @@ public class PullListService : IPullListService
             {
                 ComicVineIssueId = issueId,
                 ComicVineVolumeId = volumeId,
-                SeriesTitle = cvIssue.Volume?.Name ?? "Unknown",
-                Publisher = localSeries?.Publisher, // Only from local series; volume ref doesn't include publisher
+                SeriesTitle = seriesTitle,
+                Publisher = cvIssue.Publisher ?? localSeries?.Publisher, // WalkSoftly provides publisher, fallback to local series
                 StartYear = localSeries?.StartYear, // Only from local series; volume ref doesn't include start year
                 IssueNumber = decimal.TryParse(cvIssue.IssueNumber, out var num) ? num : 0,
                 IssueNumberText = cvIssue.IssueNumber,
@@ -1561,6 +1816,182 @@ public class PullListService : IPullListService
                 .ThenBy(i => i.IssueNumber)
                 .ToList()
         };
+    }
+
+    #endregion
+
+    #region Upcoming Releases for Series (WalkSoftly Integration)
+
+    /// <inheritdoc />
+    public async Task<SeriesUpcomingReleasesResult> GetSeriesUpcomingReleasesAsync(
+        int seriesId,
+        int weeksAhead = 4,
+        CancellationToken cancellationToken = default)
+    {
+        // Get the series from database
+        var series = await _dbContext.Series
+            .Include(s => s.Issues)
+            .FirstOrDefaultAsync(s => s.Id == seriesId, cancellationToken);
+
+        if (series == null)
+        {
+            _logger.LogWarning("Series {SeriesId} not found for upcoming releases lookup", seriesId);
+            return new SeriesUpcomingReleasesResult
+            {
+                SeriesId = seriesId,
+                SeriesTitle = "Unknown"
+            };
+        }
+
+        // Get the max issue number from local database
+        var maxLocalIssueNumber = series.Issues
+            .Where(i => !i.IsAnnual)
+            .Select(i => (decimal?)i.IssueNumber)
+            .DefaultIfEmpty()
+            .Max();
+
+        _logger.LogDebug(
+            "Looking for upcoming releases for series '{Title}' (ID: {SeriesId}). Max local issue: {MaxIssue}",
+            series.Title, seriesId, maxLocalIssueNumber);
+
+        // Query cached WalkSoftly data for upcoming weeks
+        var today = DateTime.UtcNow.Date;
+        var startDate = GetWeekStart(today);
+        var endDate = startDate.AddDays(weeksAhead * 7);
+
+        // Get all cached discovery weeks in range
+        var cachedWeeks = await _dbContext.CachedDiscoveryWeeks
+            .Where(c => c.WeekStart >= startDate && c.WeekStart < endDate)
+            .OrderBy(c => c.WeekStart)
+            .ToListAsync(cancellationToken);
+
+        var upcomingReleases = new List<UpcomingRelease>();
+        var normalizedSeriesTitle = NormalizeTitle(series.Title);
+
+        foreach (var cachedWeek in cachedWeeks)
+        {
+            try
+            {
+                var issues = JsonSerializer.Deserialize<List<ComicVineIssue>>(cachedWeek.IssuesJson);
+                if (issues == null) continue;
+
+                // Find issues that match this series by title (and optionally publisher)
+                foreach (var issue in issues)
+                {
+                    var volumeName = issue.Volume?.Name;
+                    if (string.IsNullOrEmpty(volumeName)) continue;
+
+                    var normalizedVolumeName = NormalizeTitle(volumeName);
+
+                    // Match by normalized title
+                    if (!string.Equals(normalizedSeriesTitle, normalizedVolumeName, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    // Optional: check publisher match if available
+                    if (!string.IsNullOrEmpty(series.Publisher) && !string.IsNullOrEmpty(issue.Publisher))
+                    {
+                        if (!string.Equals(series.Publisher, issue.Publisher, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // Publisher mismatch - might be a different edition (e.g., French vs US)
+                            _logger.LogDebug(
+                                "Publisher mismatch for {Title}: local={LocalPublisher}, WalkSoftly={WSPublisher}",
+                                volumeName, series.Publisher, issue.Publisher);
+                            continue;
+                        }
+                    }
+
+                    // Parse issue number
+                    if (!decimal.TryParse(issue.IssueNumber, out var issueNum))
+                        continue;
+
+                    // Only include if issue number is greater than max local issue
+                    if (maxLocalIssueNumber.HasValue && issueNum <= maxLocalIssueNumber.Value)
+                        continue;
+
+                    // Check if we already have this issue in local DB (by ComicVine ID)
+                    var existsLocally = issue.Id > 0 && 
+                        series.Issues.Any(i => i.ComicVineId == issue.Id);
+                    if (existsLocally)
+                        continue;
+
+                    // Determine if annual/special
+                    var issueNumText = issue.IssueNumber?.ToUpperInvariant() ?? "";
+                    var isAnnual = issueNumText.Contains("ANNUAL") ||
+                                   (issue.Name?.ToUpperInvariant().Contains("ANNUAL") ?? false);
+                    var isSpecial = issueNumText.Contains("SPECIAL") ||
+                                    issueNumText.StartsWith("½") ||
+                                    (issue.Name?.ToUpperInvariant().Contains("SPECIAL") ?? false);
+
+                    // Parse release date from the cached week's release day
+                    var releaseDay = cachedWeek.WeekStart.AddDays((int)DayOfWeek.Wednesday);
+                    if (issue.StoreDate.HasValue)
+                        releaseDay = issue.StoreDate.Value;
+
+                    upcomingReleases.Add(new UpcomingRelease
+                    {
+                        IssueNumber = issueNum,
+                        IssueNumberText = issue.IssueNumber,
+                        ReleaseDate = releaseDay,
+                        Publisher = issue.Publisher ?? series.Publisher,
+                        CoverImageUrl = series.CoverImageUrl, // Use series cover as fallback
+                        WalkSoftlyVolumeId = issue.Volume?.Id,
+                        WalkSoftlyIssueId = issue.Id > 0 ? issue.Id : null,
+                        IsAnnual = isAnnual,
+                        IsSpecial = isSpecial
+                    });
+                }
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex, "Failed to parse cached discovery week {WeekStart}", cachedWeek.WeekStart);
+            }
+        }
+
+        // Remove duplicates (same issue number from multiple weeks) and sort
+        upcomingReleases = upcomingReleases
+            .GroupBy(r => r.IssueNumber)
+            .Select(g => g.OrderBy(r => r.ReleaseDate).First())
+            .OrderBy(r => r.IssueNumber)
+            .ToList();
+
+        _logger.LogInformation(
+            "Found {Count} upcoming releases for series '{Title}' in next {Weeks} weeks",
+            upcomingReleases.Count, series.Title, weeksAhead);
+
+        return new SeriesUpcomingReleasesResult
+        {
+            SeriesId = seriesId,
+            SeriesTitle = series.Title,
+            Releases = upcomingReleases,
+            MaxLocalIssueNumber = maxLocalIssueNumber,
+            WeeksSearched = weeksAhead
+        };
+    }
+
+    /// <summary>
+    /// Normalizes a title for comparison (removes common suffixes, articles, etc.).
+    /// </summary>
+    private static string NormalizeTitle(string title)
+    {
+        if (string.IsNullOrEmpty(title)) return string.Empty;
+
+        // Convert to uppercase and trim
+        var normalized = title.ToUpperInvariant().Trim();
+
+        // Remove leading "THE " article
+        if (normalized.StartsWith("THE "))
+            normalized = normalized[4..];
+
+        // Remove trailing year patterns like "(2024)" or "(Vol. 2)"
+        var yearPattern = System.Text.RegularExpressions.Regex.Match(normalized, @"\s*\(\d{4}\)\s*$");
+        if (yearPattern.Success)
+            normalized = normalized[..^yearPattern.Length];
+
+        var volPattern = System.Text.RegularExpressions.Regex.Match(normalized, @"\s*\(VOL\.?\s*\d+\)\s*$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (volPattern.Success)
+            normalized = normalized[..^volPattern.Length];
+
+        return normalized.Trim();
     }
 
     #endregion

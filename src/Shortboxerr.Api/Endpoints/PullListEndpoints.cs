@@ -207,11 +207,14 @@ public static class PullListEndpoints
                 request.ComicVineVolumeId,
                 request.MarkIssueWantedComicVineId,
                 request.MonitoringMode,
+                request.ExpectedPublisher,
+                request.SeriesTitle,
+                request.ExpectedIssueNumber,
                 cancellationToken);
             return result.Success ? Results.Ok(result) : Results.BadRequest(result);
         })
         .WithName("AddSeriesFromDiscovery")
-        .WithDescription("Adds a series from discovery and optionally marks an issue as wanted")
+        .WithDescription("Adds a series from discovery and optionally marks an issue as wanted. Validates volume using publisher and issue count.")
         .Produces<AddFromDiscoveryResult>(200)
         .Produces<AddFromDiscoveryResult>(400);
 
@@ -753,7 +756,10 @@ public record AddOneOffRequest(int ComicVineIssueId);
 public record AddSeriesFromDiscoveryRequest(
     int ComicVineVolumeId, 
     int? MarkIssueWantedComicVineId = null,
-    SeriesMonitoringMode MonitoringMode = SeriesMonitoringMode.FutureIssues);
+    SeriesMonitoringMode MonitoringMode = SeriesMonitoringMode.FutureIssues,
+    string? ExpectedPublisher = null,
+    string? SeriesTitle = null,
+    decimal? ExpectedIssueNumber = null);
 
 #endregion
 

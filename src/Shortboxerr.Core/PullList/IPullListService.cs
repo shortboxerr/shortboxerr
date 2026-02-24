@@ -82,11 +82,18 @@ public interface IPullListService
 
     /// <summary>
     /// Adds a series from discovery and optionally marks the current issue as wanted.
+    /// Validates the ComicVine volume using multiple signals:
+    /// - Publisher match (e.g., "DC Comics" vs foreign editions)
+    /// - Issue count plausibility (volume should have enough issues for the expected issue number)
+    /// If validation fails, searches for a better matching volume.
     /// </summary>
     Task<AddFromDiscoveryResult> AddSeriesFromDiscoveryAsync(
         int comicVineVolumeId,
         int? markIssueWantedComicVineId = null,
         ComicVine.SeriesMonitoringMode monitoringMode = ComicVine.SeriesMonitoringMode.FutureIssues,
+        string? expectedPublisher = null,
+        string? seriesTitle = null,
+        decimal? expectedIssueNumber = null,
         CancellationToken cancellationToken = default);
 
     #endregion
@@ -200,6 +207,19 @@ public interface IPullListService
     /// </summary>
     Task<PullListActionResult> UpdateSeriesSettingsAsync(
         SeriesPullListSettings settings,
+        CancellationToken cancellationToken = default);
+
+    #endregion
+
+    #region Upcoming Releases for Series (WalkSoftly Integration)
+
+    /// <summary>
+    /// Gets upcoming releases from WalkSoftly cache for a specific series.
+    /// Matches by series title and publisher to find releases that ComicVine hasn't indexed yet.
+    /// </summary>
+    Task<SeriesUpcomingReleasesResult> GetSeriesUpcomingReleasesAsync(
+        int seriesId,
+        int weeksAhead = 4,
         CancellationToken cancellationToken = default);
 
     #endregion
@@ -954,6 +974,116 @@ public class WeeklyExportSummary
     public int MissingCount { get; set; }
     public Dictionary<string, int> ByPublisher { get; set; } = new();
     public Dictionary<string, int> ByStatus { get; set; } = new();
+}
+
+#endregion
+
+#region Upcoming Releases Models (WalkSoftly Integration)
+
+/// <summary>
+/// Result of getting upcoming releases for a series from WalkSoftly cache.
+/// These are releases that WalkSoftly reports but ComicVine hasn't indexed yet.
+/// </summary>
+public class SeriesUpcomingReleasesResult
+{
+    /// <summary>
+    /// The local series ID.
+    /// </summary>
+    public int SeriesId { get; set; }
+    
+    /// <summary>
+    /// Series title for reference.
+    /// </summary>
+    public string SeriesTitle { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Upcoming releases from WalkSoftly that aren't in ComicVine yet.
+    /// </summary>
+    public List<UpcomingRelease> Releases { get; set; } = new();
+    
+    /// <summary>
+    /// Total count of upcoming releases found.
+    /// </summary>
+    public int TotalCount => Releases.Count;
+    
+    /// <summary>
+    /// The highest issue number currently in the local database from ComicVine.
+    /// </summary>
+    public decimal? MaxLocalIssueNumber { get; set; }
+    
+    /// <summary>
+    /// Number of weeks ahead that were searched.
+    /// </summary>
+    public int WeeksSearched { get; set; }
+}
+
+/// <summary>
+/// An upcoming release from WalkSoftly that hasn't been indexed by ComicVine yet.
+/// </summary>
+public class UpcomingRelease
+{
+    /// <summary>
+    /// Issue number as reported by WalkSoftly.
+    /// </summary>
+    public decimal IssueNumber { get; set; }
+    
+    /// <summary>
+    /// Issue number as text (e.g., "17" or "Annual 1").
+    /// </summary>
+    public string? IssueNumberText { get; set; }
+    
+    /// <summary>
+    /// Store/release date.
+    /// </summary>
+    public DateTime ReleaseDate { get; set; }
+    
+    /// <summary>
+    /// Publisher name from WalkSoftly.
+    /// </summary>
+    public string? Publisher { get; set; }
+    
+    /// <summary>
+    /// Cover image URL (from series, as WalkSoftly doesn't provide issue covers).
+    /// </summary>
+    public string? CoverImageUrl { get; set; }
+    
+    /// <summary>
+    /// ComicVine volume ID from WalkSoftly (may be incorrect - don't rely on it).
+    /// </summary>
+    public int? WalkSoftlyVolumeId { get; set; }
+    
+    /// <summary>
+    /// ComicVine issue ID from WalkSoftly (may not exist in ComicVine yet).
+    /// </summary>
+    public int? WalkSoftlyIssueId { get; set; }
+    
+    /// <summary>
+    /// Whether this is an annual issue.
+    /// </summary>
+    public bool IsAnnual { get; set; }
+    
+    /// <summary>
+    /// Whether this is a special issue.
+    /// </summary>
+    public bool IsSpecial { get; set; }
+    
+    /// <summary>
+    /// Days until release (negative if already released).
+    /// </summary>
+    public int DaysUntilRelease => (int)(ReleaseDate.Date - DateTime.UtcNow.Date).TotalDays;
+    
+    /// <summary>
+    /// Human-readable release timing.
+    /// </summary>
+    public string ReleaseTiming => DaysUntilRelease switch
+    {
+        < 0 => "Released",
+        0 => "Today",
+        1 => "Tomorrow",
+        < 7 => $"In {DaysUntilRelease} days",
+        < 14 => "Next week",
+        _ => $"In {DaysUntilRelease / 7} weeks"
+    };
 }
 
 #endregion
