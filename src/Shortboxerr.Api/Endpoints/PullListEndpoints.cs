@@ -671,6 +671,30 @@ public static class PullListEndpoints
         .WithDescription("Gets the status of ComicVine discovery refresh")
         .Produces<DiscoveryRefreshStatus>(200);
 
+        // POST /api/v1/pulllist/discovery/enrich-covers - trigger manual cover enrichment
+        group.MapPost("/discovery/enrich-covers", async (
+            [FromServices] Infrastructure.BackgroundServices.DiscoveryCoverEnrichmentService enrichmentService,
+            CancellationToken cancellationToken) =>
+        {
+            await enrichmentService.TriggerEnrichmentAsync(cancellationToken);
+            return Results.Ok(new { Success = true, Message = "Cover enrichment triggered. Missing covers will be fetched from Metron." });
+        })
+        .WithName("TriggerCoverEnrichment")
+        .WithDescription("Triggers manual cover enrichment for cached discovery issues (fetches missing covers from Metron)")
+        .Produces<object>(200);
+
+        // POST /api/v1/pulllist/discovery/refresh-covers - trigger ComicVine cover refresh check
+        group.MapPost("/discovery/refresh-covers", async (
+            [FromServices] Infrastructure.BackgroundServices.DiscoveryCoverEnrichmentService enrichmentService,
+            CancellationToken cancellationToken) =>
+        {
+            await enrichmentService.TriggerCoverRefreshAsync(cancellationToken);
+            return Results.Ok(new { Success = true, Message = "Cover refresh check triggered. Issues with Metron fallback covers will be checked for ComicVine updates." });
+        })
+        .WithName("TriggerCoverRefresh")
+        .WithDescription("Checks if ComicVine now has covers for issues previously using Metron fallback covers")
+        .Produces<object>(200);
+
         #endregion
 
         #region Release Day Processing

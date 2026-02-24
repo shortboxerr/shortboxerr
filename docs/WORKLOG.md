@@ -1,5 +1,54 @@
 # Worklog
 
+## Iteration 154 (2026-02-24)
+**EPIC 11.19: Security Audit Completion + EPIC 11.22: Upcoming Cover Enrichment**
+
+### Summary
+Completed security audit for credential handling and enabled Metron cover enrichment for upcoming releases shown on series detail pages.
+
+### Security Audit (11.19)
+
+**Credential Transmission Audit:**
+- ✅ API endpoints use `HasPassword`/`HasApiKey` flags instead of returning plaintext passwords
+- ✅ Metron API uses `HasPassword: true/false` in response (never returns password)
+- ✅ ComicVine API uses `HasApiKey` and `MaskedApiKey` (e.g., "abc1...xyz9")
+- ✅ `SensitiveDataDestructuringPolicy` masks credentials in Serilog logs
+- ✅ `NewznabClient` uses `MaskApiKey()` helper when logging URLs
+
+**Frontend Audit:**
+- ✅ All password inputs use `type="password"` (9 instances in SettingsPage.tsx)
+- ✅ No credentials stored in `localStorage` or `sessionStorage`
+- ✅ Credentials only exist in React useState during form editing
+- ✅ No `console.log` statements with credential values
+
+**New Documentation:**
+| File | Description |
+|------|-------------|
+| `docs/SECURITY.md` | Comprehensive credential handling guidelines for developers |
+
+### Upcoming Cover Enrichment (11.22)
+
+**Key Discovery:** The existing `DiscoveryCoverEnrichmentService` already handles Metron cover enrichment for cached discovery data (including upcoming releases). The issue was that `GetSeriesUpcomingReleasesAsync` wasn't using the enriched cover URLs.
+
+**Files Modified:**
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` | Use enriched cover from cached issue if available, fallback to series cover |
+| `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` | Added two new cover enrichment trigger endpoints |
+
+**New API Endpoints:**
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/v1/pulllist/discovery/enrich-covers` | Manually trigger cover enrichment (fetches missing covers from Metron) |
+| `POST /api/v1/pulllist/discovery/refresh-covers` | Check if ComicVine now has covers for issues using Metron fallback |
+
+### Test Results
+- Build: ✅ Success (0 warnings, 0 errors)
+- 207 related tests passing
+- 8 pre-existing failures (EF Core InMemory provider GroupBy limitation)
+
+---
+
 ## Iteration 153 (2026-02-24)
 **EPIC 11.19: Credential Encryption Implementation**
 

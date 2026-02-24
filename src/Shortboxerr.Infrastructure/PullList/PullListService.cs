@@ -1927,13 +1927,16 @@ public class PullListService : IPullListService
                     if (issue.StoreDate.HasValue)
                         releaseDay = issue.StoreDate.Value;
 
+                    // Use enriched cover if available (from Metron), otherwise series cover
+                    var coverUrl = issue.Image?.MediumUrl ?? issue.Image?.SmallUrl ?? series.CoverImageUrl;
+
                     upcomingReleases.Add(new UpcomingRelease
                     {
                         IssueNumber = issueNum,
                         IssueNumberText = issue.IssueNumber,
                         ReleaseDate = releaseDay,
                         Publisher = issue.Publisher ?? series.Publisher,
-                        CoverImageUrl = series.CoverImageUrl, // Use series cover as fallback
+                        CoverImageUrl = coverUrl,
                         WalkSoftlyVolumeId = issue.Volume?.Id,
                         WalkSoftlyIssueId = issue.Id > 0 ? issue.Id : null,
                         IsAnnual = isAnnual,
