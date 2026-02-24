@@ -1,41 +1,56 @@
 # Worklog
 
 ## Iteration 146 (2026-02-24)
-**EPIC 11.13: League of Comic Geeks Client Integration**
+**EPIC 11.13: Cover Image Fallback System**
 
 ### Summary
-Implemented the League of Comic Geeks client for cover image fallback. This is part of the cover image fallback system to provide interim cover images when ComicVine doesn't have issue-specific covers yet.
+Implemented the complete cover image fallback system including:
+1. League of Comic Geeks client for cover image lookup
+2. Cover fallback service that queries sources in priority order
+3. Verified existing settings for upcoming releases (already complete)
 
-### Architectural Notes
+### Part 1: League of Comic Geeks Client
+
+**Architectural Notes:**
 - **No official API**: LOCG has no public API; this uses unofficial HTML scraping patterns
 - Internal endpoint: `https://leagueofcomicgeeks.com/comic/get_comics`
 - Response format: JSON with HTML in the `list` field
 - Cover URLs: `https://s3.amazonaws.com/comicgeeks/comics/covers/large-{id}.jpg`
 - Graceful degradation implemented for when site structure changes
 
-### Files Created
+**Files Created:**
 | File | Purpose |
 |------|---------|
 | `src/Shortboxerr.Core/LeagueOfComicGeeks/ILeagueOfComicGeeksClient.cs` | Interface and DTOs |
 | `src/Shortboxerr.Infrastructure/LeagueOfComicGeeks/LeagueOfComicGeeksClient.cs` | HTTP client with HTML parsing |
 | `tests/Shortboxerr.Tests/LeagueOfComicGeeksClientTests.cs` | 14 unit tests |
 
-### Key Implementation Details
-- Uses AngleSharp for HTML parsing (added as NuGet dependency)
-- 24-hour cache TTL for search results (minimize scraping)
-- 2-second minimum delay between requests (rate limiting)
-- Parses issue name, series name, publisher, cover URL, price, pull count, rating
-- Generates fallback cover URLs when image element is missing
-- Handles JSON parse errors and HTML structure changes gracefully
+### Part 2: Cover Fallback Service
+
+**Priority Hierarchy:**
+1. League of Comic Geeks issue cover (unofficial fallback)
+2. ComicVine volume/series cover (final fallback)
+
+**Files Created:**
+| File | Purpose |
+|------|---------|
+| `src/Shortboxerr.Core/Services/ICoverFallbackService.cs` | Interface, CoverSource enum, stats |
+| `src/Shortboxerr.Infrastructure/Services/CoverFallbackService.cs` | Implementation with fuzzy matching |
+| `tests/Shortboxerr.Tests/CoverFallbackServiceTests.cs` | 13 unit tests |
+
+**Key Features:**
+- Fuzzy name matching for series (70% similarity threshold)
+- Issue number normalization (handles #5, 5, etc.)
+- Publisher matching for disambiguation
+- 24-hour cache with clear capability
+- Statistics tracking (hits/misses per source)
 
 ### Tests Added
-| Category | Tests |
-|----------|-------|
-| Search functionality | 8 |
-| Weekly releases | 2 |
-| Availability check | 2 |
-| Error handling | 2 |
-| **Total** | **14** |
+| File | Tests |
+|------|-------|
+| LeagueOfComicGeeksClientTests.cs | 14 |
+| CoverFallbackServiceTests.cs | 13 |
+| **Total** | **27** |
 
 ---
 

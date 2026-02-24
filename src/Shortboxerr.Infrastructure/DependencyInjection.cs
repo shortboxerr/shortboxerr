@@ -158,6 +158,9 @@ public static class DependencyInjection
         // League of Comic Geeks client for cover image fallback (unofficial API - see BACKLOG.md 11.13)
         services.AddHttpClient<Core.LeagueOfComicGeeks.ILeagueOfComicGeeksClient, LeagueOfComicGeeks.LeagueOfComicGeeksClient>();
 
+        // Cover fallback service for enrichment when ComicVine doesn't have issue covers
+        services.AddScoped<Core.Services.ICoverFallbackService, Services.CoverFallbackService>();
+
         // NZB/Usenet services
         services.AddHttpClient<INewznabClient, NewznabClient>();
         services.AddScoped<INzbIndexerProvider, NzbIndexerProvider>();

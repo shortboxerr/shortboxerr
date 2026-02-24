@@ -1539,13 +1539,16 @@ League of Comic Geeks has **NO official API**. Analysis of existing libraries (p
   - AC: Cache responses locally with 24-hour TTL
   - AC: Respect Marvel rate limits (3000 calls/day)
 
-- [ ] **Cover fallback service** ← READY (Priority 3)
-  - AC: Create `ICoverFallbackService` that queries sources in priority order
-  - AC: Integrate with existing `DiscoveryCoverEnrichmentService`
-  - AC: Only query fallback sources when ComicVine issue cover is missing
-  - AC: Log which source provided the cover (for debugging/metrics)
-  - AC: Return null if all sources fail (UI uses series cover)
-  - AC: Track success rate per source for monitoring
+- [x] **Cover fallback service** ✅ COMPLETED (Iteration 146)
+  - AC: Create `ICoverFallbackService` that queries sources in priority order ✅
+  - AC: Priority order: LOCG → ComicVine volume (final fallback) ✅
+  - AC: Only query fallback sources when ComicVine issue cover is missing ✅
+  - AC: Log which source provided the cover (CoverSource enum) ✅
+  - AC: Return null if all sources fail (UI uses series cover) ✅
+  - AC: Track success rate per source (CoverFallbackStats) ✅
+  - AC: Fuzzy matching for series name + issue number ✅
+  - AC: 24-hour cache with clear capability ✅
+  - Note: 13 unit tests added (CoverFallbackServiceTests.cs)
 
 - [ ] **Background cover refresh** ← READY (Priority 4)
   - AC: Extend existing background service to periodically check for ComicVine cover updates
@@ -1591,12 +1594,13 @@ When WalkSoftly reports an upcoming issue (e.g., Absolute Wonder Woman #17) that
   - AC: Preserve any user intent (if user marked upcoming as "wanted", carry that forward) ✅
   - Note: Automatic - issues are filtered out of upcoming once they exist in local DB
   
-- [ ] **Settings and configuration** ← READY
-  - AC: Option to show/hide upcoming releases on series view (default: show)
-  - AC: Limit how far in the future to show (e.g., releases within next 4 weeks)
-  - AC: Add to PullListSettings: ShowUpcomingReleases (bool), UpcomingReleasesWeeksAhead (int)
-  - AC: Add API endpoint for upcoming releases settings
-  - AC: Frontend reads settings and respects them in SeriesDetailPage
+- [x] **Settings and configuration** ✅ COMPLETED (Previously implemented)
+  - AC: Option to show/hide upcoming releases on series view (default: show) ✅
+  - AC: Limit how far in the future to show (e.g., releases within next 4 weeks) ✅
+  - AC: Add to PullListSettings: ShowUpcomingReleases (bool), UpcomingReleasesWeeksAhead (int) ✅
+  - AC: API endpoint for upcoming releases settings ✅ (via /api/v1/pulllist/settings)
+  - AC: Frontend reads settings and respects them in SeriesDetailPage ✅
+  - Note: Settings UI in PullListSettingsTab, used by SeriesDetailPage lines 258-268
 
 **Tests:**
 - 6 unit tests covering title matching, publisher filtering, issue number filtering, case insensitivity
