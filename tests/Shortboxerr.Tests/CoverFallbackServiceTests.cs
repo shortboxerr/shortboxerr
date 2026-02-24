@@ -254,4 +254,158 @@ public class CoverFallbackServiceTests
         Assert.True(result.Success);
         Assert.Equal(CoverSource.LeagueOfComicGeeks, result.Source);
     }
+
+    [Fact]
+    public async Task GetCoverAsync_FallsBackToVolume_WhenLocgReturnsEmpty()
+    {
+        _locgClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new LocgSearchResult
+            {
+                Success = true,
+                Issues = new List<LocgIssue>() // Empty list
+            });
+
+        var service = CreateService();
+
+        var result = await service.GetCoverAsync("Batman", "999", volumeCoverUrl: "https://volume-fallback.jpg");
+
+        Assert.True(result.Success);
+        Assert.Equal(CoverSource.ComicVineVolume, result.Source);
+        Assert.Equal("https://volume-fallback.jpg", result.CoverUrl);
+    }
+
+    [Fact]
+    public async Task GetCoverAsync_HandlesNullIssuesList_Gracefully()
+    {
+        _locgClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new LocgSearchResult
+            {
+                Success = true,
+                Issues = null! // Null issues list
+            });
+
+        var service = CreateService();
+
+        var result = await service.GetCoverAsync("Test", "1", volumeCoverUrl: "https://fallback.jpg");
+
+        Assert.True(result.Success);
+        Assert.Equal(CoverSource.ComicVineVolume, result.Source);
+    }
+
+    [Fact]
+    public async Task GetCoverAsync_HandlesIssueWithNullCoverUrl()
+    {
+        _locgClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new LocgSearchResult
+            {
+                Success = true,
+                Issues = new List<LocgIssue>
+                {
+                    new() { IssueId = 1, SeriesName = "Test", IssueNumber = "1", CoverUrl = null } // No cover URL
+                }
+            });
+
+        var service = CreateService();
+
+        var result = await service.GetCoverAsync("Test", "1", volumeCoverUrl: "https://volume.jpg");
+
+        Assert.True(result.Success);
+        Assert.Equal(CoverSource.ComicVineVolume, result.Source);
+    }
+
+    [Fact]
+    public async Task GetCoverAsync_VerifiesPriorityOrder_LocgBeforeVolume()
+    {
+        _locgClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new LocgSearchResult
+            {
+                Success = true,
+                Issues = new List<LocgIssue>
+                {
+                    new() { IssueId = 1, SeriesName = "Batman", IssueNumber = "1", CoverUrl = "https://locg.jpg" }
+                }
+            });
+
+        var service = CreateService();
+
+        // Both LOCG and volume cover available
+        var result = await service.GetCoverAsync("Batman", "1", volumeCoverUrl: "https://volume.jpg");
+
+        // LOCG should win
+        Assert.Equal(CoverSource.LeagueOfComicGeeks, result.Source);
+        Assert.Equal("https://locg.jpg", result.CoverUrl);
+    }
+
+    [Fact]
+    public async Task GetCoverAsync_HandlesMalformedIssueNumber()
+    {
+        _locgClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new LocgSearchResult
+            {
+                Success = true,
+                Issues = new List<LocgIssue>
+                {
+                    new() { IssueId = 1, SeriesName = "Test", IssueNumber = "½", CoverUrl = "https://test.jpg" }
+                }
+            });
+
+        var service = CreateService();
+
+        // Search with various malformed inputs
+        var result = await service.GetCoverAsync("Test", "½");
+
+        Assert.True(result.Success);
+        Assert.Equal(CoverSource.LeagueOfComicGeeks, result.Source);
+    }
+
+    [Fact]
+    public async Task GetCoverAsync_TracksResolutionTime()
+    {
+        _locgClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new LocgSearchResult
+            {
+                Success = true,
+                Issues = new List<LocgIssue>
+                {
+                    new() { IssueId = 1, SeriesName = "Test", IssueNumber = "1", CoverUrl = "https://test.jpg" }
+                }
+            });
+
+        var freshCache = new MemoryCache(new MemoryCacheOptions());
+        var service = new CoverFallbackService(_locgClientMock.Object, freshCache, _loggerMock.Object);
+
+        var result = await service.GetCoverAsync("Test", "1");
+
+        Assert.True(result.ResolutionTimeMs >= 0);
+    }
+
+    [Fact]
+    public async Task GetStatsAsync_ReportsCacheHitRatio()
+    {
+        var locgClientMock = new Mock<ILeagueOfComicGeeksClient>();
+        locgClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new LocgSearchResult
+            {
+                Success = true,
+                Issues = new List<LocgIssue>
+                {
+                    new() { IssueId = 1, SeriesName = "Test", IssueNumber = "1", CoverUrl = "https://test.jpg" }
+                }
+            });
+
+        var freshCache = new MemoryCache(new MemoryCacheOptions());
+        var service = new CoverFallbackService(locgClientMock.Object, freshCache, _loggerMock.Object);
+
+        // First call (cache miss)
+        await service.GetCoverAsync("Test", "1");
+        // Second call (cache hit)
+        await service.GetCoverAsync("Test", "1");
+        // Third call (cache hit)
+        await service.GetCoverAsync("Test", "1");
+
+        var stats = await service.GetStatsAsync();
+
+        Assert.Equal(3, stats.TotalRequests);
+        Assert.True(stats.CacheHitRatio >= 0.5); // At least 2/3 should be cache hits
+    }
 }
