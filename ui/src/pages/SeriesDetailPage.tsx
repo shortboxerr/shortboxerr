@@ -43,6 +43,12 @@ export function SeriesDetailPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<PageSize>(12);
   
+  // Fetch global pull list settings (for upcoming releases display options)
+  const { data: pullListSettings } = useQuery({
+    queryKey: ['pulllist', 'settings'],
+    queryFn: () => api.getPullListSettings(),
+  });
+
   // Fetch series-specific pull list settings
   const { data: seriesSettings } = useQuery({
     queryKey: ['series', seriesId, 'pulllist-settings'],
@@ -248,14 +254,18 @@ export function SeriesDetailPage() {
   });
 
   // Fetch upcoming releases from WalkSoftly (issues not yet in ComicVine)
+  // Respects pull list settings for show/hide and weeks ahead
+  const weeksAhead = pullListSettings?.upcomingReleasesWeeksAhead ?? 4;
+  const showUpcoming = pullListSettings?.showUpcomingReleasesOnSeriesView ?? true;
+  
   const { data: upcomingData } = useQuery({
-    queryKey: ['series', seriesId, 'upcoming'],
-    queryFn: () => api.getSeriesUpcomingReleases(seriesId, 4),
-    enabled: seriesId > 0,
+    queryKey: ['series', seriesId, 'upcoming', weeksAhead],
+    queryFn: () => api.getSeriesUpcomingReleases(seriesId, weeksAhead),
+    enabled: seriesId > 0 && showUpcoming,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
-  const upcomingReleases = upcomingData?.releases ?? [];
+  const upcomingReleases = showUpcoming ? (upcomingData?.releases ?? []) : [];
 
   const allIssues = issuesData?.items ?? [];
   const allAnnuals = annualsData?.annuals ?? [];

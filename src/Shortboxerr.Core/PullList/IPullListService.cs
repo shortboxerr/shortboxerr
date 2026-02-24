@@ -513,6 +513,19 @@ public class PullListSettings
     /// </summary>
     public int PastWeeksToShow { get; set; } = 4;
 
+    /// <summary>
+    /// Whether to show upcoming releases (from WalkSoftly) on series detail view.
+    /// When true, series detail shows releases that ComicVine hasn't indexed yet.
+    /// Default: true.
+    /// </summary>
+    public bool ShowUpcomingReleasesOnSeriesView { get; set; } = true;
+
+    /// <summary>
+    /// Number of weeks ahead to check for upcoming releases on series view.
+    /// Default: 4 weeks.
+    /// </summary>
+    public int UpcomingReleasesWeeksAhead { get; set; } = 4;
+
     #region Weekly Export Settings (Mylar3 Parity)
 
     /// <summary>
