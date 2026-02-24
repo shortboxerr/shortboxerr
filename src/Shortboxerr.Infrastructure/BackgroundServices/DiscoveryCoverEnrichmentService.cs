@@ -129,6 +129,7 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             cachedWeeks.Count, currentWeekStart.ToString("yyyy-MM-dd"), weekOrder);
 
         var totalEnriched = 0;
+        var comicVineHits = 0;
         var metronHits = 0;
         var volumeHits = 0;
         var notFoundCount = 0;
@@ -141,9 +142,10 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
                 weekIndex, cachedWeeks.Count, cachedWeek.WeekStart.ToString("yyyy-MM-dd"));
             try
             {
-                var (enrichedCount, metronCount, volumeCount, notFound) = await EnrichCachedWeekAsync(
+                var (enrichedCount, cvCount, metronCount, volumeCount, notFound) = await EnrichCachedWeekAsync(
                     cachedWeek, comicVineClient, coverFallbackService, coverService, dbContext, cancellationToken);
                 totalEnriched += enrichedCount;
+                comicVineHits += cvCount;
                 metronHits += metronCount;
                 volumeHits += volumeCount;
                 notFoundCount += notFound;
@@ -157,12 +159,12 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         }
 
         _logger.LogInformation(
-            "Cover enrichment complete across {Weeks} weeks: enriched {Count} (Metron: {Metron}, volume: {Volume}), not found: {NotFound}, skipped: {HasCV} have CV / {Recent} recently checked / {Already} already enriched",
-            cachedWeeks.Count, totalEnriched, metronHits, volumeHits, notFoundCount, 
+            "Cover enrichment complete across {Weeks} weeks: enriched {Count} (ComicVine: {CV}, Metron: {Metron}, volume: {Volume}), not found: {NotFound}, skipped: {HasCV} have CV / {Recent} recently checked / {Already} already enriched",
+            cachedWeeks.Count, totalEnriched, comicVineHits, metronHits, volumeHits, notFoundCount, 
             _skippedHasComicVine, _skippedRecentlyChecked, _skippedAlreadyEnriched);
     }
 
-    private async Task<(int enrichedCount, int metronCount, int volumeCount, int notFoundCount)> EnrichCachedWeekAsync(
+    private async Task<(int enrichedCount, int comicVineCount, int metronCount, int volumeCount, int notFoundCount)> EnrichCachedWeekAsync(
         Core.Entities.CachedDiscoveryWeek cachedWeek,
         IComicVineClient comicVineClient,
         ICoverFallbackService coverFallbackService,
@@ -180,12 +182,12 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             _logger.LogWarning(ex,
                 "Failed to deserialize cached issues for week {WeekStart}",
                 cachedWeek.WeekStart);
-            return (0, 0, 0, 0);
+            return (0, 0, 0, 0, 0);
         }
 
         if (issues == null || issues.Count == 0)
         {
-            return (0, 0, 0, 0);
+            return (0, 0, 0, 0, 0);
         }
 
         // First pass: identify issues that need tagging
@@ -252,13 +254,14 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             _logger.LogDebug(
                 "Week {WeekStart}: no issues need enrichment ({Total} total, {HasCV} have CV covers, {RecentlyChecked} recently checked)",
                 cachedWeek.WeekStart, issues.Count, _skippedHasComicVine, _skippedRecentlyChecked);
-            return (0, 0, 0, 0);
+            return (0, 0, 0, 0, 0);
         }
 
         _logger.LogInformation(
             "Week {WeekStart}: processing {Count} issues for enrichment (skipped: {HasCV} have CV, {RecentlyChecked} recently checked, {AlreadyEnriched} already enriched)",
             cachedWeek.WeekStart, issuesToProcess.Count, _skippedHasComicVine, _skippedRecentlyChecked, _skippedAlreadyEnriched);
 
+        // Batch fetch volumes for fallback covers
         var volumeIds = issuesToProcess
             .Select(i => i.Volume!.Id)
             .Distinct()
@@ -281,7 +284,34 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
                 volumeResult.Error ?? "Unknown error");
         }
 
+        // Batch fetch issue-specific covers from ComicVine for issues with IDs
+        var issueIds = issuesToProcess
+            .Where(i => i.Id > 0)
+            .Select(i => i.Id)
+            .Distinct()
+            .Take(_maxVolumesPerBatch)
+            .ToList();
+        
+        var issueCoverLookup = new Dictionary<int, ComicVineImage>();
+        if (issueIds.Count > 0)
+        {
+            _logger.LogDebug("Fetching issue-specific covers from ComicVine for {Count} issues", issueIds.Count);
+            var issueResult = await comicVineClient.GetIssuesByIdsAsync(issueIds, cancellationToken);
+            
+            if (issueResult.Success && issueResult.Results != null)
+            {
+                issueCoverLookup = issueResult.Results
+                    .Where(i => i.Image != null)
+                    .ToDictionary(i => i.Id, i => i.Image!);
+                
+                _logger.LogInformation(
+                    "ComicVine returned covers for {Found}/{Requested} issues",
+                    issueCoverLookup.Count, issueIds.Count);
+            }
+        }
+
         var enrichedCount = 0;
+        var comicVineCount = 0;
         var metronCount = 0;
         var volumeCount = 0;
         var notFoundCount = 0;
@@ -300,7 +330,23 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             // Mark that we're attempting enrichment
             issue.LastEnrichmentAttempt = DateTime.UtcNow;
 
-            // Try Metron with ComicVine ID if available (preferred - exact match)
+            // Priority 1: Check if ComicVine has issue-specific cover
+            if (issue.Id > 0 && issueCoverLookup.TryGetValue(issue.Id, out var cvIssueImage))
+            {
+                var cvCoverUrl = cvIssueImage.MediumUrl ?? cvIssueImage.SmallUrl;
+                if (!string.IsNullOrEmpty(cvCoverUrl))
+                {
+                    issue.Image = cvIssueImage;
+                    issue.EnrichmentStatus = CoverEnrichmentStatus.HasComicVineCover;
+                    issue.CoverSource = "ComicVine";
+                    comicVineCount++;
+                    enrichedCount++;
+                    dataModified = true;
+                    continue;
+                }
+            }
+
+            // Priority 2: Try Metron
             CoverFallbackResult fallbackResult;
             if (issue.Id > 0)
             {
@@ -420,7 +466,7 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             }
         }
 
-        return (enrichedCount, metronCount, volumeCount, notFoundCount);
+        return (enrichedCount, comicVineCount, metronCount, volumeCount, notFoundCount);
     }
 
     /// <summary>
