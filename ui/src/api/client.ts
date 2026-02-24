@@ -419,6 +419,11 @@ export interface PullListSettingsDto {
   // Series-Annual Integration (Mylar3 Parity)
   // Nullable: null means "not set, defaults to true"
   enableSeriesAnnualIntegration: boolean | null;
+  // Upcoming releases on series view (WalkSoftly integration)
+  showUpcomingReleasesOnSeriesView: boolean;
+  upcomingReleasesWeeksAhead: number;
+  // Publisher filtering
+  ignoredPublishers: string[];
   // Weekly Export Settings (Mylar3 Parity)
   exportWeeklyPullList: boolean;
   weeklyExportDirectory?: string | null;

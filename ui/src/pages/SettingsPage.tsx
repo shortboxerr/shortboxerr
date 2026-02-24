@@ -166,6 +166,135 @@ function SettingsField({
   );
 }
 
+function IgnoredPublishersList({ 
+  publishers, 
+  onChange 
+}: { 
+  publishers: string[]; 
+  onChange: (publishers: string[]) => void;
+}) {
+  const [newPublisher, setNewPublisher] = useState('');
+
+  const handleAdd = () => {
+    const trimmed = newPublisher.trim();
+    if (trimmed && !publishers.includes(trimmed)) {
+      onChange([...publishers, trimmed]);
+      setNewPublisher('');
+    }
+  };
+
+  const handleRemove = (publisher: string) => {
+    onChange(publishers.filter(p => p !== publisher));
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '500px' }}>
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <input
+          type="text"
+          className="input"
+          placeholder="Enter publisher name or pattern..."
+          value={newPublisher}
+          onChange={(e) => setNewPublisher(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && newPublisher.trim()) {
+              e.preventDefault();
+              handleAdd();
+            }
+          }}
+          style={{ flex: 1 }}
+        />
+        <button
+          className="btn btn-primary"
+          onClick={handleAdd}
+          disabled={!newPublisher.trim()}
+          style={{ padding: '8px 16px' }}
+        >
+          Add
+        </button>
+      </div>
+      
+      {publishers.length > 0 && (
+        <div style={{ 
+          border: '1px solid var(--border-primary)',
+          borderRadius: '6px',
+          overflow: 'hidden'
+        }}>
+          {publishers.map((publisher, index) => (
+            <div 
+              key={`${publisher}-${index}`}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                padding: '10px 12px',
+                borderBottom: index < publishers.length - 1 
+                  ? '1px solid var(--border-primary)' 
+                  : 'none',
+                backgroundColor: index % 2 === 0 ? 'var(--bg-secondary)' : 'transparent'
+              }}
+            >
+              <span style={{ 
+                fontFamily: publisher.includes('*') ? 'monospace' : 'inherit',
+                color: publisher.includes('*') ? 'var(--accent-primary)' : 'var(--text-primary)'
+              }}>
+                {publisher}
+                {publisher.includes('*') && (
+                  <span style={{ 
+                    marginLeft: '8px', 
+                    fontSize: '11px', 
+                    color: 'var(--text-tertiary)',
+                    fontFamily: 'inherit'
+                  }}>
+                    (wildcard)
+                  </span>
+                )}
+              </span>
+              <button
+                className="btn btn-ghost"
+                onClick={() => handleRemove(publisher)}
+                style={{ 
+                  padding: '4px 8px',
+                  color: 'var(--status-red)',
+                  fontSize: '12px'
+                }}
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      
+      {publishers.length === 0 && (
+        <div style={{ 
+          padding: '16px',
+          textAlign: 'center',
+          color: 'var(--text-tertiary)',
+          backgroundColor: 'var(--bg-secondary)',
+          borderRadius: '6px',
+          fontSize: '13px'
+        }}>
+          No ignored publishers configured. All publishers will appear in discovery.
+        </div>
+      )}
+      
+      <div style={{ 
+        fontSize: '12px', 
+        color: 'var(--text-tertiary)',
+        padding: '8px 0'
+      }}>
+        <strong>Examples:</strong>
+        <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
+          <li><code style={{ backgroundColor: 'var(--bg-tertiary)', padding: '1px 4px', borderRadius: '3px' }}>*Manga*</code> - Matches "Viz Manga", "Dark Horse Manga", etc.</li>
+          <li><code style={{ backgroundColor: 'var(--bg-tertiary)', padding: '1px 4px', borderRadius: '3px' }}>Urban Comics</code> - Exact match only</li>
+          <li><code style={{ backgroundColor: 'var(--bg-tertiary)', padding: '1px 4px', borderRadius: '3px' }}>*Kids*</code> - Matches publishers ending with "Kids"</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 // Sample data for live preview
 const SAMPLE_DATA = {
   seriesTitle: 'Batman',
@@ -2026,6 +2155,11 @@ function PullListSettingsTab() {
     upcomingWeeksToShow: 4,
     pastWeeksToShow: 4,
     enableSeriesAnnualIntegration: true,
+    // Series view upcoming releases settings
+    showUpcomingReleasesOnSeriesView: true,
+    upcomingReleasesWeeksAhead: 4,
+    // Publisher filtering
+    ignoredPublishers: [] as string[],
     // Export settings
     exportWeeklyPullList: false,
     weeklyExportDirectory: null,
@@ -2180,6 +2314,48 @@ function PullListSettingsTab() {
             ))}
           </select>
         </SettingsField>
+
+        <SettingsField label="Show Upcoming Releases on Series View">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={currentSettings.showUpcomingReleasesOnSeriesView ?? true}
+              onChange={(e) => handleUpdate('showUpcomingReleasesOnSeriesView', e.target.checked)}
+              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+            />
+            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+              Display upcoming releases from WalkSoftly on individual series pages
+            </span>
+          </label>
+        </SettingsField>
+
+        <SettingsField 
+          label="Upcoming Releases Weeks Ahead (Series View)" 
+          description="How far in the future to show upcoming releases on series pages"
+        >
+          <select
+            className="input"
+            value={currentSettings.upcomingReleasesWeeksAhead ?? 4}
+            onChange={(e) => handleUpdate('upcomingReleasesWeeksAhead', parseInt(e.target.value))}
+            style={{ width: '120px' }}
+          >
+            {[1, 2, 4, 6, 8].map(n => (
+              <option key={n} value={n}>{n} week{n === 1 ? '' : 's'}</option>
+            ))}
+          </select>
+        </SettingsField>
+      </SettingsSection>
+
+      <SettingsSection title="Publisher Filtering">
+        <SettingsField 
+          label="Ignored Publishers" 
+          description="Publishers to exclude from pull list discovery. Use wildcards like *Manga* to match patterns."
+        >
+          <IgnoredPublishersList
+            publishers={currentSettings.ignoredPublishers ?? []}
+            onChange={(publishers) => handleUpdate('ignoredPublishers', publishers)}
+          />
+        </SettingsField>
       </SettingsSection>
 
       <SettingsSection title="Weekly Export (Mylar3 Parity)">
@@ -2291,6 +2467,9 @@ function AnnualHandlingSettingsTab() {
     upcomingWeeksToShow: 4,
     pastWeeksToShow: 4,
     enableSeriesAnnualIntegration: true,
+    showUpcomingReleasesOnSeriesView: true,
+    upcomingReleasesWeeksAhead: 4,
+    ignoredPublishers: [] as string[],
     exportWeeklyPullList: false,
     weeklyExportDirectory: null,
     weeklyExportFormat: 'Json' as const,
