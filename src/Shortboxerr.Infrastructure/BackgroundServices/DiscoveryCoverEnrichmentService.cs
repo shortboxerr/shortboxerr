@@ -102,24 +102,43 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         var coverFallbackService = scope.ServiceProvider.GetRequiredService<ICoverFallbackService>();
         var coverService = scope.ServiceProvider.GetRequiredService<ICoverService>();
 
-        var cachedWeeks = await dbContext.CachedDiscoveryWeeks
+        var allCachedWeeks = await dbContext.CachedDiscoveryWeeks
             .Where(c => c.ExpiresAt > DateTime.UtcNow)
-            .OrderByDescending(c => c.WeekStart)
             .ToListAsync(cancellationToken);
 
-        if (cachedWeeks.Count == 0)
+        if (allCachedWeeks.Count == 0)
         {
             _logger.LogDebug("No cached discovery weeks to enrich");
             return;
         }
 
+        // Order: current week first, then future weeks (ascending), then past weeks (descending)
+        // Rationale: Future issues are more likely to need Metron enrichment since ComicVine
+        // may not have indexed them yet
+        var currentWeekStart = GetWeekStart(DateTime.UtcNow);
+        var cachedWeeks = allCachedWeeks
+            .OrderBy(c => c.WeekStart == currentWeekStart ? 0 : 1) // Current week first
+            .ThenBy(c => c.WeekStart >= currentWeekStart ? 0 : 1) // Then future weeks before past
+            .ThenBy(c => c.WeekStart >= currentWeekStart ? c.WeekStart : DateTime.MaxValue) // Future ascending
+            .ThenByDescending(c => c.WeekStart < currentWeekStart ? c.WeekStart : DateTime.MinValue) // Past descending
+            .ToList();
+        
+        var weekOrder = string.Join(", ", cachedWeeks.Select(w => w.WeekStart.ToString("yyyy-MM-dd")));
+        _logger.LogInformation(
+            "Processing {Count} cached weeks for cover enrichment. Order: current week ({CurrentWeek}), then future, then past. Weeks: [{WeekOrder}]",
+            cachedWeeks.Count, currentWeekStart.ToString("yyyy-MM-dd"), weekOrder);
+
         var totalEnriched = 0;
         var metronHits = 0;
         var volumeHits = 0;
         var notFoundCount = 0;
+        var weekIndex = 0;
 
         foreach (var cachedWeek in cachedWeeks)
         {
+            weekIndex++;
+            _logger.LogDebug("Processing week {Index}/{Total}: {WeekStart}", 
+                weekIndex, cachedWeeks.Count, cachedWeek.WeekStart.ToString("yyyy-MM-dd"));
             try
             {
                 var (enrichedCount, metronCount, volumeCount, notFound) = await EnrichCachedWeekAsync(
@@ -623,5 +642,14 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
                 WeekStart = weekStart
             });
         }
+    }
+
+    /// <summary>
+    /// Gets the Monday of the week containing the given date.
+    /// </summary>
+    private static DateTime GetWeekStart(DateTime date)
+    {
+        var diff = (7 + (date.DayOfWeek - DayOfWeek.Monday)) % 7;
+        return date.Date.AddDays(-diff);
     }
 }
