@@ -19,10 +19,13 @@ public class ShortboxerrDbContext : DbContext
     public DbSet<HistoryEvent> HistoryEvents => Set<HistoryEvent>();
     public DbSet<ProviderDefinition> Providers => Set<ProviderDefinition>();
     public DbSet<IssueStoryArc> IssueStoryArcs => Set<IssueStoryArc>();
+    public DbSet<IssueCharacter> IssueCharacters => Set<IssueCharacter>();
+    public DbSet<IssueTeam> IssueTeams => Set<IssueTeam>();
     public DbSet<PendingMatch> PendingMatches => Set<PendingMatch>();
     public DbSet<MetadataRefreshEvent> MetadataRefreshEvents => Set<MetadataRefreshEvent>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<CachedDiscoveryWeek> CachedDiscoveryWeeks => Set<CachedDiscoveryWeek>();
+    public DbSet<FallbackCoverEntry> FallbackCoverEntries => Set<FallbackCoverEntry>();
     public DbSet<VariantCoverEntity> VariantCovers => Set<VariantCoverEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
