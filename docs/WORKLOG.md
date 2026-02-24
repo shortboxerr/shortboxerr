@@ -1,5 +1,45 @@
 # Worklog
 
+## Iteration 152 (2026-02-24)
+**EPIC 11.20: Metron Enable Validation**
+
+### Summary
+Prevent enabling Metron without valid credentials configured. Added UI validation (disable toggle until credentials provided) and backend validation (reject enable request if credentials missing).
+
+### Implementation
+
+**Files Modified:**
+| File | Change |
+|------|--------|
+| `ui/src/pages/SettingsPage.tsx` | Disable enable toggle when credentials not configured, show warning hint |
+| `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` | Backend validation to reject enable without credentials |
+| `tests/Shortboxerr.Tests/SettingsEndpointTests.cs` | Added 7 new Metron settings tests |
+
+### UI Changes
+- Enable toggle disabled when username or password not configured
+- Description changes to "Configure username and password first to enable Metron" when disabled
+- Warning badge with AlertCircle icon shows "Credentials required"
+- Allow toggling OFF even without credentials (to disable misconfigured state)
+
+### Backend Changes
+- Credentials are applied before enable validation (allows setting credentials + enable in single request)
+- Returns 400 Bad Request with error message: "Cannot enable Metron without username and password configured"
+
+### Tests Added
+- `GetMetronSettings_ReturnsValidSettings`
+- `UpdateMetronSettings_EnableWithoutCredentials_ReturnsBadRequest`
+- `UpdateMetronSettings_EnableWithCredentials_Succeeds`
+- `UpdateMetronSettings_DisableWithoutCredentials_Succeeds`
+- `UpdateMetronSettings_SetCredentialsAndEnableTogether_Succeeds`
+- `UpdateMetronSettings_CacheTtl_ClampedToValidRange`
+- `TestMetronConnection_WithoutCredentials_ReturnsNotConfigured`
+
+### Test Results
+- 26 SettingsEndpoint tests passing
+- All 7 new Metron tests passing
+
+---
+
 ## Iteration 151 (2026-02-24)
 **EPIC 11.18: Metron Settings UI Refinements**
 

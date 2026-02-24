@@ -1,0 +1,78 @@
+---
+description: Security practices for credential handling, API keys, and sensitive data
+alwaysApply: true
+---
+
+# Security Practices
+
+## Credential Storage
+
+**Never hardcode credentials.** Store API keys, usernames, passwords, and tokens in:
+- Environment variables
+- Encrypted settings storage (ISettingsService with encryption)
+- User secrets (development only)
+
+```csharp
+// ❌ BAD
+var apiKey = "sk-1234567890abcdef";
+
+// ✅ GOOD
+var apiKey = await _settingsService.GetAsync("ComicVine:ApiKey");
+```
+
+## Logging & Error Messages
+
+**Never log sensitive data.** Mask or omit credentials in logs and error messages.
+
+```csharp
+// ❌ BAD
+_logger.LogError("Auth failed for user {User} with password {Password}", username, password);
+
+// ✅ GOOD
+_logger.LogError("Auth failed for user {User}", username);
+```
+
+## API Responses
+
+**Never expose credentials in API responses.** Use separate DTOs for input vs output.
+
+```csharp
+// ❌ BAD - Returns password in response
+public record SettingsResponse(string Username, string Password);
+
+// ✅ GOOD - Password write-only, masked in response
+public record SettingsResponse(string Username, bool IsConfigured);
+```
+
+## Frontend Handling
+
+**Never store credentials in localStorage or expose in URLs.**
+
+```typescript
+// ❌ BAD
+localStorage.setItem('apiKey', key);
+window.location.href = `/api?key=${apiKey}`;
+
+// ✅ GOOD
+// Send credentials only in request body over HTTPS
+await api.updateSettings({ apiKey });
+```
+
+## Password Fields
+
+**Use appropriate input types and prevent autocomplete for sensitive fields.**
+
+```tsx
+// ✅ GOOD
+<input type="password" autoComplete="new-password" />
+```
+
+## Validation
+
+**Validate credentials server-side before enabling features.**
+
+```csharp
+// ✅ GOOD - Reject enable without credentials
+if (request.Enabled && string.IsNullOrEmpty(settings.Username))
+    return Results.BadRequest("Cannot enable without credentials");
+```

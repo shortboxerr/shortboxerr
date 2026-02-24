@@ -416,14 +416,27 @@ public static class SettingsEndpoints
         var settings = await settingsService.GetAsync<MetronSettings>("metron", new MetronSettings(), cancellationToken)
             ?? new MetronSettings();
 
-        if (request.Enabled.HasValue)
-            settings.Enabled = request.Enabled.Value;
+        // Apply credential updates first (before checking if we can enable)
         if (!string.IsNullOrEmpty(request.Username))
             settings.Username = request.Username;
         if (!string.IsNullOrEmpty(request.Password))
             settings.Password = request.Password;
         if (request.CacheTtlHours.HasValue)
             settings.CacheTtlHours = Math.Clamp(request.CacheTtlHours.Value, 1, 168);
+
+        // Validate: cannot enable Metron without credentials
+        if (request.Enabled == true)
+        {
+            var isConfigured = !string.IsNullOrEmpty(settings.Username) && !string.IsNullOrEmpty(settings.Password);
+            if (!isConfigured)
+            {
+                return Results.BadRequest(new { error = "Cannot enable Metron without username and password configured" });
+            }
+        }
+
+        if (request.Enabled.HasValue)
+            settings.Enabled = request.Enabled.Value;
+
         // TimeoutSeconds and MaxRequestsPerMinute are hardcoded to Metron's limits (not user-configurable)
 
         await settingsService.SetAsync("metron", settings, cancellationToken);

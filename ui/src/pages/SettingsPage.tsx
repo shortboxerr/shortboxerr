@@ -2188,6 +2188,11 @@ function MetronSettingsTab() {
     updateMutation.mutate({ enabled: !settings?.enabled });
   };
 
+  // Credentials are configured if both username and password exist
+  const isConfigured = Boolean(settings?.username && settings?.hasPassword);
+  // Can only enable if credentials are configured; can always disable
+  const canToggleOn = isConfigured;
+
   if (isLoading) {
     return <div className="loading"><div className="spinner" /></div>;
   }
@@ -2215,16 +2220,37 @@ function MetronSettingsTab() {
           </a>
         </div>
 
-        <SettingsField label="Enable Metron" description="Enable backup cover lookups from Metron when ComicVine has no cover">
-          <label className="toggle-switch">
-            <input
-              type="checkbox"
-              checked={settings?.enabled ?? false}
-              onChange={handleToggleEnabled}
-              disabled={updateMutation.isPending}
-            />
-            <span className="toggle-slider"></span>
-          </label>
+        <SettingsField 
+          label="Enable Metron" 
+          description={
+            !canToggleOn && !settings?.enabled 
+              ? "Configure username and password first to enable Metron"
+              : "Enable backup cover lookups from Metron when ComicVine has no cover"
+          }
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <label className="toggle-switch" title={!canToggleOn && !settings?.enabled ? "Configure credentials first" : undefined}>
+              <input
+                type="checkbox"
+                checked={settings?.enabled ?? false}
+                onChange={handleToggleEnabled}
+                disabled={updateMutation.isPending || (!canToggleOn && !settings?.enabled)}
+              />
+              <span className="toggle-slider"></span>
+            </label>
+            {!canToggleOn && !settings?.enabled && (
+              <span style={{ 
+                fontSize: '12px', 
+                color: 'var(--accent-warning)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <AlertCircle size={14} />
+                Credentials required
+              </span>
+            )}
+          </div>
         </SettingsField>
 
         <SettingsField 

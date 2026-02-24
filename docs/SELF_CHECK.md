@@ -1,49 +1,49 @@
-# Self Check - Iteration 151
+# Self Check - Iteration 152
 
 ## Summary
-**EPIC 11.18: Metron Settings UI Refinements** - Complete
+**EPIC 11.20: Metron Enable Validation** - Complete
 
-Renamed "Cover Service" to "Metron" and removed user-configurable rate limiting settings to prevent API abuse.
+Prevent enabling Metron without valid credentials configured. UI disables toggle until credentials provided; backend rejects enable requests without credentials.
 
 ## Recent Iterations
+- **152**: Metron Enable Validation (EPIC 11.20)
 - **151**: Metron Settings UI Refinements (EPIC 11.18)
 - **150**: Metron Settings UI + Hide Internal Data Source Names (EPIC 11.14/11.15)
 - **149**: Metron Integration Implementation (EPIC 11.14)
-- **148**: Backup Cover Research - Metron Evaluation (EPIC 11.14)
 
 ## Implementation Summary
 
 ### Files Modified
 | File | Change |
 |------|--------|
-| `ui/src/pages/SettingsPage.tsx` | Renamed tab to "Metron", removed rate limit/timeout settings |
-| `ui/src/api/client.ts` | Removed timeoutSeconds/maxRequestsPerMinute from MetronSettingsUpdate |
-| `src/Shortboxerr.Core/Metron/IMetronClient.cs` | Added DefaultTimeoutSeconds/DefaultMaxRequestsPerMinute constants |
-| `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` | Hardcoded rate limits, updated DTOs |
+| `ui/src/pages/SettingsPage.tsx` | Disable enable toggle when credentials missing, show warning hint |
+| `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` | Backend validation rejects enable without credentials |
+| `tests/Shortboxerr.Tests/SettingsEndpointTests.cs` | Added 7 new Metron settings validation tests |
 
 ## Implementation Checklist
 
-### UI Changes
-- [x] Rename Settings tab from "Cover Service" to "Metron" ✅
-- [x] Update section title from "Cover Service" to "Metron" ✅
-- [x] Update "Enable Cover Service" → "Enable Metron" ✅
-- [x] Update description to mention Metron directly ✅
-- [x] Remove "Rate Limiting" section entirely ✅
-- [x] Remove "Max Requests Per Minute" field ✅
-- [x] Remove "Request Timeout" field ✅
-- [x] Keep "Cache TTL" field (user benefit, no API risk) ✅
+### UI Validation
+- [x] Compute `isConfigured` from username + hasPassword ✅
+- [x] Disable enable toggle when trying to turn ON without credentials ✅
+- [x] Allow turning OFF even without credentials ✅
+- [x] Change description to "Configure username and password first to enable Metron" when disabled ✅
+- [x] Add AlertCircle warning badge "Credentials required" ✅
+- [x] Add title tooltip on toggle when disabled ✅
 
-### API Changes
-- [x] Add DefaultTimeoutSeconds constant (30s) ✅
-- [x] Add DefaultMaxRequestsPerMinute constant (30) ✅
-- [x] Update GetMetronSettings to return hardcoded values ✅
-- [x] Update UpdateMetronSettings to ignore rate limit params ✅
-- [x] Remove timeoutSeconds/maxRequestsPerMinute from MetronSettingsRequest DTO ✅
-- [x] Update response DTO docs to indicate read-only ✅
+### Backend Validation
+- [x] Apply credential updates before checking enable validation ✅
+- [x] Check if `request.Enabled == true` and credentials missing ✅
+- [x] Return 400 Bad Request with error message ✅
+- [x] Allow credentials + enable in single request ✅
 
-### Client Changes
-- [x] Remove timeoutSeconds from MetronSettingsUpdate interface ✅
-- [x] Remove maxRequestsPerMinute from MetronSettingsUpdate interface ✅
+### Tests Added
+- [x] `GetMetronSettings_ReturnsValidSettings` ✅
+- [x] `UpdateMetronSettings_EnableWithoutCredentials_ReturnsBadRequest` ✅
+- [x] `UpdateMetronSettings_EnableWithCredentials_Succeeds` ✅
+- [x] `UpdateMetronSettings_DisableWithoutCredentials_Succeeds` ✅
+- [x] `UpdateMetronSettings_SetCredentialsAndEnableTogether_Succeeds` ✅
+- [x] `UpdateMetronSettings_CacheTtl_ClampedToValidRange` ✅
+- [x] `TestMetronConnection_WithoutCredentials_ReturnsNotConfigured` ✅
 
 ## Build Health
 ```
@@ -54,19 +54,33 @@ Build succeeded.
 
 ## Test Results
 ```
-Passed: 25 Metron-related tests
+Total tests: 26 SettingsEndpoint tests
+     Passed: 26
+     Failed: 0
 ```
 
-## Settings Before/After
+## Validation Flow
 
-| Setting | Before | After |
-|---------|--------|-------|
-| Tab Label | "Cover Service" | "Metron" |
-| Section Title | "Cover Service" | "Metron" |
-| Enable Toggle | "Enable Cover Service" | "Enable Metron" |
-| Max Requests/Min | User-configurable (1-30) | Removed (hardcoded 30) |
-| Request Timeout | User-configurable (5-120s) | Removed (hardcoded 30s) |
-| Cache TTL | User-configurable (1-168h) | Kept (unchanged) |
+### UI Flow
+1. User opens Settings > Metron tab
+2. If no credentials configured:
+   - Enable toggle is disabled
+   - Description shows "Configure username and password first to enable Metron"
+   - Warning badge shows "Credentials required"
+3. User enters username and password, clicks Save
+4. Enable toggle becomes enabled
+5. User can now toggle Metron on
 
-## Commits
-1. `feat: rename Cover Service to Metron and remove user rate limiting`
+### Backend Flow
+1. PUT /api/v1/settings/metron with `{ "enabled": true }`
+2. Load current settings
+3. Apply any credential updates from request
+4. If `enabled == true`, check credentials:
+   - If missing: return 400 `{ "error": "Cannot enable Metron without username and password configured" }`
+   - If present: proceed with update
+5. Save settings and return updated state
+
+## Security Considerations
+- Credentials are never returned in API responses (only `hasPassword: true/false`)
+- Enable validation happens server-side as defense-in-depth
+- Frontend validation provides better UX but backend is authoritative

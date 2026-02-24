@@ -1740,6 +1740,96 @@ Rename "Cover Service" back to "Metron" and simplify configuration by removing u
 
 ---
 
+### 11.20 Metron Enable Validation ✅ COMPLETED (Iteration 152)
+
+Prevent enabling Metron without valid credentials configured. Toggle is disabled until credentials are provided, with backend validation as fallback.
+
+**Implementation Items:**
+- [x] **Disable enable toggle until credentials provided** ✅
+  - AC: Disable the "Enable Metron" toggle if username or password is empty ✅
+  - AC: Show tooltip/hint explaining why toggle is disabled ("Configure username and password first") ✅
+  - AC: Allow toggling OFF even without credentials (to disable a misconfigured state) ✅
+
+- [x] **Validate on enable** ✅
+  - AC: When user tries to enable, verify credentials are present ✅
+  - AC: Show clear error message if credentials are missing ✅
+  - Note: Auto-test on enable deferred (manual test button available)
+
+- [x] **Backend validation** ✅
+  - AC: API rejects enabling Metron if credentials not configured ✅
+  - AC: Returns 400 Bad Request: "Cannot enable Metron without username and password configured" ✅
+
+**Tests:** 7 new tests in SettingsEndpointTests.cs
+
+---
+
+### 11.19 Security Audit: Credential Storage & Protection ← READY (HIGH PRIORITY)
+
+Perform a comprehensive security audit of the codebase to ensure all API keys, usernames, passwords, and other sensitive credentials are stored and handled securely. Establish security guidelines to prevent future vulnerabilities.
+
+**Scope:**
+- All stored credentials (API keys, usernames, passwords, tokens)
+- Settings persistence (database, config files)
+- API request/response handling
+- Logging and error messages
+- Frontend credential handling
+
+**Implementation Items:**
+
+- [ ] **Audit credential storage** ← READY
+  - AC: Inventory all locations where credentials are stored (ComicVine API key, Metron credentials, indexer API keys, download client credentials, DDL provider credentials)
+  - AC: Verify credentials are encrypted at rest (not plaintext in database)
+  - AC: Document encryption method used (algorithm, key management)
+  - AC: Ensure database backups don't expose plaintext credentials
+
+- [ ] **Audit credential transmission** ← READY
+  - AC: Verify API endpoints never return plaintext passwords (only `hasPassword: true/false`)
+  - AC: Verify credentials are not logged (already covered by SensitiveDataDestructuringPolicy, but re-verify)
+  - AC: Verify credentials are not exposed in error messages
+  - AC: Verify browser network tab doesn't show passwords in request/response
+
+- [ ] **Audit frontend credential handling** ← READY
+  - AC: Verify password fields use `type="password"` attribute
+  - AC: Verify credentials are not stored in localStorage/sessionStorage
+  - AC: Verify credentials are not included in Redux/state management in plaintext
+  - AC: Verify no console.log statements expose credentials
+
+- [ ] **Implement encryption for credentials** ← READY (if not already encrypted)
+  - AC: Use AES-256 or equivalent for credential encryption
+  - AC: Derive encryption key from machine-specific value (not hardcoded)
+  - AC: Implement `ICredentialService` for encrypt/decrypt operations
+  - AC: Migrate existing plaintext credentials to encrypted storage
+
+- [ ] **Create security guidelines** ← READY
+  - AC: Add `docs/SECURITY.md` with credential handling guidelines
+  - AC: Document required patterns for storing new credentials
+  - AC: Add code review checklist for security
+  - AC: Add pre-commit hook or linter rule to detect potential credential exposure
+
+- [ ] **Add security unit tests** ← READY
+  - AC: Test that API responses never contain plaintext passwords
+  - AC: Test that logs don't contain credentials (extend existing tests)
+  - AC: Test that encrypted credentials can be round-tripped
+  - AC: Test that error messages don't expose credentials
+
+**Affected Areas:**
+- `ISettingsService` - Generic key-value storage
+- `MetronSettings` - Metron username/password
+- `ComicVineSettings` - ComicVine API key
+- `NzbIndexer` entities - Indexer API keys
+- `DownloadClient` entities - SABnzbd/NZBGet API keys
+- `DdlProvider` entities - DDL site credentials
+- `NotificationProvider` entities - Webhook URLs, email passwords, API keys
+
+**Security Standards:**
+- OWASP credential storage guidelines
+- Never log credentials (enforce via SensitiveDataDestructuringPolicy)
+- Never return passwords in API responses
+- Use secure comparison for credential validation
+- Implement rate limiting on authentication endpoints
+
+---
+
 ### 11.12 Show Upcoming Releases on Series View (WalkSoftly Integration) ✅ COMPLETED
 
 When WalkSoftly reports an upcoming issue (e.g., Absolute Wonder Woman #17) that ComicVine hasn't yet indexed, the series detail view now displays this upcoming release.
@@ -1784,6 +1874,77 @@ When WalkSoftly reports an upcoming issue (e.g., Absolute Wonder Woman #17) that
 
 **API Endpoint:**
 - GET /api/v1/series/{id}/upcoming?weeksAhead=4
+
+---
+
+### 11.21 Upcoming Issues: Display Parity with Regular Issues ← READY
+
+Upcoming issues in the series detail view should display the same metadata as regular issues (issue number, title, release date, etc.) rather than appearing as minimal placeholders.
+
+**Current State:**
+- Upcoming issues show cover image (or placeholder) and release date
+- Missing: issue number badge, issue title, publisher info
+
+**Implementation Items:**
+- [ ] **Add issue number display** ← READY
+  - AC: Show issue number badge (e.g., "#17") on upcoming issue cards
+  - AC: Match styling of regular issue number display
+  - AC: Handle variant indicators if present in WalkSoftly data
+
+- [ ] **Add issue metadata** ← READY
+  - AC: Show issue title if available from WalkSoftly
+  - AC: Show publisher name
+  - AC: Show store date in same format as regular issues
+  - AC: Show "days until release" indicator (e.g., "In 3 days", "Tomorrow")
+
+- [ ] **List view parity** ← READY
+  - AC: In list view, upcoming issues should have same columns as regular issues
+  - AC: Issue number column should be populated
+  - AC: Status column shows "Upcoming" badge instead of wanted/downloaded status
+
+---
+
+### 11.22 Upcoming Issues: Metron Cover Enrichment Service ← READY
+
+Background service to fetch cover images from Metron for upcoming issues that don't have covers. WalkSoftly provides release dates but not cover images; Metron can provide covers for issues before they're indexed by ComicVine.
+
+**Rationale:**
+- WalkSoftly provides accurate release dates but no cover images
+- ComicVine may not have upcoming issues indexed yet
+- Metron often has cover images available before ComicVine
+- Better user experience with actual covers instead of placeholders
+
+**Implementation Items:**
+- [ ] **Create UpcomingCoverEnrichmentService** ← READY
+  - AC: Background service that runs periodically (e.g., every 6 hours)
+  - AC: Only runs if Metron is enabled and configured
+  - AC: Queries WalkSoftly cache for upcoming issues without covers
+  - AC: Attempts to find matching issue in Metron by series name + issue number
+  - AC: Caches Metron cover URLs in WalkSoftly cache entries
+  - AC: Respects Metron rate limits (30 req/min)
+
+- [ ] **Metron lookup by series/issue** ← READY
+  - AC: Use existing `IMetronClient.SearchIssueAsync()` method
+  - AC: Match by series name (fuzzy) and issue number (exact)
+  - AC: Handle cases where Metron doesn't have the issue yet
+  - AC: Log matches and misses for debugging
+
+- [ ] **Cache integration** ← READY
+  - AC: Store Metron cover URL in `UpcomingRelease.CoverImageUrl` field
+  - AC: Mark entry as "enriched" to avoid repeated lookups
+  - AC: Clear enrichment flag when cache entry is refreshed from WalkSoftly
+
+- [ ] **Settings** ← READY
+  - AC: Add setting to enable/disable upcoming cover enrichment (default: enabled if Metron configured)
+  - AC: Add to Metron settings section in UI
+
+- [ ] **Manual trigger** ← READY
+  - AC: API endpoint to manually trigger enrichment: POST /api/v1/pulllist/enrich-covers
+  - AC: Button in Settings > Metron to manually run enrichment
+
+**Dependencies:**
+- Requires Metron integration (11.14) ✅ Complete
+- Requires WalkSoftly integration (11.12) ✅ Complete
 
 ---
 
