@@ -188,19 +188,55 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             return (0, 0, 0, 0);
         }
 
-        // First pass: mark issues that already have ComicVine covers
+        // First pass: identify issues that need tagging
+        // - Issues with Image but no CoverSource are legacy data (likely volume fallbacks)
+        // - Issues with CoverSource = "ComicVine" or "Metron" are properly tagged
         var dataModified = false;
-        foreach (var issue in issues.Where(i => i.Image != null && i.EnrichmentStatus == CoverEnrichmentStatus.None))
+        
+        // Log stats about issue state before processing
+        var issuesWithImage = issues.Count(i => i.Image != null);
+        var issuesNoSource = issues.Count(i => i.Image != null && string.IsNullOrEmpty(i.CoverSource));
+        var issuesNone = issues.Count(i => i.EnrichmentStatus == CoverEnrichmentStatus.None);
+        var sourceValues = issues
+            .Where(i => i.Image != null)
+            .GroupBy(i => i.CoverSource ?? "(null)")
+            .Select(g => $"{g.Key}:{g.Count()}")
+            .ToList();
+        _logger.LogInformation(
+            "Week {WeekStart}: {Total} issues, {WithImage} have images ({Sources}), {NoneStatus} have None status",
+            cachedWeek.WeekStart.ToString("yyyy-MM-dd"), issues.Count, issuesWithImage, 
+            string.Join(", ", sourceValues), issuesNone);
+
+        // Mark legacy issues (have image, no source tag, no enrichment status) as volume fallbacks
+        // These are issues from before we added proper source tracking
+        var legacyCount = 0;
+        foreach (var issue in issues.Where(i => i.Image != null && 
+                                                string.IsNullOrEmpty(i.CoverSource) && 
+                                                i.EnrichmentStatus == CoverEnrichmentStatus.None))
         {
-            issue.EnrichmentStatus = CoverEnrichmentStatus.HasComicVineCover;
-            issue.CoverSource = "ComicVine";
+            // Assume these are volume fallbacks - they need real issue covers
+            issue.CoverSource = "VolumeFallback";
+            issue.EnrichmentStatus = CoverEnrichmentStatus.HasVolumeFallback;
             dataModified = true;
-            _skippedHasComicVine++;
+            legacyCount++;
+        }
+        
+        if (legacyCount > 0)
+        {
+            _logger.LogInformation(
+                "Week {WeekStart}: Marked {Count} legacy issues as VolumeFallback",
+                cachedWeek.WeekStart.ToString("yyyy-MM-dd"), legacyCount);
         }
 
-        // Find issues that need enrichment (no cover, not recently checked, not already enriched)
+        // Find issues that need enrichment:
+        // - Issues with no cover at all
+        // - Issues with only volume fallback covers (need real issue covers)
+        // - Issues marked as HasVolumeFallback (need real issue covers)
         var issuesToProcess = issues
-            .Where(i => i.Image == null && i.Volume?.Id > 0)
+            .Where(i => i.Volume?.Id > 0)
+            .Where(i => i.Image == null || 
+                        i.CoverSource == "VolumeFallback" || 
+                        i.EnrichmentStatus == CoverEnrichmentStatus.HasVolumeFallback)
             .Where(i => ShouldAttemptEnrichment(i))
             .ToList();
 
@@ -342,23 +378,28 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
                 }
                 else if (fallbackResult.Source == CoverSource.ComicVineVolume)
                 {
-                    // Volume covers are just URLs, don't need local caching
-                    issue.Image = new ComicVineImage
+                    // Volume covers are NOT issue-specific covers - they're series covers
+                    // If issue doesn't have any image, apply the volume cover as fallback
+                    // But mark as HasVolumeFallback so we retry for real issue covers later
+                    if (issue.Image == null)
                     {
-                        MediumUrl = fallbackResult.CoverUrl,
-                        SmallUrl = fallbackResult.CoverUrl,
-                        OriginalUrl = fallbackResult.CoverUrl
-                    };
-                    issue.EnrichmentStatus = CoverEnrichmentStatus.Enriched;
-                    issue.CoverSource = "ComicVineVolume";
+                        issue.Image = new ComicVineImage
+                        {
+                            MediumUrl = fallbackResult.CoverUrl,
+                            SmallUrl = fallbackResult.CoverUrl,
+                            OriginalUrl = fallbackResult.CoverUrl
+                        };
+                        issue.CoverSource = "VolumeFallback";
+                    }
+                    // Keep or set status to HasVolumeFallback - still needs real issue cover
+                    issue.EnrichmentStatus = CoverEnrichmentStatus.HasVolumeFallback;
                     volumeCount++;
-                    enrichedCount++;
                     dataModified = true;
                 }
             }
             else
             {
-                // No cover found - mark as NotFound to avoid repeated lookups
+                // No cover found at all - mark as NotFound to apply cooldown
                 issue.EnrichmentStatus = CoverEnrichmentStatus.NotFound;
                 notFoundCount++;
                 dataModified = true;
@@ -387,7 +428,7 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
     /// </summary>
     private bool ShouldAttemptEnrichment(ComicVineIssue issue)
     {
-        // Already has ComicVine cover
+        // Already has ComicVine issue cover (not volume fallback)
         if (issue.EnrichmentStatus == CoverEnrichmentStatus.HasComicVineCover)
         {
             _skippedHasComicVine++;
@@ -412,7 +453,20 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
                 return false;
             }
         }
-
+        
+        // HasVolumeFallback - retry periodically (same cooldown as NotFound)
+        if (issue.EnrichmentStatus == CoverEnrichmentStatus.HasVolumeFallback && 
+            issue.LastEnrichmentAttempt.HasValue)
+        {
+            var timeSinceAttempt = DateTime.UtcNow - issue.LastEnrichmentAttempt.Value;
+            if (timeSinceAttempt < _notFoundCooldown)
+            {
+                _skippedRecentlyChecked++;
+                return false;
+            }
+        }
+        
+        // None - always try to enrich
         return true;
     }
 

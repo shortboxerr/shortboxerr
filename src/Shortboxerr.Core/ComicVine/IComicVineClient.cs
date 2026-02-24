@@ -390,11 +390,14 @@ public enum CoverEnrichmentStatus
     /// <summary>Issue already has a ComicVine cover - no enrichment needed.</summary>
     HasComicVineCover = 1,
 
-    /// <summary>Cover was successfully fetched from Metron.</summary>
+    /// <summary>Cover was successfully fetched from Metron (issue-specific cover).</summary>
     Enriched = 2,
 
     /// <summary>Metron was queried but no cover was found. Will retry after cooldown period.</summary>
-    NotFound = 3
+    NotFound = 3,
+    
+    /// <summary>Using a volume/series cover as fallback - still needs issue-specific cover.</summary>
+    HasVolumeFallback = 4
 }
 
 /// <summary>

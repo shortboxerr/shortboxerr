@@ -1010,11 +1010,14 @@ public class PullListService : IPullListService
             var enrichedCount = 0;
 
             // Apply volume covers to issues that don't have images
+            // Mark these as fallbacks so enrichment service knows to look for real issue covers
             foreach (var issue in issues.Where(i => i.Image == null && i.Volume?.Id > 0))
             {
                 if (volumeCoverLookup.TryGetValue(issue.Volume!.Id, out var volumeImage))
                 {
                     issue.Image = volumeImage;
+                    issue.CoverSource = "VolumeFallback"; // Mark as fallback - still needs issue-specific cover
+                    issue.EnrichmentStatus = CoverEnrichmentStatus.HasVolumeFallback;
                     enrichedCount++;
                 }
             }
