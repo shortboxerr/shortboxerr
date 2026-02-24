@@ -1548,7 +1548,8 @@ League of Comic Geeks has **NO official API**. Analysis of existing libraries (p
   - AC: Track success rate per source (CoverFallbackStats) ✅
   - AC: Fuzzy matching for series name + issue number ✅
   - AC: 24-hour cache with clear capability ✅
-  - Note: 13 unit tests added (CoverFallbackServiceTests.cs)
+  - AC: Integrated with DiscoveryCoverEnrichmentService background task ✅
+  - Note: 10 unit tests in CoverFallbackServiceTests.cs
 
 - [ ] **Background cover refresh** ← READY (Priority 4)
   - AC: Extend existing background service to periodically check for ComicVine cover updates

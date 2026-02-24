@@ -4,17 +4,23 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Shortboxerr.Core.ComicVine;
+using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.Persistence;
 
 namespace Shortboxerr.Infrastructure.BackgroundServices;
 
 /// <summary>
-/// Background service that enriches cached discovery data with cover images from ComicVine.
+/// Background service that enriches cached discovery data with cover images.
 /// 
 /// WalkSoftly data doesn't include cover images, so this service periodically:
 /// 1. Scans cached discovery weeks for issues missing cover images
-/// 2. Batch fetches volume covers from ComicVine
-/// 3. Updates the cached data with the enriched cover URLs
+/// 2. Tries LOCG for issue-specific covers first (via CoverFallbackService)
+/// 3. Falls back to ComicVine volume (series) covers
+/// 4. Updates the cached data with the enriched cover URLs
+/// 
+/// Priority:
+/// 1. LOCG issue-specific cover (via CoverFallbackService)
+/// 2. ComicVine volume cover (final fallback)
 /// 
 /// This runs independently of the main discovery refresh to avoid rate limiting
 /// and to allow gradual enrichment over time.
@@ -70,6 +76,7 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ShortboxerrDbContext>();
         var comicVineClient = scope.ServiceProvider.GetRequiredService<IComicVineClient>();
+        var coverFallbackService = scope.ServiceProvider.GetRequiredService<ICoverFallbackService>();
 
         var cachedWeeks = await dbContext.CachedDiscoveryWeeks
             .Where(c => c.ExpiresAt > DateTime.UtcNow)
@@ -83,14 +90,18 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         }
 
         var totalEnriched = 0;
+        var locgHits = 0;
+        var volumeHits = 0;
 
         foreach (var cachedWeek in cachedWeeks)
         {
             try
             {
-                var enrichedCount = await EnrichCachedWeekAsync(
-                    cachedWeek, comicVineClient, dbContext, cancellationToken);
+                var (enrichedCount, locgCount, volumeCount) = await EnrichCachedWeekAsync(
+                    cachedWeek, comicVineClient, coverFallbackService, dbContext, cancellationToken);
                 totalEnriched += enrichedCount;
+                locgHits += locgCount;
+                volumeHits += volumeCount;
             }
             catch (Exception ex)
             {
@@ -103,14 +114,15 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         if (totalEnriched > 0)
         {
             _logger.LogInformation(
-                "Cover enrichment complete: enriched {Count} issues across {Weeks} weeks",
-                totalEnriched, cachedWeeks.Count);
+                "Cover enrichment complete: enriched {Count} issues ({LocgHits} from LOCG, {VolumeHits} from volume covers) across {Weeks} weeks",
+                totalEnriched, locgHits, volumeHits, cachedWeeks.Count);
         }
     }
 
-    private async Task<int> EnrichCachedWeekAsync(
+    private async Task<(int enrichedCount, int locgCount, int volumeCount)> EnrichCachedWeekAsync(
         Core.Entities.CachedDiscoveryWeek cachedWeek,
         IComicVineClient comicVineClient,
+        ICoverFallbackService coverFallbackService,
         ShortboxerrDbContext dbContext,
         CancellationToken cancellationToken)
     {
@@ -124,12 +136,12 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             _logger.LogWarning(ex,
                 "Failed to deserialize cached issues for week {WeekStart}",
                 cachedWeek.WeekStart);
-            return 0;
+            return (0, 0, 0);
         }
 
         if (issues == null || issues.Count == 0)
         {
-            return 0;
+            return (0, 0, 0);
         }
 
         var issuesMissingCovers = issues
@@ -141,7 +153,7 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             _logger.LogDebug(
                 "Week {WeekStart}: all {Count} issues already have covers",
                 cachedWeek.WeekStart, issues.Count);
-            return 0;
+            return (0, 0, 0);
         }
 
         _logger.LogInformation(
@@ -156,26 +168,60 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
 
         var volumeResult = await comicVineClient.GetVolumesByIdsAsync(volumeIds, cancellationToken);
 
-        if (!volumeResult.Success || volumeResult.Results == null)
+        var volumeCoverLookup = new Dictionary<int, ComicVineImage>();
+        if (volumeResult.Success && volumeResult.Results != null)
+        {
+            volumeCoverLookup = volumeResult.Results
+                .Where(v => v.Image != null)
+                .ToDictionary(v => v.Id, v => v.Image!);
+        }
+        else
         {
             _logger.LogWarning(
                 "Failed to fetch volumes for cover enrichment: {Error}",
                 volumeResult.Error ?? "Unknown error");
-            return 0;
         }
 
-        var volumeCoverLookup = volumeResult.Results
-            .Where(v => v.Image != null)
-            .ToDictionary(v => v.Id, v => v.Image!);
-
         var enrichedCount = 0;
+        var locgCount = 0;
+        var volumeCount = 0;
 
         foreach (var issue in issues.Where(i => i.Image == null && i.Volume?.Id > 0))
         {
+            var seriesName = issue.Volume?.Name ?? "";
+            var issueNumber = issue.IssueNumber ?? "";
+            string? volumeCoverUrl = null;
+
             if (volumeCoverLookup.TryGetValue(issue.Volume!.Id, out var volumeImage))
             {
-                issue.Image = volumeImage;
+                volumeCoverUrl = volumeImage.MediumUrl ?? volumeImage.SmallUrl;
+            }
+
+            var fallbackResult = await coverFallbackService.GetCoverAsync(
+                seriesName,
+                issueNumber,
+                null, // Publisher not available in cached issue data
+                volumeCoverUrl,
+                cancellationToken);
+
+            if (fallbackResult.Success && !string.IsNullOrEmpty(fallbackResult.CoverUrl))
+            {
+                issue.Image = new ComicVineImage
+                {
+                    MediumUrl = fallbackResult.CoverUrl,
+                    SmallUrl = fallbackResult.CoverUrl,
+                    OriginalUrl = fallbackResult.CoverUrl
+                };
                 enrichedCount++;
+
+                if (fallbackResult.Source == CoverSource.LeagueOfComicGeeks)
+                {
+                    locgCount++;
+                }
+                else if (fallbackResult.Source == CoverSource.ComicVineVolume)
+                {
+                    volumeCount++;
+                }
             }
         }
 
@@ -186,11 +232,11 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             await dbContext.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation(
-                "Week {WeekStart}: enriched {Count} issues with volume covers",
-                cachedWeek.WeekStart, enrichedCount);
+                "Week {WeekStart}: enriched {Count} issues ({Locg} LOCG, {Volume} volume)",
+                cachedWeek.WeekStart, enrichedCount, locgCount, volumeCount);
         }
 
-        return enrichedCount;
+        return (enrichedCount, locgCount, volumeCount);
     }
 
     /// <summary>

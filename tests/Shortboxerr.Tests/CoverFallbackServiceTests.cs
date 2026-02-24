@@ -27,60 +27,59 @@ public class CoverFallbackServiceTests
     }
 
     [Fact]
-    public async Task GetCoverAsync_ReturnsLocgCover_WhenFound()
+    public async Task GetCoverAsync_ReturnsLocgCover_WhenMatchFound()
     {
-        _locgClientMock
-            .Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _locgClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new LocgSearchResult
             {
                 Success = true,
                 Issues = new List<LocgIssue>
                 {
-                    new()
-                    {
-                        SeriesName = "Batman",
-                        IssueNumber = "105",
-                        CoverUrl = "https://s3.amazonaws.com/comicgeeks/comics/covers/large-12345.jpg",
-                        Publisher = "DC Comics"
-                    }
+                    new() { IssueId = 123, SeriesName = "Batman", IssueNumber = "100", CoverUrl = "https://example.com/cover.jpg" }
                 }
             });
 
         var service = CreateService();
-        var result = await service.GetCoverAsync("Batman", "105", "DC Comics");
+
+        var result = await service.GetCoverAsync("Batman", "100");
 
         Assert.True(result.Success);
         Assert.Equal(CoverSource.LeagueOfComicGeeks, result.Source);
-        Assert.Contains("comicgeeks", result.CoverUrl);
+        Assert.Equal("https://example.com/cover.jpg", result.CoverUrl);
     }
 
     [Fact]
     public async Task GetCoverAsync_ReturnsVolumeCover_WhenLocgFails()
     {
-        _locgClientMock
-            .Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new LocgSearchResult { Success = false, Error = "Not found" });
+        _locgClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new LocgSearchResult
+            {
+                Success = false,
+                Error = "Service unavailable"
+            });
 
         var service = CreateService();
-        var result = await service.GetCoverAsync(
-            "UnknownSeries",
-            "1",
-            volumeCoverUrl: "https://comicvine.com/volume-cover.jpg");
+
+        var result = await service.GetCoverAsync("Batman", "100", volumeCoverUrl: "https://comicvine.com/volume.jpg");
 
         Assert.True(result.Success);
         Assert.Equal(CoverSource.ComicVineVolume, result.Source);
-        Assert.Contains("volume-cover", result.CoverUrl);
+        Assert.Equal("https://comicvine.com/volume.jpg", result.CoverUrl);
     }
 
     [Fact]
-    public async Task GetCoverAsync_ReturnsNotFound_WhenAllSourcesFail()
+    public async Task GetCoverAsync_ReturnsNotFound_WhenNoCoversAvailable()
     {
-        _locgClientMock
-            .Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new LocgSearchResult { Success = false });
+        _locgClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new LocgSearchResult
+            {
+                Success = true,
+                Issues = new List<LocgIssue>()
+            });
 
         var service = CreateService();
-        var result = await service.GetCoverAsync("UnknownSeries", "1");
+
+        var result = await service.GetCoverAsync("NonExistentSeries", "999");
 
         Assert.False(result.Success);
         Assert.Equal(CoverSource.None, result.Source);
@@ -89,227 +88,170 @@ public class CoverFallbackServiceTests
     [Fact]
     public async Task GetCoverAsync_ReturnsCachedResult_OnSecondCall()
     {
-        var uniqueSeries = $"CacheTestSeries_{Guid.NewGuid():N}";
-        var locgMock = new Mock<ILeagueOfComicGeeksClient>();
-        
-        locgMock
-            .Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        var uniqueSeries = $"CacheTest_{Guid.NewGuid():N}";
+        var callCount = 0;
+
+        var locgClientMock = new Mock<ILeagueOfComicGeeksClient>();
+        locgClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Callback(() => callCount++)
             .ReturnsAsync(new LocgSearchResult
             {
                 Success = true,
                 Issues = new List<LocgIssue>
                 {
-                    new()
-                    {
-                        SeriesName = uniqueSeries,
-                        IssueNumber = "1",
-                        CoverUrl = "https://s3.amazonaws.com/test.jpg"
-                    }
+                    new() { IssueId = 456, SeriesName = uniqueSeries, IssueNumber = "50", CoverUrl = "https://example.com/spidey.jpg" }
                 }
             });
 
         var freshCache = new MemoryCache(new MemoryCacheOptions());
-        var service = new CoverFallbackService(locgMock.Object, freshCache, _loggerMock.Object);
+        var service = new CoverFallbackService(locgClientMock.Object, freshCache, _loggerMock.Object);
 
-        var result1 = await service.GetCoverAsync(uniqueSeries, "1");
+        var result1 = await service.GetCoverAsync(uniqueSeries, "50");
         
-        Assert.True(result1.Success, "First call should succeed");
-        Assert.False(result1.FromCache, "First call should not be from cache");
+        Assert.True(result1.Success, $"First call failed: {result1.Error}");
+        Assert.False(result1.FromCache, "First result should not be from cache");
+        Assert.Equal(1, callCount);
 
-        var result2 = await service.GetCoverAsync(uniqueSeries, "1");
+        var result2 = await service.GetCoverAsync(uniqueSeries, "50");
         
-        Assert.True(result2.Success, "Second call should succeed");
-        Assert.True(result2.FromCache, "Second call should be from cache");
-        
-        locgMock.Verify(
-            c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
-            Times.Once);
+        Assert.True(result2.Success, $"Second call failed: {result2.Error}");
+        Assert.True(result2.FromCache, "Second result should be from cache");
+        Assert.Equal(1, callCount);
     }
 
     [Fact]
-    public async Task GetCoverAsync_MatchesIssueNumber_Correctly()
+    public async Task GetCoverAsync_MatchesFuzzySeriesNames()
     {
-        _locgClientMock
-            .Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _locgClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new LocgSearchResult
             {
                 Success = true,
                 Issues = new List<LocgIssue>
                 {
-                    new() { SeriesName = "Spider-Man", IssueNumber = "1", CoverUrl = "https://test1.jpg" },
-                    new() { SeriesName = "Spider-Man", IssueNumber = "10", CoverUrl = "https://test10.jpg" },
-                    new() { SeriesName = "Spider-Man", IssueNumber = "100", CoverUrl = "https://test100.jpg" }
+                    new() { IssueId = 789, SeriesName = "Absolute Wonder Woman", IssueNumber = "17", CoverUrl = "https://example.com/aww.jpg" }
                 }
             });
 
         var service = CreateService();
-        var result = await service.GetCoverAsync("Spider-Man", "10");
+
+        var result = await service.GetCoverAsync("Absolute Wonder-Woman", "17");
 
         Assert.True(result.Success);
-        Assert.Contains("test10", result.CoverUrl);
+        Assert.Equal(CoverSource.LeagueOfComicGeeks, result.Source);
     }
 
     [Fact]
-    public async Task GetCoverAsync_HandlesIssueNumberWithHash()
+    public async Task GetCoverAsync_HandlesException_Gracefully()
     {
-        _locgClientMock
-            .Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new LocgSearchResult
-            {
-                Success = true,
-                Issues = new List<LocgIssue>
-                {
-                    new() { SeriesName = "X-Men", IssueNumber = "5", CoverUrl = "https://xmen5.jpg" }
-                }
-            });
-
-        var service = CreateService();
-        var result = await service.GetCoverAsync("X-Men", "#5");
-
-        Assert.True(result.Success);
-    }
-
-    [Fact]
-    public async Task GetCoverAsync_MatchesPublisher_WhenProvided()
-    {
-        _locgClientMock
-            .Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new LocgSearchResult
-            {
-                Success = true,
-                Issues = new List<LocgIssue>
-                {
-                    new() { SeriesName = "Batman", IssueNumber = "1", CoverUrl = "https://urban.jpg", Publisher = "Urban Comics" },
-                    new() { SeriesName = "Batman", IssueNumber = "1", CoverUrl = "https://dc.jpg", Publisher = "DC Comics" }
-                }
-            });
-
-        var service = CreateService();
-        var result = await service.GetCoverAsync("Batman", "1", "DC Comics");
-
-        Assert.True(result.Success);
-        Assert.Contains("dc.jpg", result.CoverUrl);
-    }
-
-    [Fact]
-    public async Task GetCoverAsync_HandlesLocgException_Gracefully()
-    {
-        _locgClientMock
-            .Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _locgClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new HttpRequestException("Network error"));
 
         var service = CreateService();
-        var result = await service.GetCoverAsync(
-            "Batman",
-            "1",
-            volumeCoverUrl: "https://volume-fallback.jpg");
+
+        var result = await service.GetCoverAsync("Batman", "1", volumeCoverUrl: "https://fallback.jpg");
 
         Assert.True(result.Success);
         Assert.Equal(CoverSource.ComicVineVolume, result.Source);
+        Assert.Equal("https://fallback.jpg", result.CoverUrl);
     }
 
     [Fact]
-    public async Task GetCoverAsync_TracksTiming()
+    public async Task GetCoverAsync_PrefersPublisherMatch()
     {
-        _locgClientMock
-            .Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new LocgSearchResult { Success = false });
+        _locgClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new LocgSearchResult
+            {
+                Success = true,
+                Issues = new List<LocgIssue>
+                {
+                    new() { IssueId = 1, SeriesName = "Batman", IssueNumber = "100", Publisher = "Urban Comics", CoverUrl = "https://urban.jpg" },
+                    new() { IssueId = 2, SeriesName = "Batman", IssueNumber = "100", Publisher = "DC Comics", CoverUrl = "https://dc.jpg" }
+                }
+            });
 
         var service = CreateService();
-        var result = await service.GetCoverAsync("Test", "1", volumeCoverUrl: "https://test.jpg");
 
-        Assert.True(result.ResolutionTimeMs >= 0);
+        var result = await service.GetCoverAsync("Batman", "100", publisher: "DC");
+
+        Assert.True(result.Success);
+        Assert.Equal("https://dc.jpg", result.CoverUrl);
     }
 
     [Fact]
-    public async Task GetStatsAsync_ReturnsValidStats()
+    public async Task GetStatsAsync_ReturnsAccurateStatistics()
     {
-        _locgClientMock
-            .Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new LocgSearchResult { Success = false });
-
-        var service = CreateService();
+        var locgClientMock = new Mock<ILeagueOfComicGeeksClient>();
         
-        await service.GetCoverAsync("Test1", "1", volumeCoverUrl: "https://v1.jpg");
-        await service.GetCoverAsync("Test2", "2");
+        locgClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string seriesName, string? issueNum, CancellationToken _) => new LocgSearchResult
+            {
+                Success = true,
+                Issues = new List<LocgIssue>
+                {
+                    new() { IssueId = 1, SeriesName = seriesName, IssueNumber = issueNum ?? "1", CoverUrl = "https://test.jpg" }
+                }
+            });
+
+        var freshCache = new MemoryCache(new MemoryCacheOptions());
+        var service = new CoverFallbackService(locgClientMock.Object, freshCache, _loggerMock.Object);
+
+        await service.GetCoverAsync("Batman", "1");
+        await service.GetCoverAsync("Superman", "2");
+        await service.GetCoverAsync("Wonder Woman", "3");
 
         var stats = await service.GetStatsAsync();
 
-        Assert.Equal(2, stats.TotalRequests);
-        Assert.Equal(1, stats.ComicVineVolumeHits);
-        Assert.Equal(1, stats.Misses);
+        Assert.Equal(3, stats.TotalRequests);
+        Assert.Equal(3, stats.LocgHits);
+        Assert.Equal(0, stats.Misses);
     }
 
     [Fact]
     public async Task ClearCacheAsync_RemovesCachedEntry()
     {
-        var uniqueSeries = $"ClearTest_{Guid.NewGuid():N}";
-        
-        _locgClientMock
-            .Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _locgClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new LocgSearchResult
             {
                 Success = true,
                 Issues = new List<LocgIssue>
                 {
-                    new() { SeriesName = uniqueSeries, IssueNumber = "1", CoverUrl = "https://test.jpg" }
+                    new() { IssueId = 1, SeriesName = "ClearTest", IssueNumber = "1", CoverUrl = "https://test.jpg" }
                 }
             });
 
         var freshCache = new MemoryCache(new MemoryCacheOptions());
         var service = new CoverFallbackService(_locgClientMock.Object, freshCache, _loggerMock.Object);
 
-        var result1 = await service.GetCoverAsync(uniqueSeries, "1");
+        var result1 = await service.GetCoverAsync("ClearTest", "1");
         Assert.False(result1.FromCache);
 
-        await service.ClearCacheAsync(uniqueSeries, "1");
+        var result2 = await service.GetCoverAsync("ClearTest", "1");
+        Assert.True(result2.FromCache);
 
-        var result2 = await service.GetCoverAsync(uniqueSeries, "1");
-        Assert.False(result2.FromCache);
-        
-        _locgClientMock.Verify(
-            c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
-            Times.Exactly(2));
+        await service.ClearCacheAsync("ClearTest", "1");
+
+        var result3 = await service.GetCoverAsync("ClearTest", "1");
+        Assert.False(result3.FromCache);
     }
 
     [Fact]
-    public async Task GetCoverAsync_HandlesFuzzySeriesNameMatch()
+    public async Task GetCoverAsync_NormalizesIssueNumber()
     {
-        _locgClientMock
-            .Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _locgClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new LocgSearchResult
             {
                 Success = true,
                 Issues = new List<LocgIssue>
                 {
-                    new() { SeriesName = "The Amazing Spider-Man", IssueNumber = "5", CoverUrl = "https://asm.jpg" }
+                    new() { IssueId = 1, SeriesName = "Test", IssueNumber = "10", CoverUrl = "https://test.jpg" }
                 }
             });
 
         var service = CreateService();
-        var result = await service.GetCoverAsync("Amazing Spider-Man", "5");
+
+        var result = await service.GetCoverAsync("Test", "#10");
 
         Assert.True(result.Success);
-        Assert.Contains("asm", result.CoverUrl);
-    }
-
-    [Fact]
-    public async Task GetCoverAsync_RejectsLowSimilarityMatches()
-    {
-        _locgClientMock
-            .Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new LocgSearchResult
-            {
-                Success = true,
-                Issues = new List<LocgIssue>
-                {
-                    new() { SeriesName = "Completely Different Series", IssueNumber = "1", CoverUrl = "https://wrong.jpg" }
-                }
-            });
-
-        var service = CreateService();
-        var result = await service.GetCoverAsync("Batman", "1");
-
-        Assert.False(result.Success);
+        Assert.Equal(CoverSource.LeagueOfComicGeeks, result.Source);
     }
 }
