@@ -1,41 +1,43 @@
-# Self Check - Iteration 139
+# Self Check - Iteration 140
 
 ## Summary
-**EPIC 11.12: Show Upcoming Releases on Series View** - Completed
+**EPIC 16.1: E2E Test Framework Setup** - Completed
 
-Implemented feature to display upcoming releases from WalkSoftly on the series detail page. Shows issues that WalkSoftly reports but ComicVine hasn't indexed yet.
+Set up Playwright E2E test framework with 10 smoke tests covering all major application pages.
 
 ## Recent Iterations
+- **140**: E2E Test Framework Setup (EPIC 16.1)
 - **139**: Show Upcoming Releases on Series View (EPIC 11.12)
 - **138**: WalkSoftly Pull List Integration (EPIC 11.10)
 - **137**: Pull List Data Accuracy Investigation (EPIC 15.9)
 - **136**: Telegram Notification Provider
-- **135**: Compiler Warning Cleanup
 
 ## Implementation Checklist
-- [x] SeriesUpcomingReleasesResult model
-- [x] UpcomingRelease model
-- [x] GetSeriesUpcomingReleasesAsync() in PullListService
-- [x] Title normalization for matching
-- [x] Publisher validation
-- [x] Issue number filtering (> max local)
-- [x] API endpoint: GET /api/v1/series/{id}/upcoming
-- [x] Frontend API client function
-- [x] TypeScript interfaces
-- [x] "Upcoming" section in SeriesDetailPage
-- [x] Cover and list view support
-- [x] Unit tests (6 tests)
+- [x] Playwright npm package setup
+- [x] TypeScript configuration
+- [x] Playwright config (baseURL, browser, reporters)
+- [x] Smoke tests for all major pages
+- [x] Test fixtures structure
+- [x] npm scripts for running tests
+- [x] Browser dependencies installation
 - [x] Documentation updates
-
-## Bug Fixes (Same Session)
-- [x] Fixed duplicate ComicVineId crash in `ToDictionaryAsync`
-- [x] Fixed library matching when WalkSoftly has incorrect volume IDs
-- [x] Fixed invisible button (missing `--accent` CSS variable)
 
 ## Test Results
 ```
-Passed!  - Failed: 0, Passed: 6, Skipped: 0, Total: 6, Duration: 44ms
-(GetSeriesUpcomingReleases tests)
+Running 10 tests using 1 worker
+
+  ✓  1 [chromium] › smoke.spec.ts › Dashboard › loads successfully (466ms)
+  ✓  2 [chromium] › smoke.spec.ts › Dashboard › shows main content sections (426ms)
+  ✓  3 [chromium] › smoke.spec.ts › Series Page › loads series list (392ms)
+  ✓  4 [chromium] › smoke.spec.ts › Pull List Page › loads pull list (534ms)
+  ✓  5 [chromium] › smoke.spec.ts › Settings Page › loads settings page (391ms)
+  ✓  6 [chromium] › smoke.spec.ts › Wanted Page › loads wanted issues list (371ms)
+  ✓  7 [chromium] › smoke.spec.ts › Calendar Page › loads calendar view (323ms)
+  ✓  8 [chromium] › smoke.spec.ts › Activity/History Page › loads activity log (402ms)
+  ✓  9 [chromium] › smoke.spec.ts › Navigation › can navigate between main pages (747ms)
+  ✓ 10 [chromium] › smoke.spec.ts › Theme Toggle › page has theme attribute (353ms)
+
+10 passed (5.6s)
 ```
 
 ## Build Health
@@ -46,38 +48,22 @@ Build succeeded.
 ```
 
 ## New Files
-- None (all changes to existing files)
+- `tests/e2e/package.json`
+- `tests/e2e/tsconfig.json`
+- `tests/e2e/playwright.config.ts`
+- `tests/e2e/tests/smoke.spec.ts`
+- `tests/e2e/tests/fixtures/test-data.ts`
 
 ## Modified Files
-- `src/Shortboxerr.Core/PullList/IPullListService.cs` - New models
-- `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` - New method + bug fixes
-- `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` - New endpoint
-- `ui/src/api/client.ts` - API client + types
-- `ui/src/pages/SeriesDetailPage.tsx` - Upcoming section UI
-- `ui/src/App.css` - Added --accent CSS variable
-- `tests/Shortboxerr.Tests/PullListServiceTests.cs` - 6 new tests
-- `docs/BACKLOG.md` - Marked 11.12 as complete
-- `docs/WORKLOG.md` - Added iteration 139
+- `docs/BACKLOG.md` - Marked 16.1 complete
+- `docs/WORKLOG.md` - Added iteration 140
 
-## New API Endpoint
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /api/v1/series/{id}/upcoming?weeksAhead=4 | Get upcoming releases from WalkSoftly cache |
-
-## Example Response
-```json
-{
-  "seriesId": 25,
-  "seriesTitle": "Absolute Wonder Woman",
-  "releases": [{
-    "issueNumber": 17,
-    "issueNumberText": "17",
-    "releaseDate": "2026-02-25T00:00:00",
-    "publisher": "DC Comics",
-    "daysUntilRelease": 1,
-    "releaseTiming": "Tomorrow"
-  }],
-  "maxLocalIssueNumber": 16,
-  "weeksSearched": 4
-}
-```
+## npm Scripts Added
+| Script | Description |
+|--------|-------------|
+| `npm test` | Run all tests |
+| `npm run test:headed` | Run with visible browser |
+| `npm run test:ui` | Playwright UI mode |
+| `npm run test:debug` | Debug mode |
+| `npm run test:smoke` | Run smoke tests only |
+| `npm run test:report` | Show HTML report |

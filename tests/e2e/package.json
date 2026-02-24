@@ -1,0 +1,25 @@
+{
+  "name": "@shortboxerr/e2e-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "End-to-end tests for Shortboxerr using Playwright",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report",
+    "test:smoke": "playwright test tests/smoke.spec.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "e2e",
+    "playwright",
+    "testing"
+  ],
+  "author": "",
+  "license": "ISC"
+}

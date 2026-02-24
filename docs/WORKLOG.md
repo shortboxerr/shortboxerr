@@ -1,5 +1,48 @@
 # Worklog
 
+## Iteration 140 (2026-02-24)
+**EPIC 16.1: E2E Test Framework Setup**
+
+### Summary
+Set up Playwright E2E test framework with initial smoke tests covering all major pages and navigation flows.
+
+### Features
+- **Playwright Test Project**: `tests/e2e` with TypeScript configuration
+- **Smoke Tests**: 10 tests covering Dashboard, Series, Pull List, Settings, Wanted, Calendar, Activity, Navigation, Theme
+- **Test Fixtures**: Test data helpers for database seeding
+- **Browser**: Chromium with headless mode
+
+### Test Coverage
+| Page | Tests |
+|------|-------|
+| Dashboard | 2 (loads, content) |
+| Series | 1 (loads list) |
+| Pull List | 1 (loads) |
+| Settings | 1 (loads) |
+| Wanted | 1 (loads) |
+| Calendar | 1 (loads) |
+| Activity | 1 (loads) |
+| Navigation | 1 (page navigation) |
+| Theme | 1 (attribute check) |
+
+### Files Created
+- `tests/e2e/package.json` - npm package configuration
+- `tests/e2e/tsconfig.json` - TypeScript configuration
+- `tests/e2e/playwright.config.ts` - Playwright configuration
+- `tests/e2e/tests/smoke.spec.ts` - Smoke tests
+- `tests/e2e/tests/fixtures/test-data.ts` - Test fixtures
+
+### Commands
+```bash
+cd tests/e2e
+npm test                # Run all tests
+npm run test:headed     # Run with browser visible
+npm run test:ui         # Run with Playwright UI
+npm run test:debug      # Debug mode
+```
+
+---
+
 ## Iteration 139 (2026-02-24)
 **EPIC 11.12: Show Upcoming Releases on Series View (WalkSoftly Integration)**
 
