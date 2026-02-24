@@ -403,8 +403,8 @@ public static class SettingsEndpoints
             Username = settings.Username ?? "",
             HasPassword = !string.IsNullOrEmpty(settings.Password),
             CacheTtlHours = settings.CacheTtlHours,
-            TimeoutSeconds = settings.TimeoutSeconds,
-            MaxRequestsPerMinute = settings.MaxRequestsPerMinute
+            TimeoutSeconds = MetronSettings.DefaultTimeoutSeconds,
+            MaxRequestsPerMinute = MetronSettings.DefaultMaxRequestsPerMinute
         });
     }
 
@@ -424,10 +424,7 @@ public static class SettingsEndpoints
             settings.Password = request.Password;
         if (request.CacheTtlHours.HasValue)
             settings.CacheTtlHours = Math.Clamp(request.CacheTtlHours.Value, 1, 168);
-        if (request.TimeoutSeconds.HasValue)
-            settings.TimeoutSeconds = Math.Clamp(request.TimeoutSeconds.Value, 5, 120);
-        if (request.MaxRequestsPerMinute.HasValue)
-            settings.MaxRequestsPerMinute = Math.Clamp(request.MaxRequestsPerMinute.Value, 1, 30);
+        // TimeoutSeconds and MaxRequestsPerMinute are hardcoded to Metron's limits (not user-configurable)
 
         await settingsService.SetAsync("metron", settings, cancellationToken);
 
@@ -437,8 +434,8 @@ public static class SettingsEndpoints
             Username = settings.Username ?? "",
             HasPassword = !string.IsNullOrEmpty(settings.Password),
             CacheTtlHours = settings.CacheTtlHours,
-            TimeoutSeconds = settings.TimeoutSeconds,
-            MaxRequestsPerMinute = settings.MaxRequestsPerMinute
+            TimeoutSeconds = MetronSettings.DefaultTimeoutSeconds,
+            MaxRequestsPerMinute = MetronSettings.DefaultMaxRequestsPerMinute
         });
     }
 
@@ -887,16 +884,9 @@ public class MetronSettingsRequest
     /// Cache TTL in hours (1-168).
     /// </summary>
     public int? CacheTtlHours { get; set; }
-
-    /// <summary>
-    /// Request timeout in seconds (5-120).
-    /// </summary>
-    public int? TimeoutSeconds { get; set; }
-
-    /// <summary>
-    /// Maximum requests per minute (1-30, Metron limit is 30).
-    /// </summary>
-    public int? MaxRequestsPerMinute { get; set; }
+    
+    // Note: TimeoutSeconds and MaxRequestsPerMinute are hardcoded to Metron's limits
+    // and are not configurable via API to prevent exceeding rate limits.
 }
 
 /// <summary>
@@ -925,12 +915,12 @@ public class MetronSettingsResponse
     public int CacheTtlHours { get; set; }
 
     /// <summary>
-    /// Request timeout in seconds.
+    /// Request timeout in seconds (read-only, hardcoded to Metron's default).
     /// </summary>
     public int TimeoutSeconds { get; set; }
 
     /// <summary>
-    /// Maximum requests per minute.
+    /// Maximum requests per minute (read-only, hardcoded to Metron's API limit).
     /// </summary>
     public int MaxRequestsPerMinute { get; set; }
 }

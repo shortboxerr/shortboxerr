@@ -189,6 +189,12 @@ public class MetronPublisher
 /// </summary>
 public class MetronSettings
 {
+    /// <summary>Hardcoded timeout (not user-configurable).</summary>
+    public const int DefaultTimeoutSeconds = 30;
+    
+    /// <summary>Hardcoded rate limit per Metron API spec (not user-configurable).</summary>
+    public const int DefaultMaxRequestsPerMinute = 30;
+
     /// <summary>Whether Metron integration is enabled.</summary>
     public bool Enabled { get; set; } = true;
 
@@ -201,11 +207,11 @@ public class MetronSettings
     /// <summary>Cache TTL in hours (default: 24 hours).</summary>
     public int CacheTtlHours { get; set; } = 24;
 
-    /// <summary>Request timeout in seconds.</summary>
-    public int TimeoutSeconds { get; set; } = 30;
+    /// <summary>Request timeout in seconds (hardcoded, not user-configurable).</summary>
+    public int TimeoutSeconds { get; set; } = DefaultTimeoutSeconds;
 
-    /// <summary>Maximum requests per minute (Metron limit: 30).</summary>
-    public int MaxRequestsPerMinute { get; set; } = 30;
+    /// <summary>Maximum requests per minute (hardcoded to Metron's limit, not user-configurable).</summary>
+    public int MaxRequestsPerMinute { get; set; } = DefaultMaxRequestsPerMinute;
 
     /// <summary>Whether credentials are configured.</summary>
     public bool IsConfigured => !string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password);

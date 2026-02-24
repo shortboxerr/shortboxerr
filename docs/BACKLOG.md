@@ -1603,7 +1603,7 @@ League of Comic Geeks has **NO official API**. The implementation used unofficia
   - AC: Test graceful degradation when LOCG structure changes ✅
   - Note: 17 tests in CoverFallbackServiceTests.cs + 6 tests in DiscoveryCoverEnrichmentServiceTests.cs
 
-### 11.14 Metron Integration for Backup Covers ← READY (HIGH PRIORITY)
+### 11.14 Metron Integration for Backup Covers ✅ COMPLETED
 
 Remove LOCG and implement Metron as the backup cover source. Metron has an official API with direct ComicVine ID mapping, eliminating the fragile fuzzy-matching approach used by LOCG.
 
@@ -1709,6 +1709,34 @@ Internal data sources (WalkSoftly, Metron, etc.) should not be exposed in custom
   - AC: Ensure `dataSource` or similar fields use generic values if exposed to UI ✅
   - AC: Internal logging can still use specific names ✅
   - AC: Document any API fields that expose source names ✅ (walkSoftlyVolumeId/walkSoftlyIssueId retained for API compatibility, not exposed in UI)
+
+---
+
+### 11.18 Metron Settings UI Refinements ✅ COMPLETED (Iteration 151)
+
+Rename "Cover Service" back to "Metron" and simplify configuration by removing user-adjustable rate limiting settings.
+
+**Rationale:**
+- Metron is a well-known service in the comic community; hiding the name provides no benefit
+- User-adjustable rate limits risk exceeding Metron's API limits and getting blocked
+- Simpler UI with fewer configuration options reduces user confusion
+
+**Implementation Items:**
+- [x] **Rename "Cover Service" to "Metron"** ✅ COMPLETED (Iteration 151)
+  - AC: Update Settings tab label from "Cover Service" to "Metron" ✅
+  - AC: Update description text to reference Metron directly ✅
+  - AC: Keep metron.cloud registration link ✅
+
+- [x] **Remove user-adjustable rate limiting** ✅ COMPLETED (Iteration 151)
+  - AC: Remove "Max Requests Per Minute" input field from UI ✅
+  - AC: Remove "Request Timeout" input field from UI (use hardcoded default) ✅
+  - AC: Hardcode rate limit to Metron's official limit (30 req/min) ✅
+  - AC: Keep "Cache TTL" setting (user benefit without API risk) ✅
+  - AC: Remove corresponding API endpoint parameters (or ignore them) ✅
+
+- [x] **Update API endpoints** ✅ COMPLETED (Iteration 151)
+  - AC: Make maxRequestsPerMinute and timeoutSeconds read-only or remove from request DTO ✅
+  - AC: Return hardcoded values in response for transparency ✅
 
 ---
 

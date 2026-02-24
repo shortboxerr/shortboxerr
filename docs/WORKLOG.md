@@ -1,5 +1,41 @@
 # Worklog
 
+## Iteration 151 (2026-02-24)
+**EPIC 11.18: Metron Settings UI Refinements**
+
+### Summary
+Renamed "Cover Service" to "Metron" in Settings UI and removed user-configurable rate limiting to prevent exceeding Metron's API limits.
+
+### Implementation
+
+**Files Modified:**
+| File | Change |
+|------|--------|
+| `ui/src/pages/SettingsPage.tsx` | Renamed tab to "Metron", removed rate limit/timeout fields |
+| `ui/src/api/client.ts` | Removed timeoutSeconds/maxRequestsPerMinute from MetronSettingsUpdate |
+| `src/Shortboxerr.Core/Metron/IMetronClient.cs` | Added DefaultTimeoutSeconds/DefaultMaxRequestsPerMinute constants |
+| `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` | Hardcoded rate limits in API responses, removed from request DTO |
+
+### Changes
+
+**UI Tab:**
+- Renamed "Cover Service" → "Metron"
+- Updated all labels/descriptions to reference Metron directly
+
+**Removed Settings:**
+- Max Requests Per Minute (hardcoded to 30)
+- Request Timeout (hardcoded to 30s)
+
+**Retained Settings:**
+- Enable/disable toggle
+- Username/password fields
+- Cache TTL (user benefit without API risk)
+
+### Tests
+- 25 Metron-related tests passing
+
+---
+
 ## Iteration 150 (2026-02-24)
 **EPIC 11.14: Metron Settings UI + EPIC 11.15: Hide Internal Data Source Names**
 

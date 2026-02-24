@@ -28,7 +28,7 @@ type SettingsTab = 'general' | 'indexers' | 'download' | 'notifications' | 'impo
 const tabs: { id: SettingsTab; icon: React.ElementType; label: string }[] = [
   { id: 'general', icon: Settings, label: 'General' },
   { id: 'comicvine', icon: Database, label: 'ComicVine' },
-  { id: 'metron', icon: Globe, label: 'Cover Service' },
+  { id: 'metron', icon: Globe, label: 'Metron' },
   { id: 'pulllist', icon: Calendar, label: 'Pull List' },
   { id: 'annuals', icon: FileText, label: 'Annual Handling' },
   { id: 'search', icon: Search, label: 'Search' },
@@ -2125,7 +2125,7 @@ function SearchSettingsTab() {
   );
 }
 
-// ============== METRON SETTINGS (COVER SERVICE) ==============
+// ============== METRON SETTINGS ==============
 
 function MetronSettingsTab() {
   const [username, setUsername] = useState('');
@@ -2194,7 +2194,7 @@ function MetronSettingsTab() {
 
   return (
     <>
-      <SettingsSection title="Cover Service">
+      <SettingsSection title="Metron">
         <div style={{ 
           padding: '12px',
           background: 'var(--bg-tertiary)',
@@ -2203,8 +2203,8 @@ function MetronSettingsTab() {
           fontSize: '13px',
           color: 'var(--text-muted)'
         }}>
-          This service provides backup cover images when the primary metadata source is missing covers.
-          Registration is free at{' '}
+          Metron provides backup cover images when ComicVine is missing covers.
+          Free registration at{' '}
           <a 
             href="https://metron.cloud/" 
             target="_blank" 
@@ -2215,7 +2215,7 @@ function MetronSettingsTab() {
           </a>
         </div>
 
-        <SettingsField label="Enable Cover Service" description="Enable backup cover lookups when primary source has no cover">
+        <SettingsField label="Enable Metron" description="Enable backup cover lookups from Metron when ComicVine has no cover">
           <label className="toggle-switch">
             <input
               type="checkbox"
@@ -2229,7 +2229,7 @@ function MetronSettingsTab() {
 
         <SettingsField 
           label="Username" 
-          description="Your cover service account username"
+          description="Your Metron account username"
         >
           {settings?.username && (
             <div style={{ 
@@ -2262,7 +2262,7 @@ function MetronSettingsTab() {
 
         <SettingsField 
           label="Password" 
-          description="Your cover service account password"
+          description="Your Metron account password"
         >
           {settings?.hasPassword && (
             <div style={{ 
@@ -2324,27 +2324,10 @@ function MetronSettingsTab() {
         )}
       </SettingsSection>
 
-      <SettingsSection title="Rate Limiting">
-        <SettingsField 
-          label="Max Requests Per Minute" 
-          description="Maximum API requests per minute (service limit is 30)"
-        >
-          <input
-            className="input"
-            type="number"
-            min={1}
-            max={30}
-            value={settings?.maxRequestsPerMinute ?? 30}
-            onChange={(e) => updateMutation.mutate({ maxRequestsPerMinute: Number(e.target.value) })}
-            style={{ width: '100px' }}
-          />
-        </SettingsField>
-      </SettingsSection>
-
       <SettingsSection title="Caching">
         <SettingsField 
           label="Cache TTL (Hours)" 
-          description="How long to cache cover lookups (1-168 hours)"
+          description="How long to cache Metron cover lookups (1-168 hours)"
         >
           <input
             className="input"
@@ -2353,21 +2336,6 @@ function MetronSettingsTab() {
             max={168}
             value={settings?.cacheTtlHours ?? 24}
             onChange={(e) => updateMutation.mutate({ cacheTtlHours: Number(e.target.value) })}
-            style={{ width: '100px' }}
-          />
-        </SettingsField>
-
-        <SettingsField 
-          label="Request Timeout (Seconds)" 
-          description="Timeout for API requests (5-120 seconds)"
-        >
-          <input
-            className="input"
-            type="number"
-            min={5}
-            max={120}
-            value={settings?.timeoutSeconds ?? 30}
-            onChange={(e) => updateMutation.mutate({ timeoutSeconds: Number(e.target.value) })}
             style={{ width: '100px' }}
           />
         </SettingsField>

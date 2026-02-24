@@ -1289,8 +1289,6 @@ export interface MetronSettingsUpdate {
   username?: string;
   password?: string;
   cacheTtlHours?: number;
-  timeoutSeconds?: number;
-  maxRequestsPerMinute?: number;
 }
 
 export interface MetronTestResult {
