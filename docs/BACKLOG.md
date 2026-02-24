@@ -1373,11 +1373,11 @@ Implement background refresh service to match Mylar3's ComicVine synchronization
   - AC: Test week boundary calculations ✅ (5 tests)
   - AC: Test release date grouping ✅ (4 tests)
   - AC: Test status calculation (owned/wanted/missing) ✅ (5 tests)
-- [ ] **Automation tests** ← READY
-  - AC: Test auto-add to wanted list timing
-  - AC: Test auto-search trigger
-  - AC: Test notification generation
-  - Note: EPIC 4 is complete, this can now be implemented
+- [x] **Automation tests** ✅ COMPLETED (Iteration 146)
+  - AC: Test auto-add to wanted list timing ✅ (ReleaseDayBackgroundServiceTests)
+  - AC: Test auto-search trigger ✅ (AutoSearchBackgroundServiceTests)
+  - AC: Test notification generation ✅ (tested via mock verification)
+  - Note: 10 tests in AutoSearchBackgroundServiceTests, 7 tests in ReleaseDayBackgroundServiceTests
 - [x] **Integration tests** (partial)
   - AC: Full flow: ComicVine sync → calendar update → auto-add → search → grab (deferred - search depends on EPIC 4)
   - AC: Multi-series weekly pull list generation ✅ (2 tests)
