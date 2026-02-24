@@ -359,6 +359,42 @@ public class ComicVineIssue
     /// Associated images (variant covers, promotional images, etc.).
     /// </summary>
     public List<ComicVineAssociatedImage> AssociatedImages { get; set; } = new();
+
+    /// <summary>
+    /// Cover enrichment status for this issue.
+    /// Used by the cover enrichment service to track processing state.
+    /// </summary>
+    public CoverEnrichmentStatus EnrichmentStatus { get; set; } = CoverEnrichmentStatus.None;
+
+    /// <summary>
+    /// When the last cover enrichment attempt was made.
+    /// Used to avoid rapid retries for issues where Metron doesn't have a cover.
+    /// </summary>
+    public DateTime? LastEnrichmentAttempt { get; set; }
+
+    /// <summary>
+    /// Source of the cover image (if enriched).
+    /// Null means the cover came from the original ComicVine discovery data.
+    /// </summary>
+    public string? CoverSource { get; set; }
+}
+
+/// <summary>
+/// Status of cover enrichment for a cached issue.
+/// </summary>
+public enum CoverEnrichmentStatus
+{
+    /// <summary>No enrichment attempted yet.</summary>
+    None = 0,
+
+    /// <summary>Issue already has a ComicVine cover - no enrichment needed.</summary>
+    HasComicVineCover = 1,
+
+    /// <summary>Cover was successfully fetched from Metron.</summary>
+    Enriched = 2,
+
+    /// <summary>Metron was queried but no cover was found. Will retry after cooldown period.</summary>
+    NotFound = 3
 }
 
 /// <summary>

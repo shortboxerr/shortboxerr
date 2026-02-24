@@ -1,5 +1,57 @@
 # Worklog
 
+## Iteration 155 (2026-02-24)
+**EPIC 11.23: Metron Cover Caching Parity + EPIC 11.24: Enrichment Status Tracking**
+
+### Summary
+Implemented unified cover caching for Metron covers and added enrichment status tracking to avoid unnecessary API calls.
+
+### 11.23 Metron Cover Caching Parity
+
+**New Functionality:**
+- Metron covers are now downloaded to local disk cache (same as ComicVine covers)
+- Added `CoverCacheSource` enum to track cover origin (ComicVine, Metron, Placeholder)
+- Added `Source` field to `CoverCacheMetadata` to track which service provided the cover
+- Higher-priority covers (ComicVine) automatically overwrite lower-priority covers (Metron)
+- Added `CoverType.Discovery` for discovery issue covers
+
+**New Methods:**
+| Method | Description |
+|--------|-------------|
+| `ICoverService.DownloadExternalCoverAsync()` | Downloads cover with source tracking |
+| `ICoverService.GetCachedCoverMetadataAsync()` | Check if cover exists and its source |
+
+### 11.24 Enrichment Status Tracking
+
+**New Functionality:**
+- Added `CoverEnrichmentStatus` enum: None, HasComicVineCover, Enriched, NotFound
+- Added tracking fields to `ComicVineIssue`: EnrichmentStatus, LastEnrichmentAttempt, CoverSource
+- Issues with ComicVine covers are marked `HasComicVineCover` - never sent to Metron
+- Issues where Metron returned no result marked `NotFound` - won't retry for 7 days
+- Detailed stats logging: shows skipped counts for each reason
+
+**Enrichment Service Improvements:**
+- First pass marks issues with existing ComicVine covers
+- Skips issues based on enrichment status
+- Downloads Metron covers to local cache (not just URLs)
+- Logs detailed statistics: enriched, not found, skipped (by reason)
+
+### Files Changed
+
+**New/Modified Core Files:**
+| File | Change |
+|------|--------|
+| `ICoverService.cs` | Added `CoverCacheSource` enum, `DownloadExternalCoverAsync`, `GetCachedCoverMetadataAsync` |
+| `IComicVineClient.cs` | Added `CoverEnrichmentStatus` enum, enrichment tracking fields to `ComicVineIssue` |
+| `CoverService.cs` | Implemented new methods, added source tracking to metadata |
+| `DiscoveryCoverEnrichmentService.cs` | Added status tracking, local caching, detailed logging |
+
+### Test Results
+- 59 CoverService tests passing (5 new tests)
+- Build: SUCCESS (0 warnings, 0 errors)
+
+---
+
 ## Iteration 154 (2026-02-24)
 **EPIC 11.19: Security Audit Completion + EPIC 11.22: Upcoming Cover Enrichment**
 

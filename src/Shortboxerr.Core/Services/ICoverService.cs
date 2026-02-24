@@ -22,6 +22,39 @@ public interface ICoverService
     Task<CoverResult> DownloadCoverAsync(string url, CoverType type, int entityId, CoverSize size = CoverSize.Medium, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Downloads and caches a cover from an external source (e.g., Metron) with source tracking.
+    /// The cover will be stored with the specified source, allowing it to be overwritten when a higher-priority source becomes available.
+    /// </summary>
+    /// <param name="url">URL to download the cover from</param>
+    /// <param name="type">Type of cover (Series, Issue, Discovery)</param>
+    /// <param name="entityId">ID of the entity (series ID, issue ID, or ComicVine issue ID for discovery)</param>
+    /// <param name="source">Source of the cover (Metron, ComicVine, etc.)</param>
+    /// <param name="size">Size of the cover to download</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Cover result with local path</returns>
+    Task<CoverResult> DownloadExternalCoverAsync(
+        string url,
+        CoverType type,
+        int entityId,
+        CoverCacheSource source,
+        CoverSize size = CoverSize.Medium,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Checks if a cached cover exists and what source it came from.
+    /// </summary>
+    /// <param name="type">Type of cover</param>
+    /// <param name="entityId">Entity ID</param>
+    /// <param name="size">Cover size</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Metadata about the cached cover, or null if not cached</returns>
+    Task<CoverCacheMetadata?> GetCachedCoverMetadataAsync(
+        CoverType type,
+        int entityId,
+        CoverSize size = CoverSize.Medium,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Clears the cached cover for a series.
     /// </summary>
     Task ClearSeriesCoverCacheAsync(int seriesId, CancellationToken cancellationToken = default);
@@ -120,7 +153,9 @@ public enum CoverType
 {
     Series = 0,
     Issue = 1,
-    Edition = 2
+    Edition = 2,
+    /// <summary>Discovery issue cover (from cached discovery weeks, identified by ComicVine issue ID)</summary>
+    Discovery = 3
 }
 
 /// <summary>
@@ -438,6 +473,28 @@ public class CoverCacheMetadata
 
     /// <summary>File size in bytes.</summary>
     public long FileSize { get; set; }
+
+    /// <summary>
+    /// Source of the cover (ComicVine, Metron, etc.).
+    /// Used to determine if a cover should be overwritten when a higher-priority source becomes available.
+    /// </summary>
+    public CoverCacheSource Source { get; set; } = CoverCacheSource.ComicVine;
+}
+
+/// <summary>
+/// Identifies the source of a cached cover image.
+/// Lower values indicate higher priority - ComicVine covers should overwrite Metron covers.
+/// </summary>
+public enum CoverCacheSource
+{
+    /// <summary>ComicVine (authoritative source, highest priority).</summary>
+    ComicVine = 0,
+
+    /// <summary>Metron (fallback source, should be overwritten when ComicVine cover becomes available).</summary>
+    Metron = 1,
+
+    /// <summary>Placeholder or series cover used as fallback.</summary>
+    Placeholder = 2
 }
 
 /// <summary>

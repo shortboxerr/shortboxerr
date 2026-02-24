@@ -293,6 +293,107 @@ public class CoverService : ICoverService
         }
     }
 
+    public async Task<CoverResult> DownloadExternalCoverAsync(
+        string url,
+        CoverType type,
+        int entityId,
+        CoverCacheSource source,
+        CoverSize size = CoverSize.Medium,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(url))
+        {
+            return CoverResult.NotFound("No URL provided");
+        }
+
+        var settings = await GetSettingsAsync(cancellationToken);
+        var cachePath = GetCachePath(settings.CacheDirectory, type, entityId, size);
+
+        // Check if we already have a higher-priority cover cached
+        var existingMetadata = await LoadCoverMetadataAsync(cachePath, cancellationToken);
+        if (existingMetadata != null && existingMetadata.Source <= source)
+        {
+            _logger.LogDebug(
+                "Skipping {Source} cover download for {Type} {Id} - already have {ExistingSource} cover",
+                source, type, entityId, existingMetadata.Source);
+            return CreateCoverResult(cachePath, type, entityId, size, existingMetadata.SourceUrl);
+        }
+
+        await _downloadSemaphore.WaitAsync(cancellationToken);
+        try
+        {
+            // Ensure directory exists
+            var directory = Path.GetDirectoryName(cachePath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            using var client = _httpClientFactory.CreateClient("CoverDownload");
+            client.Timeout = TimeSpan.FromSeconds(settings.DownloadTimeoutSeconds);
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("image/*"));
+
+            _logger.LogDebug("Downloading {Source} cover from {Url} to {Path}", source, url, cachePath);
+
+            using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                return CoverResult.NotFound($"Failed to download cover: {response.StatusCode}");
+            }
+
+            var contentType = response.Content.Headers.ContentType?.MediaType ?? "image/jpeg";
+            
+            // Validate content type
+            if (!contentType.StartsWith("image/"))
+            {
+                return CoverResult.NotFound($"Invalid content type: {contentType}");
+            }
+
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            await using var fileStream = File.Create(cachePath);
+            await stream.CopyToAsync(fileStream, cancellationToken);
+
+            // Save metadata with source tracking
+            await SaveCoverMetadataAsync(cachePath, url, response, cancellationToken, source);
+
+            _logger.LogInformation("Downloaded {Source} cover for {Type} {Id} ({Size}): {Path}", 
+                source, type, entityId, size, cachePath);
+
+            return CreateCoverResult(cachePath, type, entityId, size, url);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to download {Source} cover from {Url}", source, url);
+            return CoverResult.NotFound($"Download failed: {ex.Message}");
+        }
+        finally
+        {
+            _downloadSemaphore.Release();
+        }
+    }
+
+    public async Task<CoverCacheMetadata?> GetCachedCoverMetadataAsync(
+        CoverType type,
+        int entityId,
+        CoverSize size = CoverSize.Medium,
+        CancellationToken cancellationToken = default)
+    {
+        var settings = await GetSettingsAsync(cancellationToken);
+        var cachePath = GetCachePath(settings.CacheDirectory, type, entityId, size);
+        
+        if (!File.Exists(cachePath))
+        {
+            return null;
+        }
+
+        return await LoadCoverMetadataAsync(cachePath, cancellationToken);
+    }
+
     public async Task ClearSeriesCoverCacheAsync(int seriesId, CancellationToken cancellationToken = default)
     {
         var settings = await GetSettingsAsync(cancellationToken);
@@ -720,14 +821,20 @@ public class CoverService : ICoverService
         }
     }
 
-    private async Task SaveCoverMetadataAsync(string coverPath, string sourceUrl, HttpResponseMessage response, CancellationToken cancellationToken)
+    private async Task SaveCoverMetadataAsync(
+        string coverPath, 
+        string sourceUrl, 
+        HttpResponseMessage response, 
+        CancellationToken cancellationToken,
+        CoverCacheSource source = CoverCacheSource.ComicVine)
     {
         var metadata = new CoverCacheMetadata
         {
             SourceUrl = sourceUrl,
             DownloadedAt = DateTime.UtcNow,
             LastValidatedAt = DateTime.UtcNow,
-            FileSize = new FileInfo(coverPath).Length
+            FileSize = new FileInfo(coverPath).Length,
+            Source = source
         };
 
         // Extract ETag (remove quotes if present)
@@ -873,6 +980,7 @@ public class CoverService : ICoverService
             CoverType.Series => "series",
             CoverType.Issue => "issues",
             CoverType.Edition => "editions",
+            CoverType.Discovery => "discovery",
             _ => "other"
         };
 

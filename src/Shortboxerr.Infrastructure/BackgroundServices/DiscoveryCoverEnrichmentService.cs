@@ -34,10 +34,16 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
     private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(30);
     private readonly TimeSpan _initialDelay = TimeSpan.FromMinutes(2);
     private readonly TimeSpan _coverRefreshInterval = TimeSpan.FromDays(7);
+    private readonly TimeSpan _notFoundCooldown = TimeSpan.FromDays(7);
     private readonly int _maxVolumesPerBatch = 50;
     private readonly int _maxIssuesPerRefreshBatch = 25;
     
     private DateTime _lastCoverRefresh = DateTime.MinValue;
+    
+    // Stats for this run
+    private int _skippedHasComicVine;
+    private int _skippedRecentlyChecked;
+    private int _skippedAlreadyEnriched;
 
     public DiscoveryCoverEnrichmentService(
         IServiceProvider serviceProvider,
@@ -85,10 +91,16 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
 
     private async Task EnrichMissingCoversAsync(CancellationToken cancellationToken)
     {
+        // Reset run stats
+        _skippedHasComicVine = 0;
+        _skippedRecentlyChecked = 0;
+        _skippedAlreadyEnriched = 0;
+        
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ShortboxerrDbContext>();
         var comicVineClient = scope.ServiceProvider.GetRequiredService<IComicVineClient>();
         var coverFallbackService = scope.ServiceProvider.GetRequiredService<ICoverFallbackService>();
+        var coverService = scope.ServiceProvider.GetRequiredService<ICoverService>();
 
         var cachedWeeks = await dbContext.CachedDiscoveryWeeks
             .Where(c => c.ExpiresAt > DateTime.UtcNow)
@@ -104,16 +116,18 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         var totalEnriched = 0;
         var metronHits = 0;
         var volumeHits = 0;
+        var notFoundCount = 0;
 
         foreach (var cachedWeek in cachedWeeks)
         {
             try
             {
-                var (enrichedCount, metronCount, volumeCount) = await EnrichCachedWeekAsync(
-                    cachedWeek, comicVineClient, coverFallbackService, dbContext, cancellationToken);
+                var (enrichedCount, metronCount, volumeCount, notFound) = await EnrichCachedWeekAsync(
+                    cachedWeek, comicVineClient, coverFallbackService, coverService, dbContext, cancellationToken);
                 totalEnriched += enrichedCount;
                 metronHits += metronCount;
                 volumeHits += volumeCount;
+                notFoundCount += notFound;
             }
             catch (Exception ex)
             {
@@ -123,18 +137,17 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             }
         }
 
-        if (totalEnriched > 0)
-        {
-            _logger.LogInformation(
-                "Cover enrichment complete: enriched {Count} issues ({MetronHits} from Metron, {VolumeHits} from volume covers) across {Weeks} weeks",
-                totalEnriched, metronHits, volumeHits, cachedWeeks.Count);
-        }
+        _logger.LogInformation(
+            "Cover enrichment complete across {Weeks} weeks: enriched {Count} (Metron: {Metron}, volume: {Volume}), not found: {NotFound}, skipped: {HasCV} have CV / {Recent} recently checked / {Already} already enriched",
+            cachedWeeks.Count, totalEnriched, metronHits, volumeHits, notFoundCount, 
+            _skippedHasComicVine, _skippedRecentlyChecked, _skippedAlreadyEnriched);
     }
 
-    private async Task<(int enrichedCount, int metronCount, int volumeCount)> EnrichCachedWeekAsync(
+    private async Task<(int enrichedCount, int metronCount, int volumeCount, int notFoundCount)> EnrichCachedWeekAsync(
         Core.Entities.CachedDiscoveryWeek cachedWeek,
         IComicVineClient comicVineClient,
         ICoverFallbackService coverFallbackService,
+        ICoverService coverService,
         ShortboxerrDbContext dbContext,
         CancellationToken cancellationToken)
     {
@@ -148,31 +161,50 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             _logger.LogWarning(ex,
                 "Failed to deserialize cached issues for week {WeekStart}",
                 cachedWeek.WeekStart);
-            return (0, 0, 0);
+            return (0, 0, 0, 0);
         }
 
         if (issues == null || issues.Count == 0)
         {
-            return (0, 0, 0);
+            return (0, 0, 0, 0);
         }
 
-        var issuesMissingCovers = issues
+        // First pass: mark issues that already have ComicVine covers
+        var dataModified = false;
+        foreach (var issue in issues.Where(i => i.Image != null && i.EnrichmentStatus == CoverEnrichmentStatus.None))
+        {
+            issue.EnrichmentStatus = CoverEnrichmentStatus.HasComicVineCover;
+            issue.CoverSource = "ComicVine";
+            dataModified = true;
+            _skippedHasComicVine++;
+        }
+
+        // Find issues that need enrichment (no cover, not recently checked, not already enriched)
+        var issuesToProcess = issues
             .Where(i => i.Image == null && i.Volume?.Id > 0)
+            .Where(i => ShouldAttemptEnrichment(i))
             .ToList();
 
-        if (issuesMissingCovers.Count == 0)
+        if (issuesToProcess.Count == 0)
         {
+            if (dataModified)
+            {
+                cachedWeek.IssuesJson = JsonSerializer.Serialize(issues);
+                cachedWeek.LastRefreshed = DateTime.UtcNow;
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+            
             _logger.LogDebug(
-                "Week {WeekStart}: all {Count} issues already have covers",
-                cachedWeek.WeekStart, issues.Count);
-            return (0, 0, 0);
+                "Week {WeekStart}: no issues need enrichment ({Total} total, {HasCV} have CV covers, {RecentlyChecked} recently checked)",
+                cachedWeek.WeekStart, issues.Count, _skippedHasComicVine, _skippedRecentlyChecked);
+            return (0, 0, 0, 0);
         }
 
         _logger.LogInformation(
-            "Week {WeekStart}: {Missing} of {Total} issues missing covers",
-            cachedWeek.WeekStart, issuesMissingCovers.Count, issues.Count);
+            "Week {WeekStart}: processing {Count} issues for enrichment (skipped: {HasCV} have CV, {RecentlyChecked} recently checked, {AlreadyEnriched} already enriched)",
+            cachedWeek.WeekStart, issuesToProcess.Count, _skippedHasComicVine, _skippedRecentlyChecked, _skippedAlreadyEnriched);
 
-        var volumeIds = issuesMissingCovers
+        var volumeIds = issuesToProcess
             .Select(i => i.Volume!.Id)
             .Distinct()
             .Take(_maxVolumesPerBatch)
@@ -197,8 +229,9 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         var enrichedCount = 0;
         var metronCount = 0;
         var volumeCount = 0;
+        var notFoundCount = 0;
 
-        foreach (var issue in issues.Where(i => i.Image == null && i.Volume?.Id > 0))
+        foreach (var issue in issuesToProcess)
         {
             var seriesName = issue.Volume?.Name ?? "";
             var issueNumber = issue.IssueNumber ?? "";
@@ -208,6 +241,9 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             {
                 volumeCoverUrl = volumeImage.MediumUrl ?? volumeImage.SmallUrl;
             }
+
+            // Mark that we're attempting enrichment
+            issue.LastEnrichmentAttempt = DateTime.UtcNow;
 
             // Try Metron with ComicVine ID if available (preferred - exact match)
             CoverFallbackResult fallbackResult;
@@ -231,49 +267,134 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
 
             if (fallbackResult.Success && !string.IsNullOrEmpty(fallbackResult.CoverUrl))
             {
-                issue.Image = new ComicVineImage
+                // Download cover to local cache for Metron covers
+                if (fallbackResult.Source == CoverSource.Metron && issue.Id > 0)
                 {
-                    MediumUrl = fallbackResult.CoverUrl,
-                    SmallUrl = fallbackResult.CoverUrl,
-                    OriginalUrl = fallbackResult.CoverUrl
-                };
-                enrichedCount++;
-
-                if (fallbackResult.Source == CoverSource.Metron)
-                {
-                    metronCount++;
-                    
-                    // Track Metron covers for future ComicVine refresh checks
-                    await TrackFallbackCoverAsync(
-                        dbContext,
-                        issue.Id,
-                        issue.Volume!.Id,
-                        seriesName,
-                        issueNumber,
+                    var downloadResult = await coverService.DownloadExternalCoverAsync(
                         fallbackResult.CoverUrl,
-                        fallbackResult.Source,
-                        cachedWeek.WeekStart,
+                        CoverType.Discovery,
+                        issue.Id,
+                        CoverCacheSource.Metron,
+                        CoverSize.Medium,
                         cancellationToken);
+                    
+                    if (downloadResult.Success && !string.IsNullOrEmpty(downloadResult.FilePath))
+                    {
+                        // Use local path for the cover URL
+                        issue.Image = new ComicVineImage
+                        {
+                            MediumUrl = $"/api/v1/covers/discovery/{issue.Id}/medium",
+                            SmallUrl = $"/api/v1/covers/discovery/{issue.Id}/small",
+                            OriginalUrl = fallbackResult.CoverUrl
+                        };
+                        issue.EnrichmentStatus = CoverEnrichmentStatus.Enriched;
+                        issue.CoverSource = "Metron";
+                        metronCount++;
+                        enrichedCount++;
+                        dataModified = true;
+
+                        // Track Metron covers for future ComicVine refresh checks
+                        await TrackFallbackCoverAsync(
+                            dbContext,
+                            issue.Id,
+                            issue.Volume!.Id,
+                            seriesName,
+                            issueNumber,
+                            fallbackResult.CoverUrl,
+                            fallbackResult.Source,
+                            cachedWeek.WeekStart,
+                            cancellationToken);
+                    }
+                    else
+                    {
+                        // Download failed, store URL directly as fallback
+                        issue.Image = new ComicVineImage
+                        {
+                            MediumUrl = fallbackResult.CoverUrl,
+                            SmallUrl = fallbackResult.CoverUrl,
+                            OriginalUrl = fallbackResult.CoverUrl
+                        };
+                        issue.EnrichmentStatus = CoverEnrichmentStatus.Enriched;
+                        issue.CoverSource = "Metron";
+                        metronCount++;
+                        enrichedCount++;
+                        dataModified = true;
+                    }
                 }
                 else if (fallbackResult.Source == CoverSource.ComicVineVolume)
                 {
+                    // Volume covers are just URLs, don't need local caching
+                    issue.Image = new ComicVineImage
+                    {
+                        MediumUrl = fallbackResult.CoverUrl,
+                        SmallUrl = fallbackResult.CoverUrl,
+                        OriginalUrl = fallbackResult.CoverUrl
+                    };
+                    issue.EnrichmentStatus = CoverEnrichmentStatus.Enriched;
+                    issue.CoverSource = "ComicVineVolume";
                     volumeCount++;
+                    enrichedCount++;
+                    dataModified = true;
                 }
+            }
+            else
+            {
+                // No cover found - mark as NotFound to avoid repeated lookups
+                issue.EnrichmentStatus = CoverEnrichmentStatus.NotFound;
+                notFoundCount++;
+                dataModified = true;
             }
         }
 
-        if (enrichedCount > 0)
+        if (dataModified)
         {
             cachedWeek.IssuesJson = JsonSerializer.Serialize(issues);
             cachedWeek.LastRefreshed = DateTime.UtcNow;
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation(
-                "Week {WeekStart}: enriched {Count} issues ({Metron} Metron, {Volume} volume)",
-                cachedWeek.WeekStart, enrichedCount, metronCount, volumeCount);
+            if (enrichedCount > 0)
+            {
+                _logger.LogInformation(
+                    "Week {WeekStart}: enriched {Count} issues ({Metron} Metron, {Volume} volume), {NotFound} not found",
+                    cachedWeek.WeekStart, enrichedCount, metronCount, volumeCount, notFoundCount);
+            }
         }
 
-        return (enrichedCount, metronCount, volumeCount);
+        return (enrichedCount, metronCount, volumeCount, notFoundCount);
+    }
+
+    /// <summary>
+    /// Determines if enrichment should be attempted for an issue.
+    /// </summary>
+    private bool ShouldAttemptEnrichment(ComicVineIssue issue)
+    {
+        // Already has ComicVine cover
+        if (issue.EnrichmentStatus == CoverEnrichmentStatus.HasComicVineCover)
+        {
+            _skippedHasComicVine++;
+            return false;
+        }
+
+        // Already enriched with Metron cover
+        if (issue.EnrichmentStatus == CoverEnrichmentStatus.Enriched)
+        {
+            _skippedAlreadyEnriched++;
+            return false;
+        }
+
+        // NotFound but cooldown hasn't elapsed
+        if (issue.EnrichmentStatus == CoverEnrichmentStatus.NotFound && 
+            issue.LastEnrichmentAttempt.HasValue)
+        {
+            var timeSinceAttempt = DateTime.UtcNow - issue.LastEnrichmentAttempt.Value;
+            if (timeSinceAttempt < _notFoundCooldown)
+            {
+                _skippedRecentlyChecked++;
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>

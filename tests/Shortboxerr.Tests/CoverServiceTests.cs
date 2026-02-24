@@ -393,5 +393,121 @@ public class CoverServiceTests : IDisposable
         Assert.NotNull(requestedUrl);
         Assert.Contains(expectedUrlPart, requestedUrl);
     }
+
+    #region DownloadExternalCoverAsync Tests
+
+    [Fact]
+    public async Task DownloadExternalCoverAsync_WithValidUrl_DownloadsCoverAndSetsSource()
+    {
+        // Arrange
+        var imageBytes = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0 }; // JPEG magic bytes
+        SetupHttpClient(HttpStatusCode.OK, imageBytes);
+
+        // Act
+        var result = await _service.DownloadExternalCoverAsync(
+            "https://metron.cloud/media/issue/cover.jpg",
+            CoverType.Discovery,
+            12345,
+            CoverCacheSource.Metron,
+            CoverSize.Medium);
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.NotNull(result.FilePath);
+        Assert.True(File.Exists(result.FilePath));
+
+        // Check metadata was saved with correct source
+        var metadata = await _service.GetCachedCoverMetadataAsync(CoverType.Discovery, 12345, CoverSize.Medium);
+        Assert.NotNull(metadata);
+        Assert.Equal(CoverCacheSource.Metron, metadata.Source);
+    }
+
+    [Fact]
+    public async Task DownloadExternalCoverAsync_SkipsIfHigherPrioritySourceExists()
+    {
+        // Arrange - First download a ComicVine cover (higher priority)
+        var imageBytes = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0 };
+        SetupHttpClient(HttpStatusCode.OK, imageBytes);
+
+        await _service.DownloadExternalCoverAsync(
+            "https://comicvine.com/cover.jpg",
+            CoverType.Discovery,
+            12345,
+            CoverCacheSource.ComicVine,
+            CoverSize.Medium);
+
+        // Act - Try to download a Metron cover (lower priority)
+        var result = await _service.DownloadExternalCoverAsync(
+            "https://metron.cloud/cover.jpg",
+            CoverType.Discovery,
+            12345,
+            CoverCacheSource.Metron,
+            CoverSize.Medium);
+
+        // Assert - Should still succeed but not overwrite
+        Assert.True(result.Success);
+        
+        var metadata = await _service.GetCachedCoverMetadataAsync(CoverType.Discovery, 12345, CoverSize.Medium);
+        Assert.NotNull(metadata);
+        Assert.Equal(CoverCacheSource.ComicVine, metadata.Source); // Should still be ComicVine
+    }
+
+    [Fact]
+    public async Task DownloadExternalCoverAsync_OverwritesLowerPrioritySource()
+    {
+        // Arrange - First download a Metron cover (lower priority)
+        var imageBytes = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0 };
+        SetupHttpClient(HttpStatusCode.OK, imageBytes);
+
+        await _service.DownloadExternalCoverAsync(
+            "https://metron.cloud/cover.jpg",
+            CoverType.Discovery,
+            12345,
+            CoverCacheSource.Metron,
+            CoverSize.Medium);
+
+        // Act - Download a ComicVine cover (higher priority)
+        var result = await _service.DownloadExternalCoverAsync(
+            "https://comicvine.com/cover.jpg",
+            CoverType.Discovery,
+            12345,
+            CoverCacheSource.ComicVine,
+            CoverSize.Medium);
+
+        // Assert - Should overwrite with higher priority source
+        Assert.True(result.Success);
+        
+        var metadata = await _service.GetCachedCoverMetadataAsync(CoverType.Discovery, 12345, CoverSize.Medium);
+        Assert.NotNull(metadata);
+        Assert.Equal(CoverCacheSource.ComicVine, metadata.Source);
+        Assert.Contains("comicvine.com", metadata.SourceUrl);
+    }
+
+    [Fact]
+    public async Task DownloadExternalCoverAsync_WithEmptyUrl_ReturnsNotFound()
+    {
+        // Act
+        var result = await _service.DownloadExternalCoverAsync(
+            "",
+            CoverType.Discovery,
+            12345,
+            CoverCacheSource.Metron);
+
+        // Assert
+        Assert.False(result.Success);
+        Assert.Contains("No URL", result.Error);
+    }
+
+    [Fact]
+    public async Task GetCachedCoverMetadataAsync_WithNoCachedCover_ReturnsNull()
+    {
+        // Act
+        var metadata = await _service.GetCachedCoverMetadataAsync(CoverType.Discovery, 99999, CoverSize.Medium);
+
+        // Assert
+        Assert.Null(metadata);
+    }
+
+    #endregion
 }
 
