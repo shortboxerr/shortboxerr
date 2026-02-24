@@ -1,5 +1,79 @@
 # Worklog
 
+## Iteration 149 (2026-02-24)
+**EPIC 11.14: Metron Integration Implementation**
+
+### Summary
+Implemented Metron as the backup cover source, replacing the fragile LOCG HTML scraping approach. Metron provides an official API with direct ComicVine ID mapping, eliminating fuzzy matching errors.
+
+### Implementation
+
+**Files Created:**
+| File | Description |
+|------|-------------|
+| `src/Shortboxerr.Core/Metron/IMetronClient.cs` | Metron client interface with CV ID lookup |
+| `src/Shortboxerr.Infrastructure/Metron/MetronClient.cs` | HTTP client implementation with Basic Auth |
+| `tests/Shortboxerr.Tests/MetronClientTests.cs` | 18 comprehensive unit tests |
+
+**Files Modified:**
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Services/ICoverFallbackService.cs` | Added `GetCoverByCvIdAsync`, replaced LOCG enum with Metron |
+| `src/Shortboxerr.Infrastructure/Services/CoverFallbackService.cs` | Rewrote to use Metron client |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Replaced LOCG registration with Metron |
+| `src/Shortboxerr.Infrastructure/BackgroundServices/DiscoveryCoverEnrichmentService.cs` | Updated for Metron |
+| `tests/Shortboxerr.Tests/CoverFallbackServiceTests.cs` | Rewrote tests for Metron |
+| `tests/Shortboxerr.Tests/DiscoveryCoverEnrichmentServiceTests.cs` | Updated LOCG references to Metron |
+
+**Files Deleted:**
+| File | Reason |
+|------|--------|
+| `src/Shortboxerr.Core/LeagueOfComicGeeks/ILeagueOfComicGeeksClient.cs` | LOCG removed |
+| `src/Shortboxerr.Infrastructure/LeagueOfComicGeeks/LeagueOfComicGeeksClient.cs` | LOCG removed |
+| `tests/Shortboxerr.Tests/LeagueOfComicGeeksClientTests.cs` | LOCG removed |
+
+### Key Changes
+
+**CoverSource Enum:**
+```csharp
+// Before
+LeagueOfComicGeeks = 2,
+
+// After
+Metron = 2,
+```
+
+**CoverFallbackService:**
+- Added `GetCoverByCvIdAsync(int comicVineIssueId, ...)` for direct CV ID lookup
+- Metron uses `cv_id` parameter - no fuzzy matching needed!
+- Falls back to search by series name/issue number if CV ID not available
+
+**MetronClient Features:**
+- Basic Auth authentication (username:password)
+- Rate limiting (30 requests/minute)
+- 24-hour response caching
+- Graceful degradation when service unavailable
+- Direct CV ID lookup: `GET /api/issue/?cv_id={cvId}`
+
+### Test Results
+```
+Passed: 18 MetronClientTests
+Passed: 15 CoverFallbackServiceTests  
+Passed: 6 DiscoveryCoverEnrichmentServiceTests
+Total: 39 tests passing
+```
+
+### Commits
+1. `feat: replace LOCG with Metron for backup cover source`
+2. `test: add comprehensive Metron client tests`
+
+### Pending Work
+- [ ] Add Metron settings UI (username/password configuration)
+- [ ] Add "Test Connection" button for Metron
+- [ ] Add Metron-specific API endpoints (`/api/v1/settings/metron`)
+
+---
+
 ## Iteration 148 (2026-02-24)
 **EPIC 11.14: Backup Cover Solution Research & Metron Evaluation**
 
@@ -49,25 +123,18 @@ Returns issue with cover URL directly using our existing ComicVine IDs.
 4. ComicVine volume cover (final fallback)
 
 ### Backlog Updates
-- Marked LOCG implementation as **DEPRECATED**
+- Marked LOCG implementation as **TO BE REMOVED**
 - Added new **EPIC 11.14: Metron Integration** with full implementation tasks
 - Updated priority hierarchy documentation
 - Documented Metron API details and endpoints
+- Added **EPIC 11.15: Hide Internal Data Source Names from UI**
 
 ### Files Modified
 | File | Change |
 |------|--------|
-| `docs/BACKLOG.md` | Added EPIC 11.14 for Metron integration, marked LOCG deprecated |
-| `docs/WORKLOG.md` | This research summary |
-
-### Next Steps (Ready for Implementation)
-1. **IMetronClient interface and implementation** - Direct CV ID lookup
-2. **Update CoverFallbackService** - Replace LOCG with Metron in priority order
-3. **Settings UI** - Metron credentials and connection test
-4. **Unit tests** - Mock Metron API responses
-
-### Why This Matters
-The current LOCG implementation is a ticking time bomb - it works today but could break without warning if LOCG changes their internal HTML structure. Metron provides a stable, documented, official API that directly maps to our existing ComicVine IDs, making it the obvious choice for a production-ready backup cover solution.
+| `docs/BACKLOG.md` | Added EPIC 11.14 for Metron integration, EPIC 11.15 for data source hiding |
+| `docs/WORKLOG.md` | Research summary |
+| `docs/SELF_CHECK.md` | Updated for iteration 148 |
 
 ---
 
