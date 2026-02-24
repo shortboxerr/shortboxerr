@@ -1,60 +1,67 @@
-# Self Check - Iteration 147
+# Self Check - Iteration 148
 
 ## Summary
-**EPIC 11.10: Ignored Publishers UI** - Complete
+**EPIC 11.14: Backup Cover Solution Research** - Complete
 
-Added UI settings for managing ignored publishers with wildcard support.
+Comprehensive research into backup cover alternatives. LOCG implementation deprecated in favor of Metron, which has an official API with direct ComicVine ID mapping.
 
 ## Recent Iterations
+- **148**: Backup Cover Research - Metron Evaluation (EPIC 11.14)
 - **147**: Ignored Publishers UI (EPIC 11.10)
 - **146**: Cover Image Fallback System (EPIC 11.13)
 - **145**: Background Automation & API Integration Tests (EPIC 16.3 & 16.4)
 - **144**: Issue Management E2E Tests (EPIC 16.2 continued)
-- **143**: Cover Fallback Backlog & Rate Limit Verification (EPIC 11.13 & 12.4)
+
+## Research Findings
+
+### Alternative Cover Sources Evaluated
+
+| Source | Official API | CV ID Mapping | All Publishers | Rate Limits | Verdict |
+|--------|-------------|---------------|----------------|-------------|---------|
+| **Metron** | Yes ✅ | Yes ✅ | Yes ✅ | 30/min, 10k/day | **RECOMMENDED** |
+| LOCG | No ❌ | No ❌ | Yes | Unknown | **DEPRECATED** |
+| Marvel API | Yes ✅ | No | Marvel only | 3k/day | Optional |
+
+### Key Finding
+**Metron** (`https://metron.cloud/api/`) provides:
+- Official REST API with documentation
+- Direct ComicVine ID lookup: `GET /api/issue/?cv_id={cvId}`
+- Cover images in response (`image` field)
+- Eliminates fragile fuzzy matching from LOCG approach
+
+### Updated Priority Hierarchy
+1. ComicVine issue cover (primary)
+2. **Metron cover via CV ID** (new primary fallback)
+3. Marvel API (Marvel-only, optional)
+4. ComicVine volume cover (final fallback)
 
 ## Implementation Checklist
-- [x] IgnoredPublishersList component (11.10)
-- [x] Background cover refresh with FallbackCoverEntry tracking (11.13.4)
-- [x] Additional unit tests for CoverFallbackService (11.13.5)
-- [x] Character/team DTOs and entities (#23)
-- [x] Documentation updates
-- [x] Build verification
+- [x] Research LOCG API status (confirmed: NO official API) ✅
+- [x] Research Metron API capabilities ✅
+- [x] Document Metron endpoints and authentication ✅
+- [x] Update BACKLOG with EPIC 11.14 ✅
+- [x] Mark LOCG implementation as DEPRECATED ✅
+- [x] Update priority hierarchy documentation ✅
 
 ## Build Health
-```
-Build succeeded
-    0 Warning(s)
-    0 Error(s)
-```
-
-## Test Results
-```
-CoverFallbackServiceTests: 17 passed
-DiscoveryCoverEnrichmentServiceTests: 6 passed
-Total new tests: 23
-```
+No code changes - research and documentation only.
 
 ## Modified/Created Files
 | File | Change |
 |------|--------|
-| `ui/src/pages/SettingsPage.tsx` | Added IgnoredPublishersList component |
-| `src/Shortboxerr.Core/Entities/FallbackCoverEntry.cs` | New entity for tracking LOCG covers |
-| `src/Shortboxerr.Core/Entities/IssueCharacter.cs` | New entity for character appearances |
-| `src/Shortboxerr.Core/Entities/IssueTeam.cs` | New entity for team appearances |
-| `src/Shortboxerr.Core/ComicVine/IComicVineClient.cs` | Added character/team DTOs |
-| `src/Shortboxerr.Infrastructure/BackgroundServices/DiscoveryCoverEnrichmentService.cs` | Added refresh logic |
-| `tests/Shortboxerr.Tests/DiscoveryCoverEnrichmentServiceTests.cs` | 6 new tests |
-| `tests/Shortboxerr.Tests/CoverFallbackServiceTests.cs` | 7 new tests |
+| `docs/BACKLOG.md` | Added EPIC 11.14, deprecated LOCG, updated priority hierarchy |
+| `docs/WORKLOG.md` | Added Iteration 148 research summary |
+| `docs/SELF_CHECK.md` | This file |
 
-## Backlog Items Completed This Session
-1. **EPIC 11.10**: Settings UI for managing ignored publishers ✅
-2. **EPIC 11.13.4**: Background cover refresh ✅
-3. **EPIC 11.13.5**: Unit tests for cover fallback ✅
-4. **#27**: Automation tests (verified complete in 11.7) ✅
-5. **#28**: Full integration tests (329+ tests exist) ✅
-6. **#23**: Character/team appearances foundation ✅
+## Next Steps (Ready for Implementation)
+1. [ ] **IMetronClient** - Interface and HTTP client implementation
+2. [ ] **CoverFallbackService update** - Replace LOCG with Metron
+3. [ ] **Settings UI** - Metron credentials configuration
+4. [ ] **Unit tests** - Mock Metron API responses
 
-## Remaining EPIC 11.13 Items
-- [ ] Marvel API client integration (Priority 2, optional)
-- [ ] Background cover refresh (Priority 4)
-- [ ] Integration with DiscoveryCoverEnrichmentService
+## Remaining EPIC 11.13/11.14 Items
+- [ ] Metron client integration (EPIC 11.14, Priority 1)
+- [ ] Update CoverFallbackService for Metron (EPIC 11.14, Priority 1)
+- [ ] Marvel API client integration (EPIC 11.13, Priority 3, optional)
+- [ ] Metron settings UI (EPIC 11.14, Priority 2)
+- [ ] Deprecate LOCG code (EPIC 11.14, Priority 3)

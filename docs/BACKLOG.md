@@ -1495,13 +1495,37 @@ WalkSoftly provides release data but no cover images. ComicVine is the source of
 
 Implement the cover image fallback system based on research from 11.11. When ComicVine doesn't have an issue cover, query alternative sources before falling back to series cover.
 
-**Priority Hierarchy:**
+**Priority Hierarchy (REVISED 2026-02-24):**
 1. ComicVine issue cover (primary, source of truth)
-2. League of Comic Geeks issue cover (fallback) - **via HTML scraping (no official API)**
-3. Marvel API cover (Marvel comics only)
+2. **Metron cover via ComicVine ID lookup** (primary fallback - official API with direct CV ID mapping!)
+3. Marvel API cover (Marvel comics only, optional)
 4. ComicVine volume/series cover (final fallback)
 
-**ARCHITECTURAL NOTES (2026-02-24):**
+**⚠️ LOCG DEPRECATION NOTICE (2026-02-24):**
+
+The LOCG implementation has been **deprecated** in favor of Metron. Research findings:
+
+| Source | Official API | CV ID Mapping | All Publishers | Rate Limits | Recommendation |
+|--------|-------------|---------------|----------------|-------------|----------------|
+| **Metron** | Yes ✅ | Yes ✅ | Yes ✅ | 30/min, 10k/day | **RECOMMENDED** |
+| LOCG | No ❌ | No ❌ | Yes | Unknown | **DEPRECATED** |
+| Marvel | Yes ✅ | No | Marvel only | 3k/day | Optional |
+
+**Why Metron over LOCG:**
+1. **Official REST API** with OpenAPI documentation at `https://metron.cloud/api/`
+2. **Direct ComicVine ID mapping** via `cv_id` field - **no fuzzy matching needed!**
+3. **Cover images in responses** - `image` field contains cover URLs
+4. **Store date filtering** - perfect for weekly releases
+5. **Free account registration** required (Basic Auth)
+6. **Reasonable rate limits**: 30 requests/minute, 10,000/day
+
+**Key Metron Endpoint for Our Use Case:**
+```
+GET /api/issue/?cv_id={comicVineIssueId}
+```
+Returns issue with cover image URL directly - eliminates fuzzy matching errors.
+
+**ORIGINAL LOCG IMPLEMENTATION (DEPRECATED):**
 
 League of Comic Geeks has **NO official API**. Analysis of existing libraries (pruizlezcano/comicgeeks, maruf99/comicgeeks) reveals:
 - Internal endpoint: `https://leagueofcomicgeeks.com/comic/get_comics`
@@ -1511,14 +1535,8 @@ League of Comic Geeks has **NO official API**. Analysis of existing libraries (p
 - **Challenge**: LOCG has its own IDs, no ComicVine mapping. Must search by title and fuzzy-match.
 - **Risk**: Unofficial approach could break if site changes
 
-**Implementation Strategy:**
-1. Implement LOCG client with HTML parsing (graceful degradation if site changes)
-2. Search by series name + issue number, fuzzy match results
-3. Cache aggressively (24hr+) to minimize scraping
-4. Fall back gracefully on any error (use series cover)
-
 **Implementation Items:**
-- [x] **League of Comic Geeks client integration** ✅ COMPLETED (Iteration 146)
+- [x] **League of Comic Geeks client integration** ✅ COMPLETED but DEPRECATED (Iteration 146)
   - AC: Create `ILeagueOfComicGeeksClient` interface ✅
   - AC: Implement client using HTML parsing patterns (AngleSharp) ✅
   - AC: Internal endpoint: `/comic/get_comics?list=search&title={query}&list_option=series` ✅
@@ -1529,8 +1547,9 @@ League of Comic Geeks has **NO official API**. Analysis of existing libraries (p
   - AC: Conservative rate limiting (2s delay between requests) ✅
   - AC: Graceful degradation on parse errors (site structure may change) ✅
   - Note: 14 unit tests added (LeagueOfComicGeeksClientTests.cs)
+  - **⚠️ DEPRECATED**: Replace with Metron (see 11.14)
 
-- [ ] **Marvel API client integration** ← READY (Priority 2, Marvel-only)
+- [ ] **Marvel API client integration** ← READY (Priority 3, Marvel-only, Optional)
   - AC: Create `IMarvelApiClient` interface  
   - AC: Implement HMAC authentication (public key + private key + timestamp)
   - AC: Search endpoint: `/v1/public/comics?title={series}&issueNumber={num}`
@@ -1539,7 +1558,7 @@ League of Comic Geeks has **NO official API**. Analysis of existing libraries (p
   - AC: Cache responses locally with 24-hour TTL
   - AC: Respect Marvel rate limits (3000 calls/day)
 
-- [x] **Cover fallback service** ✅ COMPLETED (Iteration 146)
+- [x] **Cover fallback service** ✅ COMPLETED (Iteration 146) - NEEDS UPDATE for Metron
   - AC: Create `ICoverFallbackService` that queries sources in priority order ✅
   - AC: Priority order: LOCG → ComicVine volume (final fallback) ✅
   - AC: Only query fallback sources when ComicVine issue cover is missing ✅
@@ -1550,6 +1569,7 @@ League of Comic Geeks has **NO official API**. Analysis of existing libraries (p
   - AC: 24-hour cache with clear capability ✅
   - AC: Integrated with DiscoveryCoverEnrichmentService background task ✅
   - Note: 10 unit tests in CoverFallbackServiceTests.cs
+  - **⚠️ UPDATE NEEDED**: Replace LOCG with Metron (see 11.14)
 
 - [x] **Background cover refresh** ✅ COMPLETED (Iteration 147)
   - AC: Extend existing background service to periodically check for ComicVine cover updates ✅
@@ -1566,6 +1586,79 @@ League of Comic Geeks has **NO official API**. Analysis of existing libraries (p
   - AC: Mock external API responses ✅
   - AC: Test graceful degradation when LOCG structure changes ✅
   - Note: 17 tests in CoverFallbackServiceTests.cs + 6 tests in DiscoveryCoverEnrichmentServiceTests.cs
+
+### 11.14 Metron Integration for Backup Covers ← READY (HIGH PRIORITY)
+
+Replace LOCG with Metron as the primary backup cover source. Metron has an official API with direct ComicVine ID mapping, eliminating the fragile fuzzy-matching approach.
+
+**Research Summary (2026-02-24):**
+- **API Base URL**: `https://metron.cloud/api/`
+- **Authentication**: Basic Auth (username:password)
+- **Registration**: Free account at metron.cloud (requires valid email)
+- **Rate Limits**: 30 requests/minute, 10,000 requests/day
+- **Key Feature**: `cv_id` field allows direct ComicVine ID lookup
+
+**Key Endpoints:**
+- `GET /api/issue/?cv_id={comicVineIssueId}` - Direct lookup by CV ID (preferred!)
+- `GET /api/issue/?series_name={name}&number={num}` - Fallback search
+- `GET /api/issue/?store_date_range_after={date}&store_date_range_before={date}` - Weekly releases
+
+**Response Fields:**
+```json
+{
+  "id": 12345,
+  "series": {"id": 100, "name": "Amazing Spider-Man"},
+  "number": "1",
+  "cover_date": "2024-01-01",
+  "store_date": "2024-01-10",
+  "image": "https://metron.cloud/media/issue/...",  // Cover URL!
+  "cv_id": 67890,  // ComicVine ID mapping!
+  "gcd_id": null   // Grand Comics Database ID
+}
+```
+
+**Implementation Items:**
+- [ ] **Metron client implementation** ← READY (Priority 1)
+  - AC: Create `IMetronClient` interface
+  - AC: Implement Basic Auth HTTP client
+  - AC: Primary lookup: `GET /api/issue/?cv_id={cvId}` (direct mapping)
+  - AC: Fallback lookup: `GET /api/issue/?series_name={name}&number={num}`
+  - AC: Extract cover URL from `image` field
+  - AC: Cache responses locally with 24-hour TTL
+  - AC: Rate limiting: max 30 requests/minute
+  - AC: User-Agent header required (not browser agent)
+  - AC: Graceful degradation when service unavailable
+  - AC: Store Metron credentials in settings (encrypted)
+
+- [ ] **Update CoverFallbackService** ← READY (Priority 1)
+  - AC: Add `CoverSource.Metron` to enum
+  - AC: Replace LOCG lookup with Metron lookup
+  - AC: Priority order: Metron (via CV ID) → ComicVine volume
+  - AC: Pass ComicVine issue ID to Metron for direct lookup
+  - AC: Update stats tracking for Metron hits
+  - AC: Keep LOCG as disabled fallback (for migration period)
+
+- [ ] **Settings UI for Metron** ← READY (Priority 2)
+  - AC: Add Metron section to Settings > General or new Metadata tab
+  - AC: Username/password fields (stored encrypted)
+  - AC: "Test Connection" button
+  - AC: Enable/disable toggle
+  - AC: Show rate limit status
+
+- [ ] **Deprecate LOCG integration** ← READY (Priority 3)
+  - AC: Add deprecation warning in code comments
+  - AC: Make LOCG disabled by default
+  - AC: Remove LOCG from default priority order
+  - AC: Keep code for users who may have it working
+  - AC: Document migration path in release notes
+
+- [ ] **Unit tests for Metron client** ← READY (Priority 1)
+  - AC: Test direct CV ID lookup
+  - AC: Test fallback series/issue lookup
+  - AC: Test authentication handling
+  - AC: Test rate limit handling
+  - AC: Test caching behavior
+  - AC: Mock HTTP responses
 
 ### 11.12 Show Upcoming Releases on Series View (WalkSoftly Integration) ✅ COMPLETED
 

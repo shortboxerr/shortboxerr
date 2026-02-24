@@ -1,5 +1,76 @@
 # Worklog
 
+## Iteration 148 (2026-02-24)
+**EPIC 11.14: Backup Cover Solution Research & Metron Evaluation**
+
+### Summary
+Comprehensive research into backup cover solutions revealed that the current LOCG implementation is fragile and should be replaced with Metron, which has an official API with direct ComicVine ID mapping.
+
+### Research Findings
+
+**Problem Statement:**
+The LOCG (League of Comic Geeks) implementation uses unofficial HTML scraping with no official API support. It requires fuzzy matching by series/issue names, which is error-prone, and could break at any time if LOCG changes their site structure.
+
+**Evaluated Alternatives:**
+
+| Source | Official API | CV ID Mapping | All Publishers | Rate Limits | Verdict |
+|--------|-------------|---------------|----------------|-------------|---------|
+| **Metron** | Yes ✅ | Yes ✅ | Yes ✅ | 30/min, 10k/day | **RECOMMENDED** |
+| LOCG | No ❌ | No ❌ | Yes | Unknown | DEPRECATED |
+| Marvel API | Yes ✅ | No | Marvel only ❌ | 3k/day | Optional |
+| GCD | Unofficial | No | Yes | Unknown | Archive only |
+
+**Key Finding - Metron Advantages:**
+1. **Official REST API** with OpenAPI documentation at `https://metron.cloud/api/`
+2. **Direct ComicVine ID mapping** via `cv_id` field - eliminates fuzzy matching!
+3. **Cover images included** - `image` field contains direct cover URLs
+4. **Store date filtering** - perfect for weekly release queries
+5. **Free registration** with Basic Auth authentication
+6. **Reasonable rate limits**: 30 requests/minute, 10,000/day
+7. **Community-maintained** - not dependent on single corporation
+
+**Metron Key Endpoint:**
+```
+GET /api/issue/?cv_id={comicVineIssueId}
+```
+Returns issue with cover URL directly using our existing ComicVine IDs.
+
+### Updated Priority Hierarchy
+
+**Old (with LOCG):**
+1. ComicVine issue cover
+2. LOCG cover (fuzzy match) ← DEPRECATED
+3. ComicVine volume cover
+
+**New (with Metron):**
+1. ComicVine issue cover (primary, source of truth)
+2. **Metron cover via CV ID lookup** (direct mapping!)
+3. Marvel API cover (Marvel-only, optional)
+4. ComicVine volume cover (final fallback)
+
+### Backlog Updates
+- Marked LOCG implementation as **DEPRECATED**
+- Added new **EPIC 11.14: Metron Integration** with full implementation tasks
+- Updated priority hierarchy documentation
+- Documented Metron API details and endpoints
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `docs/BACKLOG.md` | Added EPIC 11.14 for Metron integration, marked LOCG deprecated |
+| `docs/WORKLOG.md` | This research summary |
+
+### Next Steps (Ready for Implementation)
+1. **IMetronClient interface and implementation** - Direct CV ID lookup
+2. **Update CoverFallbackService** - Replace LOCG with Metron in priority order
+3. **Settings UI** - Metron credentials and connection test
+4. **Unit tests** - Mock Metron API responses
+
+### Why This Matters
+The current LOCG implementation is a ticking time bomb - it works today but could break without warning if LOCG changes their internal HTML structure. Metron provides a stable, documented, official API that directly maps to our existing ComicVine IDs, making it the obvious choice for a production-ready backup cover solution.
+
+---
+
 ## Iteration 147 (2026-02-24)
 **EPIC 11.10 & 11.13: Ignored Publishers UI + Background Cover Refresh**
 
