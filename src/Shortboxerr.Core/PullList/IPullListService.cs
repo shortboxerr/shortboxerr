@@ -624,6 +624,32 @@ public class PullListSettings
     public List<string> IgnoredPublishers { get; set; } = new();
 
     #endregion
+
+    #region Discovery Upgrade Service (EPIC 11.27 - MetronInterim → ComicVineFinalized)
+
+    /// <summary>
+    /// Whether to enable the background discovery upgrade service.
+    /// When enabled, periodically re-checks issues with interim Metron data
+    /// and upgrades them to authoritative ComicVine data when available.
+    /// Default: true
+    /// </summary>
+    public bool DiscoveryUpgradeEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Interval (in hours) between discovery upgrade checks.
+    /// Matching Mylar3's refresh interval of 4 hours.
+    /// Default: 4
+    /// </summary>
+    public int DiscoveryUpgradeIntervalHours { get; set; } = 4;
+
+    /// <summary>
+    /// Number of weeks ahead to check for enrichment upgrades.
+    /// Only checks weeks that might have non-finalized issues.
+    /// Default: 4
+    /// </summary>
+    public int DiscoveryUpgradeWeeksAhead { get; set; } = 4;
+
+    #endregion
 }
 
 /// <summary>

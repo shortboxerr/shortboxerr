@@ -144,6 +144,10 @@ public static class DependencyInjection
         services.AddSingleton<BackgroundServices.UpcomingReleasesEnrichmentService>();
         services.AddHostedService(provider =>
             provider.GetRequiredService<BackgroundServices.UpcomingReleasesEnrichmentService>());
+        // 11.27: Discovery upgrade service for MetronInterim → ComicVineFinalized transitions
+        services.AddSingleton<BackgroundServices.DiscoveryUpgradeBackgroundService>();
+        services.AddHostedService(provider =>
+            provider.GetRequiredService<BackgroundServices.DiscoveryUpgradeBackgroundService>());
         services.AddSingleton<BackgroundServices.ReleaseDayBackgroundService>();
         services.AddHostedService(provider => 
             provider.GetRequiredService<BackgroundServices.ReleaseDayBackgroundService>());
