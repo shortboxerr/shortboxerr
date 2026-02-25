@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Shortboxerr.Core.Activity;
 using Shortboxerr.Core.Ddl;
 using Shortboxerr.Core.Services;
 
@@ -57,12 +58,33 @@ public static class DdlEndpoints
             .WithDescription("Cancels an active download.")
             .Produces<object>();
 
+        // Retry a stalled/failed download
+        group.MapPost("/downloads/{downloadId}/retry", RetryDownload)
+            .WithName("RetryDdlDownload")
+            .WithSummary("Retry a stalled or failed DDL download")
+            .WithDescription("Retries a stalled or failed download, resuming from where it left off if possible.")
+            .Produces<DdlGrabResponseDto>();
+
         // Get download history
         group.MapGet("/downloads/history", GetDownloadHistory)
             .WithName("GetDdlDownloadHistory")
             .WithSummary("Get DDL download history")
             .WithDescription("Returns recent download history.")
             .Produces<List<DdlDownloadHistoryDto>>();
+
+        // Get DDL activity feed (for UI activity page)
+        group.MapGet("/activity-feed", GetDdlActivity)
+            .WithName("GetDdlActivity")
+            .WithSummary("Get DDL activity feed")
+            .WithDescription("Returns recent DDL activity including active downloads, completed downloads, and failures.")
+            .Produces<List<DdlActivityEventDto>>();
+
+        // Clear DDL activity history
+        group.MapDelete("/activity-feed", ClearDdlActivity)
+            .WithName("ClearDdlActivity")
+            .WithSummary("Clear DDL activity history")
+            .WithDescription("Clears the DDL activity history (completed, failed, and cancelled downloads).")
+            .Produces<object>();
 
         // Get latest releases from all sites
         group.MapGet("/latest", GetLatestReleases)
@@ -129,6 +151,7 @@ public static class DdlEndpoints
         [FromBody] DdlGrabRequestDto request,
         [FromServices] IDdlDownloadService downloadService,
         [FromServices] ISettingsService settingsService,
+        [FromServices] IHistoryService historyService,
         CancellationToken cancellationToken)
     {
         // Reconstruct the candidate from the request
@@ -187,6 +210,19 @@ public static class DdlEndpoints
 
         var result = await downloadService.DownloadAsync(candidate, options, cancellationToken);
 
+        // Record "grabbed" history event when download is initiated
+        var title = !string.IsNullOrEmpty(request.SeriesTitle) && request.IssueNumber.HasValue
+            ? $"{request.SeriesTitle} #{request.IssueNumber}"
+            : request.ReleaseTitle;
+        
+        await historyService.RecordDownloadGrabbedAsync(
+            title: title,
+            source: request.SourceSite,
+            seriesId: null,
+            issueId: null,
+            additionalData: null,
+            cancellationToken: cancellationToken);
+
         return Results.Ok(new DdlGrabResponseDto
         {
             Success = result.Success,
@@ -233,6 +269,30 @@ public static class DdlEndpoints
         return Results.Ok(new { message = "Download cancelled", downloadId });
     }
 
+    private static async Task<IResult> RetryDownload(
+        string downloadId,
+        [FromServices] IDdlDownloadService downloadService,
+        CancellationToken cancellationToken)
+    {
+        var result = await downloadService.RetryDownloadAsync(downloadId, cancellationToken);
+        if (result == null)
+        {
+            return Results.NotFound(new { error = "Download not found or cannot be retried" });
+        }
+
+        return Results.Ok(new DdlGrabResponseDto
+        {
+            Success = result.Success,
+            DownloadId = result.DownloadId,
+            FilePath = result.FilePath,
+            FileName = result.FileName,
+            FileSize = result.FileSize,
+            DurationMs = (int)result.Duration.TotalMilliseconds,
+            ErrorMessage = result.ErrorMessage,
+            FailureReason = result.Success ? null : result.FailureReason.ToString()
+        });
+    }
+
     private static IResult GetDownloadHistory(
         [FromQuery] int? limit,
         [FromServices] IDdlDownloadService downloadService)
@@ -255,6 +315,129 @@ public static class DdlEndpoints
             StartedAt = h.StartedAt,
             CompletedAt = h.CompletedAt
         }).ToList());
+    }
+
+    private static IResult GetDdlActivity(
+        [FromQuery] string? filter,
+        [FromQuery] int? limit,
+        [FromServices] IDdlDownloadService downloadService)
+    {
+        var events = new List<DdlActivityEventDto>();
+        var maxEvents = limit ?? 50;
+        
+        // Get active downloads
+        var activeDownloads = downloadService.GetActiveDownloads();
+        foreach (var download in activeDownloads)
+        {
+            var eventType = download.State switch
+            {
+                DdlDownloadState.Downloading => "download_started",
+                DdlDownloadState.Stalled => "download_started",
+                DdlDownloadState.Retrying => "download_started",
+                _ => "download_started"
+            };
+            
+            var status = download.State switch
+            {
+                DdlDownloadState.Downloading => "info",
+                DdlDownloadState.Stalled => "warning",
+                DdlDownloadState.Retrying => "warning",
+                _ => "info"
+            };
+            
+            var details = download.State == DdlDownloadState.Downloading
+                ? $"{download.ProgressPercent:F0}% - {FormatBytes(download.BytesPerSecond)}/s"
+                : download.State.ToString();
+            
+            events.Add(new DdlActivityEventDto
+            {
+                Id = download.DownloadId,
+                Type = eventType,
+                Title = Path.GetFileNameWithoutExtension(download.DestinationPath) ?? "Unknown",
+                Provider = "GetComics",
+                Timestamp = FormatRelativeTime(download.StartedAt),
+                Details = details,
+                Status = status
+            });
+        }
+        
+        // Get download history
+        var history = downloadService.GetDownloadHistory(maxEvents);
+        foreach (var entry in history)
+        {
+            // Apply filter
+            if (filter == "download" && entry.Success) continue;
+            if (filter == "failed" && entry.Success) continue;
+            
+            var eventType = entry.Success ? "download_complete" : "download_failed";
+            var status = entry.Success ? "success" : "error";
+            
+            var details = entry.Success
+                ? $"Downloaded {FormatBytes(entry.FileSize)}"
+                : entry.ErrorMessage ?? entry.FailureReason?.ToString() ?? "Unknown error";
+            
+            events.Add(new DdlActivityEventDto
+            {
+                Id = entry.Id,
+                Type = eventType,
+                Title = entry.ReleaseTitle ?? Path.GetFileNameWithoutExtension(entry.DestinationPath) ?? "Unknown",
+                Provider = entry.SourceSite ?? "GetComics",
+                Timestamp = FormatRelativeTime(entry.CompletedAt),
+                Details = details,
+                Status = status
+            });
+        }
+        
+        // Sort by most recent first (active downloads first, then by timestamp)
+        var sorted = events
+            .OrderByDescending(e => e.Type == "download_started")
+            .ThenByDescending(e => e.Timestamp)
+            .Take(maxEvents)
+            .ToList();
+        
+        return Results.Ok(sorted);
+    }
+
+    private static async Task<IResult> ClearDdlActivity(
+        [FromServices] IDownloadHistoryService? historyService,
+        [FromServices] IDdlDownloadService downloadService,
+        CancellationToken cancellationToken)
+    {
+        var count = 0;
+        
+        // Clear persisted DDL history
+        if (historyService != null)
+        {
+            count = await historyService.ClearBySourceTypeAsync(DownloadSourceType.Ddl, cancellationToken);
+        }
+        
+        // Also clear the in-memory history in DdlDownloadService
+        downloadService.ClearHistory();
+        
+        return Results.Ok(new { success = true, removedCount = count });
+    }
+    
+    private static string FormatBytes(double bytes)
+    {
+        if (bytes >= 1024 * 1024 * 1024) return $"{bytes / (1024 * 1024 * 1024):F1} GB";
+        if (bytes >= 1024 * 1024) return $"{bytes / (1024 * 1024):F1} MB";
+        if (bytes >= 1024) return $"{bytes / 1024:F1} KB";
+        return $"{bytes:F0} B";
+    }
+    
+    private static string FormatBytes(long bytes)
+    {
+        return FormatBytes((double)bytes);
+    }
+    
+    private static string FormatRelativeTime(DateTime timestamp)
+    {
+        var diff = DateTime.UtcNow - timestamp;
+        if (diff.TotalSeconds < 60) return "Just now";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
+        if (diff.TotalDays < 7) return $"{(int)diff.TotalDays}d ago";
+        return timestamp.ToString("MMM d");
     }
 
     private static async Task<IResult> GetLatestReleases(
@@ -489,4 +672,15 @@ public record DdlLinkExtractionResponseDto
     public List<DdlDownloadLinkDto> Links { get; init; } = new();
     public List<string> DeadLinks { get; init; } = new();
     public string? ErrorMessage { get; init; }
+}
+
+public record DdlActivityEventDto
+{
+    public required string Id { get; init; }
+    public required string Type { get; init; }
+    public required string Title { get; init; }
+    public required string Provider { get; init; }
+    public required string Timestamp { get; init; }
+    public string? Details { get; init; }
+    public required string Status { get; init; }
 }

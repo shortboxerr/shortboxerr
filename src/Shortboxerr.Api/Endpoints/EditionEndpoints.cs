@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Shortboxerr.Api.Dtos;
 using Shortboxerr.Core.Entities;
+using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.Persistence;
 
 namespace Shortboxerr.Api.Endpoints;
@@ -113,19 +114,32 @@ public static class EditionEndpoints
         .WithName("GetEditionContents");
 
         // POST create edition
-        group.MapPost("/", async (ShortboxerrDbContext db, CreateEditionRequest request) =>
+        group.MapPost("/", async (
+            ShortboxerrDbContext db,
+            IHistoryService historyService,
+            CreateEditionRequest request,
+            CancellationToken ct) =>
         {
             // Validate SeriesId if provided
+            string? seriesTitle = null;
             if (request.SeriesId.HasValue)
             {
-                var seriesExists = await db.Series.AnyAsync(s => s.Id == request.SeriesId.Value);
-                if (!seriesExists)
+                var series = await db.Series.FindAsync(new object[] { request.SeriesId.Value }, ct);
+                if (series == null)
                     return Results.BadRequest(new { message = $"Series {request.SeriesId} not found" });
+                seriesTitle = series.Title;
             }
 
             var entity = request.ToEntity();
             db.EditionTitles.Add(entity);
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(ct);
+
+            // Record history event
+            if (request.SeriesId.HasValue)
+            {
+                await historyService.RecordEditionAddedAsync(
+                    entity.Id, request.SeriesId.Value, entity.Title, seriesTitle ?? "Unknown", ct);
+            }
 
             return Results.Created($"/api/v1/editions/{entity.Id}", EditionDto.FromEntity(entity));
         })
@@ -172,14 +186,31 @@ public static class EditionEndpoints
         .WithName("UpdateEdition");
 
         // DELETE edition
-        group.MapDelete("/{id:int}", async (ShortboxerrDbContext db, int id) =>
+        group.MapDelete("/{id:int}", async (
+            ShortboxerrDbContext db,
+            IHistoryService historyService,
+            int id,
+            bool deleteFiles = false,
+            CancellationToken ct = default) =>
         {
-            var edition = await db.EditionTitles.FindAsync(id);
+            var edition = await db.EditionTitles
+                .Include(e => e.Series)
+                .FirstOrDefaultAsync(e => e.Id == id, ct);
             if (edition is null)
                 return Results.NotFound(new { message = $"Edition {id} not found" });
 
+            var editionTitle = edition.Title;
+            var seriesId = edition.SeriesId;
+            var seriesTitle = edition.Series?.Title ?? "Unknown";
+
+            // TODO: If deleteFiles is true, delete associated file assets from disk
+
             db.EditionTitles.Remove(edition);
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(ct);
+
+            // Record history event (pass null for editionId since the edition is now deleted)
+            await historyService.RecordEditionDeletedAsync(
+                null, seriesId, editionTitle, seriesTitle, deleteFiles, ct);
 
             return Results.NoContent();
         })

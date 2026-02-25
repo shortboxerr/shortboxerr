@@ -4,6 +4,7 @@ using Shortboxerr.Api.Dtos;
 using Shortboxerr.Core.Caching;
 using Shortboxerr.Core.Entities;
 using Shortboxerr.Core.PullList;
+using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.Persistence;
 
 namespace Shortboxerr.Api.Endpoints;
@@ -366,11 +367,16 @@ public static class SeriesEndpoints
         group.MapPost("/", async (
             ShortboxerrDbContext db,
             ICacheService cacheService,
-            CreateSeriesRequest request) =>
+            IHistoryService historyService,
+            CreateSeriesRequest request,
+            CancellationToken ct) =>
         {
             var entity = request.ToEntity();
             db.Series.Add(entity);
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(ct);
+
+            // Record history event
+            await historyService.RecordSeriesAddedAsync(entity.Id, entity.Title, request.ExternalSource, ct);
 
             // Invalidate series list cache (new series added)
             cacheService.RemoveByPrefix(CacheKeys.SeriesList);
@@ -419,14 +425,24 @@ public static class SeriesEndpoints
         group.MapDelete("/{id:int}", async (
             ShortboxerrDbContext db,
             ICacheService cacheService,
-            int id) =>
+            IHistoryService historyService,
+            int id,
+            bool deleteFiles = false,
+            CancellationToken ct = default) =>
         {
-            var series = await db.Series.FindAsync(id);
+            var series = await db.Series.FindAsync(new object[] { id }, ct);
             if (series is null)
                 return Results.NotFound(new { message = $"Series {id} not found" });
 
+            var seriesTitle = series.Title;
+
+            // TODO: If deleteFiles is true, delete associated file assets from disk
+
             db.Series.Remove(series);
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(ct);
+
+            // Record history event (pass null for seriesId since the series is now deleted)
+            await historyService.RecordSeriesDeletedAsync(null, seriesTitle, deleteFiles, ct);
 
             // Invalidate caches for this series and list
             cacheService.RemoveByPrefix(CacheKeys.SeriesList);
