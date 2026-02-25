@@ -202,6 +202,9 @@ public static class DependencyInjection
         services.AddSingleton<INzbFilterService, NzbFilterService>();
         services.AddScoped<INzbImportService, NzbImportService>();
         services.AddHostedService<BackgroundServices.NzbImportBackgroundService>();
+        
+        // DDL auto-import background service
+        services.AddHostedService<BackgroundServices.DdlImportBackgroundService>();
 
         // Indexer health monitoring
         services.AddScoped<IIndexerHealthService, IndexerHealthService>();

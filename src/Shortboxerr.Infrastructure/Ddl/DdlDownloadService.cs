@@ -333,6 +333,31 @@ public class DdlDownloadService : IDdlDownloadService
         _logger?.LogInformation("DDL download history cleared");
     }
 
+    public IReadOnlyList<DdlDownloadHistoryEntry> GetPendingImportDownloads()
+    {
+        lock (_historyLock)
+        {
+            return _downloadHistory
+                .Where(h => h.Success && !h.ImportProcessed && !string.IsNullOrEmpty(h.DestinationPath))
+                .OrderBy(h => h.CompletedAt)
+                .ToList();
+        }
+    }
+
+    public void MarkAsImported(string downloadId)
+    {
+        lock (_historyLock)
+        {
+            var entry = _downloadHistory.FirstOrDefault(h => h.DownloadId == downloadId);
+            if (entry != null)
+            {
+                entry.ImportProcessed = true;
+                entry.ImportProcessedAt = DateTime.UtcNow;
+                _logger?.LogDebug("Marked download {DownloadId} as imported", downloadId);
+            }
+        }
+    }
+
     public async Task<bool> CanResumeAsync(string url, string destinationPath)
     {
         // Check if partial file exists
@@ -951,7 +976,9 @@ public class DdlDownloadService : IDdlDownloadService
             RetryAttempts = result.RetryAttempts,
             Duration = result.Duration,
             StartedAt = startedAt,
-            CompletedAt = completedAt
+            CompletedAt = completedAt,
+            Candidate = candidate,
+            ImportProcessed = false
         };
         
         lock (_historyLock)

@@ -50,6 +50,16 @@ public interface IDdlDownloadService
     /// Check if a URL can be resumed (partial download exists).
     /// </summary>
     Task<bool> CanResumeAsync(string url, string destinationPath);
+    
+    /// <summary>
+    /// Get successful downloads that haven't been processed by the import pipeline yet.
+    /// </summary>
+    IReadOnlyList<DdlDownloadHistoryEntry> GetPendingImportDownloads();
+    
+    /// <summary>
+    /// Mark a download as processed by the import pipeline.
+    /// </summary>
+    void MarkAsImported(string downloadId);
 }
 
 /// <summary>
@@ -603,6 +613,21 @@ public class DdlDownloadHistoryEntry
     /// When the download completed.
     /// </summary>
     public DateTime CompletedAt { get; init; }
+    
+    /// <summary>
+    /// Whether this download has been processed by the import pipeline.
+    /// </summary>
+    public bool ImportProcessed { get; set; }
+    
+    /// <summary>
+    /// When the import was processed (if processed).
+    /// </summary>
+    public DateTime? ImportProcessedAt { get; set; }
+    
+    /// <summary>
+    /// The original candidate used for this download (for import matching).
+    /// </summary>
+    public DdlCandidate? Candidate { get; init; }
 }
 
 
