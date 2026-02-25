@@ -21,6 +21,7 @@
 | 📋 | [EPIC 14](#epic-14-future-enhancements--planned) | Future Enhancements |
 | ✅ | [EPIC 15](#epic-15-ui-bug-fixes--improvements--completed) | UI Bug Fixes |
 | ✅ | [EPIC 16](#epic-16-end-to-end-testing-infrastructure--completed) | E2E Testing Infrastructure |
+| 🔄 | [EPIC 17](#epic-17-ddl-download-link-robustness--in-progress) | DDL Download Link Robustness |
 
 **Legend:** ✅ Completed | 🔄 In Progress | 📋 Planned
 
@@ -3905,6 +3906,90 @@ Comprehensive E2E test suite to exercise all user workflows, background automati
 
 ---
 
+
+## EPIC 17: DDL Download Link Robustness 🔄 IN PROGRESS
+
+End-to-end improvements for DDL (Direct Download Link) reliability, error handling, and activity tracking.
+
+### 17.1 Activity Tracking ✅ COMPLETED
+- [x] **Centralized download history** ✅
+  - AC: ActivityService uses static history collection for cross-scope visibility
+  - AC: DdlDownloadService records all download attempts (success and failure)
+  - AC: Activity page displays download history correctly
+  - Note: Fixed DI lifetime mismatch - ActivityService was scoped but DdlDownloadService is singleton
+
+### 17.2 GetComics Adapter Consolidation ✅ COMPLETED
+- [x] **Remove legacy adapter** ✅
+  - AC: GetComicsAdapter (V2) is the sole implementation with Mylar3 parity
+  - AC: Legacy GetComicsAdapter removed from codebase
+  - AC: DdlSiteAdapterFactory uses consolidated adapter
+  - AC: Documentation updated to reflect single adapter
+  - Note: V2 adapter renamed to GetComicsAdapter, legacy deleted
+
+### 17.3 Download Verification 📋 PLANNED
+- [ ] **HTML error page detection**
+  - AC: Detect when downloaded file is HTML instead of comic archive
+  - AC: Check magic bytes (PK for ZIP/CBZ, Rar! for CBR/RAR)
+  - AC: Detect Cloudflare challenge pages in response
+  - AC: Detect site-specific error pages (access denied, paywall, etc.)
+  - AC: Mark download as failed when HTML detected
+  - AC: Move to next download link automatically on HTML detection
+- [ ] **File size validation**
+  - AC: Compare downloaded size vs Content-Length header
+  - AC: Reject suspiciously small files (< 100KB for comics)
+  - AC: Log size mismatch as potential partial download
+- [ ] **Archive integrity check**
+  - AC: Verify CBZ/CBR can be opened after download
+  - AC: Detect truncated archives
+  - AC: Option to extract and re-compress corrupted archives
+
+### 17.4 ReadComicOnline Adapter Fixes 📋 PLANNED
+- [ ] **HTML response handling**
+  - AC: Detect when RCO returns HTML error/placeholder page
+  - AC: Parse error messages from HTML response
+  - AC: Retry with alternate link or skip to next candidate
+- [ ] **Domain detection improvements**
+  - AC: Handle domain changes gracefully (li, to, org, cc variants)
+  - AC: Periodic homepage detection to update base URL
+  - AC: Log domain migration events for debugging
+
+### 17.5 Link Extraction Updates 📋 PLANNED
+- [ ] **GetComics page structure changes**
+  - AC: Update DownloadButtonMylar3Regex if page structure changes
+  - AC: Add fallback patterns for common download button classes
+  - AC: Log when expected patterns don't match (helps detect site changes)
+- [ ] **Host link detection**
+  - AC: Keep KnownHostLinkMylar3Regex updated with new hosts
+  - AC: Support terabox.com, rootz.so, vikingfile.com, pixeldrain.com, mega.nz
+  - AC: Add support for any new hosts GetComics starts using
+- [ ] **Redirect link handling**
+  - AC: GetComicsRedirectLinkRegex handles `/dlds/` redirect links
+  - AC: Follow redirects to final download URL
+  - AC: Detect and skip infinite redirect loops
+
+### 17.6 Multi-Link Fallback 📋 PLANNED
+- [ ] **Automatic link rotation**
+  - AC: Try next link when current fails (timeout, 404, HTML response)
+  - AC: Log each attempt with failure reason
+  - AC: Configure max attempts per candidate
+  - AC: Report all attempted links in activity history
+- [ ] **Host reliability scoring**
+  - AC: Track success/failure rate per host
+  - AC: Prefer hosts with higher success rates
+  - AC: Temporary blacklist for repeatedly failing hosts
+
+### 17.7 Decision Engine Tuning 📋 PLANNED
+- [ ] **Auto-grab threshold review**
+  - AC: Default AutoGrabThreshold (55) may reject valid matches
+  - AC: Document recommended threshold values for different use cases
+  - AC: Consider lower threshold for "any match" vs "confident match" scenarios
+- [ ] **Multi-candidate handling**
+  - AC: ManualChoiceMargin (10) controls when manual selection required
+  - AC: Option to prefer specific sites (GetComics over RCO)
+  - AC: Configurable site priority in decision engine
+
+---
+
 ## Story Ordering Notes
 
 **EPIC 4 Implementation Order:**
@@ -3937,3 +4022,4 @@ Comprehensive E2E test suite to exercise all user workflows, background automati
 - EPIC 11.6 depends on EPIC 7 (Mylar3 Migration) for config import patterns
 - EPIC 12 has no hard dependencies; can be implemented incrementally alongside other work
 - EPIC 16 depends on most other EPICs being functional (tests exercise complete workflows)
+- EPIC 17 depends on EPIC 8 (DDL Site Adapters) for adapter infrastructure
