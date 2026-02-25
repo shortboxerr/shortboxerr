@@ -1,15 +1,27 @@
 # Worklog
 
 ## Iteration 156 (2026-02-24)
-**Planning Note: EPIC 11.25 queued as next recommended item**
+**EPIC 11.25: ID-Less Upcoming Issue Matching for Metron Covers**
 
 ### Summary
-Added a new READY backlog item to address upcoming issues that lack a ComicVine issue ID from WalkSoftly (`walkSoftlyIssueId = null`), which currently causes series/volume fallback covers to appear instead of issue-specific covers.
+Implemented confidence-scored ID-less Metron matching for upcoming issues that do not yet have a ComicVine issue ID from WalkSoftly.
 
-### Recommendation
-- Next implementation target: `11.25 ID-Less Upcoming Issue Matching for Metron Covers`
-- Rationale: Introduce a confidence-scored Metron matching path (title + issue number + publisher/date heuristics) for ID-less upcoming issues, while preventing false-positive cover assignments.
-- Expected outcome: Better issue-cover accuracy for unreleased issues until authoritative ComicVine issue metadata becomes available.
+### What Changed
+- Added `MinMatchConfidence` to Metron settings (default 85, clamped 50-100) and exposed it via:
+  - `GET /api/v1/settings/metron`
+  - `PUT /api/v1/settings/metron`
+- Enhanced `CoverFallbackService` ID-less search path:
+  - confidence scoring across title similarity, publisher match, and store-date proximity
+  - threshold gating to reject low-confidence candidates
+  - explicit match metadata (`MatchMethod`, `MatchConfidence`, `WasConfidenceRejected`)
+- Extended discovery issue metadata (`ComicVineIssue`) with:
+  - `CoverMatchMethod`
+  - `CoverMatchConfidence`
+- Updated `DiscoveryCoverEnrichmentService` to:
+  - pass expected store date into ID-less lookup
+  - apply ID-less Metron covers even when `issue.Id <= 0`
+  - track and log `idless matched` / `idless rejected` counters
+  - persist match metadata with enriched/fallback covers
 
 ---
 

@@ -1665,6 +1665,51 @@ Generates a new API key. The previous key is immediately invalidated. Always ret
 
 ---
 
+## Metron Settings
+
+### Get Metron Settings
+```
+GET /api/v1/settings/metron
+```
+Returns Metron configuration with masked credential state.
+
+**Response (200 OK)**
+```json
+{
+  "enabled": true,
+  "username": "my-metron-user",
+  "hasPassword": true,
+  "cacheTtlHours": 24,
+  "minMatchConfidence": 85,
+  "timeoutSeconds": 30,
+  "maxRequestsPerMinute": 30
+}
+```
+
+### Update Metron Settings
+```
+PUT /api/v1/settings/metron
+Content-Type: application/json
+```
+
+**Request Body**
+```json
+{
+  "enabled": true,
+  "username": "my-metron-user",
+  "password": "********",
+  "cacheTtlHours": 24,
+  "minMatchConfidence": 85
+}
+```
+
+**Notes**
+- `minMatchConfidence` is clamped to `50..100`.
+- Lower values increase recall but can raise false-positive cover matches.
+- Timeout and rate limit are read-only and fixed to Metron-safe defaults.
+
+---
+
 ## OpenAPI / Swagger
 
 - **Swagger UI**: `GET /swagger`

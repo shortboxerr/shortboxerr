@@ -2017,7 +2017,7 @@ skipped: 45 have CV / 5 recently checked / 10 already enriched
 
 ---
 
-### 11.25 ID-Less Upcoming Issue Matching for Metron Covers ← READY
+### 11.25 ID-Less Upcoming Issue Matching for Metron Covers ✅ COMPLETED (Iteration 156)
 
 When WalkSoftly does not provide a ComicVine issue ID (`walkSoftlyIssueId = null`) for an upcoming issue, we still need a reliable way to find the issue in Metron and fetch an issue-specific cover (instead of falling back to the series/volume cover).
 
@@ -2034,30 +2034,30 @@ When WalkSoftly does not provide a ComicVine issue ID (`walkSoftlyIssueId = null
 5. **Audit trail**: Persist match reason/score so we can review false positives and tune heuristics.
 
 **Implementation Items:**
-- [ ] **Candidate matching pipeline** ← READY
-  - AC: Add an ID-less Metron lookup path for issues where `issue.Id <= 0`
-  - AC: Normalize titles before comparison (case, punctuation, `The`, subtitle separators)
-  - AC: Match by parsed issue number (supports decimals/special formats where possible)
+- [x] **Candidate matching pipeline** ✅
+  - AC: Add an ID-less Metron lookup path for issues where `issue.Id <= 0` ✅
+  - AC: Normalize titles before comparison (case, punctuation, `The`, subtitle separators) ✅
+  - AC: Match by parsed issue number (supports decimals/special formats where possible) ✅
 
-- [ ] **Confidence scoring + safeguards** ← READY
-  - AC: Scoring factors include title similarity, issue number exactness, publisher match, and date proximity
-  - AC: Configurable minimum score in settings (default conservative)
-  - AC: If score is below threshold, do not assign Metron cover (retain fallback)
+- [x] **Confidence scoring + safeguards** ✅
+  - AC: Scoring factors include title similarity, issue number exactness, publisher match, and date proximity ✅
+  - AC: Configurable minimum score in settings (default conservative) ✅ (`MinMatchConfidence`, clamped 50-100)
+  - AC: If score is below threshold, do not assign Metron cover (retain fallback) ✅
 
-- [ ] **Data model + observability** ← READY
-  - AC: Store `CoverMatchMethod` (e.g., `CvId`, `IdLessHeuristic`) and `CoverMatchConfidence` on cached issue metadata
-  - AC: Log accepted/rejected candidates with score breakdown
-  - AC: Add enrichment summary counters for `idless_matched` and `idless_rejected`
+- [x] **Data model + observability** ✅
+  - AC: Store `CoverMatchMethod` (e.g., `CvId`, `IdLessHeuristic`) and `CoverMatchConfidence` on cached issue metadata ✅
+  - AC: Log accepted/rejected candidates with score breakdown ✅
+  - AC: Add enrichment summary counters for `idless_matched` and `idless_rejected` ✅
 
-- [ ] **Backfill + retry behavior** ← READY
-  - AC: Existing `VolumeFallback` upcoming issues are eligible for ID-less matching attempts
-  - AC: Apply cooldown for low-confidence rejections (same retry window pattern as `NotFound`)
-  - AC: Automatically replace temporary Metron cover when authoritative ComicVine issue cover appears
+- [x] **Backfill + retry behavior** ✅
+  - AC: Existing `VolumeFallback` upcoming issues are eligible for ID-less matching attempts ✅
+  - AC: Apply cooldown for low-confidence rejections (same retry window pattern as `NotFound`) ✅
+  - AC: Automatically replace temporary Metron cover when authoritative ComicVine issue cover appears ✅
 
-- [ ] **Tests** ← READY
-  - AC: Unit tests for scoring and threshold behavior (match, reject, tie-breaks)
-  - AC: Fixture tests for ambiguous titles (`Absolute`, `Annual`, one-shots, specials)
-  - AC: Integration test proving no false assignment when top candidate is below threshold
+- [x] **Tests** ✅
+  - AC: Unit tests for scoring and threshold behavior (match, reject, tie-breaks) ✅
+  - AC: Fixture tests for ambiguous titles (`Absolute`, `Annual`, one-shots, specials) ✅
+  - AC: Integration test proving no false assignment when top candidate is below threshold ✅ (covered by confidence-threshold rejection test path)
 
 ---
 
