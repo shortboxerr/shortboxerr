@@ -458,63 +458,69 @@ public class DdlDownloadService : IDdlDownloadService
             Directory.CreateDirectory(directory);
         }
         
-        var fileMode = startPosition > 0 ? FileMode.Append : FileMode.Create;
-        await using var fileStream = new FileStream(partialPath, fileMode, FileAccess.Write, FileShare.None, BufferSize, true);
-        await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        
-        var buffer = new byte[BufferSize];
         var bytesRead = 0L;
-        var lastProgressReport = DateTime.UtcNow;
-        var lastBytesForSpeed = startPosition;
-        var lastTimeForSpeed = stopwatch.Elapsed;
         
-        while (true)
+        // Use explicit scope for file stream so it's closed before verification
         {
-            var read = await contentStream.ReadAsync(buffer, cancellationToken);
-            if (read == 0)
-            {
-                break;
-            }
+            var fileMode = startPosition > 0 ? FileMode.Append : FileMode.Create;
+            await using var fileStream = new FileStream(partialPath, fileMode, FileAccess.Write, FileShare.None, BufferSize, true);
+            await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
             
-            await fileStream.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
-            bytesRead += read;
-            status.BytesDownloaded = startPosition + bytesRead;
+            var buffer = new byte[BufferSize];
+            var lastProgressReport = DateTime.UtcNow;
+            var lastBytesForSpeed = startPosition;
+            var lastTimeForSpeed = stopwatch.Elapsed;
             
-            // Calculate speed
-            var elapsed = stopwatch.Elapsed;
-            var timeDiff = (elapsed - lastTimeForSpeed).TotalSeconds;
-            if (timeDiff >= 1)
+            while (true)
             {
-                var bytesDiff = status.BytesDownloaded - lastBytesForSpeed;
-                status.BytesPerSecond = bytesDiff / timeDiff;
-                lastBytesForSpeed = status.BytesDownloaded;
-                lastTimeForSpeed = elapsed;
-            }
-            
-            // Report progress
-            if (options.OnProgress != null && (DateTime.UtcNow - lastProgressReport).TotalMilliseconds >= 500)
-            {
-                var progress = new DdlDownloadProgress
+                var read = await contentStream.ReadAsync(buffer, cancellationToken);
+                if (read == 0)
                 {
-                    DownloadId = downloadId,
-                    BytesDownloaded = status.BytesDownloaded,
-                    TotalBytes = totalBytes,
-                    ProgressPercent = status.ProgressPercent,
-                    BytesPerSecond = status.BytesPerSecond,
-                    EstimatedTimeRemaining = CalculateEta(status.BytesDownloaded, totalBytes, status.BytesPerSecond)
-                };
+                    break;
+                }
                 
-                options.OnProgress(progress);
-                lastProgressReport = DateTime.UtcNow;
+                await fileStream.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+                bytesRead += read;
+                status.BytesDownloaded = startPosition + bytesRead;
+                
+                // Calculate speed
+                var elapsed = stopwatch.Elapsed;
+                var timeDiff = (elapsed - lastTimeForSpeed).TotalSeconds;
+                if (timeDiff >= 1)
+                {
+                    var bytesDiff = status.BytesDownloaded - lastBytesForSpeed;
+                    status.BytesPerSecond = bytesDiff / timeDiff;
+                    lastBytesForSpeed = status.BytesDownloaded;
+                    lastTimeForSpeed = elapsed;
+                }
+                
+                // Report progress
+                if (options.OnProgress != null && (DateTime.UtcNow - lastProgressReport).TotalMilliseconds >= 500)
+                {
+                    var progress = new DdlDownloadProgress
+                    {
+                        DownloadId = downloadId,
+                        BytesDownloaded = status.BytesDownloaded,
+                        TotalBytes = totalBytes,
+                        ProgressPercent = status.ProgressPercent,
+                        BytesPerSecond = status.BytesPerSecond,
+                        EstimatedTimeRemaining = CalculateEta(status.BytesDownloaded, totalBytes, status.BytesPerSecond)
+                    };
+                    
+                    options.OnProgress(progress);
+                    lastProgressReport = DateTime.UtcNow;
+                }
             }
+            
+            await fileStream.FlushAsync(cancellationToken);
+            // fileStream is disposed here when exiting scope
         }
         
-        await fileStream.FlushAsync(cancellationToken);
         stopwatch.Stop();
         
         var finalSize = startPosition + bytesRead;
         
-        // Verify download
+        // Verify download (file stream is now closed)
         if (options.VerifyDownload)
         {
             status.State = DdlDownloadState.Verifying;
