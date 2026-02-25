@@ -1,67 +1,36 @@
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
-  Download, AlertCircle, Clock, XCircle, RefreshCw, Pause, Play, Trash2,
-  Search, CheckCircle, Filter, Plug
+  Download, AlertCircle, Clock, XCircle, RefreshCw, Pause, Play, Trash2
 } from 'lucide-react';
 import { api } from '../api/client';
 
-// Queue item interface for downloads
 interface QueueItem {
   id: string;
   title: string;
   series: string;
-  status: 'downloading' | 'queued' | 'paused' | 'failed';
+  status: 'downloading' | 'queued' | 'paused' | 'failed' | 'completed';
   progress: number;
   size: string;
   timeRemaining: string | null;
   provider: string;
 }
 
-// DDL activity event
-interface DdlActivityEvent {
-  id: string;
-  type: 'search' | 'download_started' | 'download_complete' | 'download_failed' | 'candidate_found';
-  title: string;
-  provider: string;
-  timestamp: string;
-  details: string | null;
-  status: 'success' | 'warning' | 'error' | 'info';
-}
-
-type ActivityTab = 'queue' | 'ddl';
-type DdlFilterType = 'all' | 'search' | 'download' | 'failed';
-
 export function ActivityPage() {
-  const [activeTab, setActiveTab] = useState<ActivityTab>('queue');
-  const [ddlFilter, setDdlFilter] = useState<DdlFilterType>('all');
-
-  const { data: queue, isLoading: queueLoading, refetch: refetchQueue } = useQuery({
+  const { data: queue, isLoading, refetch } = useQuery({
     queryKey: ['activity-queue'],
     queryFn: api.getActivityQueue,
-    refetchInterval: 5000,
+    refetchInterval: 3000,
   });
 
-  const { data: ddlActivity, isLoading: ddlLoading, refetch: refetchDdl } = useQuery({
-    queryKey: ['ddl-activity', ddlFilter],
-    queryFn: () => getDdlActivity(ddlFilter),
-    refetchInterval: 10000,
-  });
-
-  const handleRefresh = () => {
-    if (activeTab === 'queue') {
-      refetchQueue();
-    } else {
-      refetchDdl();
-    }
-  };
+  // Filter to only show active downloads (not completed)
+  const activeQueue = (queue ?? []).filter(item => item.status !== 'completed');
 
   return (
     <>
       <header className="page-header">
         <h1 className="page-title">Activity</h1>
         <div className="toolbar-group">
-          <button className="btn btn-icon" onClick={handleRefresh} title="Refresh">
+          <button className="btn btn-icon" onClick={() => refetch()} title="Refresh">
             <RefreshCw size={18} />
           </button>
         </div>
@@ -69,56 +38,22 @@ export function ActivityPage() {
       
       <div className="page-content">
         <div className="toolbar">
-          <div className="toolbar-group" style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-            <button 
-              className={`btn ${activeTab === 'queue' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setActiveTab('queue')}
-              style={{ borderRadius: 0, borderRight: 'none' }}
-            >
-              <Download size={16} />
-              Queue ({queue?.length ?? 0})
-            </button>
-            <button 
-              className={`btn ${activeTab === 'ddl' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setActiveTab('ddl')}
-              style={{ borderRadius: 0 }}
-            >
-              <Plug size={16} />
-              DDL Activity
-            </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Download size={18} style={{ color: 'var(--text-muted)' }} />
+            <span style={{ color: 'var(--text-secondary)' }}>
+              {activeQueue.length === 0 
+                ? 'No active downloads' 
+                : `${activeQueue.length} active download${activeQueue.length !== 1 ? 's' : ''}`}
+            </span>
           </div>
-
-          {activeTab === 'ddl' && (
-            <>
-              <div className="toolbar-spacer" />
-              <select 
-                className="input" 
-                value={ddlFilter} 
-                onChange={(e) => setDdlFilter(e.target.value as DdlFilterType)}
-                style={{ minWidth: '150px' }}
-              >
-                <option value="all">All Events</option>
-                <option value="search">Searches</option>
-                <option value="download">Downloads</option>
-                <option value="failed">Failed</option>
-              </select>
-            </>
-          )}
         </div>
         
-        {activeTab === 'queue' && (
-          <QueueView queue={queue ?? []} isLoading={queueLoading} />
-        )}
-
-        {activeTab === 'ddl' && (
-          <DdlActivityView events={ddlActivity ?? []} isLoading={ddlLoading} />
-        )}
+        <QueueView queue={activeQueue} isLoading={isLoading} />
       </div>
     </>
   );
 }
 
-// Queue view component
 function QueueView({ queue, isLoading }: { queue: QueueItem[]; isLoading: boolean }) {
   if (isLoading) {
     return <div className="loading"><div className="spinner" /></div>;
@@ -128,9 +63,9 @@ function QueueView({ queue, isLoading }: { queue: QueueItem[]; isLoading: boolea
     return (
       <div className="empty-state">
         <Download size={48} />
-        <div className="empty-state-title">Queue is empty</div>
+        <div className="empty-state-title">No active downloads</div>
         <div className="empty-state-text">
-          Downloads will appear here when comics are grabbed from indexers.
+          Downloads will appear here when comics are grabbed from indexers or DDL sites.
         </div>
       </div>
     );
@@ -151,6 +86,7 @@ function QueueItemCard({ item }: { item: QueueItem }) {
     queued: Clock,
     paused: Pause,
     failed: XCircle,
+    completed: Download,
   };
   
   const statusColors = {
@@ -158,6 +94,7 @@ function QueueItemCard({ item }: { item: QueueItem }) {
     queued: 'muted',
     paused: 'warning',
     failed: 'danger',
+    completed: 'success',
   };
   
   const Icon = statusIcons[item.status];
@@ -189,7 +126,7 @@ function QueueItemCard({ item }: { item: QueueItem }) {
                   <Play size={16} />
                 </button>
               )}
-              <button className="btn btn-icon" title="Remove">
+              <button className="btn btn-icon" title="Cancel">
                 <Trash2 size={16} />
               </button>
             </div>
@@ -217,6 +154,12 @@ function QueueItemCard({ item }: { item: QueueItem }) {
               </div>
             </div>
           )}
+
+          {item.status === 'queued' && (
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              Waiting to start • {item.size}
+            </div>
+          )}
           
           {item.status === 'failed' && (
             <div style={{ 
@@ -238,91 +181,4 @@ function QueueItemCard({ item }: { item: QueueItem }) {
       </div>
     </div>
   );
-}
-
-// DDL Activity view component
-function DdlActivityView({ events, isLoading }: { events: DdlActivityEvent[]; isLoading: boolean }) {
-  if (isLoading) {
-    return <div className="loading"><div className="spinner" /></div>;
-  }
-
-  if (!events.length) {
-    return (
-      <div className="empty-state">
-        <Plug size={48} />
-        <div className="empty-state-title">No DDL activity</div>
-        <div className="empty-state-text">
-          DDL searches and downloads will appear here when indexers are active.
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="activity-list">
-      {events.map((event) => (
-        <DdlActivityCard key={event.id} event={event} />
-      ))}
-    </div>
-  );
-}
-
-function DdlActivityCard({ event }: { event: DdlActivityEvent }) {
-  const typeIcons = {
-    search: Search,
-    download_started: Download,
-    download_complete: CheckCircle,
-    download_failed: XCircle,
-    candidate_found: Filter,
-  };
-  
-  const statusColors = {
-    success: 'success',
-    warning: 'warning',
-    error: 'danger',
-    info: 'info',
-  };
-
-  const typeLabels = {
-    search: 'Search',
-    download_started: 'Download Started',
-    download_complete: 'Download Complete',
-    download_failed: 'Download Failed',
-    candidate_found: 'Candidate Found',
-  };
-  
-  const Icon = typeIcons[event.type];
-  const colorClass = statusColors[event.status];
-
-  return (
-    <div className="activity-item">
-      <div className={`activity-icon ${colorClass}`}>
-        <Icon size={20} />
-      </div>
-      <div className="activity-content">
-        <div className="activity-title">
-          {event.title}
-          <span className={`badge badge-${colorClass}`} style={{ marginLeft: '8px' }}>
-            {typeLabels[event.type]}
-          </span>
-        </div>
-        <div className="activity-meta">
-          {event.provider}
-          {event.details && ` • ${event.details}`}
-        </div>
-      </div>
-      <div style={{ color: 'var(--text-muted)', fontSize: '13px', whiteSpace: 'nowrap' }}>
-        {event.timestamp}
-      </div>
-    </div>
-  );
-}
-
-// Mock function to get DDL activity (would connect to real API)
-async function getDdlActivity(_filter: DdlFilterType): Promise<DdlActivityEvent[]> {
-  // In a real implementation, this would call an API endpoint like:
-  // return await api.getDdlActivity({ filter: _filter });
-  
-  // For now, return empty array since there's no DDL activity endpoint yet
-  return [];
 }

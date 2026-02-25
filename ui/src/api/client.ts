@@ -31,6 +31,60 @@ function toPagedResult<T>(response: ApiPagedResult<T>): PagedResult<T> {
   };
 }
 
+// Helper to map activity state to UI status
+function mapActivityState(state: string): 'downloading' | 'queued' | 'paused' | 'failed' | 'completed' {
+  switch (state.toLowerCase()) {
+    case 'downloading':
+    case 'processing':
+      return 'downloading';
+    case 'queued':
+      return 'queued';
+    case 'paused':
+    case 'stalled':
+      return 'paused';
+    case 'completed':
+      return 'completed';
+    case 'failed':
+    case 'cancelled':
+      return 'failed';
+    default:
+      return 'downloading';
+  }
+}
+
+// Helper to format bytes for display
+function formatBytes(totalBytes: number | null, downloadedBytes: number | null): string {
+  if (!totalBytes) return 'Unknown size';
+  
+  const formatSize = (bytes: number): string => {
+    if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+    if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${bytes} B`;
+  };
+  
+  if (downloadedBytes != null) {
+    return `${formatSize(downloadedBytes)} / ${formatSize(totalBytes)}`;
+  }
+  return formatSize(totalBytes);
+}
+
+// Helper to format time remaining
+function formatTimeRemaining(timeSpan: string): string {
+  // Parse .NET TimeSpan format (e.g., "00:11:25.2344485")
+  const match = timeSpan.match(/(\d+):(\d+):(\d+)/);
+  if (!match) return timeSpan;
+  
+  const [, hours, minutes, seconds] = match;
+  const h = parseInt(hours, 10);
+  const m = parseInt(minutes, 10);
+  const s = parseInt(seconds, 10);
+  
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
 interface SystemStatus {
   version: string;
   seriesCount: number;
@@ -622,7 +676,7 @@ interface QueueItem {
   id: string;
   title: string;
   series: string;
-  status: 'downloading' | 'queued' | 'paused' | 'failed';
+  status: 'downloading' | 'queued' | 'paused' | 'failed' | 'completed';
   progress: number;
   size: string;
   timeRemaining: string | null;
@@ -647,11 +701,12 @@ interface WantedItem {
 
 interface HistoryEvent {
   id: number;
-  type: 'grabbed' | 'imported' | 'deleted' | 'failed' | 'renamed';
+  type: 'grabbed' | 'downloaded' | 'imported' | 'deleted' | 'failed' | 'renamed' | 'added';
   title: string;
   series: string;
   details: string;
   timestamp: string;
+  fullTimestamp: string;
   source: string | null;
 }
 
@@ -1778,9 +1833,35 @@ export const api = {
 
   // Activity
   getActivityQueue: async (): Promise<QueueItem[]> => {
-    // This would connect to a real queue endpoint
-    // For now, return empty as there's no queue implementation
-    return [];
+    try {
+      const response = await fetchApi<Array<{
+        id: string;
+        title: string;
+        state: string;
+        progress: number;
+        totalBytes: number | null;
+        downloadedBytes: number | null;
+        speedBytesPerSecond: number | null;
+        estimatedTimeRemaining: string | null;
+        clientName: string;
+        sourceType: string;
+        errorMessage: string | null;
+      }>>('/api/v1/activity');
+      
+      return response.map(item => ({
+        id: item.id,
+        title: item.title,
+        series: item.sourceType === 'Ddl' ? 'DDL Download' : item.clientName,
+        status: mapActivityState(item.state),
+        progress: Math.round(item.progress),
+        size: formatBytes(item.totalBytes, item.downloadedBytes),
+        timeRemaining: item.estimatedTimeRemaining ? formatTimeRemaining(item.estimatedTimeRemaining) : null,
+        provider: item.clientName,
+      }));
+    } catch (error) {
+      console.error('Failed to fetch activity queue:', error);
+      return [];
+    }
   },
 
   // Wanted
@@ -1847,24 +1928,57 @@ export const api = {
     if (params.search) query.set('search', params.search);
 
     try {
-      const response = await fetchApi<any[]>(`/api/v1/history?${query}`);
+      const response = await fetchApi<{
+        items: Array<{
+          id: number;
+          eventType: string;
+          message: string;
+          seriesId: number | null;
+          issueId: number | null;
+          sourcePath: string | null;
+          destinationPath: string | null;
+          success: boolean;
+          errorMessage: string | null;
+          date: string;
+          data: string | null;
+        }>;
+        page: number;
+        pageSize: number;
+        totalCount: number;
+        totalPages: number;
+      }>(`/api/v1/history?${query}`);
+      
       return {
-        items: response.map((e: any) => ({
+        items: response.items.map((e) => ({
           id: e.id,
-          type: mapHistoryType(e.eventType),
-          title: e.sourceTitle ?? 'Unknown',
-          series: e.description ?? '',
+          type: e.eventType as HistoryEvent['type'],
+          title: e.message || 'Unknown',
+          series: e.destinationPath ? extractSeriesFromPath(e.destinationPath) : '',
           details: e.data ?? '',
-          timestamp: formatTimestamp(e.timestamp),
-          source: e.downloadClient ?? null,
+          timestamp: formatTimestamp(e.date),
+          fullTimestamp: formatFullTimestamp(e.date),
+          source: e.sourcePath ? extractSourceFromPath(e.sourcePath) : null,
         })),
-        page: 1,
-        pageSize: 50,
-        totalCount: response.length,
-        totalPages: 1,
+        page: response.page,
+        pageSize: response.pageSize,
+        totalCount: response.totalCount,
+        totalPages: response.totalPages,
       };
     } catch {
       return { items: [], page: 1, pageSize: 50, totalCount: 0, totalPages: 0 };
+    }
+  },
+
+  clearHistory: async (): Promise<{ success: boolean; deletedCount: number }> => {
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/history`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to clear history');
+      return response.json();
+    } catch (error) {
+      console.error('Failed to clear history:', error);
+      return { success: false, deletedCount: 0 };
     }
   },
 
@@ -2960,24 +3074,6 @@ function mapEventType(type: string): 'success' | 'warning' | 'info' | 'danger' {
   }
 }
 
-function mapHistoryType(type: string): 'grabbed' | 'imported' | 'deleted' | 'failed' | 'renamed' {
-  switch (type?.toLowerCase()) {
-    case 'grabbed':
-      return 'grabbed';
-    case 'imported':
-    case 'downloadcomplete':
-      return 'imported';
-    case 'deleted':
-      return 'deleted';
-    case 'downloadfailed':
-      return 'failed';
-    case 'renamed':
-      return 'renamed';
-    default:
-      return 'imported';
-  }
-}
-
 function formatTimestamp(timestamp: string): string {
   if (!timestamp) return '';
   const date = new Date(timestamp);
@@ -2991,7 +3087,49 @@ function formatTimestamp(timestamp: string): string {
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
+  
+  // For older events, show date and time
+  return date.toLocaleDateString(undefined, { 
+    month: 'short', 
+    day: 'numeric',
+    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+  }) + ' ' + date.toLocaleTimeString(undefined, { 
+    hour: 'numeric', 
+    minute: '2-digit'
+  });
+}
+
+function formatFullTimestamp(timestamp: string): string {
+  if (!timestamp) return '';
+  const date = new Date(timestamp);
+  return date.toLocaleString(undefined, {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+}
+
+function extractSeriesFromPath(path: string): string {
+  if (!path) return '';
+  const parts = path.split(/[/\\]/);
+  if (parts.length >= 2) {
+    return parts[parts.length - 2];
+  }
+  return '';
+}
+
+function extractSourceFromPath(path: string): string | null {
+  if (!path) return null;
+  try {
+    const url = new URL(path);
+    return url.hostname;
+  } catch {
+    return null;
+  }
 }
 
 function formatSize(bytes: number | undefined): string {
