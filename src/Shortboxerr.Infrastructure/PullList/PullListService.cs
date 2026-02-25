@@ -928,7 +928,12 @@ public class PullListService : IPullListService
                 
                 var issues = filteredReleases.Select(ConvertWalkSoftlyToComicVineIssue).ToList();
                 
-                // Enrich WalkSoftly data with volume covers from ComicVine
+                // 11.27: Enrich issues using the unified data flow
+                // Step 1: For issues WITH CV issue IDs, fetch full data from ComicVine (authoritative)
+                await EnrichWithComicVineIssueDataAsync(issues, cancellationToken);
+                
+                // Step 2: For remaining issues (no CV issue ID), fall back to volume covers
+                // These will be further enriched with Metron data later
                 await EnrichWithVolumeCoverImagesAsync(issues, cancellationToken);
                 
                 return (issues, "WalkSoftly");
@@ -1039,6 +1044,106 @@ public class PullListService : IPullListService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error enriching issues with volume covers");
+        }
+    }
+
+    /// <summary>
+    /// Enriches issues with full ComicVine data when WalkSoftly provided a CV issue ID.
+    /// This is the authoritative enrichment path - issues enriched here are marked as finalized.
+    /// Part of 11.27 unified enrichment strategy.
+    /// </summary>
+    private async Task EnrichWithComicVineIssueDataAsync(
+        List<ComicVineIssue> issues,
+        CancellationToken cancellationToken)
+    {
+        // Find issues that have ComicVine issue IDs from WalkSoftly
+        var issuesWithCvId = issues.Where(i => i.Id > 0).ToList();
+        
+        if (issuesWithCvId.Count == 0)
+        {
+            _logger.LogDebug("No issues have ComicVine issue IDs for direct enrichment");
+            return;
+        }
+        
+        _logger.LogInformation(
+            "Enriching {Count} of {Total} issues directly from ComicVine (have CV issue IDs)",
+            issuesWithCvId.Count, issues.Count);
+        
+        try
+        {
+            // Batch the issue IDs for efficient lookup
+            var issueIds = issuesWithCvId.Select(i => i.Id).Distinct().ToList();
+            
+            // Fetch full issue data from ComicVine in batches
+            // ComicVine supports filtering by multiple IDs: filter=id:123|456|789
+            var cvResult = await _comicVineClient.GetIssuesByIdsAsync(issueIds, cancellationToken);
+            
+            if (!cvResult.Success || cvResult.Results == null || cvResult.Results.Count == 0)
+            {
+                _logger.LogWarning(
+                    "Failed to fetch issue details from ComicVine: {Error}",
+                    cvResult.Error ?? "No results returned");
+                return;
+            }
+            
+            // Create lookup by issue ID
+            var cvIssueLookup = cvResult.Results.ToDictionary(i => i.Id);
+            
+            var enrichedCount = 0;
+            var coverCount = 0;
+            
+            foreach (var issue in issuesWithCvId)
+            {
+                if (!cvIssueLookup.TryGetValue(issue.Id, out var cvIssue))
+                {
+                    _logger.LogDebug("ComicVine did not return data for issue {IssueId}", issue.Id);
+                    continue;
+                }
+                
+                // Update with ComicVine data (authoritative)
+                if (!string.IsNullOrEmpty(cvIssue.Name))
+                {
+                    issue.Name = cvIssue.Name;
+                }
+                
+                if (!string.IsNullOrEmpty(cvIssue.Description))
+                {
+                    issue.Description = cvIssue.Description;
+                }
+                
+                if (cvIssue.StoreDate.HasValue)
+                {
+                    issue.StoreDate = cvIssue.StoreDate;
+                }
+                
+                if (cvIssue.CoverDate.HasValue)
+                {
+                    issue.CoverDate = cvIssue.CoverDate;
+                }
+                
+                // Most importantly: get the issue-specific cover image
+                if (cvIssue.Image != null)
+                {
+                    issue.Image = cvIssue.Image;
+                    issue.CoverSource = "ComicVine";
+                    issue.CoverMatchMethod = "CvIssueId";
+                    coverCount++;
+                }
+                
+                // Mark as finalized - no further enrichment needed
+                issue.EnrichmentStatus = CoverEnrichmentStatus.HasComicVineCover;
+                issue.LastEnrichmentAttempt = DateTime.UtcNow;
+                
+                enrichedCount++;
+            }
+            
+            _logger.LogInformation(
+                "Enriched {EnrichedCount} issues from ComicVine ({CoverCount} with issue covers)",
+                enrichedCount, coverCount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error enriching issues with ComicVine data");
         }
     }
 
@@ -1798,6 +1903,23 @@ public class PullListService : IPullListService
                 if (!filter.IncludeSpecials && isSpecial) continue;
             }
 
+            // Determine enrichment status based on ComicVineIssue enrichment
+            var enrichmentStatus = cvIssue.EnrichmentStatus switch
+            {
+                CoverEnrichmentStatus.HasComicVineCover => EnrichmentStatus.ComicVineFinalized,
+                CoverEnrichmentStatus.Enriched => EnrichmentStatus.MetronInterim,
+                _ => EnrichmentStatus.Pending
+            };
+            
+            // Determine data source for cover
+            var coverSource = cvIssue.CoverSource switch
+            {
+                "ComicVine" => DataSource.ComicVine,
+                "Metron" => DataSource.Metron,
+                "VolumeFallback" => DataSource.ComicVine, // Volume covers come from ComicVine
+                _ => DataSource.WalkSoftly
+            };
+            
             discoveryIssues.Add(new DiscoverableIssue
             {
                 ComicVineIssueId = issueId,
@@ -1815,7 +1937,13 @@ public class PullListService : IPullListService
                 LocalSeriesId = localSeries?.Id,
                 LocalIssueId = localIssue?.Id,
                 Status = localIssue?.Status,
-                IsSeriesMonitored = localSeries?.Monitored ?? false
+                IsSeriesMonitored = localSeries?.Monitored ?? false,
+                
+                // 11.27: Enrichment tracking
+                EnrichmentStatus = enrichmentStatus,
+                CoverSource = coverSource,
+                MetadataSource = issueId > 0 ? DataSource.ComicVine : DataSource.WalkSoftly,
+                EnrichedAt = cvIssue.LastEnrichmentAttempt
             });
         }
 
@@ -2101,8 +2229,9 @@ public class PullListService : IPullListService
 
     /// <summary>
     /// Enriches discoverable issues with Metron cover images.
-    /// Only processes library items since we want their issue-specific covers.
+    /// Only processes library items that need enrichment (not already finalized).
     /// Uses the database's ComicVine IDs (same as Series Detail page) to ensure cache reuse.
+    /// Part of 11.27 unified enrichment strategy - this is the Metron fallback path.
     /// </summary>
     private async Task EnrichDiscoveryWithMetronCoversAsync(
         List<DiscoverableIssue> issues,
@@ -2110,8 +2239,17 @@ public class PullListService : IPullListService
     {
         _logger.LogDebug("EnrichDiscoveryWithMetronCoversAsync called with {Count} total issues", issues.Count);
         
+        // 11.27: Skip issues that are already finalized with ComicVine data
+        var pendingIssues = issues.Where(i => i.EnrichmentStatus != EnrichmentStatus.ComicVineFinalized).ToList();
+        var skippedFinalized = issues.Count - pendingIssues.Count;
+        
+        if (skippedFinalized > 0)
+        {
+            _logger.LogDebug("Skipping {Count} issues already finalized with ComicVine data", skippedFinalized);
+        }
+        
         // Only enrich library items that have a local series ID (so we can look up the correct CV ID)
-        var libraryIssues = issues.Where(i => i.IsInLibrary && i.LocalSeriesId.HasValue).ToList();
+        var libraryIssues = pendingIssues.Where(i => i.IsInLibrary && i.LocalSeriesId.HasValue).ToList();
         
         _logger.LogDebug("Found {Count} library issues with LocalSeriesId to potentially enrich", libraryIssues.Count);
         
@@ -2212,6 +2350,11 @@ public class PullListService : IPullListService
                                 {
                                     // Use local URL for the cover
                                     issue.CoverImageUrl = $"/api/v1/covers/issues/{issue.LocalIssueId.Value}";
+                                    // 11.27: Track Metron enrichment
+                                    issue.EnrichmentStatus = EnrichmentStatus.MetronInterim;
+                                    issue.CoverSource = DataSource.Metron;
+                                    issue.MetronIssueId = metronIssue.Id;
+                                    issue.EnrichedAt = DateTime.UtcNow;
                                     _logger.LogDebug(
                                         "Cached Metron cover for {Series} #{Number} (LocalIssueId: {LocalId})",
                                         issue.SeriesTitle, issueNumberStr, issue.LocalIssueId.Value);
@@ -2224,6 +2367,11 @@ public class PullListService : IPullListService
                                         "Failed to cache Metron cover for {Series} #{Number}: {Error}",
                                         issue.SeriesTitle, issueNumberStr, downloadResult.Error);
                                     issue.CoverImageUrl = metronIssue.ImageUrl;
+                                    // 11.27: Track Metron enrichment even with external URL fallback
+                                    issue.EnrichmentStatus = EnrichmentStatus.MetronInterim;
+                                    issue.CoverSource = DataSource.Metron;
+                                    issue.MetronIssueId = metronIssue.Id;
+                                    issue.EnrichedAt = DateTime.UtcNow;
                                     enrichedCount++;
                                 }
                             }
@@ -2233,6 +2381,11 @@ public class PullListService : IPullListService
                                     "Exception caching Metron cover for {Series} #{Number}",
                                     issue.SeriesTitle, issueNumberStr);
                                 issue.CoverImageUrl = metronIssue.ImageUrl;
+                                // 11.27: Track Metron enrichment even on exception
+                                issue.EnrichmentStatus = EnrichmentStatus.MetronInterim;
+                                issue.CoverSource = DataSource.Metron;
+                                issue.MetronIssueId = metronIssue.Id;
+                                issue.EnrichedAt = DateTime.UtcNow;
                                 enrichedCount++;
                             }
                         }
@@ -2253,6 +2406,11 @@ public class PullListService : IPullListService
                                 {
                                     // Use local URL for the cover
                                     issue.CoverImageUrl = $"/api/v1/covers/discovery/{metronIssue.Id}";
+                                    // 11.27: Track Metron enrichment
+                                    issue.EnrichmentStatus = EnrichmentStatus.MetronInterim;
+                                    issue.CoverSource = DataSource.Metron;
+                                    issue.MetronIssueId = metronIssue.Id;
+                                    issue.EnrichedAt = DateTime.UtcNow;
                                     _logger.LogDebug(
                                         "Cached Metron discovery cover for {Series} #{Number} (MetronId: {MetronId})",
                                         issue.SeriesTitle, issueNumberStr, metronIssue.Id);
@@ -2262,12 +2420,20 @@ public class PullListService : IPullListService
                                 {
                                     // Download failed - fall back to external URL
                                     issue.CoverImageUrl = metronIssue.ImageUrl;
+                                    issue.EnrichmentStatus = EnrichmentStatus.MetronInterim;
+                                    issue.CoverSource = DataSource.Metron;
+                                    issue.MetronIssueId = metronIssue.Id;
+                                    issue.EnrichedAt = DateTime.UtcNow;
                                     enrichedCount++;
                                 }
                             }
                             catch
                             {
                                 issue.CoverImageUrl = metronIssue.ImageUrl;
+                                issue.EnrichmentStatus = EnrichmentStatus.MetronInterim;
+                                issue.CoverSource = DataSource.Metron;
+                                issue.MetronIssueId = metronIssue.Id;
+                                issue.EnrichedAt = DateTime.UtcNow;
                                 enrichedCount++;
                             }
                         }
