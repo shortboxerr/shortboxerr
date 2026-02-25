@@ -3370,7 +3370,7 @@ The AutoSearchService was finding search candidates but not initiating downloads
 - All Background Services (`src/Shortboxerr.Infrastructure/BackgroundServices/`)
 - Pull List Service (`src/Shortboxerr.Infrastructure/PullList/PullListService.cs`)
 
-### 14.10 DDL Auto-Import Background Service 📋 READY
+### 14.10 DDL Auto-Import Background Service ✅ COMPLETED
 *Discovered during 14.9 Workflow Connectivity Audit*
 
 When DDL downloads are initiated manually via the UI (GrabDdl endpoint), completed downloads sit in the download folder without automatic import processing. This creates a workflow gap where users must manually trigger the import.
@@ -3386,21 +3386,27 @@ Create a DdlImportBackgroundService (similar to NzbImportBackgroundService) that
 3. Triggers import pipeline when downloads complete
 4. Adds completed items to history
 
-- [ ] **Create DdlImportBackgroundService**
-  - AC: Service polls for completed DDL downloads
-  - AC: Integrates with DdlImportService.ProcessDownloadAsync
-  - AC: Configurable check interval (default 30 seconds)
-  - AC: Respects auto-import settings
+- [x] **Create DdlImportBackgroundService**
+  - AC: Service polls for completed DDL downloads ✅
+  - AC: Integrates with DdlImportService.ProcessDownloadAsync ✅
+  - AC: Configurable check interval (default 30 seconds) ✅
+  - AC: Respects auto-import settings ✅
 
-- [ ] **Track download completion in DdlDownloadService**
-  - AC: Maintain list of completed downloads pending import
-  - AC: Remove from pending after successful import
-  - AC: Store download metadata for import matching
+- [x] **Track download completion in DdlDownloadService**
+  - AC: Maintain list of completed downloads pending import ✅
+  - AC: Remove from pending after successful import ✅
+  - AC: Store download metadata for import matching ✅
 
-- [ ] **Add settings for DDL auto-import**
-  - AC: Enable/disable auto-import for DDL downloads
-  - AC: Minimum confidence threshold for auto-matching
-  - AC: Manual review mode (hold for approval)
+- [x] **Add settings for DDL auto-import**
+  - AC: Enable/disable auto-import for DDL downloads ✅ (`ddl_auto_import_enabled`)
+  - AC: Minimum confidence threshold for auto-matching ✅ (`ddl_auto_import_min_confidence`)
+  - AC: Manual review mode (hold for approval) ✅ (PendingManualReview flow)
+
+**Implementation:**
+- Created `DdlImportBackgroundService` in `src/Shortboxerr.Infrastructure/BackgroundServices/`
+- Added `GetPendingImportDownloads()` and `MarkAsImported()` to `IDdlDownloadService`
+- Extended `DdlDownloadHistoryEntry` with `ImportProcessed`, `ImportProcessedAt`, and `Candidate` fields
+- Settings: `ddl_auto_import_enabled` (default: true), `ddl_auto_import_interval_seconds` (default: 30), `ddl_auto_import` (default: true), `ddl_auto_import_min_confidence` (default: 80)
 
 **Related:**
 - `src/Shortboxerr.Infrastructure/BackgroundServices/NzbImportBackgroundService.cs` (reference implementation)

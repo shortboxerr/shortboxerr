@@ -1,5 +1,51 @@
 # Worklog
 
+## Iteration 162 (2026-02-25)
+**EPIC 14.10: DDL Auto-Import Background Service**
+
+### Summary
+Implemented automatic import processing for DDL downloads to close the workflow gap identified in 14.9.
+
+### Problem Addressed
+When DDL downloads were initiated manually via the UI (GrabDdl endpoint), completed downloads sat in the download folder without automatic import processing. Users had to manually trigger the import.
+
+### Implementation
+
+**DdlImportBackgroundService:**
+- Monitors completed DDL downloads every 30 seconds (configurable)
+- Integrates with `DdlImportService.ProcessDownloadAsync` for import pipeline
+- Tracks import status to avoid reprocessing
+- Logs to activity history on success/failure
+- Supports confidence-based auto-approval
+
+**DdlDownloadService Enhancements:**
+- Added `GetPendingImportDownloads()` to retrieve successful downloads awaiting import
+- Added `MarkAsImported()` to flag downloads as processed
+- Extended `DdlDownloadHistoryEntry` with `ImportProcessed`, `ImportProcessedAt`, and `Candidate` fields
+
+**Settings (via generic settings API):**
+- `ddl_auto_import_enabled` (default: true)
+- `ddl_auto_import_interval_seconds` (default: 30)
+- `ddl_auto_import` (default: true)
+- `ddl_auto_import_min_confidence` (default: 80)
+
+### Files Changed
+
+**New Files:**
+- `src/Shortboxerr.Infrastructure/BackgroundServices/DdlImportBackgroundService.cs`
+- `tests/Shortboxerr.Tests/DdlImportBackgroundServiceTests.cs`
+
+**Modified Files:**
+- `src/Shortboxerr.Core/Ddl/IDdlDownloadService.cs` - Added import tracking methods and properties
+- `src/Shortboxerr.Infrastructure/Ddl/DdlDownloadService.cs` - Implemented tracking logic
+- `src/Shortboxerr.Infrastructure/DependencyInjection.cs` - Registered background service
+
+### Commits
+- `feat(ddl): add DdlImportBackgroundService for auto-import`
+- `test(ddl): add DdlImportBackgroundService tests`
+
+---
+
 ## Iteration 161 (2026-02-25)
 **EPIC 14.9: Workflow Connectivity Audit + History System Refactoring**
 

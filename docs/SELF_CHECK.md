@@ -1,3 +1,73 @@
+# Self-Check: Iteration 162
+
+## Summary
+Implemented EPIC 14.10 (DDL Auto-Import Background Service). Created a background service that monitors completed DDL downloads and automatically triggers the import pipeline, closing the workflow gap identified in iteration 161.
+
+## Checklist
+
+### 14.10 DDL Auto-Import Background Service
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Create DdlImportBackgroundService | ✅ | Polls for pending imports every 30s |
+| Integrate with DdlImportService | ✅ | Calls ProcessDownloadAsync |
+| Configurable check interval | ✅ | `ddl_auto_import_interval_seconds` setting |
+| Respect auto-import settings | ✅ | `ddl_auto_import_enabled` setting |
+| Track pending downloads | ✅ | GetPendingImportDownloads() method |
+| Mark downloads as imported | ✅ | MarkAsImported() method |
+| Store candidate for matching | ✅ | Candidate stored in DdlDownloadHistoryEntry |
+| Enable/disable setting | ✅ | `ddl_auto_import_enabled` |
+| Confidence threshold | ✅ | `ddl_auto_import_min_confidence` |
+| Manual review mode | ✅ | PendingManualReview flow supported |
+
+## Build & Test Results
+
+```
+Backend Build: SUCCESS (0 warnings, 0 errors)
+Tests: 6 new tests added (DdlImportBackgroundServiceTests)
+Note: Pre-existing test failures in GetComicsAdapterTests.cs (not related to this change)
+```
+
+## Files Changed
+
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/BackgroundServices/DdlImportBackgroundService.cs` | New - Background service implementation |
+| `src/Shortboxerr.Core/Ddl/IDdlDownloadService.cs` | Added GetPendingImportDownloads, MarkAsImported, import tracking fields |
+| `src/Shortboxerr.Infrastructure/Ddl/DdlDownloadService.cs` | Implemented tracking methods |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Registered background service |
+| `tests/Shortboxerr.Tests/DdlImportBackgroundServiceTests.cs` | New - Unit tests |
+| `docs/BACKLOG.md` | Marked 14.10 as complete |
+| `docs/WORKLOG.md` | Added Iteration 162 details |
+
+## Commits
+
+1. `feat(ddl): add DdlImportBackgroundService for auto-import`
+2. `test(ddl): add DdlImportBackgroundService tests`
+
+## Implementation Details
+
+### Background Service
+- Starts 15 seconds after app launch (initial delay)
+- Polls every 30 seconds (configurable via settings)
+- Uses scoped services for proper DI
+- Handles consecutive errors with backoff
+
+### Download Tracking
+- DdlDownloadHistoryEntry extended with:
+  - `ImportProcessed` (bool)
+  - `ImportProcessedAt` (DateTime?)
+  - `Candidate` (DdlCandidate?) for import matching
+- `GetPendingImportDownloads()` filters: Success=true, ImportProcessed=false, DestinationPath not empty
+
+### Settings (generic API at /api/v1/settings/{key})
+- `ddl_auto_import_enabled`: Enable/disable feature (default: true)
+- `ddl_auto_import_interval_seconds`: Poll interval (default: 30)
+- `ddl_auto_import`: Auto-import on match (default: true)
+- `ddl_auto_import_min_confidence`: Threshold for auto-approve (default: 80)
+
+---
+
 # Self-Check: Iteration 159
 
 ## Summary
