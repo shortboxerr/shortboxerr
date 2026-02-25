@@ -736,14 +736,23 @@ public class DdlImportService : IDdlImportService
 
     private string GetStagingFolder()
     {
-        return _configuration.GetValue<string>("Shortboxerr:StagingFolder") 
-               ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "shortboxerr", "staging");
+        // Use same config keys as StagingService for consistency
+        return Environment.GetEnvironmentVariable("SHORTBOXERR_STAGING")
+               ?? _configuration.GetValue<string>("MediaManagement:StagingFolder")
+               ?? _configuration.GetValue<string>("Shortboxerr:StagingFolder") 
+               ?? "/data/staging";
     }
 
     private string GetLibraryFolder()
     {
+        // Use same config keys as StagingService for consistency
+        var rootFolders = _configuration.GetSection("MediaManagement:RootFolders").Get<string[]>();
+        if (rootFolders?.Length > 0)
+        {
+            return rootFolders[0];
+        }
         return _configuration.GetValue<string>("Shortboxerr:LibraryFolder") 
-               ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "shortboxerr", "library");
+               ?? "/data/library";
     }
 
     private static string SanitizeFilename(string filename)
