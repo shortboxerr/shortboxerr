@@ -257,6 +257,7 @@ app.MapPullListEndpoints();
 app.MapWantedEndpoints();
 app.MapNotificationEndpoints();
 app.MapActivityEndpoints();
+app.MapHistoryEndpoints();
 app.MapCacheEndpoints();
 app.MapSettingsEndpoints();
 app.MapComicVineEndpoints();

@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Shortboxerr.Core.Activity;
 using Shortboxerr.Core.Ddl;
 using Shortboxerr.Core.Entities;
+using Shortboxerr.Core.Models;
 using Shortboxerr.Core.Search;
 using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.Persistence;
@@ -20,16 +22,33 @@ public class AutoSearchServiceTests
         return new ShortboxerrDbContext(options);
     }
 
+    private static (Mock<IDdlDownloadService>, Mock<IDdlImportService>, Mock<IActivityService>, Mock<IDecisionEngine>) CreateMockDependencies()
+    {
+        var mockDownload = new Mock<IDdlDownloadService>();
+        var mockImport = new Mock<IDdlImportService>();
+        var mockActivity = new Mock<IActivityService>();
+        var mockDecision = new Mock<IDecisionEngine>();
+        
+        // Default behavior: no auto-grab
+        mockDecision.Setup(d => d.EvaluateAndRank(It.IsAny<IEnumerable<Candidate>>(), It.IsAny<CandidateTarget>()))
+            .Returns(Array.Empty<CandidateEvaluation>());
+        mockDecision.Setup(d => d.CheckAutoGrab(It.IsAny<IReadOnlyList<CandidateEvaluation>>()))
+            .Returns((false, "No candidates"));
+        
+        return (mockDownload, mockImport, mockActivity, mockDecision);
+    }
+
     [Fact]
     public async Task SearchIssueAsync_WhenIssueNotFound_ReturnsFailedResult()
     {
         // Arrange
         using var context = CreateInMemoryContext();
         var mockDdlSearch = new Mock<IDdlSearchService>();
+        var (mockDownload, mockImport, mockActivity, mockDecision) = CreateMockDependencies();
         var mockSettings = new Mock<ISettingsService>();
         var mockLogger = new Mock<ILogger<AutoSearchService>>();
         
-        var service = new AutoSearchService(context, mockDdlSearch.Object, mockSettings.Object, mockLogger.Object);
+        var service = new AutoSearchService(context, mockDdlSearch.Object, mockDownload.Object, mockImport.Object, mockActivity.Object, mockDecision.Object, mockSettings.Object, mockLogger.Object);
         
         // Act
         var result = await service.SearchIssueAsync(999);
@@ -84,13 +103,16 @@ public class AutoSearchServiceTests
                 Warnings = new List<string>()
             });
         
+        var (mockDownload2, mockImport2, mockActivity2, mockDecision2) = CreateMockDependencies();
         var mockSettings = new Mock<ISettingsService>();
         mockSettings.Setup(s => s.GetAsync<SearchSettings>(It.IsAny<string>(), It.IsAny<SearchSettings>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SearchSettings());
+        mockSettings.Setup(s => s.GetGeneralSettingsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GeneralSettings());
         
         var mockLogger = new Mock<ILogger<AutoSearchService>>();
         
-        var service = new AutoSearchService(context, mockDdlSearch.Object, mockSettings.Object, mockLogger.Object);
+        var service = new AutoSearchService(context, mockDdlSearch.Object, mockDownload2.Object, mockImport2.Object, mockActivity2.Object, mockDecision2.Object, mockSettings.Object, mockLogger.Object);
         
         // Act
         var result = await service.SearchIssueAsync(1);
@@ -136,13 +158,14 @@ public class AutoSearchServiceTests
                 Warnings = new List<string>()
             });
         
+        var (mockDownload3, mockImport3, mockActivity3, mockDecision3) = CreateMockDependencies();
         var mockSettings = new Mock<ISettingsService>();
         mockSettings.Setup(s => s.GetAsync<SearchSettings>(It.IsAny<string>(), It.IsAny<SearchSettings>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SearchSettings());
         
         var mockLogger = new Mock<ILogger<AutoSearchService>>();
         
-        var service = new AutoSearchService(context, mockDdlSearch.Object, mockSettings.Object, mockLogger.Object);
+        var service = new AutoSearchService(context, mockDdlSearch.Object, mockDownload3.Object, mockImport3.Object, mockActivity3.Object, mockDecision3.Object, mockSettings.Object, mockLogger.Object);
         
         // Act
         var result = await service.SearchIssueAsync(1);
@@ -187,13 +210,14 @@ public class AutoSearchServiceTests
                 Warnings = new List<string>()
             });
         
+        var (mockDownload4, mockImport4, mockActivity4, mockDecision4) = CreateMockDependencies();
         var mockSettings = new Mock<ISettingsService>();
         mockSettings.Setup(s => s.GetAsync<SearchSettings>(It.IsAny<string>(), It.IsAny<SearchSettings>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SearchSettings());
         
         var mockLogger = new Mock<ILogger<AutoSearchService>>();
         
-        var service = new AutoSearchService(context, mockDdlSearch.Object, mockSettings.Object, mockLogger.Object);
+        var service = new AutoSearchService(context, mockDdlSearch.Object, mockDownload4.Object, mockImport4.Object, mockActivity4.Object, mockDecision4.Object, mockSettings.Object, mockLogger.Object);
         
         // Act
         await service.SearchIssueAsync(1);
@@ -239,13 +263,14 @@ public class AutoSearchServiceTests
         await context.SaveChangesAsync();
         
         var mockDdlSearch = new Mock<IDdlSearchService>();
+        var (mockDownload5, mockImport5, mockActivity5, mockDecision5) = CreateMockDependencies();
         var mockSettings = new Mock<ISettingsService>();
         mockSettings.Setup(s => s.GetAsync<SearchSettings>(It.IsAny<string>(), It.IsAny<SearchSettings>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SearchSettings { StaleSearchThresholdDays = 7 });
         
         var mockLogger = new Mock<ILogger<AutoSearchService>>();
         
-        var service = new AutoSearchService(context, mockDdlSearch.Object, mockSettings.Object, mockLogger.Object);
+        var service = new AutoSearchService(context, mockDdlSearch.Object, mockDownload5.Object, mockImport5.Object, mockActivity5.Object, mockDecision5.Object, mockSettings.Object, mockLogger.Object);
         
         // Act
         var searchable = await service.GetSearchableIssuesAsync();
@@ -284,13 +309,14 @@ public class AutoSearchServiceTests
         await context.SaveChangesAsync();
         
         var mockDdlSearch = new Mock<IDdlSearchService>();
+        var (mockDownload6, mockImport6, mockActivity6, mockDecision6) = CreateMockDependencies();
         var mockSettings = new Mock<ISettingsService>();
         mockSettings.Setup(s => s.GetAsync<SearchSettings>(It.IsAny<string>(), It.IsAny<SearchSettings>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SearchSettings { StaleSearchThresholdDays = 7 }); // Re-search after 7 days
         
         var mockLogger = new Mock<ILogger<AutoSearchService>>();
         
-        var service = new AutoSearchService(context, mockDdlSearch.Object, mockSettings.Object, mockLogger.Object);
+        var service = new AutoSearchService(context, mockDdlSearch.Object, mockDownload6.Object, mockImport6.Object, mockActivity6.Object, mockDecision6.Object, mockSettings.Object, mockLogger.Object);
         
         // Act
         var searchable = await service.GetSearchableIssuesAsync();
@@ -319,13 +345,14 @@ public class AutoSearchServiceTests
         await context.SaveChangesAsync();
         
         var mockDdlSearch = new Mock<IDdlSearchService>();
+        var (mockDownload7, mockImport7, mockActivity7, mockDecision7) = CreateMockDependencies();
         var mockSettings = new Mock<ISettingsService>();
         mockSettings.Setup(s => s.GetAsync<SearchSettings>(It.IsAny<string>(), It.IsAny<SearchSettings>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SearchSettings { AutoSearchEnabled = true, AutoSearchIntervalHours = 24 });
         
         var mockLogger = new Mock<ILogger<AutoSearchService>>();
         
-        var service = new AutoSearchService(context, mockDdlSearch.Object, mockSettings.Object, mockLogger.Object);
+        var service = new AutoSearchService(context, mockDdlSearch.Object, mockDownload7.Object, mockImport7.Object, mockActivity7.Object, mockDecision7.Object, mockSettings.Object, mockLogger.Object);
         
         // Act
         var status = await service.GetStatusAsync();
@@ -362,13 +389,14 @@ public class AutoSearchServiceTests
                 Warnings = new List<string>()
             });
         
+        var (mockDownload8, mockImport8, mockActivity8, mockDecision8) = CreateMockDependencies();
         var mockSettings = new Mock<ISettingsService>();
         mockSettings.Setup(s => s.GetAsync<SearchSettings>(It.IsAny<string>(), It.IsAny<SearchSettings>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SearchSettings { SearchDelaySeconds = 0, StaleSearchThresholdDays = 7 });
         
         var mockLogger = new Mock<ILogger<AutoSearchService>>();
         
-        var service = new AutoSearchService(context, mockDdlSearch.Object, mockSettings.Object, mockLogger.Object);
+        var service = new AutoSearchService(context, mockDdlSearch.Object, mockDownload8.Object, mockImport8.Object, mockActivity8.Object, mockDecision8.Object, mockSettings.Object, mockLogger.Object);
         
         // Act
         var result = await service.SearchAllWantedAsync(maxIssues: 10);

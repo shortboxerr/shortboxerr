@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using Microsoft.Extensions.Logging;
+using Shortboxerr.Core.Activity;
 using Shortboxerr.Core.Ddl;
 
 namespace Shortboxerr.Infrastructure.Ddl;
@@ -15,6 +16,7 @@ public class DdlDownloadService : IDdlDownloadService
     private readonly ILogger<DdlDownloadService>? _logger;
     private readonly IDownloadHostResolverFactory? _resolverFactory;
     private readonly IHostBlacklistService? _blacklistService;
+    private readonly IActivityService? _activityService;
     private readonly ConcurrentDictionary<string, DdlDownloadStatus> _activeDownloads = new();
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _cancellationTokens = new();
     private readonly List<DdlDownloadHistoryEntry> _downloadHistory = new();
@@ -35,11 +37,13 @@ public class DdlDownloadService : IDdlDownloadService
     public DdlDownloadService(
         IDownloadHostResolverFactory? resolverFactory = null, 
         IHostBlacklistService? blacklistService = null,
-        ILogger<DdlDownloadService>? logger = null)
+        ILogger<DdlDownloadService>? logger = null,
+        IActivityService? activityService = null)
     {
         _resolverFactory = resolverFactory;
         _blacklistService = blacklistService;
         _logger = logger;
+        _activityService = activityService;
     }
 
     public async Task<DdlDownloadResult> DownloadAsync(DdlCandidate candidate, DdlDownloadOptions? options = null, CancellationToken cancellationToken = default)
@@ -775,6 +779,9 @@ public class DdlDownloadService : IDdlDownloadService
 
     private void RecordHistory(DdlCandidate candidate, DdlDownloadResult result)
     {
+        var startedAt = DateTime.UtcNow - result.Duration;
+        var completedAt = DateTime.UtcNow;
+        
         var entry = new DdlDownloadHistoryEntry
         {
             Id = Guid.NewGuid().ToString(),
@@ -789,8 +796,8 @@ public class DdlDownloadService : IDdlDownloadService
             ErrorMessage = result.ErrorMessage,
             RetryAttempts = result.RetryAttempts,
             Duration = result.Duration,
-            StartedAt = DateTime.UtcNow - result.Duration,
-            CompletedAt = DateTime.UtcNow
+            StartedAt = startedAt,
+            CompletedAt = completedAt
         };
         
         lock (_historyLock)
@@ -803,6 +810,26 @@ public class DdlDownloadService : IDdlDownloadService
                 _downloadHistory.RemoveAt(0);
             }
         }
+        
+        // Also add to unified activity service for Activity page visibility
+        _activityService?.AddToHistory(new DownloadActivity
+        {
+            Id = result.DownloadId,
+            SourceType = DownloadSourceType.Ddl,
+            ClientName = "DDL",
+            Title = candidate.ReleaseTitle,
+            State = result.Success ? ActivityState.Completed : ActivityState.Failed,
+            Progress = result.Success ? 100 : 0,
+            TotalBytes = result.FileSize > 0 ? result.FileSize : null,
+            DownloadedBytes = result.FileSize,
+            StartedAt = startedAt,
+            CompletedAt = completedAt,
+            ErrorMessage = result.ErrorMessage,
+            RetryCount = result.RetryAttempts,
+            OutputPath = result.FilePath,
+            SourceUrl = result.SourceUrl ?? candidate.DownloadLinks.FirstOrDefault()?.Url,
+            Category = candidate.SourceSite
+        });
     }
 
     private bool IsLinkBlacklisted(DdlDownloadLink link)

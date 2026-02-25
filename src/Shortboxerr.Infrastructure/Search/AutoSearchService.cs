@@ -1,8 +1,10 @@
 using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Shortboxerr.Core.Activity;
 using Shortboxerr.Core.Ddl;
 using Shortboxerr.Core.Entities;
+using Shortboxerr.Core.Models;
 using Shortboxerr.Core.Search;
 using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.Persistence;
@@ -17,6 +19,10 @@ public class AutoSearchService : IAutoSearchService
 {
     private readonly ShortboxerrDbContext _dbContext;
     private readonly IDdlSearchService _ddlSearchService;
+    private readonly IDdlDownloadService _ddlDownloadService;
+    private readonly IDdlImportService _ddlImportService;
+    private readonly IActivityService _activityService;
+    private readonly IDecisionEngine _decisionEngine;
     private readonly ISettingsService _settingsService;
     private readonly ILogger<AutoSearchService> _logger;
     
@@ -31,11 +37,19 @@ public class AutoSearchService : IAutoSearchService
     public AutoSearchService(
         ShortboxerrDbContext dbContext,
         IDdlSearchService ddlSearchService,
+        IDdlDownloadService ddlDownloadService,
+        IDdlImportService ddlImportService,
+        IActivityService activityService,
+        IDecisionEngine decisionEngine,
         ISettingsService settingsService,
         ILogger<AutoSearchService> logger)
     {
         _dbContext = dbContext;
         _ddlSearchService = ddlSearchService;
+        _ddlDownloadService = ddlDownloadService;
+        _ddlImportService = ddlImportService;
+        _activityService = activityService;
+        _decisionEngine = decisionEngine;
         _settingsService = settingsService;
         _logger = logger;
     }
@@ -75,11 +89,186 @@ public class AutoSearchService : IAutoSearchService
             
             if (searchResult.AllCandidates.Count > 0)
             {
-                // Get the best candidate (first one after deduplication/sorting)
+                _logger.LogInformation("Found {Count} candidates for {Series} #{Issue}",
+                    searchResult.AllCandidates.Count, seriesTitle, issueNumber);
+                
+                // Convert DDL candidates to generic Candidates for DecisionEngine
+                var candidates = searchResult.AllCandidates.Select(c => c.ToCandidate()).ToList();
+                
+                // Create target for DecisionEngine evaluation
+                var target = new CandidateTarget
+                {
+                    SeriesTitle = seriesTitle,
+                    IssueNumber = issue.IssueNumber,
+                    Year = issue.ReleaseDate?.Year ?? issue.CoverDate?.Year,
+                    IsCollection = false
+                };
+                
+                // Evaluate and rank candidates
+                var rankedCandidates = _decisionEngine.EvaluateAndRank(candidates, target);
+                
+                var (shouldAutoGrab, reason) = _decisionEngine.CheckAutoGrab(rankedCandidates);
+                
+                string? downloadId = null;
                 var bestCandidate = searchResult.AllCandidates.First();
                 
-                _logger.LogInformation("Found {Count} candidates for {Series} #{Issue}, best: {Title}",
-                    searchResult.AllCandidates.Count, seriesTitle, issueNumber, bestCandidate.ReleaseTitle);
+                if (shouldAutoGrab)
+                {
+                    _logger.LogInformation("Auto-grab approved for {Series} #{Issue}: {Reason}",
+                        seriesTitle, issueNumber, reason);
+                    
+                    // Find the matching DDL candidate for the best ranked candidate
+                    var bestEval = rankedCandidates.FirstOrDefault(e => e.Accepted);
+                    if (bestEval != null)
+                    {
+                        var matchingDdl = searchResult.AllCandidates
+                            .FirstOrDefault(c => c.Id == bestEval.Candidate.Id);
+                        
+                        // If no download links, try to extract them from the source page
+                        if (matchingDdl != null && matchingDdl.DownloadLinks.Count == 0 && !string.IsNullOrEmpty(matchingDdl.SourceUrl))
+                        {
+                            _logger.LogInformation("Extracting download links from {Url}", matchingDdl.SourceUrl);
+                            try
+                            {
+                                var extractResult = await _ddlSearchService.ExtractLinksAsync(
+                                    matchingDdl.SourceSite, matchingDdl.SourceUrl, cancellationToken);
+                                
+                                if (extractResult.Success && extractResult.Links.Count > 0)
+                                {
+                                    matchingDdl.DownloadLinks.AddRange(extractResult.Links);
+                                    _logger.LogInformation("Extracted {Count} download links", extractResult.Links.Count);
+                                }
+                                else
+                                {
+                                    _logger.LogWarning("Failed to extract links: {Error}", extractResult.ErrorMessage ?? "No links found");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Error extracting download links from {Url}", matchingDdl.SourceUrl);
+                            }
+                        }
+                        
+                        if (matchingDdl != null && matchingDdl.DownloadLinks.Count > 0)
+                        {
+                            bestCandidate = matchingDdl;
+                            
+                            // Get download folder from settings
+                            var generalSettings = await _settingsService.GetGeneralSettingsAsync(cancellationToken);
+                            var downloadFolder = !string.IsNullOrEmpty(generalSettings.DownloadFolder)
+                                ? generalSettings.DownloadFolder
+                                : Path.GetTempPath();
+                            
+                            var downloadOptions = new DdlDownloadOptions
+                            {
+                                DestinationFolder = downloadFolder,
+                                VerifyDownload = true
+                            };
+                            
+                            try
+                            {
+                                var activityId = Guid.NewGuid().ToString();
+                                var startedAt = DateTime.UtcNow;
+                                
+                                var downloadResult = await _ddlDownloadService.DownloadAsync(
+                                    matchingDdl, downloadOptions, cancellationToken);
+                                
+                                if (downloadResult.Success)
+                                {
+                                    downloadId = downloadResult.DownloadId;
+                                    _logger.LogInformation("Download completed for {Series} #{Issue}: {DownloadId}",
+                                        seriesTitle, issueNumber, downloadId);
+                                    
+                                    // Process download through import pipeline
+                                    _logger.LogInformation("Processing download for import: {FilePath}", downloadResult.FilePath);
+                                    var importResult = await _ddlImportService.ProcessDownloadAsync(
+                                        downloadResult, matchingDdl, cancellationToken: cancellationToken);
+                                    
+                                    ActivityState finalState;
+                                    string? outputPath = downloadResult.FilePath;
+                                    string? errorMessage = null;
+                                    
+                                    if (importResult.Success)
+                                    {
+                                        _logger.LogInformation("Import completed for {Series} #{Issue}: {LibraryPath}",
+                                            seriesTitle, issueNumber, importResult.LibraryPath);
+                                        finalState = ActivityState.Completed;
+                                        outputPath = importResult.LibraryPath;
+                                    }
+                                    else if (importResult.PendingManualReview)
+                                    {
+                                        _logger.LogInformation("Import pending review for {Series} #{Issue}: {Reason}",
+                                            seriesTitle, issueNumber, importResult.State);
+                                        finalState = ActivityState.Processing;
+                                    }
+                                    else
+                                    {
+                                        _logger.LogWarning("Import failed for {Series} #{Issue}: {Error}",
+                                            seriesTitle, issueNumber, importResult.ErrorMessage);
+                                        finalState = ActivityState.Failed;
+                                        errorMessage = importResult.ErrorMessage;
+                                    }
+                                    
+                                    // Add to activity history
+                                    _activityService.AddToHistory(new DownloadActivity
+                                    {
+                                        Id = activityId,
+                                        Title = matchingDdl.ReleaseTitle,
+                                        SourceType = DownloadSourceType.Ddl,
+                                        ClientName = matchingDdl.SourceSite,
+                                        State = finalState,
+                                        Progress = 100,
+                                        TotalBytes = downloadResult.FileSize,
+                                        DownloadedBytes = downloadResult.FileSize,
+                                        StartedAt = startedAt,
+                                        CompletedAt = DateTime.UtcNow,
+                                        OutputPath = outputPath,
+                                        ErrorMessage = errorMessage,
+                                        SeriesId = issue.SeriesId,
+                                        IssueId = issue.Id,
+                                        SourceUrl = matchingDdl.SourceUrl
+                                    });
+                                }
+                                else
+                                {
+                                    _logger.LogWarning("Download failed for {Series} #{Issue}: {Error}",
+                                        seriesTitle, issueNumber, downloadResult.ErrorMessage);
+                                    
+                                    // Add failed download to history
+                                    _activityService.AddToHistory(new DownloadActivity
+                                    {
+                                        Id = activityId,
+                                        Title = matchingDdl.ReleaseTitle,
+                                        SourceType = DownloadSourceType.Ddl,
+                                        ClientName = matchingDdl.SourceSite,
+                                        State = ActivityState.Failed,
+                                        StartedAt = startedAt,
+                                        CompletedAt = DateTime.UtcNow,
+                                        ErrorMessage = downloadResult.ErrorMessage,
+                                        SeriesId = issue.SeriesId,
+                                        IssueId = issue.Id,
+                                        SourceUrl = matchingDdl.SourceUrl
+                                    });
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Failed to initiate download for {Series} #{Issue}",
+                                    seriesTitle, issueNumber);
+                            }
+                        }
+                        else if (matchingDdl != null)
+                        {
+                            _logger.LogWarning("No download links available for {Series} #{Issue}, SourceUrl: {Url}",
+                                seriesTitle, issueNumber, matchingDdl.SourceUrl ?? "(none)");
+                        }
+                    }
+                }
+                else
+                {
+                    _logger.LogInformation("Auto-grab not approved for {Series} #{Issue}: {Reason}",
+                        seriesTitle, issueNumber, reason);
+                }
                 
                 issue.LastSearchError = null;
                 await _dbContext.SaveChangesAsync(cancellationToken);
@@ -90,7 +279,7 @@ public class AutoSearchService : IAutoSearchService
                     issueId, seriesTitle, issueNumber,
                     searchResult.AllCandidates.Count,
                     bestCandidate.ReleaseTitle,
-                    null, // Download not initiated automatically - requires user confirmation or download client
+                    downloadId,
                     stopwatch.Elapsed);
                 
                 AddToHistory(result);

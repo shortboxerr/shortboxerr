@@ -469,6 +469,15 @@ public class DdlImportService : IDdlImportService
             
             _dbContext.FileAssets.Add(fileAsset);
             
+            // Update issue status to Owned if this is a single issue import
+            if (match.Issue != null)
+            {
+                match.Issue.HasFile = true;
+                match.Issue.Status = IssueStatus.Owned;
+                match.Issue.UpdatedAt = DateTime.UtcNow;
+                _logger?.LogInformation("Updated issue #{IssueNumber} status to Owned", match.Issue.IssueNumber);
+            }
+            
             // Create history event
             var historyEvent = new HistoryEvent
             {

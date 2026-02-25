@@ -57,6 +57,11 @@ public interface IActivityService
     /// Clears all completed items from history.
     /// </summary>
     Task<int> ClearCompletedAsync(CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Adds an activity to history (for completed/failed downloads).
+    /// </summary>
+    void AddToHistory(DownloadActivity activity);
 }
 
 /// <summary>

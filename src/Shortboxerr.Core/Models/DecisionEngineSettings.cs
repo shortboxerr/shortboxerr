@@ -14,8 +14,10 @@ public class DecisionEngineSettings
     /// <summary>
     /// Minimum score required for auto-grab.
     /// Candidates below this threshold require manual approval.
+    /// Default of 55 requires at least exact series (30) + exact issue (25) match.
+    /// With year match: 65, with format match: 75-85.
     /// </summary>
-    public int AutoGrabThreshold { get; set; } = 80;
+    public int AutoGrabThreshold { get; set; } = 55;
     
     /// <summary>
     /// Score margin for manual choice.

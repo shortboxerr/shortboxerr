@@ -10,6 +10,12 @@ public abstract class BaseDdlSiteAdapter : IDdlSiteAdapter
     private DdlSiteConfiguration _configuration = new();
     private HttpClient? _httpClient;
     
+    /// <summary>
+    /// Default browser User-Agent to avoid anti-bot detection.
+    /// Matches Mylar3's Firefox user agent for compatibility.
+    /// </summary>
+    protected const string DefaultBrowserUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0";
+    
     public abstract string SiteType { get; }
     public abstract string DisplayName { get; }
     public abstract string DefaultBaseUrl { get; }
@@ -125,9 +131,20 @@ public abstract class BaseDdlSiteAdapter : IDdlSiteAdapter
             Timeout = TimeSpan.FromSeconds(_configuration.TimeoutSeconds > 0 ? _configuration.TimeoutSeconds : 30)
         };
         
-        // Set User-Agent
-        var userAgent = _configuration.UserAgent ?? "Shortboxerr/1.0 (Comic Manager)";
+        // Use browser-like User-Agent to avoid anti-bot detection (matches Mylar3 behavior)
+        // Default to Firefox user agent like Mylar3 does
+        var userAgent = _configuration.UserAgent ?? DefaultBrowserUserAgent;
         client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+        
+        // Add browser-like headers to avoid detection
+        client.DefaultRequestHeaders.Accept.ParseAdd("text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
+        client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("en-US,en;q=0.5");
+        
+        // Set Referer to the site's base URL (like Mylar3 does)
+        if (!string.IsNullOrEmpty(_configuration.BaseUrl))
+        {
+            client.DefaultRequestHeaders.Referrer = new Uri(_configuration.BaseUrl);
+        }
         
         // Add custom headers
         foreach (var (key, value) in _configuration.CustomHeaders)
