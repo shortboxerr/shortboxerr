@@ -580,12 +580,12 @@ public class DdlDownloadService : IDdlDownloadService
             return (false, DdlDownloadFailureReason.FileTooLarge, $"File size {fileSize} exceeds maximum {options.MaxExpectedSize}");
         }
         
-        // Check magic bytes
+        // Check magic bytes (need at least 16 bytes to detect HTML doctype)
         try
         {
-            var magicBytes = new byte[8];
+            var magicBytes = new byte[16];
             await using var fs = File.OpenRead(filePath);
-            await fs.ReadAsync(magicBytes.AsMemory(0, Math.Min(8, (int)fileSize)));
+            await fs.ReadAsync(magicBytes.AsMemory(0, Math.Min(16, (int)fileSize)));
             
             // Check if it's an HTML error page
             var isHtml = IsHtmlContent(magicBytes);
