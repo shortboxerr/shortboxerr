@@ -1,23 +1,23 @@
-# Self-Check: Iteration 157
+# Self-Check: Iteration 158
 
 ## Summary
-Implemented Phase 1 of EPIC 11.27 (Pull List Data Flow Refactoring) by establishing the unified enrichment strategy with clear data source hierarchy and finalization states.
+Implemented Phase 2 of EPIC 11.27 (Pull List Data Flow Refactoring) by creating the background upgrade service that periodically upgrades interim Metron data to authoritative ComicVine data.
 
 ## Checklist
 
-### 11.27 Pull List Data Flow Refactoring - Phase 1
+### 11.27 Pull List Data Flow Refactoring - Phase 2
 
 | Item | Status | Notes |
 |------|--------|-------|
-| EnrichmentStatus enum | ✅ | `Pending`, `MetronInterim`, `ComicVineFinalized` |
-| DataSource enum | ✅ | `WalkSoftly`, `ComicVine`, `Metron`, `LocalLibrary` |
-| DiscoverableIssue extensions | ✅ | `MetronIssueId`, `EnrichmentStatus`, `CoverSource`, `MetadataSource`, `EnrichedAt` |
-| ComicVine direct enrichment | ✅ | `EnrichWithComicVineIssueDataAsync` fetches full CV data when CV issue ID available |
-| Branching logic in fetch | ✅ | CV enrichment before volume fallback |
-| Status propagation | ✅ | `BuildDiscoveryListAsync` maps enrichment status |
-| Metron skip finalized | ✅ | `EnrichDiscoveryWithMetronCoversAsync` skips `ComicVineFinalized` issues |
-| Metron status tracking | ✅ | Sets `MetronInterim` status when Metron covers applied |
-| Unit tests | ✅ | 5 tests for enrichment enums and data model |
+| DiscoveryUpgradeBackgroundService | ✅ | Periodically checks cached weeks for non-finalized issues |
+| Re-query WalkSoftly | ✅ | Detects newly available CV issue IDs |
+| Batch CV fetch | ✅ | Fetches full data for issues with new CV IDs |
+| Update cached issues | ✅ | Marks upgraded issues as `ComicVineFinalized` |
+| Settings: DiscoveryUpgradeEnabled | ✅ | Default: true |
+| Settings: DiscoveryUpgradeIntervalHours | ✅ | Default: 4 (Mylar3 parity) |
+| Settings: DiscoveryUpgradeWeeksAhead | ✅ | Default: 4 |
+| DI registration | ✅ | Singleton hosted service |
+| Unit tests | ✅ | 11 tests for settings and state transitions |
 
 ## Build & Test Results
 
@@ -25,8 +25,7 @@ Implemented Phase 1 of EPIC 11.27 (Pull List Data Flow Refactoring) by establish
 Build: SUCCESS (0 warnings, 0 errors)
 
 Targeted tests:
-- EnrichmentStatus tests: 10 passed
-- Full test suite: 2404 passed, 6 failed (pre-existing failures)
+- DiscoveryUpgradeBackgroundServiceTests: 11 passed
 
 Pre-existing failures (not introduced by this iteration):
 - PullListServiceTests.GetDiscoveryPublishersAsync_* (GroupBy not supported by InMemory provider)
@@ -37,25 +36,41 @@ Pre-existing failures (not introduced by this iteration):
 
 | File | Change |
 |------|--------|
-| `src/Shortboxerr.Core/PullList/IPullListService.cs` | Added `EnrichmentStatus`, `DataSource` enums; extended `DiscoverableIssue` |
-| `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` | Added `EnrichWithComicVineIssueDataAsync`; updated fetch, build, and Metron enrichment flows |
-| `tests/Shortboxerr.Tests/PullListServiceTests.cs` | Added 5 enrichment status unit tests |
-| `docs/WORKLOG.md` | Added Iteration 157 details |
-| `docs/BACKLOG.md` | Updated 11.27 status and marked completed items |
+| `src/Shortboxerr.Core/PullList/IPullListService.cs` | Added `DiscoveryUpgradeEnabled`, `DiscoveryUpgradeIntervalHours`, `DiscoveryUpgradeWeeksAhead` settings |
+| `src/Shortboxerr.Infrastructure/BackgroundServices/DiscoveryUpgradeBackgroundService.cs` | New background service for MetronInterim→ComicVineFinalized upgrades |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Registered DiscoveryUpgradeBackgroundService |
+| `tests/Shortboxerr.Tests/DiscoveryUpgradeBackgroundServiceTests.cs` | 11 unit tests |
+| `docs/WORKLOG.md` | Added Iteration 158 details |
+| `docs/BACKLOG.md` | Updated 11.27 background upgrade service as complete |
 
 ## Commits
 
-1. `feat(pulllist): add EnrichmentStatus enum and tracking fields`
-2. `feat(pulllist): implement unified enrichment data flow (11.27)`
-3. `test(pulllist): add unit tests for enrichment status tracking`
+1. `feat(pulllist): add background discovery upgrade service (EPIC 11.27 Phase 2)`
 
-## Next Steps (Phase 2)
+## Algorithm
 
-- [ ] Implement background upgrade service for MetronInterim → ComicVineFinalized
-- [ ] Re-check WalkSoftly for CV issue IDs that become available later
+```
+Every 4 hours (configurable):
+  For each cached week (current + N weeks ahead):
+    1. Deserialize cached issues from JSON
+    2. Filter to non-finalized issues (Id <= 0 OR status != HasComicVineCover)
+    3. Re-query WalkSoftly for that week
+    4. Build lookup: (series title, issue number) → WalkSoftly release
+    5. For each non-finalized issue:
+       - If WalkSoftly now has a CV issue ID → add to upgrade list
+    6. Batch fetch CV data for upgrade list
+    7. Apply CV data, mark as finalized
+    8. Save updated cache to database
+```
+
+## Next Steps
+
 - [ ] Evaluate 11.26 (local cover caching routing issue) relevance
+- [ ] Consider 11.21 (Upcoming Issues Display Parity) as next priority
+- [ ] Add integration tests for Metron→ComicVine upgrade flow
 
 ## Notes
-- This iteration establishes the foundation for the unified enrichment strategy
-- ComicVine data is now considered authoritative and "finalizes" issue enrichment
-- Metron data is explicitly marked as interim and can be upgraded later
+- This completes the core implementation of EPIC 11.27
+- Background service respects settings and can be disabled
+- 4-hour interval matches Mylar3's refresh behavior
+- Upgrade only triggers when WalkSoftly provides new CV issue IDs

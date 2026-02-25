@@ -1,5 +1,63 @@
 # Worklog
 
+## Iteration 158 (2026-02-25)
+**EPIC 11.27: Pull List Data Flow Refactoring - Phase 2 (Background Upgrade Service)**
+
+### Summary
+Implemented the background service that periodically upgrades interim Metron-enriched issues to authoritative ComicVine data when CV issue IDs become available in WalkSoftly.
+
+### What Changed
+
+**DiscoveryUpgradeBackgroundService (New):**
+- Periodically checks cached discovery weeks for non-finalized issues
+- Re-queries WalkSoftly to detect newly available ComicVine issue IDs
+- For issues with newly discovered CV IDs:
+  - Batch fetches full data from ComicVine API
+  - Updates metadata (name, description, dates, cover)
+  - Marks issues as `ComicVineFinalized`
+  - Updates cached discovery weeks in database
+
+**PullListSettings Extensions:**
+- `DiscoveryUpgradeEnabled` (default: true) - Enable/disable the upgrade service
+- `DiscoveryUpgradeIntervalHours` (default: 4) - Check interval matching Mylar3
+- `DiscoveryUpgradeWeeksAhead` (default: 4) - How many weeks to check for upgrades
+
+**DI Registration:**
+- Registered `DiscoveryUpgradeBackgroundService` as singleton hosted service
+
+### Algorithm
+```
+Every 4 hours:
+  For each cached week (current + 3 weeks ahead):
+    Deserialize cached issues from JSON
+    Filter to non-finalized issues (Id <= 0 or status != HasComicVineCover)
+    Re-query WalkSoftly for that week
+    Build lookup: (series title, issue number) → WalkSoftly release
+    For each non-finalized issue:
+      If WalkSoftly now has a CV issue ID → add to upgrade list
+    Batch fetch CV data for upgrade list
+    Apply CV data to issues, mark as finalized
+    Save updated cache to database
+```
+
+### Tests Added
+- 11 new unit tests for settings defaults and enrichment state transitions
+- Tests verify:
+  - Default values for new PullListSettings properties
+  - Custom value assignments
+  - CoverEnrichmentStatus finalized state identification
+  - Non-finalized issue detection by ID and status
+
+### Commits
+1. `feat(pulllist): add background discovery upgrade service (EPIC 11.27 Phase 2)`
+
+### Next Steps
+- [ ] Evaluate 11.26 (local cover caching routing) - may be obviated by this work
+- [ ] Add integration tests for Metron→ComicVine upgrade flow
+- [ ] Consider 11.21 (Upcoming Issues Display Parity) as next priority
+
+---
+
 ## Iteration 157 (2026-02-25)
 **EPIC 11.27: Pull List Data Flow Refactoring - Phase 1 (Unified Enrichment Strategy)**
 

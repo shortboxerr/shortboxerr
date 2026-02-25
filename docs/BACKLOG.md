@@ -2211,22 +2211,23 @@ Refactor Pull List data retrieval and enrichment to establish a clear hierarchy 
   - AC: Mark as `MetronInterim` ✅
   - AC: Skip finalized issues during Metron enrichment ✅
 
-- [ ] **Implement background upgrade service** ← NEXT PHASE
-  - AC: Periodic job to re-check `MetronInterim` and `Pending` issues
-  - AC: Re-query WalkSoftly for those release weeks
-  - AC: Upgrade to ComicVine data when CV ID becomes available
-  - AC: Replace local cached covers with ComicVine covers
-  - AC: Configurable check interval (e.g., every 4 hours, matching Mylar3)
+- [x] **Implement background upgrade service** ✅ (Iteration 158)
+  - AC: Periodic job to re-check `MetronInterim` and `Pending` issues ✅
+  - AC: Re-query WalkSoftly for those release weeks ✅
+  - AC: Upgrade to ComicVine data when CV ID becomes available ✅
+  - AC: Replace local cached covers with ComicVine covers ✅
+  - AC: Configurable check interval (e.g., every 4 hours, matching Mylar3) ✅
 
 - [ ] **Update local cover caching (integrates 11.26)**
   - AC: All covers (ComicVine and Metron) stored locally via `ICoverService`
   - AC: Fix `/api/v1/covers/discovery/{id}` endpoint routing issue from 11.26
   - AC: Cover replacement: new ComicVine cover overwrites existing Metron cover
 
-- [x] **Tests** ✅ (Iteration 157)
-  - AC: Unit tests for enrichment state transitions ✅ (5 tests)
+- [x] **Tests** ✅ (Iterations 157-158)
+  - AC: Unit tests for enrichment state transitions ✅ (5 tests, Iteration 157)
+  - AC: Unit tests for upgrade service settings/state ✅ (11 tests, Iteration 158)
   - AC: Unit tests for branching logic (CV ID present vs absent) ⏸️ (deferred - requires mocking)
-  - AC: Integration test: issue upgrades from Metron→ComicVine when CV ID appears ⏸️ (Phase 2)
+  - AC: Integration test: issue upgrades from Metron→ComicVine when CV ID appears ⏸️ (future)
   - AC: Verify finalized issues are not re-enriched ✅ (code skips finalized)
 
 **Dependencies:**
