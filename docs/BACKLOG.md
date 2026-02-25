@@ -475,7 +475,7 @@ Reference: Mylar3's getcomics.py script analyzed for implementation details.
   - AC: Thread-safe with SemaphoreSlim
   - AC: Registered in DI container
 
-#### 8.6.2 GetComicsAdapterV2 (Complete Rewrite) ✅ COMPLETED
+#### 8.6.2 GetComicsAdapter (Complete Rewrite) ✅ COMPLETED
 - [x] **Anti-bot measures** ✅
   - AC: Firefox User-Agent matching Mylar3 (`Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1`)
   - AC: Referer header set to GetComics base URL

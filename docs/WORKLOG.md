@@ -12,7 +12,7 @@ Implemented full Mylar3 behavioral parity for GetComics.org DDL functionality. A
 - `IDdlCookieService.cs` - Interface for persistent cookie management across sessions
 - `DdlCookieService.cs` - JSON file storage with 7-day expiry (like Mylar3's `.gc_cookies.dat`)
 - `GetComicsSettings.cs` - Comprehensive settings model with link priority, quality preference, FlareSolverr config
-- `GetComicsAdapterV2.cs` - Complete rewrite with full Mylar3 feature parity
+- `GetComicsAdapter.cs` - Complete rewrite with full Mylar3 feature parity (replaced legacy adapter)
 - `IDdlPostProcessor.cs` - Interface for post-download processing (zip extraction)
 - `DdlPostProcessor.cs` - Handles zip file extraction like Mylar3's `zip_zip` function
 - `DdlPackInfo.cs` - Model for storing pack detection details (series, issue range, annuals)
