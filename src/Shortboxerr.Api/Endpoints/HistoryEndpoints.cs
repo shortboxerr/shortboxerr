@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Shortboxerr.Core.Activity;
 using Shortboxerr.Core.Entities;
 using Shortboxerr.Infrastructure.Persistence;
 
@@ -15,79 +16,11 @@ public static class HistoryEndpoints
             .WithTags("History")
             .WithOpenApi();
 
-        // GET /api/v1/history - Get history events
-        group.MapGet("/", async (
-            ShortboxerrDbContext db,
-            string? type,
-            string? search,
-            int page = 1,
-            int pageSize = 50,
-            CancellationToken ct = default) =>
-        {
-            var query = db.HistoryEvents.AsQueryable();
-
-            // Filter by event type
-            if (!string.IsNullOrEmpty(type) && type != "all")
-            {
-                var eventType = type.ToLowerInvariant() switch
-                {
-                    "grabbed" => HistoryEventType.DownloadGrabbed,
-                    "imported" => HistoryEventType.DdlImportCompleted,
-                    "deleted" => HistoryEventType.FileDeleted,
-                    "failed" => HistoryEventType.DownloadFailed,
-                    "renamed" => HistoryEventType.FileRenamed,
-                    _ => (HistoryEventType?)null
-                };
-
-                if (eventType.HasValue)
-                {
-                    query = query.Where(e => e.EventType == eventType.Value);
-                }
-            }
-
-            // Search filter
-            if (!string.IsNullOrEmpty(search))
-            {
-                query = query.Where(e => 
-                    e.Message.Contains(search) ||
-                    (e.SourcePath != null && e.SourcePath.Contains(search)) ||
-                    (e.DestinationPath != null && e.DestinationPath.Contains(search)));
-            }
-
-            var totalCount = await query.CountAsync(ct);
-            
-            var items = await query
-                .OrderByDescending(e => e.Timestamp)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(e => new HistoryEventDto
-                {
-                    Id = e.Id,
-                    EventType = e.EventType.ToString().ToLowerInvariant(),
-                    Message = e.Message,
-                    SeriesId = e.SeriesId,
-                    IssueId = e.IssueId,
-                    SourcePath = e.SourcePath,
-                    DestinationPath = e.DestinationPath,
-                    Success = e.Success,
-                    ErrorMessage = e.ErrorMessage,
-                    Date = e.Timestamp,
-                    Data = e.Data
-                })
-                .ToListAsync(ct);
-
-            return Results.Ok(new PagedHistoryResult
-            {
-                Items = items,
-                Page = page,
-                PageSize = pageSize,
-                TotalCount = totalCount,
-                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
-            });
-        })
-        .WithName("GetHistory")
-        .WithSummary("Gets application history events")
-        .Produces<PagedHistoryResult>();
+        // GET /api/v1/history - Get unified history events (HistoryEvents + DownloadHistory)
+        group.MapGet("/", GetHistory)
+            .WithName("GetHistory")
+            .WithSummary("Gets application history events")
+            .Produces<PagedHistoryResult>();
 
         // GET /api/v1/history/{id} - Get specific event
         group.MapGet("/{id:int}", async (
@@ -137,17 +70,191 @@ public static class HistoryEndpoints
         .Produces<object>()
         .Produces(StatusCodes.Status404NotFound);
 
-        // DELETE /api/v1/history - Clear all history
+        // DELETE /api/v1/history - Clear all history (both HistoryEvents and DownloadHistory)
         group.MapDelete("/", async (
             ShortboxerrDbContext db,
             CancellationToken ct) =>
         {
-            var count = await db.HistoryEvents.ExecuteDeleteAsync(ct);
-            return Results.Ok(new { success = true, deletedCount = count });
+            var historyCount = await db.HistoryEvents.ExecuteDeleteAsync(ct);
+            var downloadCount = await db.DownloadHistories.ExecuteDeleteAsync(ct);
+            return Results.Ok(new { success = true, deletedCount = historyCount + downloadCount });
         })
         .WithName("ClearHistory")
         .WithSummary("Clears all history events")
         .Produces<object>();
+    }
+
+    private static async Task<IResult> GetHistory(
+        ShortboxerrDbContext db,
+        string? type,
+        string? search,
+        int page = 1,
+        int pageSize = 50,
+        CancellationToken ct = default)
+    {
+        var allItems = new List<HistoryEventDto>();
+
+        // Check if we need download history
+        var includeDownloads = string.IsNullOrEmpty(type) || type == "all" || type == "downloaded" || type == "failed";
+        var includeHistoryEvents = string.IsNullOrEmpty(type) || type == "all" || 
+            type == "grabbed" || type == "imported" || type == "deleted" || type == "renamed" || type == "failed" || type == "added";
+
+        // Get HistoryEvents
+        if (includeHistoryEvents)
+        {
+            var historyQuery = db.HistoryEvents.AsQueryable();
+
+            // Filter by event type
+            if (!string.IsNullOrEmpty(type) && type != "all" && type != "downloaded")
+            {
+                if (type == "added")
+                {
+                    // "added" includes series, issue, and edition additions
+                    historyQuery = historyQuery.Where(e => 
+                        e.EventType == HistoryEventType.SeriesAdded ||
+                        e.EventType == HistoryEventType.IssueAdded ||
+                        e.EventType == HistoryEventType.EditionAdded);
+                }
+                else if (type == "deleted")
+                {
+                    // "deleted" includes file, series, and edition deletions
+                    historyQuery = historyQuery.Where(e => 
+                        e.EventType == HistoryEventType.FileDeleted ||
+                        e.EventType == HistoryEventType.SeriesDeleted ||
+                        e.EventType == HistoryEventType.EditionDeleted);
+                }
+                else
+                {
+                    var eventType = type.ToLowerInvariant() switch
+                    {
+                        "grabbed" => HistoryEventType.DownloadGrabbed,
+                        "imported" => HistoryEventType.DdlImportCompleted,
+                        "failed" => HistoryEventType.DownloadFailed,
+                        "renamed" => HistoryEventType.FileRenamed,
+                        _ => (HistoryEventType?)null
+                    };
+
+                    if (eventType.HasValue)
+                    {
+                        historyQuery = historyQuery.Where(e => e.EventType == eventType.Value);
+                    }
+                }
+            }
+
+            // Search filter
+            if (!string.IsNullOrEmpty(search))
+            {
+                historyQuery = historyQuery.Where(e => 
+                    e.Message.Contains(search) ||
+                    (e.SourcePath != null && e.SourcePath.Contains(search)) ||
+                    (e.DestinationPath != null && e.DestinationPath.Contains(search)));
+            }
+
+            var historyItems = await historyQuery
+                .OrderByDescending(e => e.Timestamp)
+                .Take(pageSize * 2)
+                .ToListAsync(ct);
+
+            allItems.AddRange(historyItems.Select(e => new HistoryEventDto
+            {
+                Id = e.Id,
+                EventType = MapEventType(e.EventType),
+                Message = e.Message,
+                SeriesId = e.SeriesId,
+                IssueId = e.IssueId,
+                SourcePath = e.SourcePath,
+                DestinationPath = e.DestinationPath,
+                Success = e.Success,
+                ErrorMessage = e.ErrorMessage,
+                Date = e.Timestamp,
+                Data = e.Data
+            }));
+        }
+
+        // Get DownloadHistory (for "downloaded" and "failed" filters)
+        if (includeDownloads)
+        {
+            var downloadQuery = db.DownloadHistories.AsQueryable();
+
+            // Filter by download success/failure
+            if (type == "downloaded")
+            {
+                downloadQuery = downloadQuery.Where(d => d.Success);
+            }
+            else if (type == "failed")
+            {
+                downloadQuery = downloadQuery.Where(d => !d.Success);
+            }
+
+            // Search filter
+            if (!string.IsNullOrEmpty(search))
+            {
+                downloadQuery = downloadQuery.Where(d =>
+                    d.Title.Contains(search) ||
+                    (d.SourceSite != null && d.SourceSite.Contains(search)) ||
+                    (d.DestinationPath != null && d.DestinationPath.Contains(search)));
+            }
+
+            var downloadItems = await downloadQuery
+                .OrderByDescending(d => d.CompletedAt)
+                .Take(pageSize * 2)
+                .ToListAsync(ct);
+
+            allItems.AddRange(downloadItems.Select(d => new HistoryEventDto
+            {
+                Id = d.Id + 1000000,
+                EventType = d.Success ? "downloaded" : "failed",
+                Message = d.Title,
+                SeriesId = d.SeriesId,
+                IssueId = d.IssueId,
+                SourcePath = d.SourceUrl,
+                DestinationPath = d.DestinationPath,
+                Success = d.Success,
+                ErrorMessage = d.ErrorMessage,
+                Date = d.CompletedAt,
+                Data = d.SourceSite != null ? $"Source: {d.SourceSite}" : null
+            }));
+        }
+
+        // Sort combined results and paginate
+        var sortedItems = allItems
+            .OrderByDescending(e => e.Date)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        var totalCount = allItems.Count;
+
+        return Results.Ok(new PagedHistoryResult
+        {
+            Items = sortedItems,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
+        });
+    }
+
+    private static string MapEventType(HistoryEventType eventType)
+    {
+        return eventType switch
+        {
+            HistoryEventType.DownloadGrabbed => "grabbed",
+            HistoryEventType.DownloadCompleted => "downloaded",
+            HistoryEventType.DownloadFailed => "failed",
+            HistoryEventType.FileImported => "imported",
+            HistoryEventType.DdlImportCompleted => "imported",
+            HistoryEventType.DdlImportFailed => "failed",
+            HistoryEventType.FileDeleted => "deleted",
+            HistoryEventType.FileRenamed => "renamed",
+            HistoryEventType.FileMoved => "renamed",
+            HistoryEventType.SeriesAdded => "added",
+            HistoryEventType.SeriesDeleted => "deleted",
+            HistoryEventType.IssueAdded => "added",
+            HistoryEventType.EditionAdded => "added",
+            HistoryEventType.EditionDeleted => "deleted",
+            _ => eventType.ToString().ToLowerInvariant()
+        };
     }
 }
 
