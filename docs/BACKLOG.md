@@ -21,7 +21,7 @@
 | 📋 | [EPIC 14](#epic-14-future-enhancements--planned) | Future Enhancements |
 | ✅ | [EPIC 15](#epic-15-ui-bug-fixes--improvements--completed) | UI Bug Fixes |
 | ✅ | [EPIC 16](#epic-16-end-to-end-testing-infrastructure--completed) | E2E Testing Infrastructure |
-| 🔄 | [EPIC 17](#epic-17-ddl-download-link-robustness--in-progress) | DDL Download Link Robustness |
+| ✅ | [EPIC 17](#epic-17-ddl-download-link-robustness--completed) | DDL Download Link Robustness |
 
 **Legend:** ✅ Completed | 🔄 In Progress | 📋 Planned
 
@@ -3907,7 +3907,7 @@ Comprehensive E2E test suite to exercise all user workflows, background automati
 ---
 
 
-## EPIC 17: DDL Download Link Robustness 🔄 IN PROGRESS
+## EPIC 17: DDL Download Link Robustness ✅ COMPLETED
 
 End-to-end improvements for DDL (Direct Download Link) reliability, error handling, and activity tracking.
 
@@ -3953,16 +3953,16 @@ End-to-end improvements for DDL (Direct Download Link) reliability, error handli
   - AC: Periodic homepage detection to update base URL
   - AC: Log domain migration events for debugging
 
-### 17.5 Link Extraction Updates 📋 PLANNED
-- [ ] **GetComics page structure changes**
+### 17.5 Link Extraction Updates ✅ COMPLETED
+- [x] **GetComics page structure changes** ✅
   - AC: Update DownloadButtonMylar3Regex if page structure changes
   - AC: Add fallback patterns for common download button classes
   - AC: Log when expected patterns don't match (helps detect site changes)
-- [ ] **Host link detection**
+- [x] **Host link detection** ✅
   - AC: Keep KnownHostLinkMylar3Regex updated with new hosts
   - AC: Support terabox.com, rootz.so, vikingfile.com, pixeldrain.com, mega.nz
   - AC: Add support for any new hosts GetComics starts using
-- [ ] **Redirect link handling**
+- [x] **Redirect link handling** ✅
   - AC: GetComicsRedirectLinkRegex handles `/dlds/` redirect links
   - AC: Follow redirects to final download URL
   - AC: Detect and skip infinite redirect loops
@@ -3978,12 +3978,12 @@ End-to-end improvements for DDL (Direct Download Link) reliability, error handli
   - AC: Prefer hosts with higher success rates
   - AC: Temporary blacklist for repeatedly failing hosts
 
-### 17.7 Decision Engine Tuning 📋 PLANNED
-- [ ] **Auto-grab threshold review**
+### 17.7 Decision Engine Tuning ✅ COMPLETED
+- [x] **Auto-grab threshold review** ✅
   - AC: Default AutoGrabThreshold (55) may reject valid matches
   - AC: Document recommended threshold values for different use cases
   - AC: Consider lower threshold for "any match" vs "confident match" scenarios
-- [ ] **Multi-candidate handling**
+- [x] **Multi-candidate handling** ✅
   - AC: ManualChoiceMargin (10) controls when manual selection required
   - AC: Option to prefer specific sites (GetComics over RCO)
   - AC: Configurable site priority in decision engine
