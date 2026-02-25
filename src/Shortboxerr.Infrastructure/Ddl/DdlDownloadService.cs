@@ -567,6 +567,12 @@ public class DdlDownloadService : IDdlDownloadService
         );
     }
 
+    // Default minimum size for comic files (50KB) - HTML error pages are typically smaller
+    private const long DefaultMinComicSize = 50 * 1024;
+    
+    // Suspiciously small file threshold - always verify format for files under this size
+    private const long SuspiciouslySmalLThreshold = 200 * 1024; // 200KB
+    
     private async Task<(bool Success, DdlDownloadFailureReason FailureReason, string? ErrorMessage)> VerifyDownloadAsync(string filePath, long fileSize, DdlDownloadOptions options)
     {
         // Check file size
@@ -575,9 +581,12 @@ public class DdlDownloadService : IDdlDownloadService
             return (false, DdlDownloadFailureReason.EmptyFile, "Downloaded file is empty");
         }
         
-        if (options.MinExpectedSize.HasValue && fileSize < options.MinExpectedSize.Value)
+        // Apply default minimum size if not specified
+        var minSize = options.MinExpectedSize ?? DefaultMinComicSize;
+        if (fileSize < minSize)
         {
-            return (false, DdlDownloadFailureReason.FileTooSmall, $"File size {fileSize} is below minimum {options.MinExpectedSize}");
+            _logger?.LogWarning("File size {Size} bytes is below minimum {MinSize} bytes", fileSize, minSize);
+            return (false, DdlDownloadFailureReason.FileTooSmall, $"File size {fileSize} bytes is below minimum {minSize} bytes (likely an error page)");
         }
         
         if (options.MaxExpectedSize.HasValue && fileSize > options.MaxExpectedSize.Value)
@@ -585,25 +594,39 @@ public class DdlDownloadService : IDdlDownloadService
             return (false, DdlDownloadFailureReason.FileTooLarge, $"File size {fileSize} exceeds maximum {options.MaxExpectedSize}");
         }
         
-        // Check magic bytes (need at least 16 bytes to detect HTML doctype)
+        // Check magic bytes (need at least 64 bytes for better content detection)
         try
         {
-            var magicBytes = new byte[16];
+            var bytesToRead = Math.Min(64, (int)fileSize);
+            var magicBytes = new byte[bytesToRead];
             await using var fs = File.OpenRead(filePath);
-            await fs.ReadAsync(magicBytes.AsMemory(0, Math.Min(16, (int)fileSize)));
+            await fs.ReadAsync(magicBytes.AsMemory(0, bytesToRead));
             
             // Check if it's an HTML error page
             var isHtml = IsHtmlContent(magicBytes);
             if (isHtml)
             {
+                _logger?.LogWarning("Downloaded file is HTML content, not a comic archive");
                 return (false, DdlDownloadFailureReason.HtmlErrorPage, "Downloaded file appears to be an HTML error page");
             }
             
             // Check for valid archive formats
             var isValidFormat = IsValidComicFormat(magicBytes);
-            if (!isValidFormat && fileSize > 1000) // Only check for larger files
+            
+            // For suspiciously small files, require valid format
+            if (!isValidFormat && fileSize < SuspiciouslySmalLThreshold)
             {
-                _logger?.LogWarning("Downloaded file may not be a valid comic archive (magic bytes: {Bytes})", BitConverter.ToString(magicBytes.Take(4).ToArray()));
+                _logger?.LogWarning("Small file ({Size} bytes) is not a valid comic format (magic bytes: {Bytes})", 
+                    fileSize, BitConverter.ToString(magicBytes.Take(8).ToArray()));
+                return (false, DdlDownloadFailureReason.InvalidFormat, 
+                    $"Downloaded file ({fileSize} bytes) is not a valid comic archive format");
+            }
+            
+            // For larger files, just warn if format doesn't match (could be a rare format)
+            if (!isValidFormat)
+            {
+                _logger?.LogWarning("Downloaded file may not be a valid comic archive (magic bytes: {Bytes})", 
+                    BitConverter.ToString(magicBytes.Take(8).ToArray()));
             }
         }
         catch (Exception ex)
@@ -616,9 +639,35 @@ public class DdlDownloadService : IDdlDownloadService
 
     private static bool IsHtmlContent(byte[] bytes)
     {
-        // Check for common HTML starts
+        // Check for common HTML/error page patterns
         var start = System.Text.Encoding.ASCII.GetString(bytes).ToLowerInvariant();
-        return start.StartsWith("<!doctype") || start.StartsWith("<html") || start.StartsWith("<head") || start.StartsWith("<?xml");
+        
+        // Standard HTML markers
+        if (start.StartsWith("<!doctype") || start.StartsWith("<html") || 
+            start.StartsWith("<head") || start.StartsWith("<?xml"))
+        {
+            return true;
+        }
+        
+        // Check for HTML tags anywhere in first 16 bytes (some error pages have BOM or whitespace first)
+        if (start.Contains("<html") || start.Contains("<head") || start.Contains("<!doc"))
+        {
+            return true;
+        }
+        
+        // Check for common error page indicators
+        if (start.Contains("error") || start.Contains("denied") || start.Contains("cloudflare"))
+        {
+            return true;
+        }
+        
+        // Check for JSON error responses (some APIs return JSON errors)
+        if (start.TrimStart().StartsWith("{\"error") || start.TrimStart().StartsWith("{\"message"))
+        {
+            return true;
+        }
+        
+        return false;
     }
 
     private static bool IsValidComicFormat(byte[] bytes)

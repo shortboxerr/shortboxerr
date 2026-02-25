@@ -3926,15 +3926,15 @@ End-to-end improvements for DDL (Direct Download Link) reliability, error handli
   - AC: Documentation updated to reflect single adapter
   - Note: V2 adapter renamed to GetComicsAdapter, legacy deleted
 
-### 17.3 Download Verification 📋 PLANNED
-- [ ] **HTML error page detection**
+### 17.3 Download Verification 🔄 IN PROGRESS
+- [x] **HTML error page detection** ✅
   - AC: Detect when downloaded file is HTML instead of comic archive
   - AC: Check magic bytes (PK for ZIP/CBZ, Rar! for CBR/RAR)
   - AC: Detect Cloudflare challenge pages in response
   - AC: Detect site-specific error pages (access denied, paywall, etc.)
   - AC: Mark download as failed when HTML detected
   - AC: Move to next download link automatically on HTML detection
-- [ ] **File size validation**
+- [x] **File size validation** ✅
   - AC: Compare downloaded size vs Content-Length header
   - AC: Reject suspiciously small files (< 100KB for comics)
   - AC: Log size mismatch as potential partial download

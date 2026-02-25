@@ -305,6 +305,11 @@ public enum DdlDownloadFailureReason
     VerificationFailed = 34,
     
     /// <summary>
+    /// Downloaded file is not a valid comic archive format (CBZ/CBR/PDF/CB7).
+    /// </summary>
+    InvalidFormat = 35,
+    
+    /// <summary>
     /// Disk full or write error.
     /// </summary>
     DiskError = 40,
