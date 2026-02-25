@@ -12,6 +12,7 @@ public record StagedItemDto
     public ParsedComicInfoDto? ParsedInfo { get; init; }
     public int ParseConfidence { get; init; }
     public int? SuggestedSeriesId { get; init; }
+    public string? SuggestedSeriesTitle { get; init; }
     public int? SuggestedEditionId { get; init; }
     public bool IsCollection { get; init; }
     public string? RejectionReason { get; init; }
@@ -26,6 +27,7 @@ public record StagedItemDto
         ParsedInfo = item.ParsedInfo != null ? ParsedComicInfoDto.FromModel(item.ParsedInfo) : null,
         ParseConfidence = item.ParseConfidence,
         SuggestedSeriesId = item.SuggestedSeriesId,
+        SuggestedSeriesTitle = item.SuggestedSeriesTitle,
         SuggestedEditionId = item.SuggestedEditionId,
         IsCollection = item.IsCollection,
         RejectionReason = item.RejectionReason

@@ -415,17 +415,26 @@ public class StagingService : IStagingService
         }
     }
 
-    public Task<bool> UpdateMatchAsync(string sourcePath, int? seriesId, int? issueId, int? editionId, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateMatchAsync(string sourcePath, int? seriesId, int? issueId, int? editionId, CancellationToken cancellationToken = default)
     {
         try
         {
+            string? seriesTitle = null;
+            
+            // Fetch series title if seriesId is provided
+            if (seriesId.HasValue)
+            {
+                var series = await _db.Series.FindAsync(new object[] { seriesId.Value }, cancellationToken);
+                seriesTitle = series?.Title;
+            }
+            
             lock (_overrideLock)
             {
                 if (seriesId.HasValue || issueId.HasValue || editionId.HasValue)
                 {
-                    _matchOverrides[sourcePath] = new MatchOverride(seriesId, issueId, editionId);
-                    _logger.LogInformation("Match updated for {SourcePath}: SeriesId={SeriesId}, IssueId={IssueId}, EditionId={EditionId}",
-                        sourcePath, seriesId, issueId, editionId);
+                    _matchOverrides[sourcePath] = new MatchOverride(seriesId, seriesTitle, issueId, editionId);
+                    _logger.LogInformation("Match updated for {SourcePath}: SeriesId={SeriesId}, SeriesTitle={SeriesTitle}, IssueId={IssueId}, EditionId={EditionId}",
+                        sourcePath, seriesId, seriesTitle, issueId, editionId);
                 }
                 else
                 {
@@ -434,12 +443,12 @@ public class StagingService : IStagingService
                     _logger.LogInformation("Match cleared for {SourcePath}", sourcePath);
                 }
             }
-            return Task.FromResult(true);
+            return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to update match for {SourcePath}", sourcePath);
-            return Task.FromResult(false);
+            return false;
         }
     }
 
@@ -472,6 +481,7 @@ public class StagingService : IStagingService
         if (series != null)
         {
             item.SuggestedSeriesId = series.Id;
+            item.SuggestedSeriesTitle = series.Title;
             var oldConfidence = item.ParseConfidence;
             item.ParseConfidence = Math.Min(100, item.ParseConfidence + 15);
             _logger.LogDebug("Confidence adjusted: {OldConfidence}% → {NewConfidence}%", oldConfidence, item.ParseConfidence);
@@ -540,11 +550,12 @@ public class StagingService : IStagingService
             if (_matchOverrides.TryGetValue(item.Path, out var matchOverride))
             {
                 item.SuggestedSeriesId = matchOverride.SeriesId;
+                item.SuggestedSeriesTitle = matchOverride.SeriesTitle;
                 item.SuggestedEditionId = matchOverride.EditionId;
                 // Note: IssueId is stored but not applied to SuggestedIssueId (not in model yet)
                 item.ParseConfidence = Math.Max(item.ParseConfidence, 80); // Manual match has high confidence
-                _logger.LogDebug("Applied match override for {Path}: SeriesId={SeriesId}, EditionId={EditionId}",
-                    item.Path, matchOverride.SeriesId, matchOverride.EditionId);
+                _logger.LogDebug("Applied match override for {Path}: SeriesId={SeriesId}, SeriesTitle={SeriesTitle}, EditionId={EditionId}",
+                    item.Path, matchOverride.SeriesId, matchOverride.SeriesTitle, matchOverride.EditionId);
             }
         }
     }
@@ -553,7 +564,7 @@ public class StagingService : IStagingService
 /// <summary>
 /// Represents a manual match override for a staged file.
 /// </summary>
-internal record MatchOverride(int? SeriesId, int? IssueId, int? EditionId);
+internal record MatchOverride(int? SeriesId, string? SeriesTitle, int? IssueId, int? EditionId);
 
 
 

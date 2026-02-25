@@ -46,6 +46,11 @@ public class StagedItem
     public int? SuggestedSeriesId { get; set; }
     
     /// <summary>
+    /// Suggested series title (for display).
+    /// </summary>
+    public string? SuggestedSeriesTitle { get; set; }
+    
+    /// <summary>
     /// Suggested edition match (if any).
     /// </summary>
     public int? SuggestedEditionId { get; set; }

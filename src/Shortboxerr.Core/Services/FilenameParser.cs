@@ -108,6 +108,12 @@ public partial class FilenameParser : IFilenameParser
     private static bool IsCollectionFilename(string filename)
     {
         var lower = filename.ToLowerInvariant();
+        
+        // Check if it's DC's Absolute series line (not a collection)
+        var isAbsoluteSeriesLine = Regex.IsMatch(lower, @"^absolute\s+(batman|wonder\s*woman|superman|flash|green\s*lantern|martian\s*manhunter|aquaman|cyborg|power\s*girl)");
+        if (isAbsoluteSeriesLine)
+            return false;
+        
         return CollectionIndicators.Any(ind => lower.Contains(ind));
     }
 
@@ -134,6 +140,11 @@ public partial class FilenameParser : IFilenameParser
 
         // Detect edition type
         var lower = working.ToLowerInvariant();
+        
+        // Check if "Absolute" is part of DC's Absolute line (series name, not edition)
+        // DC's Absolute line: Absolute Batman, Absolute Wonder Woman, Absolute Superman, etc.
+        var isAbsoluteSeriesLine = Regex.IsMatch(lower, @"^absolute\s+(batman|wonder\s*woman|superman|flash|green\s*lantern|martian\s*manhunter|aquaman|cyborg|power\s*girl)");
+        
         if (lower.Contains("omnibus") || lower.Contains("omni"))
             info.EditionIndicator = "Omnibus";
         else if (lower.Contains("hardcover") || lower.Contains(" hc"))
@@ -142,7 +153,7 @@ public partial class FilenameParser : IFilenameParser
             info.EditionIndicator = "TPB";
         else if (lower.Contains("compendium"))
             info.EditionIndicator = "Compendium";
-        else if (lower.Contains("absolute"))
+        else if (lower.Contains("absolute") && !isAbsoluteSeriesLine)
             info.EditionIndicator = "Absolute";
         else if (lower.Contains("deluxe"))
             info.EditionIndicator = "Deluxe";
@@ -151,9 +162,13 @@ public partial class FilenameParser : IFilenameParser
             confidence += 10;
 
         // What remains is likely the series title
-        // Remove edition indicators
+        // Remove edition indicators (but not "absolute" if it's part of DC's Absolute series line)
         foreach (var ind in CollectionIndicators)
         {
+            // Skip "absolute" if it's part of the DC Absolute series line
+            if (ind == "absolute" && isAbsoluteSeriesLine)
+                continue;
+                
             working = Regex.Replace(working, $@"\b{Regex.Escape(ind)}\b", " ", RegexOptions.IgnoreCase);
         }
 
@@ -164,7 +179,18 @@ public partial class FilenameParser : IFilenameParser
     {
         // Common patterns: "Series Name #123", "Series Name 123", "Series Name - 123"
         
-        // Try hash pattern first: "Title #123" or "Title #123.1"
+        // Handle "Issue #X" pattern (common from ReadComicOnline)
+        // e.g., "Absolute Martian Manhunter Issue #9" -> series="Absolute Martian Manhunter", issue=9
+        var issueWordMatch = IssueWordPattern().Match(working);
+        if (issueWordMatch.Success)
+        {
+            info.IssueNumber = decimal.Parse(issueWordMatch.Groups[1].Value);
+            info.SeriesTitle = working[..issueWordMatch.Index].Trim();
+            confidence += 25;
+            return;
+        }
+        
+        // Try hash pattern: "Title #123" or "Title #123.1"
         var hashMatch = IssueHashPattern().Match(working);
         if (hashMatch.Success)
         {
@@ -223,6 +249,9 @@ public partial class FilenameParser : IFilenameParser
 
     [GeneratedRegex(@"#\s*(\d+(?:\.\d+)?)", RegexOptions.IgnoreCase)]
     private static partial Regex IssueHashPattern();
+
+    [GeneratedRegex(@"\bIssue\s*#?\s*(\d+(?:\.\d+)?)", RegexOptions.IgnoreCase)]
+    private static partial Regex IssueWordPattern();
 
     [GeneratedRegex(@"v(\d+)\s*(?:#?\s*(\d+(?:\.\d+)?))?", RegexOptions.IgnoreCase)]
     private static partial Regex VolumeIssuePattern();
