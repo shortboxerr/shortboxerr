@@ -119,5 +119,15 @@ public static class ActivityEndpoints
         .WithName("ClearCompletedHistory")
         .WithSummary("Clears all completed downloads from history")
         .Produces<object>();
+
+        // DELETE /api/v1/activity/history - Clear all history
+        group.MapDelete("/history", async (IActivityService activityService, CancellationToken ct) =>
+        {
+            var count = await activityService.ClearAllHistoryAsync(ct);
+            return Results.Ok(new { success = true, removedCount = count });
+        })
+        .WithName("ClearAllHistory")
+        .WithSummary("Clears all download history (completed, failed, and cancelled)")
+        .Produces<object>();
     }
 }

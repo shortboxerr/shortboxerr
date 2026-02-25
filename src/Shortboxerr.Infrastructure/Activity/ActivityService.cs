@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Shortboxerr.Core.Activity;
+using Shortboxerr.Core.Ddl;
+using Shortboxerr.Core.Entities;
 using Shortboxerr.Core.Providers;
 
 namespace Shortboxerr.Infrastructure.Activity;
@@ -11,18 +13,24 @@ namespace Shortboxerr.Infrastructure.Activity;
 public class ActivityService : IActivityService
 {
     private readonly IProviderManager _providerManager;
+    private readonly IDdlDownloadService? _ddlDownloadService;
+    private readonly IDownloadHistoryService? _downloadHistoryService;
     private readonly ILogger<ActivityService>? _logger;
 
-    // In-memory history for recently completed/failed downloads
-    // Static to share across all scoped instances (since DdlDownloadService resolves in different scopes)
-    // In a production system, this would be persisted to the database
-    private static readonly List<DownloadActivity> _history = new();
+    // In-memory history for session-only items (will be backed by DB for persistence)
+    private static readonly List<DownloadActivity> _sessionHistory = new();
     private static readonly object _historyLock = new();
     private const int MaxHistoryItems = 100;
 
-    public ActivityService(IProviderManager providerManager, ILogger<ActivityService>? logger = null)
+    public ActivityService(
+        IProviderManager providerManager, 
+        IDdlDownloadService? ddlDownloadService = null,
+        IDownloadHistoryService? downloadHistoryService = null,
+        ILogger<ActivityService>? logger = null)
     {
         _providerManager = providerManager;
+        _ddlDownloadService = ddlDownloadService;
+        _downloadHistoryService = downloadHistoryService;
         _logger = logger;
     }
 
@@ -32,7 +40,24 @@ public class ActivityService : IActivityService
 
         try
         {
-            // Get all enabled download providers
+            // Get DDL active downloads
+            if (_ddlDownloadService != null)
+            {
+                try
+                {
+                    var ddlDownloads = _ddlDownloadService.GetActiveDownloads();
+                    foreach (var ddl in ddlDownloads)
+                    {
+                        activities.Add(MapDdlToActivity(ddl));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogWarning(ex, "Failed to get active DDL downloads");
+                }
+            }
+
+            // Get all enabled download providers (NZB, Torrent)
             var providers = await _providerManager.GetDownloadClientsAsync(cancellationToken);
 
             foreach (var provider in providers)
@@ -60,16 +85,39 @@ public class ActivityService : IActivityService
         return activities.OrderByDescending(a => a.StartedAt).ToList();
     }
 
-    public Task<IReadOnlyList<DownloadActivity>> GetRecentHistoryAsync(int limit = 50, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<DownloadActivity>> GetRecentHistoryAsync(int limit = 50, CancellationToken cancellationToken = default)
     {
+        var allHistory = new List<DownloadActivity>();
+        
+        // Include session history (non-persisted items)
         lock (_historyLock)
         {
-            var result = _history
-                .OrderByDescending(a => a.CompletedAt ?? a.StartedAt)
-                .Take(limit)
-                .ToList();
-            return Task.FromResult<IReadOnlyList<DownloadActivity>>(result);
+            allHistory.AddRange(_sessionHistory);
         }
+        
+        // Include persisted database history
+        if (_downloadHistoryService != null)
+        {
+            try
+            {
+                var dbHistory = await _downloadHistoryService.GetRecentAsync(limit, cancellationToken);
+                foreach (var entry in dbHistory)
+                {
+                    allHistory.Add(MapDbHistoryToActivity(entry));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Failed to get persisted download history");
+            }
+        }
+        
+        var result = allHistory
+            .DistinctBy(a => a.Id)
+            .OrderByDescending(a => a.CompletedAt ?? a.StartedAt)
+            .Take(limit)
+            .ToList();
+        return result;
     }
 
     public async Task<DownloadActivity?> GetByIdAsync(string downloadId, CancellationToken cancellationToken = default)
@@ -83,7 +131,7 @@ public class ActivityService : IActivityService
         // Check history
         lock (_historyLock)
         {
-            return _history.FirstOrDefault(a => a.Id == downloadId);
+            return _sessionHistory.FirstOrDefault(a => a.Id == downloadId);
         }
     }
 
@@ -94,7 +142,7 @@ public class ActivityService : IActivityService
         IReadOnlyList<DownloadActivity> history;
         lock (_historyLock)
         {
-            history = _history.ToList();
+            history = _sessionHistory.ToList();
         }
 
         var downloading = active.Where(a => a.State == ActivityState.Downloading).ToList();
@@ -173,47 +221,90 @@ public class ActivityService : IActivityService
         return Task.FromResult(false);
     }
 
-    public Task<bool> RemoveFromHistoryAsync(string downloadId, CancellationToken cancellationToken = default)
+    public async Task<bool> RemoveFromHistoryAsync(string downloadId, CancellationToken cancellationToken = default)
     {
+        // Remove from session history
         lock (_historyLock)
         {
-            var item = _history.FirstOrDefault(a => a.Id == downloadId);
+            var item = _sessionHistory.FirstOrDefault(a => a.Id == downloadId);
             if (item != null)
             {
-                _history.Remove(item);
-                return Task.FromResult(true);
+                _sessionHistory.Remove(item);
             }
         }
-        return Task.FromResult(false);
+        
+        // Also try to find and remove from persisted history
+        if (_downloadHistoryService != null)
+        {
+            var entry = await _downloadHistoryService.GetByDownloadIdAsync(downloadId, cancellationToken);
+            if (entry != null)
+            {
+                await _downloadHistoryService.RemoveAsync(entry.Id, cancellationToken);
+                return true;
+            }
+        }
+        return false;
     }
 
-    public Task<int> ClearCompletedAsync(CancellationToken cancellationToken = default)
+    public async Task<int> ClearCompletedAsync(CancellationToken cancellationToken = default)
     {
+        var count = 0;
+        
+        // Clear session history
         lock (_historyLock)
         {
-            var completed = _history.Where(a => a.State == ActivityState.Completed).ToList();
+            var completed = _sessionHistory.Where(a => a.State == ActivityState.Completed).ToList();
             foreach (var item in completed)
             {
-                _history.Remove(item);
+                _sessionHistory.Remove(item);
             }
-            return Task.FromResult(completed.Count);
+            count = completed.Count;
         }
+        
+        // Clear persisted history
+        if (_downloadHistoryService != null)
+        {
+            count += await _downloadHistoryService.ClearCompletedAsync(cancellationToken);
+        }
+        
+        return count;
+    }
+
+    public async Task<int> ClearAllHistoryAsync(CancellationToken cancellationToken = default)
+    {
+        var count = 0;
+        
+        // Clear all session history
+        lock (_historyLock)
+        {
+            count = _sessionHistory.Count;
+            _sessionHistory.Clear();
+        }
+        
+        // Clear all persisted history
+        if (_downloadHistoryService != null)
+        {
+            count += await _downloadHistoryService.ClearAllAsync(cancellationToken);
+        }
+        
+        return count;
     }
 
     /// <summary>
-    /// Adds a completed/failed activity to history.
+    /// Adds a completed/failed activity to session history.
     /// Called by download services when downloads complete.
+    /// Note: Persistence to DB is handled by the download service directly.
     /// </summary>
     public void AddToHistory(DownloadActivity activity)
     {
         lock (_historyLock)
         {
-            _history.Insert(0, activity);
+            _sessionHistory.Insert(0, activity);
 
-            // Trim history if too large
-            while (_history.Count > MaxHistoryItems)
+            // Trim session history if too large
+            while (_sessionHistory.Count > MaxHistoryItems)
             {
-                _history.RemoveAt(_history.Count - 1);
+                _sessionHistory.RemoveAt(_sessionHistory.Count - 1);
             }
         }
     }
@@ -255,6 +346,105 @@ public class ActivityService : IActivityService
             RetryCount = status.RetryCount,
             OutputPath = status.OutputPath,
             SourceUrl = status.SourceUrl
+        };
+    }
+
+    private static DownloadActivity MapDdlToActivity(DdlDownloadStatus ddl)
+    {
+        var state = ddl.State switch
+        {
+            DdlDownloadState.Queued => ActivityState.Queued,
+            DdlDownloadState.Downloading => ActivityState.Downloading,
+            DdlDownloadState.Completed => ActivityState.Completed,
+            DdlDownloadState.Failed => ActivityState.Failed,
+            DdlDownloadState.Cancelled => ActivityState.Cancelled,
+            DdlDownloadState.Retrying => ActivityState.Retrying,
+            DdlDownloadState.Stalled => ActivityState.Stalled,
+            _ => ActivityState.Downloading
+        };
+
+        // Calculate speed and ETA
+        long? speed = ddl.BytesPerSecond > 0 ? (long)ddl.BytesPerSecond : null;
+        TimeSpan? eta = null;
+        if (ddl.BytesPerSecond > 0 && ddl.TotalBytes.HasValue && ddl.TotalBytes.Value > 0 && ddl.BytesDownloaded < ddl.TotalBytes.Value)
+        {
+            var remaining = ddl.TotalBytes.Value - ddl.BytesDownloaded;
+            eta = TimeSpan.FromSeconds(remaining / ddl.BytesPerSecond);
+        }
+
+        return new DownloadActivity
+        {
+            Id = ddl.DownloadId,
+            SourceType = DownloadSourceType.Ddl,
+            ClientName = "DDL",
+            Title = System.IO.Path.GetFileNameWithoutExtension(ddl.DestinationPath) ?? ddl.DownloadId,
+            State = state,
+            Progress = ddl.ProgressPercent,
+            TotalBytes = ddl.TotalBytes,
+            DownloadedBytes = ddl.BytesDownloaded,
+            SpeedBytesPerSecond = speed,
+            EstimatedTimeRemaining = eta,
+            StartedAt = ddl.StartedAt,
+            ErrorMessage = ddl.LastError,
+            RetryCount = ddl.CurrentRetry,
+            OutputPath = ddl.DestinationPath,
+            SourceUrl = ddl.SourceUrl
+        };
+    }
+
+    private static DownloadActivity MapDdlHistoryToActivity(DdlDownloadHistoryEntry entry)
+    {
+        var state = entry.Success ? ActivityState.Completed : 
+            (entry.FailureReason == DdlDownloadFailureReason.Cancelled ? ActivityState.Cancelled : ActivityState.Failed);
+
+        return new DownloadActivity
+        {
+            Id = entry.DownloadId,
+            SourceType = DownloadSourceType.Ddl,
+            ClientName = entry.SourceSite ?? "DDL",
+            Title = entry.ReleaseTitle ?? System.IO.Path.GetFileNameWithoutExtension(entry.DestinationPath) ?? entry.DownloadId,
+            State = state,
+            Progress = entry.Success ? 100 : 0,
+            TotalBytes = entry.FileSize > 0 ? entry.FileSize : null,
+            DownloadedBytes = entry.Success ? entry.FileSize : 0,
+            StartedAt = entry.StartedAt,
+            CompletedAt = entry.CompletedAt,
+            ErrorMessage = entry.ErrorMessage,
+            RetryCount = entry.RetryAttempts,
+            OutputPath = entry.DestinationPath,
+            SourceUrl = entry.SourceUrl
+        };
+    }
+
+    private static DownloadActivity MapDbHistoryToActivity(DownloadHistory entry)
+    {
+        var state = entry.State switch
+        {
+            DownloadHistoryState.Completed => ActivityState.Completed,
+            DownloadHistoryState.Failed => ActivityState.Failed,
+            DownloadHistoryState.Cancelled => ActivityState.Cancelled,
+            _ => ActivityState.Failed
+        };
+
+        return new DownloadActivity
+        {
+            Id = entry.DownloadId,
+            SourceType = entry.SourceType,
+            ClientName = entry.SourceSite ?? entry.SourceType.ToString(),
+            Title = entry.Title,
+            State = state,
+            Progress = entry.Success ? 100 : 0,
+            TotalBytes = entry.FileSize > 0 ? entry.FileSize : null,
+            DownloadedBytes = entry.Success ? entry.FileSize : 0,
+            SpeedBytesPerSecond = entry.AverageSpeedBytesPerSecond.HasValue ? (long)entry.AverageSpeedBytesPerSecond.Value : null,
+            StartedAt = entry.StartedAt,
+            CompletedAt = entry.CompletedAt,
+            ErrorMessage = entry.ErrorMessage,
+            RetryCount = entry.RetryAttempts,
+            OutputPath = entry.DestinationPath,
+            SourceUrl = entry.SourceUrl,
+            SeriesId = entry.SeriesId,
+            IssueId = entry.IssueId
         };
     }
 

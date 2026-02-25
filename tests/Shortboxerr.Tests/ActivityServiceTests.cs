@@ -17,7 +17,11 @@ public class ActivityServiceTests
     {
         _providerManagerMock = new Mock<IProviderManager>();
         _loggerMock = new Mock<ILogger<ActivityService>>();
-        _service = new ActivityService(_providerManagerMock.Object, _loggerMock.Object);
+        _service = new ActivityService(
+            _providerManagerMock.Object, 
+            ddlDownloadService: null, 
+            downloadHistoryService: null,
+            _loggerMock.Object);
     }
 
     #region GetActiveDownloadsAsync Tests

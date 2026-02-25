@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shortboxerr.Core.Activity;
 using Shortboxerr.Core.Ddl;
+using Shortboxerr.Core.Entities;
 
 namespace Shortboxerr.Infrastructure.Ddl;
 
@@ -258,10 +259,57 @@ public class DdlDownloadService : IDdlDownloadService
         return false;
     }
 
+    public async Task<DdlDownloadResult?> RetryDownloadAsync(string downloadId, CancellationToken cancellationToken = default)
+    {
+        // Find the download in active downloads or history
+        if (_activeDownloads.TryGetValue(downloadId, out var status))
+        {
+            // Can only retry stalled or failed downloads
+            if (status.State is not (DdlDownloadState.Stalled or DdlDownloadState.Failed))
+            {
+                _logger?.LogWarning("Cannot retry download {DownloadId} in state {State}", downloadId, status.State);
+                return null;
+            }
+            
+            // Cancel the existing download first
+            CancelDownload(downloadId);
+            
+            // Re-download with resume enabled
+            var options = new DdlDownloadOptions
+            {
+                EnableResume = true,
+                DestinationFolder = Path.GetDirectoryName(status.DestinationPath)
+            };
+            
+            return await DownloadUrlAsync(status.SourceUrl, status.DestinationPath, options, cancellationToken);
+        }
+        
+        // Check history for failed downloads
+        DdlDownloadHistoryEntry? historyEntry;
+        lock (_historyLock)
+        {
+            historyEntry = _downloadHistory.FirstOrDefault(h => h.DownloadId == downloadId);
+        }
+        
+        if (historyEntry != null && !historyEntry.Success && historyEntry.DestinationPath != null)
+        {
+            var options = new DdlDownloadOptions
+            {
+                EnableResume = true,
+                DestinationFolder = Path.GetDirectoryName(historyEntry.DestinationPath)
+            };
+            
+            return await DownloadUrlAsync(historyEntry.SourceUrl, historyEntry.DestinationPath, options, cancellationToken);
+        }
+        
+        _logger?.LogWarning("Download {DownloadId} not found for retry", downloadId);
+        return null;
+    }
+
     public IReadOnlyList<DdlDownloadStatus> GetActiveDownloads()
     {
         return _activeDownloads.Values
-            .Where(d => d.State is DdlDownloadState.Queued or DdlDownloadState.Connecting or DdlDownloadState.Downloading or DdlDownloadState.Retrying)
+            .Where(d => d.State is DdlDownloadState.Queued or DdlDownloadState.Connecting or DdlDownloadState.Downloading or DdlDownloadState.Retrying or DdlDownloadState.Stalled)
             .ToList();
     }
 
@@ -274,6 +322,15 @@ public class DdlDownloadService : IDdlDownloadService
                 .Take(limit)
                 .ToList();
         }
+    }
+
+    public void ClearHistory()
+    {
+        lock (_historyLock)
+        {
+            _downloadHistory.Clear();
+        }
+        _logger?.LogInformation("DDL download history cleared");
     }
 
     public async Task<bool> CanResumeAsync(string url, string destinationPath)
@@ -476,13 +533,39 @@ public class DdlDownloadService : IDdlDownloadService
             var lastBytesForSpeed = startPosition;
             var lastTimeForSpeed = stopwatch.Elapsed;
             
+            // Stall detection
+            var lastDataReceivedTime = DateTime.UtcNow;
+            var stallTimeoutMs = options.StallTimeoutSeconds * 1000;
+            var minSpeedBytes = options.MinSpeedBytesPerSecond;
+            var lowSpeedStartTime = (DateTime?)null;
+            
             while (true)
             {
-                var read = await contentStream.ReadAsync(buffer, cancellationToken);
+                // Use a read timeout to enable stall detection
+                using var readCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                readCts.CancelAfter(TimeSpan.FromSeconds(Math.Max(options.StallTimeoutSeconds, 10)));
+                
+                int read;
+                try
+                {
+                    read = await contentStream.ReadAsync(buffer, readCts.Token);
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                {
+                    // Read timed out - download has stalled
+                    var stallDuration = DateTime.UtcNow - lastDataReceivedTime;
+                    _logger?.LogWarning("Download stalled - no data received for {Duration:F1} seconds", stallDuration.TotalSeconds);
+                    status.State = DdlDownloadState.Stalled;
+                    throw new DdlStalledException($"Download stalled - no data received for {stallDuration.TotalSeconds:F0} seconds");
+                }
+                
                 if (read == 0)
                 {
                     break;
                 }
+                
+                // Data received - reset stall timer
+                lastDataReceivedTime = DateTime.UtcNow;
                 
                 await fileStream.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
                 bytesRead += read;
@@ -497,6 +580,25 @@ public class DdlDownloadService : IDdlDownloadService
                     status.BytesPerSecond = bytesDiff / timeDiff;
                     lastBytesForSpeed = status.BytesDownloaded;
                     lastTimeForSpeed = elapsed;
+                    
+                    // Check for low speed stall
+                    if (status.BytesPerSecond < minSpeedBytes)
+                    {
+                        lowSpeedStartTime ??= DateTime.UtcNow;
+                        var lowSpeedDuration = (DateTime.UtcNow - lowSpeedStartTime.Value).TotalSeconds;
+                        
+                        if (lowSpeedDuration >= options.StallTimeoutSeconds)
+                        {
+                            _logger?.LogWarning("Download stalled - speed below {MinSpeed} B/s for {Duration:F1} seconds", 
+                                minSpeedBytes, lowSpeedDuration);
+                            status.State = DdlDownloadState.Stalled;
+                            throw new DdlStalledException($"Download stalled - speed below {minSpeedBytes} B/s for {lowSpeedDuration:F0} seconds");
+                        }
+                    }
+                    else
+                    {
+                        lowSpeedStartTime = null; // Reset low speed timer
+                    }
                 }
                 
                 // Report progress
@@ -768,6 +870,7 @@ public class DdlDownloadService : IDdlDownloadService
         return reason switch
         {
             DdlDownloadFailureReason.Timeout => true,
+            DdlDownloadFailureReason.Stalled => true,  // Retry stalled downloads
             DdlDownloadFailureReason.ConnectionFailed => true,
             DdlDownloadFailureReason.DnsFailure => true,
             DdlDownloadFailureReason.ServerError => true,
@@ -792,6 +895,7 @@ public class DdlDownloadService : IDdlDownloadService
     {
         return ex switch
         {
+            DdlStalledException => DdlDownloadFailureReason.Stalled,
             TaskCanceledException or OperationCanceledException => DdlDownloadFailureReason.Timeout,
             HttpRequestException httpEx when httpEx.Message.Contains("Name or service not known") => DdlDownloadFailureReason.DnsFailure,
             HttpRequestException => DdlDownloadFailureReason.ConnectionFailed,
@@ -861,46 +965,75 @@ public class DdlDownloadService : IDdlDownloadService
             }
         }
         
-        // Also add to unified activity service for Activity page visibility
-        // Use service locator pattern since ActivityService is scoped and this service is singleton
+        // Persist to database for history that survives restarts
+        // Fire and forget - don't block the download completion
         if (_serviceProvider != null)
         {
-            try
+            _ = Task.Run(async () =>
             {
-                using var scope = _serviceProvider.CreateScope();
-                var activityService = scope.ServiceProvider.GetService<IActivityService>();
-                if (activityService != null)
+                try
                 {
-                    activityService.AddToHistory(new DownloadActivity
+                    using var scope = _serviceProvider.CreateScope();
+                    
+                    // Persist to database
+                    var historyService = scope.ServiceProvider.GetService<IDownloadHistoryService>();
+                    if (historyService != null)
                     {
-                        Id = result.DownloadId,
-                        SourceType = DownloadSourceType.Ddl,
-                        ClientName = "DDL",
-                        Title = candidate.ReleaseTitle,
-                        State = result.Success ? ActivityState.Completed : ActivityState.Failed,
-                        Progress = result.Success ? 100 : 0,
-                        TotalBytes = result.FileSize > 0 ? result.FileSize : null,
-                        DownloadedBytes = result.FileSize,
-                        StartedAt = startedAt,
-                        CompletedAt = completedAt,
-                        ErrorMessage = result.ErrorMessage,
-                        RetryCount = result.RetryAttempts,
-                        OutputPath = result.FilePath,
-                        SourceUrl = result.SourceUrl ?? candidate.DownloadLinks.FirstOrDefault()?.Url,
-                        Category = candidate.SourceSite
-                    });
-                    _logger?.LogInformation("Added download to activity history: {Title}, Success: {Success}", 
-                        candidate.ReleaseTitle, result.Success);
+                        var historyState = result.Success ? DownloadHistoryState.Completed :
+                            (result.FailureReason == DdlDownloadFailureReason.Cancelled ? DownloadHistoryState.Cancelled : DownloadHistoryState.Failed);
+                        
+                        await historyService.AddAsync(new DownloadHistory
+                        {
+                            DownloadId = result.DownloadId,
+                            SourceType = DownloadSourceType.Ddl,
+                            SourceSite = candidate.SourceSite,
+                            SourceUrl = result.SourceUrl ?? candidate.DownloadLinks.FirstOrDefault()?.Url,
+                            Title = candidate.ReleaseTitle,
+                            DestinationPath = result.FilePath,
+                            FileSize = result.FileSize,
+                            Success = result.Success,
+                            State = historyState,
+                            FailureReason = result.Success ? null : result.FailureReason.ToString(),
+                            ErrorMessage = result.ErrorMessage,
+                            RetryAttempts = result.RetryAttempts,
+                            DurationMs = (long)result.Duration.TotalMilliseconds,
+                            AverageSpeedBytesPerSecond = result.BytesPerSecond,
+                            StartedAt = startedAt,
+                            CompletedAt = completedAt
+                        });
+                        _logger?.LogInformation("Persisted download history: {Title}, Success: {Success}", 
+                            candidate.ReleaseTitle, result.Success);
+                    }
+                    
+                    // Also add to in-memory activity service for immediate visibility
+                    var activityService = scope.ServiceProvider.GetService<IActivityService>();
+                    if (activityService != null)
+                    {
+                        activityService.AddToHistory(new DownloadActivity
+                        {
+                            Id = result.DownloadId,
+                            SourceType = DownloadSourceType.Ddl,
+                            ClientName = "DDL",
+                            Title = candidate.ReleaseTitle,
+                            State = result.Success ? ActivityState.Completed : ActivityState.Failed,
+                            Progress = result.Success ? 100 : 0,
+                            TotalBytes = result.FileSize > 0 ? result.FileSize : null,
+                            DownloadedBytes = result.FileSize,
+                            StartedAt = startedAt,
+                            CompletedAt = completedAt,
+                            ErrorMessage = result.ErrorMessage,
+                            RetryCount = result.RetryAttempts,
+                            OutputPath = result.FilePath,
+                            SourceUrl = result.SourceUrl ?? candidate.DownloadLinks.FirstOrDefault()?.Url,
+                            Category = candidate.SourceSite
+                        });
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    _logger?.LogWarning("ActivityService not available - could not record download history");
+                    _logger?.LogWarning(ex, "Failed to add download to history");
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogWarning(ex, "Failed to add download to activity history");
-            }
+            });
         }
     }
 

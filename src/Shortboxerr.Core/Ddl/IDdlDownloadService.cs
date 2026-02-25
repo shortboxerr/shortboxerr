@@ -27,6 +27,11 @@ public interface IDdlDownloadService
     bool CancelDownload(string downloadId);
     
     /// <summary>
+    /// Retry a failed or stalled download.
+    /// </summary>
+    Task<DdlDownloadResult?> RetryDownloadAsync(string downloadId, CancellationToken cancellationToken = default);
+    
+    /// <summary>
     /// Get all active downloads.
     /// </summary>
     IReadOnlyList<DdlDownloadStatus> GetActiveDownloads();
@@ -35,6 +40,11 @@ public interface IDdlDownloadService
     /// Get recent download history.
     /// </summary>
     IReadOnlyList<DdlDownloadHistoryEntry> GetDownloadHistory(int limit = 50);
+    
+    /// <summary>
+    /// Clear all download history (in-memory).
+    /// </summary>
+    void ClearHistory();
     
     /// <summary>
     /// Check if a URL can be resumed (partial download exists).
@@ -77,6 +87,18 @@ public class DdlDownloadOptions
     /// Request timeout in seconds.
     /// </summary>
     public int TimeoutSeconds { get; set; } = 300; // 5 minutes
+    
+    /// <summary>
+    /// Stall detection timeout in seconds. If no data is received for this
+    /// duration, the download is considered stalled and will be retried.
+    /// </summary>
+    public int StallTimeoutSeconds { get; set; } = 30;
+    
+    /// <summary>
+    /// Minimum speed in bytes per second. If speed drops below this for
+    /// StallTimeoutSeconds, the download is considered stalled.
+    /// </summary>
+    public int MinSpeedBytesPerSecond { get; set; } = 1024; // 1 KB/s
     
     /// <summary>
     /// Whether to attempt resuming partial downloads.
@@ -243,6 +265,11 @@ public enum DdlDownloadFailureReason
     /// Network timeout.
     /// </summary>
     Timeout = 10,
+    
+    /// <summary>
+    /// Download stalled (no data received for extended period).
+    /// </summary>
+    Stalled = 13,
     
     /// <summary>
     /// Connection failed.
@@ -449,7 +476,21 @@ public enum DdlDownloadState
     /// <summary>
     /// Cancelled.
     /// </summary>
-    Cancelled = 12
+    Cancelled = 12,
+    
+    /// <summary>
+    /// Stalled (no data received or very slow speed).
+    /// </summary>
+    Stalled = 13
+}
+
+/// <summary>
+/// Exception thrown when a download stalls.
+/// </summary>
+public class DdlStalledException : Exception
+{
+    public DdlStalledException(string message) : base(message) { }
+    public DdlStalledException(string message, Exception inner) : base(message, inner) { }
 }
 
 /// <summary>
