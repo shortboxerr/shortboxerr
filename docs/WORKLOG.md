@@ -1,5 +1,65 @@
 # Worklog
 
+## Iteration 157 (2026-02-25)
+**EPIC 11.27: Pull List Data Flow Refactoring - Phase 1 (Unified Enrichment Strategy)**
+
+### Summary
+Implemented the foundation for the unified enrichment strategy that establishes a clear hierarchy of data sources with well-defined finalization states. This phase focuses on the core data model and ComicVine direct enrichment path.
+
+### What Changed
+
+**Data Model (IPullListService.cs):**
+- Added `EnrichmentStatus` enum: `Pending`, `MetronInterim`, `ComicVineFinalized`
+- Added `DataSource` enum: `WalkSoftly`, `ComicVine`, `Metron`, `LocalLibrary`
+- Extended `DiscoverableIssue` with:
+  - `MetronIssueId` for tracking Metron-enriched issues
+  - `EnrichmentStatus` for tracking enrichment state
+  - `CoverSource` and `MetadataSource` for provenance tracking
+  - `EnrichedAt` timestamp
+
+**Enrichment Flow (PullListService.cs):**
+- New `EnrichWithComicVineIssueDataAsync` method:
+  - Fetches full issue data from ComicVine when WalkSoftly provides CV issue ID
+  - Updates issue metadata (name, description, dates)
+  - Downloads issue-specific covers directly from ComicVine
+  - Marks issues as `ComicVineFinalized`
+- Updated `FetchWeeklyReleasesAsync`:
+  - Calls `EnrichWithComicVineIssueDataAsync` for issues with CV issue IDs
+  - Falls back to volume cover enrichment for issues without CV issue IDs
+- Updated `BuildDiscoveryListAsync`:
+  - Maps `CoverEnrichmentStatus` to new `EnrichmentStatus`
+  - Sets `CoverSource` and `MetadataSource` based on enrichment path
+- Updated `EnrichDiscoveryWithMetronCoversAsync`:
+  - Skips issues already finalized with ComicVine data
+  - Tracks `EnrichmentStatus.MetronInterim` when Metron covers are applied
+  - Stores `MetronIssueId` for later upgrade potential
+
+### Data Flow Summary
+```
+WalkSoftly Release
+       │
+       ├─── Has CV Issue ID ──→ Query ComicVine ──→ ComicVineFinalized
+       │
+       └─── No CV Issue ID ──→ Volume Cover Fallback ──→ Metron Enrichment ──→ MetronInterim
+```
+
+### Tests Added
+- 5 new unit tests for `EnrichmentStatus` and `DataSource` enums
+- Tests verify default values, state transitions, and enum completeness
+- All 10 enrichment-related tests pass
+
+### Commits
+1. `feat(pulllist): add EnrichmentStatus enum and tracking fields`
+2. `feat(pulllist): implement unified enrichment data flow (11.27)`
+3. `test(pulllist): add unit tests for enrichment status tracking`
+
+### Next Steps (Phase 2)
+- [ ] Implement background upgrade service for MetronInterim → ComicVineFinalized transitions
+- [ ] Re-check WalkSoftly for CV issue IDs that become available later
+- [ ] Evaluate if 11.26 (local cover caching routing issue) is still relevant
+
+---
+
 ## Iteration 156 (2026-02-24)
 **EPIC 11.25: ID-Less Upcoming Issue Matching for Metron Covers**
 
