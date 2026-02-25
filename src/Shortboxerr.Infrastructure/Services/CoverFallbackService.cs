@@ -10,9 +10,10 @@ namespace Shortboxerr.Infrastructure.Services;
 /// Implements cover image fallback logic, querying multiple sources in priority order.
 /// 
 /// Priority:
-/// 1. Metron via ComicVine ID lookup (official API, preferred - uses cv_id for exact matching)
-/// 2. Metron via series name/issue number search (fallback when CV ID not available)
-/// 3. ComicVine volume cover (final fallback, always available)
+/// 1. Metron via ComicVine issue ID lookup (exact matching via cv_id field)
+/// 2. Metron via ComicVine volume ID + issue number (series ID mapping then issue lookup)
+/// 3. Metron via series name/issue number search (fuzzy fallback when IDs not available)
+/// 4. ComicVine volume cover (final fallback, always available)
 /// </summary>
 public class CoverFallbackService : ICoverFallbackService
 {
@@ -45,7 +46,10 @@ public class CoverFallbackService : ICoverFallbackService
 
     public async Task<CoverFallbackResult> GetCoverByCvIdAsync(
         int comicVineIssueId,
+        int? comicVineVolumeId = null,
+        string? issueNumber = null,
         string? volumeCoverUrl = null,
+        bool bypassCache = false,
         CancellationToken cancellationToken = default)
     {
         Interlocked.Increment(ref _totalRequests);
@@ -53,7 +57,7 @@ public class CoverFallbackService : ICoverFallbackService
 
         var cacheKey = GenerateCacheKey(comicVineIssueId);
 
-        if (_cache.TryGetValue(cacheKey, out CoverFallbackResult? cachedResult) && cachedResult != null)
+        if (!bypassCache && _cache.TryGetValue(cacheKey, out CoverFallbackResult? cachedResult) && cachedResult != null)
         {
             Interlocked.Increment(ref _cacheHits);
             cachedResult.FromCache = true;
@@ -67,28 +71,52 @@ public class CoverFallbackService : ICoverFallbackService
             return cachedResult;
         }
 
-        _logger.LogDebug("Cover fallback lookup for CV ID {CvId}", comicVineIssueId);
+        _logger.LogDebug("Cover fallback lookup for CV ID {CvId} (bypassCache: {Bypass})", comicVineIssueId, bypassCache);
 
         CoverFallbackResult result;
 
+        // Priority 1: Try Metron by CV issue ID
         try
         {
-            result = await TryMetronByCvIdAsync(comicVineIssueId, cancellationToken);
+            result = await TryMetronByCvIdAsync(comicVineIssueId, bypassCache, cancellationToken);
 
             if (result.Success)
             {
                 Interlocked.Increment(ref _metronHits);
                 _logger.LogInformation(
-                    "Cover found via Metron for CV ID {CvId}",
+                    "Cover found via Metron CV issue ID for {CvId}",
                     comicVineIssueId);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Metron fallback failed for CV ID {CvId}", comicVineIssueId);
+            _logger.LogWarning(ex, "Metron CV issue ID lookup failed for {CvId}", comicVineIssueId);
             result = CoverFallbackResult.NotFound();
         }
 
+        // Priority 2: Try Metron by CV volume ID + issue number
+        if (!result.Success && comicVineVolumeId.HasValue && !string.IsNullOrEmpty(issueNumber))
+        {
+            try
+            {
+                result = await TryMetronByCvVolumeIdAsync(comicVineVolumeId.Value, issueNumber, bypassCache, cancellationToken);
+
+                if (result.Success)
+                {
+                    Interlocked.Increment(ref _metronHits);
+                    _logger.LogInformation(
+                        "Cover found via Metron CV volume ID {VolumeId} + issue #{Number} for CV issue {CvId}",
+                        comicVineVolumeId, issueNumber, comicVineIssueId);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Metron CV volume ID lookup failed for volume {VolumeId} issue {Number}", 
+                    comicVineVolumeId, issueNumber);
+            }
+        }
+
+        // Priority 3: Volume cover fallback
         if (!result.Success && !string.IsNullOrEmpty(volumeCoverUrl))
         {
             Interlocked.Increment(ref _volumeHits);
@@ -122,9 +150,11 @@ public class CoverFallbackService : ICoverFallbackService
     public async Task<CoverFallbackResult> GetCoverAsync(
         string seriesName,
         string issueNumber,
+        int? comicVineVolumeId = null,
         string? publisher = null,
         DateTime? expectedStoreDate = null,
         string? volumeCoverUrl = null,
+        bool bypassCache = false,
         CancellationToken cancellationToken = default)
     {
         Interlocked.Increment(ref _totalRequests);
@@ -132,7 +162,7 @@ public class CoverFallbackService : ICoverFallbackService
 
         var cacheKey = GenerateCacheKey(seriesName, issueNumber);
 
-        if (_cache.TryGetValue(cacheKey, out CoverFallbackResult? cachedResult) && cachedResult != null)
+        if (!bypassCache && _cache.TryGetValue(cacheKey, out CoverFallbackResult? cachedResult) && cachedResult != null)
         {
             Interlocked.Increment(ref _cacheHits);
             cachedResult.FromCache = true;
@@ -147,29 +177,56 @@ public class CoverFallbackService : ICoverFallbackService
         }
 
         _logger.LogDebug(
-            "Cover fallback lookup for {Series} #{Issue} (publisher: {Publisher})",
-            seriesName, issueNumber, publisher ?? "unknown");
+            "Cover fallback lookup for {Series} #{Issue} (publisher: {Publisher}, cvVolumeId: {VolumeId}, bypassCache: {Bypass})",
+            seriesName, issueNumber, publisher ?? "unknown", comicVineVolumeId?.ToString() ?? "none", bypassCache);
 
-        CoverFallbackResult result;
+        CoverFallbackResult result = CoverFallbackResult.NotFound();
 
-        try
+        // Priority 1: Try Metron by CV volume ID + issue number (if available)
+        if (comicVineVolumeId.HasValue)
         {
-            result = await TryMetronBySearchAsync(seriesName, issueNumber, publisher, expectedStoreDate, cancellationToken);
-
-            if (result.Success)
+            try
             {
-                Interlocked.Increment(ref _metronHits);
-                _logger.LogInformation(
-                    "Cover found via Metron search for {Series} #{Issue}",
-                    seriesName, issueNumber);
+                result = await TryMetronByCvVolumeIdAsync(comicVineVolumeId.Value, issueNumber, bypassCache, cancellationToken);
+
+                if (result.Success)
+                {
+                    Interlocked.Increment(ref _metronHits);
+                    _logger.LogInformation(
+                        "Cover found via Metron CV volume ID {VolumeId} + issue #{Number} for {Series}",
+                        comicVineVolumeId, issueNumber, seriesName);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Metron CV volume ID lookup failed for volume {VolumeId} issue {Number}", 
+                    comicVineVolumeId, issueNumber);
             }
         }
-        catch (Exception ex)
+
+        // Priority 2: Try Metron by series name/issue number search
+        if (!result.Success)
         {
-            _logger.LogWarning(ex, "Metron fallback failed for {Series} #{Issue}", seriesName, issueNumber);
-            result = CoverFallbackResult.NotFound();
+            try
+            {
+                result = await TryMetronBySearchAsync(seriesName, issueNumber, publisher, expectedStoreDate, bypassCache, cancellationToken);
+
+                if (result.Success)
+                {
+                    Interlocked.Increment(ref _metronHits);
+                    _logger.LogInformation(
+                        "Cover found via Metron search for {Series} #{Issue}",
+                        seriesName, issueNumber);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Metron search failed for {Series} #{Issue}", seriesName, issueNumber);
+                result = CoverFallbackResult.NotFound();
+            }
         }
 
+        // Priority 3: Volume cover fallback
         var wasConfidenceRejected = result.WasConfidenceRejected;
         if (!result.Success && !string.IsNullOrEmpty(volumeCoverUrl))
         {
@@ -204,15 +261,10 @@ public class CoverFallbackService : ICoverFallbackService
 
     private async Task<CoverFallbackResult> TryMetronByCvIdAsync(
         int comicVineIssueId,
+        bool bypassCache,
         CancellationToken cancellationToken)
     {
-        if (!_metronClient.IsConfigured)
-        {
-            _logger.LogDebug("Metron client not configured, skipping CV ID lookup");
-            return CoverFallbackResult.NotFound("Metron not configured");
-        }
-
-        var metronResult = await _metronClient.GetIssueByCvIdAsync(comicVineIssueId, cancellationToken);
+        var metronResult = await _metronClient.GetIssueByCvIdAsync(comicVineIssueId, bypassCache, cancellationToken);
 
         if (!metronResult.Success || metronResult.Issue == null)
         {
@@ -221,7 +273,49 @@ public class CoverFallbackService : ICoverFallbackService
 
         if (!string.IsNullOrEmpty(metronResult.Issue.ImageUrl))
         {
-            return CoverFallbackResult.Found(metronResult.Issue.ImageUrl, CoverSource.Metron, matchMethod: "CvId", matchConfidence: 1.0);
+            return CoverFallbackResult.Found(metronResult.Issue.ImageUrl, CoverSource.Metron, matchMethod: "CvIssueId", matchConfidence: 1.0);
+        }
+
+        return CoverFallbackResult.NotFound("Metron issue found but no cover image available");
+    }
+
+    private async Task<CoverFallbackResult> TryMetronByCvVolumeIdAsync(
+        int comicVineVolumeId,
+        string issueNumber,
+        bool bypassCache,
+        CancellationToken cancellationToken)
+    {
+        // Step 1: Look up Metron series by CV volume ID
+        var seriesResult = await _metronClient.GetSeriesByCvIdAsync(comicVineVolumeId, bypassCache, cancellationToken);
+
+        if (!seriesResult.Success || seriesResult.Series == null)
+        {
+            _logger.LogDebug("No Metron series found for CV volume ID {VolumeId}: {Error}", 
+                comicVineVolumeId, seriesResult.Error);
+            return CoverFallbackResult.NotFound(seriesResult.Error);
+        }
+
+        var metronSeriesId = seriesResult.Series.Id;
+        _logger.LogDebug("Found Metron series {SeriesId} ({SeriesName}) for CV volume ID {VolumeId}",
+            metronSeriesId, seriesResult.Series.Name, comicVineVolumeId);
+
+        // Step 2: Look up issue by Metron series ID + issue number
+        var issueResult = await _metronClient.GetIssueBySeriesIdAsync(metronSeriesId, issueNumber, bypassCache, cancellationToken);
+
+        if (!issueResult.Success || issueResult.Issue == null)
+        {
+            _logger.LogDebug("No Metron issue found for series {SeriesId} issue #{Number}: {Error}",
+                metronSeriesId, issueNumber, issueResult.Error);
+            return CoverFallbackResult.NotFound(issueResult.Error);
+        }
+
+        if (!string.IsNullOrEmpty(issueResult.Issue.ImageUrl))
+        {
+            return CoverFallbackResult.Found(
+                issueResult.Issue.ImageUrl, 
+                CoverSource.Metron, 
+                matchMethod: "CvVolumeId", 
+                matchConfidence: 1.0);
         }
 
         return CoverFallbackResult.NotFound("Metron issue found but no cover image available");
@@ -232,15 +326,11 @@ public class CoverFallbackService : ICoverFallbackService
         string issueNumber,
         string? publisher,
         DateTime? expectedStoreDate,
+        bool bypassCache,
         CancellationToken cancellationToken)
     {
-        if (!_metronClient.IsConfigured)
-        {
-            _logger.LogDebug("Metron client not configured, skipping search");
-            return CoverFallbackResult.NotFound("Metron not configured");
-        }
-
-        var searchResult = await _metronClient.SearchIssueAsync(seriesName, issueNumber, cancellationToken);
+        // MetronClient checks configuration internally after loading settings from database
+        var searchResult = await _metronClient.SearchIssueAsync(seriesName, issueNumber, bypassCache, cancellationToken);
 
         if (!searchResult.Success || searchResult.Issues.Count == 0)
         {

@@ -204,6 +204,32 @@ public class CoverService : ICoverService
         return CoverResult.Placeholder(await EnsurePlaceholderAsync(cancellationToken));
     }
 
+    public async Task<CoverResult> GetDiscoveryCoverAsync(
+        int comicVineIssueId, 
+        CoverSize size = CoverSize.Medium, 
+        CancellationToken cancellationToken = default)
+    {
+        var settings = await GetSettingsAsync(cancellationToken);
+
+        // Check if discovery cover exists in cache
+        var cachedPath = GetCachePath(settings.CacheDirectory, CoverType.Discovery, comicVineIssueId, size);
+        if (File.Exists(cachedPath))
+        {
+            Interlocked.Increment(ref _hits);
+            var fileInfo = new FileInfo(cachedPath);
+            Interlocked.Add(ref _bandwidthSaved, fileInfo.Length);
+            
+            // Update last access time for LRU tracking
+            TouchFile(cachedPath);
+            
+            var metadata = await LoadCoverMetadataAsync(cachedPath, cancellationToken);
+            return CreateCoverResult(cachedPath, CoverType.Discovery, comicVineIssueId, size, metadata?.SourceUrl);
+        }
+
+        // Discovery cover not found - return not found (no fallback)
+        return CoverResult.NotFound($"Discovery cover for ComicVine issue {comicVineIssueId} not found");
+    }
+
     public async Task<CoverResult> DownloadCoverAsync(
         string url, 
         CoverType type, 

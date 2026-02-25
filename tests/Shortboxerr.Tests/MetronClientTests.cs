@@ -2,10 +2,10 @@ using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Protected;
 using Shortboxerr.Core.Metron;
+using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.Metron;
 using Xunit;
 
@@ -33,8 +33,13 @@ public class MetronClientTests
 
     private MetronClient CreateClient(HttpClient httpClient, MetronSettings? settings = null)
     {
-        var options = Options.Create(settings ?? _defaultSettings);
-        return new MetronClient(httpClient, _cache, options, _loggerMock.Object);
+        var mockSettingsService = new Mock<ISettingsService>();
+        mockSettingsService.Setup(s => s.GetAsync<MetronSettings>(
+                "metron", 
+                It.IsAny<MetronSettings>(), 
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(settings ?? _defaultSettings);
+        return new MetronClient(httpClient, _cache, mockSettingsService.Object, _loggerMock.Object);
     }
 
     private static HttpClient CreateMockHttpClient(HttpStatusCode statusCode, string? content = null)
@@ -56,10 +61,26 @@ public class MetronClientTests
     }
 
     [Fact]
-    public void IsConfigured_ReturnsTrue_WhenCredentialsProvided()
+    public async Task IsConfigured_ReturnsTrue_WhenCredentialsProvided()
     {
-        var httpClient = CreateMockHttpClient(HttpStatusCode.OK);
+        var jsonResponse = JsonSerializer.Serialize(new
+        {
+            count = 1,
+            results = new[]
+            {
+                new
+                {
+                    id = 1,
+                    number = "1",
+                    image = "https://test.jpg"
+                }
+            }
+        });
+        var httpClient = CreateMockHttpClient(HttpStatusCode.OK, jsonResponse);
         var client = CreateClient(httpClient);
+
+        // IsConfigured requires settings to be loaded, which happens during async calls
+        await client.GetIssueByCvIdAsync(1);
 
         Assert.True(client.IsConfigured);
     }
@@ -219,8 +240,13 @@ public class MetronClientTests
 
         var httpClient = new HttpClient(handlerMock.Object);
         var freshCache = new MemoryCache(new MemoryCacheOptions());
-        var options = Options.Create(_defaultSettings);
-        var client = new MetronClient(httpClient, freshCache, options, _loggerMock.Object);
+        var mockSettingsService = new Mock<ISettingsService>();
+        mockSettingsService.Setup(s => s.GetAsync<MetronSettings>(
+                "metron", 
+                It.IsAny<MetronSettings>(), 
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_defaultSettings);
+        var client = new MetronClient(httpClient, freshCache, mockSettingsService.Object, _loggerMock.Object);
 
         var result1 = await client.GetIssueByCvIdAsync(67890);
         Assert.True(result1.Success);

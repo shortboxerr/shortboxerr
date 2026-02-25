@@ -248,6 +248,7 @@ app.MapMylar3ImportEndpoints();
 app.MapManualImportEndpoints();
 app.MapDecisionEngineEndpoints();
 app.MapProviderEndpoints();
+app.MapDdlEndpoints();
 app.MapDdlImportEndpoints();
 app.MapDdlSiteEndpoints();
 app.MapSiteHealthEndpoints();

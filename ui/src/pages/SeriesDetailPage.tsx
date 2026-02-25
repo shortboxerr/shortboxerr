@@ -839,59 +839,38 @@ export function SeriesDetailPage() {
                       {upcomingReleases.map((release) => (
                         <div 
                           key={`upcoming-${release.issueNumber}`}
-                          className="issue-card upcoming"
+                          className="issue-card issue-card-wanted upcoming"
                           style={{
-                            position: 'relative',
-                            borderRadius: 'var(--radius-md)',
-                            overflow: 'hidden',
-                            background: 'var(--bg-secondary)',
                             border: '1px dashed var(--accent-info)',
-                            opacity: 0.9,
                           }}
                         >
-                          <div className="issue-card-cover" style={{ position: 'relative' }}>
-                            {release.coverImageUrl ? (
-                              <img 
-                                src={release.coverImageUrl} 
-                                alt={`Issue #${release.issueNumber}`}
-                                style={{ width: '100%', aspectRatio: '2/3', objectFit: 'cover', filter: 'grayscale(30%)' }}
-                              />
-                            ) : (
-                              <div 
-                                style={{ 
-                                  width: '100%', 
-                                  aspectRatio: '2/3', 
-                                  background: 'var(--bg-tertiary)',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  color: 'var(--text-muted)'
-                                }}
-                              >
-                                <Calendar size={32} />
-                              </div>
-                            )}
-                            <div style={{
-                              position: 'absolute',
-                              top: '8px',
-                              right: '8px',
+                          <div className="issue-card-cover-wrapper">
+                            <img 
+                              src={release.coverImageUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="150" viewBox="0 0 100 150"%3E%3Crect fill="%232a2d35" width="100" height="150"/%3E%3Ctext fill="%236b7280" font-family="sans-serif" font-size="10" x="50" y="75" text-anchor="middle"%3ENo Cover%3C/text%3E%3C/svg%3E'} 
+                              alt={`Issue #${release.issueNumber}`}
+                              className="issue-card-cover"
+                              style={{ filter: 'grayscale(30%)' }}
+                            />
+                            <div className="issue-card-status" style={{ 
                               background: 'var(--accent-info)',
-                              color: 'white',
                               padding: '2px 8px',
                               borderRadius: '10px',
-                              fontSize: '10px',
-                              fontWeight: 600,
-                              textTransform: 'uppercase'
+                              fontSize: '10px'
                             }}>
-                              Upcoming
+                              <Clock size={14} />
                             </div>
                           </div>
-                          <div className="issue-card-info" style={{ padding: '12px' }}>
-                            <div style={{ fontWeight: 600, fontSize: '14px' }}>
-                              #{release.issueNumberText || release.issueNumber}
+                          <div className="issue-card-info">
+                            <div className="issue-card-number">
+                              {release.issueNumberText || release.issueNumber}
                             </div>
-                            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                              <Calendar size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                            {release.title && (
+                              <div className="issue-card-title" title={release.title}>
+                                {release.title}
+                              </div>
+                            )}
+                            <div className="issue-card-date">
+                              <Calendar size={10} />
                               {new Date(release.releaseDate).toLocaleDateString()}
                             </div>
                             <div style={{ 
@@ -912,6 +891,7 @@ export function SeriesDetailPage() {
                         <thead>
                           <tr>
                             <th style={{ width: '80px' }}>#</th>
+                            <th>Title</th>
                             <th>Release Date</th>
                             <th>Status</th>
                           </tr>
@@ -920,10 +900,12 @@ export function SeriesDetailPage() {
                           {upcomingReleases.map((release) => (
                             <tr key={`upcoming-list-${release.issueNumber}`} style={{ opacity: 0.9 }}>
                               <td style={{ fontWeight: 600 }}>
-                                #{release.issueNumberText || release.issueNumber}
+                                {release.issueNumberText || release.issueNumber}
+                              </td>
+                              <td style={{ color: release.title ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                                {release.title || 'Untitled'}
                               </td>
                               <td>
-                                <Calendar size={14} style={{ marginRight: '8px', verticalAlign: 'middle', color: 'var(--text-muted)' }} />
                                 {new Date(release.releaseDate).toLocaleDateString()}
                               </td>
                               <td>

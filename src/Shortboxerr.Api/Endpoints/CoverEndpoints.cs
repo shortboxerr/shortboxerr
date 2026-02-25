@@ -29,6 +29,14 @@ public static class CoverEndpoints
             .Produces(200, contentType: "image/jpeg")
             .Produces(404);
 
+        // Get discovery cover (Metron covers cached by ComicVine issue ID)
+        group.MapGet("/discovery/{comicVineIssueId:int}", GetDiscoveryCover)
+            .WithName("GetDiscoveryCover")
+            .WithDescription("Gets a cached discovery cover by ComicVine issue ID (used for Pull List enrichment).")
+            .WithOpenApi()
+            .Produces(200, contentType: "image/jpeg")
+            .Produces(404);
+
         // Clear series cover cache
         group.MapDelete("/series/{seriesId:int}", ClearSeriesCoverCache)
             .WithName("ClearSeriesCoverCache")
@@ -174,6 +182,44 @@ public static class CoverEndpoints
         // Add ETag based on file modification time
         var fileInfo = new FileInfo(result.FilePath);
         var etag = ETagHelper.GenerateETag(issueId, fileInfo.LastWriteTimeUtc);
+        
+        if (ETagHelper.IsNotModified(httpContext.Request, etag))
+        {
+            httpContext.Response.Headers.ETag = etag;
+            return Results.StatusCode(304);
+        }
+        
+        httpContext.Response.Headers.ETag = etag;
+        httpContext.Response.Headers.LastModified = fileInfo.LastWriteTimeUtc.ToString("R");
+
+        return Results.File(result.FilePath, result.ContentType ?? "image/jpeg");
+    }
+
+    private static async Task<IResult> GetDiscoveryCover(
+        HttpContext httpContext,
+        int comicVineIssueId,
+        [FromQuery] CoverSize size,
+        ICoverService coverService,
+        CancellationToken cancellationToken)
+    {
+        var result = await coverService.GetDiscoveryCoverAsync(comicVineIssueId, size, cancellationToken);
+
+        if (!result.Success || string.IsNullOrEmpty(result.FilePath))
+        {
+            return Results.NotFound(new { error = result.Error ?? "Cover not found" });
+        }
+
+        if (!File.Exists(result.FilePath))
+        {
+            return Results.NotFound(new { error = "Cover file not found" });
+        }
+
+        // Add Cache-Control header for cover images (1 day)
+        httpContext.Response.Headers.CacheControl = $"public, max-age={CoverCacheSeconds}";
+        
+        // Add ETag based on file modification time
+        var fileInfo = new FileInfo(result.FilePath);
+        var etag = ETagHelper.GenerateETag(comicVineIssueId, fileInfo.LastWriteTimeUtc);
         
         if (ETagHelper.IsNotModified(httpContext.Request, etag))
         {

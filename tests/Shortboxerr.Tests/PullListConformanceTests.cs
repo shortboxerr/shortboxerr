@@ -6,6 +6,7 @@ using Moq;
 using Shortboxerr.Core.Caching;
 using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Core.Entities;
+using Shortboxerr.Core.Metron;
 using Shortboxerr.Core.PullList;
 using Shortboxerr.Core.Services;
 using Shortboxerr.Core.WalkSoftly;
@@ -27,7 +28,9 @@ public class PullListConformanceTests : IDisposable
     private readonly Mock<ISettingsService> _mockSettingsService;
     private readonly Mock<IComicVineClient> _mockComicVineClient;
     private readonly Mock<IWalkSoftlyClient> _mockWalkSoftlyClient;
+    private readonly Mock<IMetronClient> _mockMetronClient;
     private readonly Mock<ISeriesMetadataService> _mockSeriesMetadataService;
+    private readonly Mock<ICoverService> _mockCoverService;
     private readonly ICacheService _cacheService;
     private readonly Mock<ILogger<PullListService>> _mockLogger;
 
@@ -41,6 +44,8 @@ public class PullListConformanceTests : IDisposable
         _mockSettingsService = new Mock<ISettingsService>();
         _mockComicVineClient = new Mock<IComicVineClient>();
         _mockWalkSoftlyClient = new Mock<IWalkSoftlyClient>();
+        _mockMetronClient = new Mock<IMetronClient>();
+        _mockCoverService = new Mock<ICoverService>();
         _mockSeriesMetadataService = new Mock<ISeriesMetadataService>();
         _cacheService = new CacheService(
             new MemoryCache(new MemoryCacheOptions()),
@@ -58,8 +63,10 @@ public class PullListConformanceTests : IDisposable
             _mockSettingsService.Object, 
             _mockComicVineClient.Object,
             _mockWalkSoftlyClient.Object,
+            _mockMetronClient.Object,
             _mockSeriesMetadataService.Object, 
-            _cacheService, 
+            _cacheService,
+            _mockCoverService.Object,
             _mockLogger.Object);
     }
 

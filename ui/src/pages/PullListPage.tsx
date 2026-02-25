@@ -150,7 +150,7 @@ export function PullListPage() {
   }, [weekOffset]);
 
   // Discovery query - always fetch all releases, filter client-side
-  // Cache for 30 minutes - release data is set weeks in advance and rarely changes
+  // Short stale time ensures cover enrichment updates are picked up quickly
   const { data: discovery, isLoading: discoveryLoading, isFetching: discoveryFetching, refetch: refetchDiscovery } = useQuery({
     queryKey: ['pulllist', 'discovery', weekDate],
     queryFn: async ({ queryKey }) => {
@@ -158,7 +158,8 @@ export function PullListPage() {
       return api.getWeeklyDiscoveryByDate(date, {});
     },
     enabled: viewMode === 'week',
-    staleTime: 30 * 60 * 1000, // 30 minutes - matches backend cache duration
+    staleTime: 2 * 60 * 1000, // 2 minutes - allows cover enrichment updates to show quickly
+    refetchOnWindowFocus: true, // Refresh when user returns to tab
   });
 
   // Upcoming weeks (for multi-week views)
@@ -176,7 +177,8 @@ export function PullListPage() {
       return weeks;
     },
     enabled: viewMode === 'upcoming',
-    staleTime: 30 * 60 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutes - allows cover enrichment updates to show quickly
+    refetchOnWindowFocus: true,
   });
 
   // Past weeks
@@ -194,7 +196,8 @@ export function PullListPage() {
       return weeks;
     },
     enabled: viewMode === 'past',
-    staleTime: 30 * 60 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutes - allows cover enrichment updates to show quickly
+    refetchOnWindowFocus: true,
   });
 
   const { data: stats } = useQuery({

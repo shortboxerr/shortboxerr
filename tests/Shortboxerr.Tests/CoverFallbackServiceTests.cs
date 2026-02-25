@@ -44,7 +44,7 @@ public class CoverFallbackServiceTests
             Number = "100"
         };
 
-        _metronClientMock.Setup(c => c.GetIssueByCvIdAsync(67890, It.IsAny<CancellationToken>()))
+        _metronClientMock.Setup(c => c.GetIssueByCvIdAsync(67890, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(MetronIssueResult.Found(metronIssue));
 
         var service = CreateService();
@@ -59,7 +59,7 @@ public class CoverFallbackServiceTests
     [Fact]
     public async Task GetCoverByCvIdAsync_ReturnsVolumeCover_WhenMetronFails()
     {
-        _metronClientMock.Setup(c => c.GetIssueByCvIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+        _metronClientMock.Setup(c => c.GetIssueByCvIdAsync(It.IsAny<int>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(MetronIssueResult.NotFound("Not found"));
 
         var service = CreateService();
@@ -74,7 +74,7 @@ public class CoverFallbackServiceTests
     [Fact]
     public async Task GetCoverByCvIdAsync_ReturnsNotFound_WhenNoCoversAvailable()
     {
-        _metronClientMock.Setup(c => c.GetIssueByCvIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+        _metronClientMock.Setup(c => c.GetIssueByCvIdAsync(It.IsAny<int>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(MetronIssueResult.NotFound());
 
         var service = CreateService();
@@ -96,7 +96,7 @@ public class CoverFallbackServiceTests
         };
 
         var callCount = 0;
-        _metronClientMock.Setup(c => c.GetIssueByCvIdAsync(67890, It.IsAny<CancellationToken>()))
+        _metronClientMock.Setup(c => c.GetIssueByCvIdAsync(67890, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .Callback(() => callCount++)
             .ReturnsAsync(MetronIssueResult.Found(metronIssue));
 
@@ -127,7 +127,7 @@ public class CoverFallbackServiceTests
             Number = "17"
         };
 
-        _metronClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _metronClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MetronSearchResult
             {
                 Success = true,
@@ -145,12 +145,12 @@ public class CoverFallbackServiceTests
     [Fact]
     public async Task GetCoverAsync_HandlesException_Gracefully()
     {
-        _metronClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _metronClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new HttpRequestException("Network error"));
 
         var service = CreateService();
 
-        var result = await service.GetCoverAsync("Batman", "1", volumeCoverUrl: "https://fallback.jpg");
+        var result = await service.GetCoverAsync("Batman", "1", volumeCoverUrl: "https://fallback.jpg", comicVineVolumeId: null);
 
         Assert.True(result.Success);
         Assert.Equal(CoverSource.ComicVineVolume, result.Source);
@@ -160,7 +160,7 @@ public class CoverFallbackServiceTests
     [Fact]
     public async Task GetCoverAsync_PrefersPublisherMatch()
     {
-        _metronClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _metronClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MetronSearchResult
             {
                 Success = true,
@@ -193,7 +193,7 @@ public class CoverFallbackServiceTests
 
         var service = CreateService();
 
-        var result = await service.GetCoverAsync("Batman", "100", publisher: "DC");
+        var result = await service.GetCoverAsync("Batman", "100", comicVineVolumeId: null, publisher: "DC");
 
         Assert.True(result.Success);
         Assert.Equal("https://dc.jpg", result.CoverUrl);
@@ -204,8 +204,8 @@ public class CoverFallbackServiceTests
     {
         var metronClientMock = new Mock<IMetronClient>();
         metronClientMock.Setup(c => c.IsConfigured).Returns(true);
-        metronClientMock.Setup(c => c.GetIssueByCvIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((int cvId, CancellationToken _) => MetronIssueResult.Found(new MetronIssue
+        metronClientMock.Setup(c => c.GetIssueByCvIdAsync(It.IsAny<int>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((int cvId, bool _, CancellationToken __) => MetronIssueResult.Found(new MetronIssue
             {
                 Id = cvId,
                 CvId = cvId,
@@ -236,7 +236,7 @@ public class CoverFallbackServiceTests
             ImageUrl = "https://test.jpg"
         };
 
-        _metronClientMock.Setup(c => c.GetIssueByCvIdAsync(12345, It.IsAny<CancellationToken>()))
+        _metronClientMock.Setup(c => c.GetIssueByCvIdAsync(12345, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(MetronIssueResult.Found(metronIssue));
 
         var freshCache = new MemoryCache(new MemoryCacheOptions());
@@ -257,7 +257,7 @@ public class CoverFallbackServiceTests
     [Fact]
     public async Task GetCoverAsync_FallsBackToVolume_WhenMetronReturnsEmpty()
     {
-        _metronClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _metronClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MetronSearchResult
             {
                 Success = true,
@@ -266,7 +266,7 @@ public class CoverFallbackServiceTests
 
         var service = CreateService();
 
-        var result = await service.GetCoverAsync("Batman", "999", volumeCoverUrl: "https://volume-fallback.jpg");
+        var result = await service.GetCoverAsync("Batman", "999", comicVineVolumeId: null, volumeCoverUrl: "https://volume-fallback.jpg");
 
         Assert.True(result.Success);
         Assert.Equal(CoverSource.ComicVineVolume, result.Source);
@@ -297,7 +297,7 @@ public class CoverFallbackServiceTests
             ImageUrl = null
         };
 
-        _metronClientMock.Setup(c => c.GetIssueByCvIdAsync(12345, It.IsAny<CancellationToken>()))
+        _metronClientMock.Setup(c => c.GetIssueByCvIdAsync(12345, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(MetronIssueResult.Found(metronIssue));
 
         var service = CreateService();
@@ -318,7 +318,7 @@ public class CoverFallbackServiceTests
             ImageUrl = "https://metron.jpg"
         };
 
-        _metronClientMock.Setup(c => c.GetIssueByCvIdAsync(12345, It.IsAny<CancellationToken>()))
+        _metronClientMock.Setup(c => c.GetIssueByCvIdAsync(12345, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(MetronIssueResult.Found(metronIssue));
 
         var service = CreateService();
@@ -339,7 +339,7 @@ public class CoverFallbackServiceTests
             ImageUrl = "https://test.jpg"
         };
 
-        _metronClientMock.Setup(c => c.GetIssueByCvIdAsync(12345, It.IsAny<CancellationToken>()))
+        _metronClientMock.Setup(c => c.GetIssueByCvIdAsync(12345, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(MetronIssueResult.Found(metronIssue));
 
         var freshCache = new MemoryCache(new MemoryCacheOptions());
@@ -360,7 +360,7 @@ public class CoverFallbackServiceTests
             ImageUrl = "https://test.jpg"
         };
 
-        _metronClientMock.Setup(c => c.GetIssueByCvIdAsync(12345, It.IsAny<CancellationToken>()))
+        _metronClientMock.Setup(c => c.GetIssueByCvIdAsync(12345, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(MetronIssueResult.Found(metronIssue));
 
         var freshCache = new MemoryCache(new MemoryCacheOptions());
@@ -386,7 +386,7 @@ public class CoverFallbackServiceTests
             .Setup(s => s.GetAsync<MetronSettings>("metron", It.IsAny<MetronSettings>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MetronSettings { MinMatchConfidence = 95 });
 
-        _metronClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _metronClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MetronSearchResult
             {
                 Success = true,
@@ -411,6 +411,7 @@ public class CoverFallbackServiceTests
         var result = await service.GetCoverAsync(
             "Absolute Wonder Woman",
             "17",
+            comicVineVolumeId: null,
             publisher: "DC Comics",
             expectedStoreDate: DateTime.UtcNow,
             volumeCoverUrl: "https://comicvine/volume.jpg");
@@ -427,7 +428,7 @@ public class CoverFallbackServiceTests
             .Setup(s => s.GetAsync<MetronSettings>("metron", It.IsAny<MetronSettings>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MetronSettings { MinMatchConfidence = 70 });
 
-        _metronClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _metronClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MetronSearchResult
             {
                 Success = true,
@@ -452,6 +453,7 @@ public class CoverFallbackServiceTests
         var result = await service.GetCoverAsync(
             "Absolute Wonder Woman",
             "17",
+            comicVineVolumeId: null,
             publisher: "DC Comics",
             expectedStoreDate: DateTime.UtcNow.Date);
 

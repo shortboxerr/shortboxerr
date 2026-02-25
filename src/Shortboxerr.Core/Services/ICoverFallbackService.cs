@@ -4,43 +4,62 @@ namespace Shortboxerr.Core.Services;
 /// Service that provides cover image fallback logic.
 /// 
 /// Priority hierarchy:
-/// 1. ComicVine issue-specific cover (primary, source of truth)
-/// 2. Metron issue cover via ComicVine ID lookup (official API, preferred fallback)
-/// 3. ComicVine volume/series cover (final fallback)
+/// 1. ComicVine issue-specific cover (primary, source of truth - checked before calling this service)
+/// 2. Metron issue cover via ComicVine issue ID lookup (exact matching via cv_id field)
+/// 3. Metron issue cover via ComicVine volume ID + issue number (series ID mapping then issue lookup)
+/// 4. Metron issue cover via series name/issue number search (fuzzy fallback)
+/// 5. ComicVine volume/series cover (final fallback)
 /// 
 /// This service should only be invoked when the primary ComicVine issue cover is missing.
 /// </summary>
 public interface ICoverFallbackService
 {
     /// <summary>
-    /// Gets a cover image for an issue using ComicVine ID for direct Metron lookup.
-    /// This is the preferred method as it provides exact matching via Metron's cv_id field.
+    /// Gets a cover image for an issue using ComicVine IDs for Metron lookup.
+    /// Tries multiple strategies in priority order:
+    /// 1. Direct lookup by CV issue ID
+    /// 2. Lookup by CV volume ID (to get Metron series) + issue number
+    /// 3. Falls back to volume cover if provided
     /// </summary>
     /// <param name="comicVineIssueId">ComicVine issue ID for direct Metron lookup</param>
+    /// <param name="comicVineVolumeId">ComicVine volume ID for series-based lookup (optional but recommended)</param>
+    /// <param name="issueNumber">Issue number for series-based lookup (required if comicVineVolumeId provided)</param>
     /// <param name="volumeCoverUrl">ComicVine volume cover URL as final fallback</param>
+    /// <param name="bypassCache">If true, bypasses the cache and forces a fresh lookup</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Result containing cover URL and source information</returns>
     Task<CoverFallbackResult> GetCoverByCvIdAsync(
         int comicVineIssueId,
+        int? comicVineVolumeId = null,
+        string? issueNumber = null,
         string? volumeCoverUrl = null,
+        bool bypassCache = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets a cover image for an issue, querying fallback sources if the primary source has no cover.
-    /// Falls back to series name/issue number search if ComicVine ID is not available.
+    /// Gets a cover image for an issue when ComicVine issue ID is not available.
+    /// Tries multiple strategies in priority order:
+    /// 1. Lookup by CV volume ID (to get Metron series) + issue number (if volume ID provided)
+    /// 2. Search by series name/issue number with heuristic matching
+    /// 3. Falls back to volume cover if provided
     /// </summary>
     /// <param name="seriesName">Series name for searching alternate sources</param>
     /// <param name="issueNumber">Issue number for searching alternate sources</param>
+    /// <param name="comicVineVolumeId">ComicVine volume ID for series-based lookup (optional but recommended)</param>
     /// <param name="publisher">Publisher name for better matching</param>
+    /// <param name="expectedStoreDate">Expected store date for better matching</param>
     /// <param name="volumeCoverUrl">ComicVine volume cover URL as final fallback</param>
+    /// <param name="bypassCache">If true, bypasses the cache and forces a fresh lookup</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Result containing cover URL and source information</returns>
     Task<CoverFallbackResult> GetCoverAsync(
         string seriesName,
         string issueNumber,
+        int? comicVineVolumeId = null,
         string? publisher = null,
         DateTime? expectedStoreDate = null,
         string? volumeCoverUrl = null,
+        bool bypassCache = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -53,6 +72,7 @@ public interface ICoverFallbackService
     /// Should be called when ComicVine cover becomes available.
     /// </summary>
     Task ClearCacheAsync(string seriesName, string issueNumber, CancellationToken cancellationToken = default);
+
 }
 
 /// <summary>

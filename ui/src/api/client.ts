@@ -1415,6 +1415,14 @@ export interface UpcomingRelease {
   isSpecial: boolean;
   daysUntilRelease: number;
   releaseTiming: string;
+  // Metron enrichment fields
+  isMetronEnriched: boolean;
+  metronIssueId: number | null;
+  title: string | null;
+  storyNames: string[] | null;
+  description: string | null;
+  price: string | null;
+  coverDate: string | null;
 }
 
 // Result from linking existing annual series to parents

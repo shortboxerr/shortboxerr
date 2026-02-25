@@ -673,14 +673,19 @@ public static class PullListEndpoints
 
         // POST /api/v1/pulllist/discovery/enrich-covers - trigger manual cover enrichment
         group.MapPost("/discovery/enrich-covers", async (
+            [FromQuery] bool? force,
             [FromServices] Infrastructure.BackgroundServices.DiscoveryCoverEnrichmentService enrichmentService,
             CancellationToken cancellationToken) =>
         {
-            await enrichmentService.TriggerEnrichmentAsync(cancellationToken);
-            return Results.Ok(new { Success = true, Message = "Cover enrichment triggered. Missing covers will be fetched from Metron." });
+            var forceEnrich = force ?? false;
+            await enrichmentService.TriggerEnrichmentAsync(cancellationToken, forceEnrich);
+            var message = forceEnrich 
+                ? "Cover enrichment triggered (force mode - bypassing cooldown). Missing covers will be fetched from Metron."
+                : "Cover enrichment triggered. Missing covers will be fetched from Metron.";
+            return Results.Ok(new { Success = true, Message = message, Force = forceEnrich });
         })
         .WithName("TriggerCoverEnrichment")
-        .WithDescription("Triggers manual cover enrichment for cached discovery issues (fetches missing covers from Metron)")
+        .WithDescription("Triggers manual cover enrichment for cached discovery issues (fetches missing covers from Metron). Use force=true to bypass the 7-day cooldown.")
         .Produces<object>(200);
 
         // POST /api/v1/pulllist/discovery/refresh-covers - trigger ComicVine cover refresh check

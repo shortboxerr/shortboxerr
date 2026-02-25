@@ -115,6 +115,11 @@ public interface ICoverService
     Task<CoverCleanupResult> EnforceCacheLimitAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets a discovery cover (Metron cover cached by ComicVine issue ID).
+    /// </summary>
+    Task<CoverResult> GetDiscoveryCoverAsync(int comicVineIssueId, CoverSize size = CoverSize.Medium, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets the path to the placeholder image.
     /// </summary>
     string GetPlaceholderPath();

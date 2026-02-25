@@ -739,6 +739,48 @@ public class WeeklyDiscoveryList
 }
 
 /// <summary>
+/// Tracks the enrichment state of a discoverable issue.
+/// Determines whether data has been finalized from ComicVine or is interim from Metron.
+/// </summary>
+public enum EnrichmentStatus
+{
+    /// <summary>
+    /// Issue has basic WalkSoftly data only. No enrichment attempted or pending retry.
+    /// </summary>
+    Pending = 0,
+    
+    /// <summary>
+    /// Issue enriched with Metron data as interim source.
+    /// Will be upgraded to ComicVineFinalized when CV issue ID becomes available.
+    /// </summary>
+    MetronInterim = 1,
+    
+    /// <summary>
+    /// Issue has authoritative ComicVine data. No further enrichment needed.
+    /// </summary>
+    ComicVineFinalized = 2
+}
+
+/// <summary>
+/// Data source that provided specific fields for a discoverable issue.
+/// Used for provenance tracking and debugging.
+/// </summary>
+public enum DataSource
+{
+    /// <summary>Data from WalkSoftly release aggregator.</summary>
+    WalkSoftly = 0,
+    
+    /// <summary>Data from ComicVine (authoritative).</summary>
+    ComicVine = 1,
+    
+    /// <summary>Data from Metron (interim fallback).</summary>
+    Metron = 2,
+    
+    /// <summary>Data from local library database.</summary>
+    LocalLibrary = 3
+}
+
+/// <summary>
 /// An issue available for discovery (may or may not be in library).
 /// </summary>
 public class DiscoverableIssue
@@ -746,6 +788,9 @@ public class DiscoverableIssue
     // ComicVine identifiers
     public int ComicVineIssueId { get; set; }
     public int ComicVineVolumeId { get; set; }
+    
+    // Metron identifier (when enriched via Metron)
+    public int? MetronIssueId { get; set; }
     
     // Series info
     public string SeriesTitle { get; set; } = string.Empty;
@@ -766,6 +811,27 @@ public class DiscoverableIssue
     public int? LocalIssueId { get; set; }
     public Entities.IssueStatus? Status { get; set; }
     public bool IsSeriesMonitored { get; set; }
+    
+    // Enrichment tracking (11.27)
+    /// <summary>
+    /// Current enrichment status for this issue.
+    /// </summary>
+    public EnrichmentStatus EnrichmentStatus { get; set; } = EnrichmentStatus.Pending;
+    
+    /// <summary>
+    /// Source that provided the cover image URL.
+    /// </summary>
+    public DataSource CoverSource { get; set; } = DataSource.WalkSoftly;
+    
+    /// <summary>
+    /// Source that provided the issue metadata (title, description).
+    /// </summary>
+    public DataSource MetadataSource { get; set; } = DataSource.WalkSoftly;
+    
+    /// <summary>
+    /// When this issue was last enriched.
+    /// </summary>
+    public DateTime? EnrichedAt { get; set; }
 }
 
 /// <summary>
@@ -1032,6 +1098,7 @@ public class SeriesUpcomingReleasesResult
 
 /// <summary>
 /// An upcoming release from WalkSoftly that hasn't been indexed by ComicVine yet.
+/// May be enriched with Metron data for cover images and additional metadata.
 /// </summary>
 public class UpcomingRelease
 {
@@ -1056,7 +1123,9 @@ public class UpcomingRelease
     public string? Publisher { get; set; }
     
     /// <summary>
-    /// Cover image URL (from series, as WalkSoftly doesn't provide issue covers).
+    /// Cover image URL. Sources (in order of preference):
+    /// 1. Metron issue cover (if enriched)
+    /// 2. Series cover fallback
     /// </summary>
     public string? CoverImageUrl { get; set; }
     
@@ -1079,6 +1148,45 @@ public class UpcomingRelease
     /// Whether this is a special issue.
     /// </summary>
     public bool IsSpecial { get; set; }
+    
+    #region Metron Enrichment Fields
+    
+    /// <summary>
+    /// Whether this release has been enriched with Metron data.
+    /// </summary>
+    public bool IsMetronEnriched { get; set; }
+    
+    /// <summary>
+    /// Metron issue ID (if enriched).
+    /// </summary>
+    public int? MetronIssueId { get; set; }
+    
+    /// <summary>
+    /// Issue title from Metron (usually empty for single-issue stories).
+    /// </summary>
+    public string? Title { get; set; }
+    
+    /// <summary>
+    /// Story names/arc parts from Metron (e.g., "Season of the Witch, Part 2 of 5").
+    /// </summary>
+    public List<string> StoryNames { get; set; } = new();
+    
+    /// <summary>
+    /// Issue description/solicitation text from Metron.
+    /// </summary>
+    public string? Description { get; set; }
+    
+    /// <summary>
+    /// Cover price from Metron (e.g., "4.99").
+    /// </summary>
+    public string? Price { get; set; }
+    
+    /// <summary>
+    /// Cover date from Metron (differs from store date).
+    /// </summary>
+    public DateTime? CoverDate { get; set; }
+    
+    #endregion
     
     /// <summary>
     /// Days until release (negative if already released).

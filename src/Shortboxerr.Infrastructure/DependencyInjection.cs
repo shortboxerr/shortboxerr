@@ -141,6 +141,9 @@ public static class DependencyInjection
         services.AddSingleton<BackgroundServices.DiscoveryCoverEnrichmentService>();
         services.AddHostedService(provider =>
             provider.GetRequiredService<BackgroundServices.DiscoveryCoverEnrichmentService>());
+        services.AddSingleton<BackgroundServices.UpcomingReleasesEnrichmentService>();
+        services.AddHostedService(provider =>
+            provider.GetRequiredService<BackgroundServices.UpcomingReleasesEnrichmentService>());
         services.AddSingleton<BackgroundServices.ReleaseDayBackgroundService>();
         services.AddHostedService(provider => 
             provider.GetRequiredService<BackgroundServices.ReleaseDayBackgroundService>());
@@ -157,7 +160,7 @@ public static class DependencyInjection
         services.AddHttpClient<Core.WalkSoftly.IWalkSoftlyClient, WalkSoftly.WalkSoftlyClient>();
 
         // Metron client for cover image fallback (official API with ComicVine ID mapping)
-        services.Configure<Core.Metron.MetronSettings>(options => { }); // Defaults, override via config
+        // MetronClient loads settings from ISettingsService, no IOptions configuration needed
         services.AddHttpClient<Core.Metron.IMetronClient, Metron.MetronClient>();
 
         // Cover fallback service for enrichment when ComicVine doesn't have issue covers

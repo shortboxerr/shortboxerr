@@ -2061,6 +2061,184 @@ When WalkSoftly does not provide a ComicVine issue ID (`walkSoftlyIssueId = null
 
 ---
 
+### 11.26 Pull List: Local Caching of Metron Cover Images ← ON HOLD (see 11.27)
+
+Currently, the Pull List enrichment sets external Metron URLs directly in `coverImageUrl`. This can cause reliability issues (external server availability), CORS issues, and inconsistency with how library issue covers are handled.
+
+**⚠️ Status Note:** This work is on hold pending completion of 11.27 (Pull List Data Flow Refactoring), which may obviate this item entirely. The routing issue identified below will be addressed as part of the broader refactoring.
+
+**Problem Statement:**
+- Pull List `EnrichDiscoveryWithMetronCoversAsync` returns external Metron URLs
+- Library covers (from Series Detail page) use local cache via `ICoverService`
+- External URLs are subject to availability, CORS, and caching issues
+- Inconsistent behavior between discovery covers and library covers
+
+**Implementation Status:**
+
+- [x] **Add `ICoverService` dependency to `PullListService`** ✅
+  - AC: Inject `ICoverService` for cover download/caching ✅
+
+- [x] **Implement local caching in `EnrichDiscoveryWithMetronCoversAsync`** ✅
+  - AC: For issues with `LocalIssueId`: cache using `CoverType.Issue`, return `/api/v1/covers/issues/{id}` ✅
+  - AC: For issues without `LocalIssueId`: cache using `CoverType.Discovery` + Metron issue ID ✅
+  - AC: Fall back to external Metron URL if download fails ✅
+
+- [x] **Add `GetDiscoveryCoverAsync` method to `ICoverService`** ✅
+  - AC: Serve cached discovery covers from local cache ✅
+
+- [x] **Add discovery cover endpoint** ✅
+  - AC: `GET /api/v1/covers/discovery/{metronIssueId}` endpoint added ✅
+
+- [ ] **Debug discovery cover endpoint routing** ← NEEDS INVESTIGATION
+  - AC: Endpoint returns HTML (SPA fallback) instead of cover data
+  - AC: Route constraint `{comicVineIssueId:int}` may need adjustment
+  - AC: Verify endpoint mapping is correctly registered at startup
+  - AC: Test with API documentation/Swagger to confirm route registration
+
+- [ ] **Verify end-to-end flow**
+  - AC: Pull List shows local URLs (`/api/v1/covers/discovery/{id}`) for enriched covers
+  - AC: Covers are actually downloaded to `covers/discovery/` directory
+  - AC: UI correctly loads covers from local endpoints
+
+**Files Changed:**
+- `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` - Added `ICoverService`, modified enrichment
+- `src/Shortboxerr.Core/Services/ICoverService.cs` - Added `GetDiscoveryCoverAsync`
+- `src/Shortboxerr.Infrastructure/Services/CoverService.cs` - Implemented `GetDiscoveryCoverAsync`
+- `src/Shortboxerr.Api/Endpoints/CoverEndpoints.cs` - Added discovery cover endpoint
+- `tests/Shortboxerr.Tests/PullListServiceTests.cs` - Added `ICoverService` mock
+- `tests/Shortboxerr.Tests/PullListConformanceTests.cs` - Added `ICoverService` mock
+
+**Notes:**
+- The core implementation is complete; issue is with endpoint routing
+- Discovery covers use Metron issue ID (not ComicVine issue ID) since WalkSoftly doesn't provide CV issue IDs
+- Library items with `LocalIssueId` use `CoverType.Issue` for consistency with Series Detail page
+
+---
+
+### 11.27 Pull List Data Flow Refactoring: Unified Enrichment Strategy ← HIGH PRIORITY
+
+Refactor Pull List data retrieval and enrichment to establish a clear hierarchy of data sources with well-defined finalization states. This unifies the scattered enrichment logic and ensures consistent behavior.
+
+**⚠️ Priority Note:** This is the highest priority Pull List work item. Completion may obviate 11.26 (Local Caching of Metron Cover Images) - to be determined after implementation.
+
+**Problem Statement:**
+- Current enrichment logic is spread across multiple services with unclear priority
+- No clear "finalized" state for issue data - enrichment may re-run unnecessarily
+- WalkSoftly provides ComicVine issue IDs for some (but not all) releases
+- Metron is used as fallback but data isn't upgraded when ComicVine becomes available
+- Overlap with 11.26 (local cover caching) - this refactoring may supersede that work
+
+**Data Source Hierarchy (Authority Order):**
+1. **ComicVine** - Authoritative source of truth (highest priority, finalizes data)
+2. **Metron** - Interim fallback (used when ComicVine ID not yet available)
+3. **WalkSoftly** - Release schedule source (provides release dates and initial data)
+
+**Proposed Data Flow:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Weekly Release Discovery                      │
+├─────────────────────────────────────────────────────────────────┤
+│  1. Query WalkSoftly for upcoming weeks (Mylar3 parity)         │
+│     - WalkSoftly has data before ComicVine                      │
+│     - Returns: series, issue#, publisher, ship date, CV IDs     │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│               For Each Release from WalkSoftly                   │
+├─────────────────────────────────────────────────────────────────┤
+│  IF WalkSoftly provides ComicVine issue ID:                     │
+│    → Query ComicVine with issue ID                              │
+│    → Use ComicVine data (authoritative)                         │
+│    → Download cover to local cache                              │
+│    → Mark issue as FINALIZED                                    │
+│                                                                  │
+│  ELSE (no ComicVine issue ID from WalkSoftly):                  │
+│    → Query Metron /api/issue by title + issue number            │
+│    → IF Metron returns a match:                                 │
+│        → Use Metron data (interim)                              │
+│        → Download Metron cover to local cache                   │
+│        → Mark issue as INTERIM (Metron-sourced)                 │
+│    → ELSE:                                                       │
+│        → Use WalkSoftly data only                               │
+│        → Use series/volume cover as fallback                    │
+│        → Mark issue as PENDING_ENRICHMENT                       │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│            Background Upgrade Service (Periodic)                 │
+├─────────────────────────────────────────────────────────────────┤
+│  For issues marked INTERIM or PENDING_ENRICHMENT:               │
+│    → Re-query WalkSoftly for the release week                   │
+│    → IF WalkSoftly now has ComicVine issue ID:                  │
+│        → Query ComicVine with issue ID                          │
+│        → Replace Metron data with ComicVine data                │
+│        → Replace Metron cover with ComicVine cover              │
+│        → Mark issue as FINALIZED                                │
+│                                                                  │
+│  For FINALIZED issues:                                          │
+│    → No further updates needed                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Implementation Items:**
+
+- [ ] **Define enrichment state tracking**
+  - AC: Add `EnrichmentStatus` enum: `Pending`, `MetronInterim`, `ComicVineFinalized`
+  - AC: Store enrichment status with cached discovery issues
+  - AC: Include data source provenance (which service provided which fields)
+
+- [ ] **Refactor `PullListService.GetDiscoveryReleasesAsync`**
+  - AC: WalkSoftly remains primary source for release schedule (unchanged)
+  - AC: Implement branching logic based on ComicVine issue ID availability
+  - AC: Call ComicVine directly when WalkSoftly provides CV issue ID
+  - AC: Fall back to Metron title/issue# search when no CV ID
+
+- [ ] **Implement ComicVine direct enrichment path**
+  - AC: When WalkSoftly provides `comicid` (CV issue ID), query ComicVine `issue/{id}`
+  - AC: Use ComicVine response for: title, description, cover image, store date
+  - AC: Download ComicVine cover to local cache (via `ICoverService`)
+  - AC: Mark as `ComicVineFinalized`
+
+- [ ] **Refine Metron fallback path**
+  - AC: When no CV ID, query Metron `GET /api/issue/?series_name={title}&number={issue#}`
+  - AC: Use existing confidence scoring from 11.25 for match validation
+  - AC: Download Metron cover to local cache
+  - AC: Mark as `MetronInterim`
+
+- [ ] **Implement background upgrade service**
+  - AC: Periodic job to re-check `MetronInterim` and `Pending` issues
+  - AC: Re-query WalkSoftly for those release weeks
+  - AC: Upgrade to ComicVine data when CV ID becomes available
+  - AC: Replace local cached covers with ComicVine covers
+  - AC: Configurable check interval (e.g., every 4 hours, matching Mylar3)
+
+- [ ] **Update local cover caching (integrates 11.26)**
+  - AC: All covers (ComicVine and Metron) stored locally via `ICoverService`
+  - AC: Fix `/api/v1/covers/discovery/{id}` endpoint routing issue from 11.26
+  - AC: Cover replacement: new ComicVine cover overwrites existing Metron cover
+
+- [ ] **Tests**
+  - AC: Unit tests for enrichment state transitions
+  - AC: Unit tests for branching logic (CV ID present vs absent)
+  - AC: Integration test: issue upgrades from Metron→ComicVine when CV ID appears
+  - AC: Verify finalized issues are not re-enriched
+
+**Dependencies:**
+- 11.26 (Local Caching of Metron Cover Images) - may be obviated by this work; evaluate after completion
+- 11.25 (ID-Less Matching) - reuses confidence scoring for Metron fallback
+- 11.16 (WalkSoftly Integration) - relies on existing WalkSoftly client
+
+**Notes:**
+- This consolidates enrichment logic currently spread across `PullListService`, `DiscoveryCoverEnrichmentService`, and `CoverFallbackService`
+- "Finalized" state prevents unnecessary API calls and provides predictable behavior
+- WalkSoftly's early data availability is preserved (Mylar3 parity)
+- ComicVine authority is respected - Metron is explicitly interim
+
+---
+
 ## EPIC 12: Performance & Caching Strategy 🔄 IN PROGRESS
 
 ### Overview
@@ -2880,6 +3058,120 @@ Ensure full feature parity with Mylar3's search configuration options.
   - AC: Import from Mylar3 config.ini
   - AC: `search_32p` / `search_delay_32p` (32pag.es integration)
   - AC: `ignore_havetotal` option
+
+### 14.7 Issue Data & Cover Acquisition Refactoring 📋 PLANNED
+Comprehensive examination and refactoring of the issue data and cover acquisition pipeline to ensure clean architecture, proper separation of concerns, and thorough test coverage.
+
+**Background:**
+The cover acquisition system has evolved organically with multiple data sources (ComicVine, Metron, WalkSoftly) and priority chains. A systematic review will ensure consistency, maintainability, and reliable cover matching.
+
+**Current state:**
+- Cover priority chain: ComicVine issue → Metron via CV issue ID → Metron via CV volume ID → Metron via series name search → ComicVine volume
+- Multiple services involved: `CoverFallbackService`, `MetronClient`, `ComicVineClient`, `DiscoveryCoverEnrichmentService`
+- Caching at multiple layers (MetronClient, CoverFallbackService, in-memory)
+
+#### 14.7.1 Code Architecture Review
+- [ ] **Service responsibility audit**
+  - AC: Document each service's current responsibilities
+  - AC: Identify overlapping concerns between services
+  - AC: Propose clear ownership boundaries
+  - AC: Ensure single responsibility principle adherence
+
+- [ ] **Interface design review**
+  - AC: Review `IMetronClient` interface for completeness
+  - AC: Review `ICoverFallbackService` interface clarity
+  - AC: Ensure consistent error handling patterns
+  - AC: Validate caching strategy documentation
+
+- [ ] **Data flow documentation**
+  - AC: Create sequence diagrams for cover acquisition paths
+  - AC: Document priority chain with all fallback scenarios
+  - AC: Map data transformations between API responses and domain models
+
+#### 14.7.2 Cover Source Integration Testing
+- [ ] **Metron API integration tests**
+  - AC: Test `GetIssueByCvIdAsync` with real API (integration test)
+  - AC: Test `GetSeriesByCvIdAsync` with real API (integration test)
+  - AC: Test `GetIssueBySeriesIdAsync` with real API (integration test)
+  - AC: Test `SearchIssueAsync` with real API (integration test)
+  - AC: Test rate limiting behavior
+  - AC: Test authentication error handling
+  - AC: Test network error resilience
+
+- [ ] **ComicVine API integration tests**
+  - AC: Test issue cover retrieval paths
+  - AC: Test volume cover fallback
+  - AC: Test batch operations (GetIssuesByIdsAsync, GetVolumesByIdsAsync)
+
+- [ ] **Cross-source consistency tests**
+  - AC: Test same issue returns consistent data from different paths
+  - AC: Test cover URL stability (same issue → same cover across calls)
+  - AC: Test fallback chain completeness (no gaps in priority)
+
+#### 14.7.3 Unit Test Coverage Expansion
+- [ ] **CoverFallbackService tests**
+  - AC: Increase test coverage to >90%
+  - AC: Test all priority chain combinations
+  - AC: Test cache hit/miss scenarios
+  - AC: Test concurrent access patterns
+  - AC: Test bypass cache functionality
+
+- [ ] **MetronClient tests**
+  - AC: Test all new methods (GetSeriesByCvIdAsync, GetIssueBySeriesIdAsync)
+  - AC: Test issue number normalization edge cases
+  - AC: Test series cache TTL behavior
+  - AC: Test error response mapping
+
+- [ ] **DiscoveryCoverEnrichmentService tests**
+  - AC: Test enrichment with all cover sources
+  - AC: Test partial enrichment (some succeed, some fail)
+  - AC: Test refresh logic for stale covers
+
+#### 14.7.4 Refactoring Candidates
+- [ ] **Cover source abstraction** (if warranted)
+  - AC: Evaluate whether `ICoverSource` abstraction would simplify code
+  - AC: Consider strategy pattern for cover source selection
+  - AC: Document decision and rationale
+
+- [ ] **Caching consolidation** (if warranted)
+  - AC: Audit all caching layers
+  - AC: Consider centralizing cache key generation
+  - AC: Ensure consistent TTL policies
+  - AC: Add cache metrics/observability
+
+- [ ] **Error handling standardization**
+  - AC: Ensure consistent error result patterns
+  - AC: Add structured logging for debugging
+  - AC: Consider circuit breaker for external APIs
+
+#### 14.7.5 Edge Case Handling
+- [ ] **Variant cover handling**
+  - AC: Document current behavior with variants
+  - AC: Test variant detection and handling
+  - AC: Ensure main cover is preferred over variants (or configurable)
+
+- [ ] **Missing cover scenarios**
+  - AC: Test behavior when no cover exists anywhere
+  - AC: Test placeholder/fallback image behavior
+  - AC: Test partial cover data (URL exists but image 404s)
+
+- [ ] **Series name normalization**
+  - AC: Test with special characters in series names
+  - AC: Test with non-ASCII characters
+  - AC: Test with very long series names
+  - AC: Test with numbered series (e.g., "Spider-Man 2099")
+
+**Success Criteria:**
+- All cover acquisition paths have integration tests
+- Unit test coverage >90% for cover-related services
+- No known gaps in the priority chain
+- Clear documentation of service responsibilities
+- Consistent error handling across all sources
+
+**Related:**
+- EPIC 9 (ComicVine Integration)
+- EPIC 11 (Weekly Pull List - discovery enrichment)
+- EPIC 12 (Performance & Caching)
 
 ---
 

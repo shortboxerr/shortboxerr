@@ -15,13 +15,15 @@ namespace Shortboxerr.Infrastructure.BackgroundServices;
 /// 
 /// WalkSoftly data doesn't include cover images, so this service periodically:
 /// 1. Scans cached discovery weeks for issues missing cover images
-/// 2. Tries Metron for issue-specific covers first (via CoverFallbackService)
-/// 3. Falls back to ComicVine volume (series) covers
-/// 4. Updates the cached data with the enriched cover URLs
+/// 2. Tries multiple sources for covers (via CoverFallbackService)
+/// 3. Updates the cached data with the enriched cover URLs
 /// 
-/// Priority:
-/// 1. Metron issue-specific cover (via CoverFallbackService with CV ID lookup)
-/// 2. ComicVine volume cover (final fallback)
+/// Priority (via CoverFallbackService):
+/// 1. ComicVine issue-specific cover (checked before calling fallback service)
+/// 2. Metron via CV issue ID lookup (exact matching)
+/// 3. Metron via CV volume ID + issue number (series mapping then issue lookup)
+/// 4. Metron via series name/issue number search (fuzzy fallback)
+/// 5. ComicVine volume cover (final fallback)
 /// 
 /// This runs independently of the main discovery refresh to avoid rate limiting
 /// and to allow gradual enrichment over time.
@@ -44,6 +46,7 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
     private int _skippedHasComicVine;
     private int _skippedRecentlyChecked;
     private int _skippedAlreadyEnriched;
+    private bool _forceEnrichment;
 
     public DiscoveryCoverEnrichmentService(
         IServiceProvider serviceProvider,
@@ -89,12 +92,13 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         _logger.LogInformation("Cover enrichment service stopping");
     }
 
-    private async Task EnrichMissingCoversAsync(CancellationToken cancellationToken)
+    private async Task EnrichMissingCoversAsync(CancellationToken cancellationToken, bool force = false)
     {
         // Reset run stats
         _skippedHasComicVine = 0;
         _skippedRecentlyChecked = 0;
         _skippedAlreadyEnriched = 0;
+        _forceEnrichment = force;
         
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ShortboxerrDbContext>();
@@ -145,7 +149,7 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             try
             {
                 var (enrichedCount, cvCount, metronCount, volumeCount, notFound, weekIdlessMatched, weekIdlessRejected) = await EnrichCachedWeekAsync(
-                    cachedWeek, comicVineClient, coverFallbackService, coverService, dbContext, cancellationToken);
+                    cachedWeek, comicVineClient, coverFallbackService, coverService, dbContext, force, cancellationToken);
                 totalEnriched += enrichedCount;
                 comicVineHits += cvCount;
                 metronHits += metronCount;
@@ -175,6 +179,7 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         ICoverFallbackService coverFallbackService,
         ICoverService coverService,
         ShortboxerrDbContext dbContext,
+        bool bypassCache,
         CancellationToken cancellationToken)
     {
         List<ComicVineIssue>? issues;
@@ -239,11 +244,13 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         // - Issues with no cover at all
         // - Issues with only volume fallback covers (need real issue covers)
         // - Issues marked as HasVolumeFallback (need real issue covers)
+        // - In force mode: also retry NotFound issues
         var issuesToProcess = issues
             .Where(i => i.Volume?.Id > 0)
             .Where(i => i.Image == null || 
                         i.CoverSource == "VolumeFallback" || 
-                        i.EnrichmentStatus == CoverEnrichmentStatus.HasVolumeFallback)
+                        i.EnrichmentStatus == CoverEnrichmentStatus.HasVolumeFallback ||
+                        (_forceEnrichment && i.EnrichmentStatus == CoverEnrichmentStatus.NotFound))
             .Where(i => ShouldAttemptEnrichment(i))
             .ToList();
 
@@ -355,24 +362,30 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
                 }
             }
 
-            // Priority 2: Try Metron
+            // Priority 2: Try Metron (with CV volume ID for better matching)
+            var cvVolumeId = issue.Volume?.Id;
             CoverFallbackResult fallbackResult;
             if (issue.Id > 0)
             {
                 fallbackResult = await coverFallbackService.GetCoverByCvIdAsync(
                     issue.Id,
+                    cvVolumeId,
+                    issueNumber,
                     volumeCoverUrl,
+                    bypassCache,
                     cancellationToken);
             }
             else
             {
-                // Fall back to series name/issue number search
+                // Fall back to CV volume ID + issue number, then series name/issue number search
                 fallbackResult = await coverFallbackService.GetCoverAsync(
                     seriesName,
                     issueNumber,
+                    cvVolumeId,
                     null,
                     issue.StoreDate,
                     volumeCoverUrl,
+                    bypassCache,
                     cancellationToken);
             }
 
@@ -533,8 +546,9 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             return false;
         }
 
-        // NotFound but cooldown hasn't elapsed
-        if (issue.EnrichmentStatus == CoverEnrichmentStatus.NotFound && 
+        // NotFound but cooldown hasn't elapsed (skip cooldown check if force mode)
+        if (!_forceEnrichment && 
+            issue.EnrichmentStatus == CoverEnrichmentStatus.NotFound && 
             issue.LastEnrichmentAttempt.HasValue)
         {
             var timeSinceAttempt = DateTime.UtcNow - issue.LastEnrichmentAttempt.Value;
@@ -545,8 +559,9 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             }
         }
         
-        // HasVolumeFallback - retry periodically (same cooldown as NotFound)
-        if (issue.EnrichmentStatus == CoverEnrichmentStatus.HasVolumeFallback && 
+        // HasVolumeFallback - retry periodically (skip cooldown check if force mode)
+        if (!_forceEnrichment && 
+            issue.EnrichmentStatus == CoverEnrichmentStatus.HasVolumeFallback && 
             issue.LastEnrichmentAttempt.HasValue)
         {
             var timeSinceAttempt = DateTime.UtcNow - issue.LastEnrichmentAttempt.Value;
@@ -564,10 +579,12 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
     /// <summary>
     /// Manually triggers cover enrichment. Called from the API endpoint.
     /// </summary>
-    public async Task TriggerEnrichmentAsync(CancellationToken cancellationToken = default)
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="force">If true, bypasses the cooldown period and retries all issues needing covers.</param>
+    public async Task TriggerEnrichmentAsync(CancellationToken cancellationToken = default, bool force = false)
     {
-        _logger.LogInformation("Manual cover enrichment triggered");
-        await EnrichMissingCoversAsync(cancellationToken);
+        _logger.LogInformation("Manual cover enrichment triggered (force: {Force})", force);
+        await EnrichMissingCoversAsync(cancellationToken, force);
     }
 
     /// <summary>

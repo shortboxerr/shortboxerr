@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Shortboxerr.Core.Caching;
 using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Core.Entities;
+using Shortboxerr.Core.Metron;
 using Shortboxerr.Core.PullList;
 using Shortboxerr.Core.Services;
 using Shortboxerr.Core.WalkSoftly;
@@ -22,8 +23,10 @@ public class PullListService : IPullListService
     private readonly ISettingsService _settingsService;
     private readonly IComicVineClient _comicVineClient;
     private readonly IWalkSoftlyClient _walkSoftlyClient;
+    private readonly IMetronClient _metronClient;
     private readonly ISeriesMetadataService _seriesMetadataService;
     private readonly ICacheService _cacheService;
+    private readonly ICoverService _coverService;
     private readonly ILogger<PullListService> _logger;
 
     // Settings key
@@ -42,16 +45,20 @@ public class PullListService : IPullListService
         ISettingsService settingsService,
         IComicVineClient comicVineClient,
         IWalkSoftlyClient walkSoftlyClient,
+        IMetronClient metronClient,
         ISeriesMetadataService seriesMetadataService,
         ICacheService cacheService,
+        ICoverService coverService,
         ILogger<PullListService> logger)
     {
         _dbContext = dbContext;
         _settingsService = settingsService;
         _comicVineClient = comicVineClient;
         _walkSoftlyClient = walkSoftlyClient;
+        _metronClient = metronClient;
         _seriesMetadataService = seriesMetadataService;
         _cacheService = cacheService;
+        _coverService = coverService;
         _logger = logger;
     }
 
@@ -873,6 +880,9 @@ public class PullListService : IPullListService
         }
 
         var discoveryList = await BuildDiscoveryListAsync(allIssues, weekStart, weekEnd, releaseDay, filter, cancellationToken);
+        
+        // Enrich library items that don't have covers with Metron issue covers
+        await EnrichDiscoveryWithMetronCoversAsync(discoveryList.Issues, cancellationToken);
         
         // Add cache metadata
         discoveryList.CacheMetadata = CreateCacheMetadata(releaseDay, settings, fromCache, refreshedAt);
@@ -1960,9 +1970,19 @@ public class PullListService : IPullListService
             .OrderBy(r => r.IssueNumber)
             .ToList();
 
+        // Enrich with Metron data if series has ComicVine volume ID
+        if (upcomingReleases.Count > 0 && series.ComicVineId.HasValue)
+        {
+            await EnrichUpcomingReleasesWithMetronAsync(
+                series.ComicVineId.Value, 
+                upcomingReleases, 
+                cancellationToken);
+        }
+
         _logger.LogInformation(
-            "Found {Count} upcoming releases for series '{Title}' in next {Weeks} weeks",
-            upcomingReleases.Count, series.Title, weeksAhead);
+            "Found {Count} upcoming releases for series '{Title}' in next {Weeks} weeks (Metron enriched: {Enriched})",
+            upcomingReleases.Count, series.Title, weeksAhead, 
+            upcomingReleases.Any(r => r.IsMetronEnriched));
 
         return new SeriesUpcomingReleasesResult
         {
@@ -1972,6 +1992,326 @@ public class PullListService : IPullListService
             MaxLocalIssueNumber = maxLocalIssueNumber,
             WeeksSearched = weeksAhead
         };
+    }
+
+    /// <summary>
+    /// Enriches upcoming releases with Metron data (cover images, titles, descriptions).
+    /// </summary>
+    private async Task EnrichUpcomingReleasesWithMetronAsync(
+        int comicVineVolumeId,
+        List<UpcomingRelease> releases,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Step 1: Get Metron series ID from CV volume ID
+            var seriesResult = await _metronClient.GetSeriesByCvIdAsync(comicVineVolumeId, cancellationToken: cancellationToken);
+            if (!seriesResult.Success || seriesResult.Series == null)
+            {
+                _logger.LogDebug(
+                    "No Metron series found for CV volume ID {CvId}: {Error}",
+                    comicVineVolumeId, seriesResult.Error);
+                return;
+            }
+
+            var metronSeriesId = seriesResult.Series.Id;
+            _logger.LogDebug(
+                "Found Metron series {MetronId} for CV volume {CvId}",
+                metronSeriesId, comicVineVolumeId);
+
+            // Step 2: Get all issues for the Metron series
+            var issueListResult = await _metronClient.GetSeriesIssueListAsync(metronSeriesId, cancellationToken: cancellationToken);
+            if (!issueListResult.Success || issueListResult.Issues.Count == 0)
+            {
+                _logger.LogDebug(
+                    "No Metron issues found for series {MetronId}: {Error}",
+                    metronSeriesId, issueListResult.Error);
+                return;
+            }
+
+            _logger.LogDebug(
+                "Metron series {MetronId} has {Count} issues",
+                metronSeriesId, issueListResult.Issues.Count);
+
+            // Step 3: Match and enrich each upcoming release
+            foreach (var release in releases)
+            {
+                var issueNumberStr = release.IssueNumber.ToString("0.##");
+                
+                // Find matching issue in Metron list (by issue number)
+                var metronIssueFromList = issueListResult.Issues.FirstOrDefault(i => 
+                    NormalizeIssueNumber(i.Number) == NormalizeIssueNumber(issueNumberStr));
+
+                if (metronIssueFromList != null)
+                {
+                    // Start with basic data from issue_list
+                    release.IsMetronEnriched = true;
+                    release.MetronIssueId = metronIssueFromList.Id;
+                    
+                    // Use Metron cover if available (this is the actual issue cover, not series fallback)
+                    if (!string.IsNullOrEmpty(metronIssueFromList.ImageUrl))
+                    {
+                        release.CoverImageUrl = metronIssueFromList.ImageUrl;
+                    }
+                    release.CoverDate = metronIssueFromList.CoverDate;
+
+                    // Step 4: Fetch full issue details for title, description, price
+                    var fullIssueResult = await _metronClient.GetIssueByIdAsync(
+                        metronIssueFromList.Id, 
+                        cancellationToken: cancellationToken);
+
+                    if (fullIssueResult.Success && fullIssueResult.Issue != null)
+                    {
+                        var fullIssue = fullIssueResult.Issue;
+                        
+                        // Get title from either Title field or first story name
+                        release.Title = !string.IsNullOrEmpty(fullIssue.Title) 
+                            ? fullIssue.Title 
+                            : fullIssue.StoryNames.FirstOrDefault();
+                        release.StoryNames = fullIssue.StoryNames;
+                        release.Description = fullIssue.Description;
+                        release.Price = fullIssue.Price;
+
+                        _logger.LogDebug(
+                            "Enriched upcoming issue #{Number} with full Metron data (ID: {MetronId}, title: '{Title}', price: {Price})",
+                            release.IssueNumber, metronIssueFromList.Id, 
+                            release.Title ?? "(none)", release.Price ?? "(none)");
+                    }
+                    else
+                    {
+                        _logger.LogDebug(
+                            "Got basic Metron data for issue #{Number} (ID: {MetronId}), full details unavailable: {Error}",
+                            release.IssueNumber, metronIssueFromList.Id, fullIssueResult.Error);
+                    }
+                }
+            }
+
+            var enrichedCount = releases.Count(r => r.IsMetronEnriched);
+            _logger.LogInformation(
+                "Enriched {Enriched}/{Total} upcoming releases with Metron data for CV volume {CvId}",
+                enrichedCount, releases.Count, comicVineVolumeId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, 
+                "Failed to enrich upcoming releases with Metron data for CV volume {CvId}",
+                comicVineVolumeId);
+        }
+    }
+
+    /// <summary>
+    /// Enriches discoverable issues with Metron cover images.
+    /// Only processes library items since we want their issue-specific covers.
+    /// Uses the database's ComicVine IDs (same as Series Detail page) to ensure cache reuse.
+    /// </summary>
+    private async Task EnrichDiscoveryWithMetronCoversAsync(
+        List<DiscoverableIssue> issues,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogDebug("EnrichDiscoveryWithMetronCoversAsync called with {Count} total issues", issues.Count);
+        
+        // Only enrich library items that have a local series ID (so we can look up the correct CV ID)
+        var libraryIssues = issues.Where(i => i.IsInLibrary && i.LocalSeriesId.HasValue).ToList();
+        
+        _logger.LogDebug("Found {Count} library issues with LocalSeriesId to potentially enrich", libraryIssues.Count);
+        
+        if (libraryIssues.Count == 0)
+        {
+            return;
+        }
+
+        // Get the series IDs we need to look up
+        var seriesIds = libraryIssues.Select(i => i.LocalSeriesId!.Value).Distinct().ToList();
+        
+        // Batch lookup series from database to get their ComicVine IDs
+        var seriesMap = await _dbContext.Series
+            .Where(s => seriesIds.Contains(s.Id) && s.ComicVineId.HasValue)
+            .Select(s => new { s.Id, s.ComicVineId, s.Title })
+            .ToDictionaryAsync(s => s.Id, cancellationToken);
+        
+        _logger.LogDebug("Database lookup found {Count} series with ComicVine IDs: {Details}",
+            seriesMap.Count, 
+            string.Join(", ", seriesMap.Values.Select(s => $"{s.Title} (CV:{s.ComicVineId})")));
+        
+        if (seriesMap.Count == 0)
+        {
+            _logger.LogDebug("No library series have ComicVine IDs for Metron enrichment");
+            return;
+        }
+        
+        // Group issues by their database series ID (which maps to a known CV ID)
+        var issuesBySeries = libraryIssues
+            .Where(i => seriesMap.ContainsKey(i.LocalSeriesId!.Value))
+            .GroupBy(i => i.LocalSeriesId!.Value)
+            .ToList();
+        
+        _logger.LogDebug(
+            "Enriching {IssueCount} library issues across {SeriesCount} series with Metron covers (using DB ComicVine IDs)", 
+            libraryIssues.Count, issuesBySeries.Count);
+        
+        var enrichedCount = 0;
+        
+        foreach (var seriesGroup in issuesBySeries)
+        {
+            var seriesId = seriesGroup.Key;
+            var seriesInfo = seriesMap[seriesId];
+            var cvVolumeId = seriesInfo.ComicVineId!.Value;
+            
+            try
+            {
+                // Step 1: Get Metron series ID from CV volume ID (cached - same key as Series Detail page)
+                var seriesResult = await _metronClient.GetSeriesByCvIdAsync(cvVolumeId, cancellationToken: cancellationToken);
+                if (!seriesResult.Success || seriesResult.Series == null)
+                {
+                    _logger.LogDebug(
+                        "No Metron series for {SeriesTitle} (CV {CvId}){FromCache}",
+                        seriesInfo.Title, cvVolumeId, seriesResult.FromCache ? " (from cache)" : "");
+                    continue;
+                }
+
+                var metronSeriesId = seriesResult.Series.Id;
+
+                // Step 2: Get all issues for the Metron series (cached - same key as Series Detail page)
+                var issueListResult = await _metronClient.GetSeriesIssueListAsync(metronSeriesId, cancellationToken: cancellationToken);
+                if (!issueListResult.Success || issueListResult.Issues.Count == 0)
+                {
+                    _logger.LogDebug(
+                        "No Metron issues for series {MetronId}{FromCache}",
+                        metronSeriesId, issueListResult.FromCache ? " (from cache)" : "");
+                    continue;
+                }
+
+                _logger.LogDebug(
+                    "Metron series {MetronId} ({SeriesTitle}) has {Count} issues",
+                    metronSeriesId, seriesInfo.Title, issueListResult.Issues.Count);
+
+                // Step 3: Match each library issue by number and update cover
+                foreach (var issue in seriesGroup)
+                {
+                    var issueNumberStr = issue.IssueNumberText ?? issue.IssueNumber.ToString("0.##");
+                    
+                    var metronIssue = issueListResult.Issues.FirstOrDefault(i => 
+                        NormalizeIssueNumber(i.Number) == NormalizeIssueNumber(issueNumberStr));
+
+                    if (metronIssue != null && !string.IsNullOrEmpty(metronIssue.ImageUrl))
+                    {
+                        // Download Metron cover to local cache for reliable serving
+                        if (issue.LocalIssueId.HasValue)
+                        {
+                            try
+                            {
+                                var downloadResult = await _coverService.DownloadExternalCoverAsync(
+                                    metronIssue.ImageUrl,
+                                    CoverType.Issue,
+                                    issue.LocalIssueId.Value,
+                                    CoverCacheSource.Metron,
+                                    CoverSize.Medium,
+                                    cancellationToken);
+                                
+                                if (downloadResult.Success)
+                                {
+                                    // Use local URL for the cover
+                                    issue.CoverImageUrl = $"/api/v1/covers/issues/{issue.LocalIssueId.Value}";
+                                    _logger.LogDebug(
+                                        "Cached Metron cover for {Series} #{Number} (LocalIssueId: {LocalId})",
+                                        issue.SeriesTitle, issueNumberStr, issue.LocalIssueId.Value);
+                                    enrichedCount++;
+                                }
+                                else
+                                {
+                                    // Download failed - fall back to external URL
+                                    _logger.LogDebug(
+                                        "Failed to cache Metron cover for {Series} #{Number}: {Error}",
+                                        issue.SeriesTitle, issueNumberStr, downloadResult.Error);
+                                    issue.CoverImageUrl = metronIssue.ImageUrl;
+                                    enrichedCount++;
+                                }
+                            }
+                            catch (Exception downloadEx)
+                            {
+                                _logger.LogDebug(downloadEx,
+                                    "Exception caching Metron cover for {Series} #{Number}",
+                                    issue.SeriesTitle, issueNumberStr);
+                                issue.CoverImageUrl = metronIssue.ImageUrl;
+                                enrichedCount++;
+                            }
+                        }
+                        else
+                        {
+                            // No local issue ID - cache as discovery cover using Metron issue ID
+                            try
+                            {
+                                var downloadResult = await _coverService.DownloadExternalCoverAsync(
+                                    metronIssue.ImageUrl,
+                                    CoverType.Discovery,
+                                    metronIssue.Id,  // Use Metron issue ID for caching
+                                    CoverCacheSource.Metron,
+                                    CoverSize.Medium,
+                                    cancellationToken);
+                                
+                                if (downloadResult.Success)
+                                {
+                                    // Use local URL for the cover
+                                    issue.CoverImageUrl = $"/api/v1/covers/discovery/{metronIssue.Id}";
+                                    _logger.LogDebug(
+                                        "Cached Metron discovery cover for {Series} #{Number} (MetronId: {MetronId})",
+                                        issue.SeriesTitle, issueNumberStr, metronIssue.Id);
+                                    enrichedCount++;
+                                }
+                                else
+                                {
+                                    // Download failed - fall back to external URL
+                                    issue.CoverImageUrl = metronIssue.ImageUrl;
+                                    enrichedCount++;
+                                }
+                            }
+                            catch
+                            {
+                                issue.CoverImageUrl = metronIssue.ImageUrl;
+                                enrichedCount++;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogDebug(
+                            "No Metron cover match for {Series} #{Number}",
+                            issue.SeriesTitle, issueNumberStr);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, 
+                    "Failed to get Metron covers for {SeriesTitle} (CV {CvId})", 
+                    seriesInfo.Title, cvVolumeId);
+            }
+        }
+
+        if (enrichedCount > 0)
+        {
+            _logger.LogInformation(
+                "Enriched {Enriched}/{Total} library issues with Metron covers",
+                enrichedCount, libraryIssues.Count);
+        }
+    }
+
+    /// <summary>
+    /// Normalizes an issue number for comparison (removes leading zeros, etc.).
+    /// </summary>
+    private static string NormalizeIssueNumber(string? issueNumber)
+    {
+        if (string.IsNullOrEmpty(issueNumber)) return "";
+        
+        var result = issueNumber.TrimStart('#').Trim();
+        
+        // If it's a pure integer, return without leading zeros
+        if (int.TryParse(result, out var num))
+        {
+            return num.ToString();
+        }
+        
+        return result;
     }
 
     /// <summary>
