@@ -48,14 +48,18 @@ public partial class GetComicsAdapter : IDdlSiteAdapter
     
     /// <summary>
     /// Text patterns indicating we hit an error/donation page instead of the actual download.
+    /// Note: "cloudflare" alone is too broad as GetComics uses Cloudflare CDN legitimately.
+    /// Look for specific Cloudflare challenge page indicators instead.
     /// </summary>
     private static readonly string[] ErrorPagePatterns = 
     { 
         "support and donation", 
-        "cloudflare", 
+        "challenge-platform",
+        "cf-challenge",
         "just a moment",
         "checking your browser",
-        "access denied"
+        "access denied",
+        "ray id"
     };
     
     public GetComicsAdapter(
@@ -991,6 +995,15 @@ public partial class GetComicsAdapter : IDdlSiteAdapter
     private static bool IsErrorPage(string html)
     {
         var lowerHtml = html.ToLowerInvariant();
+        
+        // If the page has actual article content, it's not an error page
+        // even if Cloudflare scripts are present (they're on all pages)
+        if (lowerHtml.Contains("<article") && lowerHtml.Contains("post-title"))
+        {
+            return false;
+        }
+        
+        // Check for actual error/challenge indicators only if no content found
         return ErrorPagePatterns.Any(p => lowerHtml.Contains(p));
     }
     

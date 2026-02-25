@@ -1,4 +1,7 @@
 using System.Collections.Concurrent;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Shortboxerr.Core.Services;
 using Shortboxerr.Core.Ddl;
 
 namespace Shortboxerr.Infrastructure.Ddl;
@@ -11,9 +14,11 @@ public class DdlSiteAdapterFactory : IDdlSiteAdapterFactory
     private readonly ConcurrentDictionary<string, Func<IDdlSiteAdapter>> _adapterFactories = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, IDdlSiteAdapter> _adapterCache = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _enabledSites = new(StringComparer.OrdinalIgnoreCase);
+    private readonly IServiceProvider? _serviceProvider;
     
-    public DdlSiteAdapterFactory()
+    public DdlSiteAdapterFactory(IServiceProvider? serviceProvider = null)
     {
+        _serviceProvider = serviceProvider;
         // Register built-in adapters
         RegisterBuiltInAdapters();
     }
@@ -189,8 +194,15 @@ public class DdlSiteAdapterFactory : IDdlSiteAdapterFactory
         RegisterAdapter("MockDdl", () => new MockDdlSiteAdapter());
         RegisterAdapter("GettyComics", () => new GettyComicsSiteAdapter());
         
-        // Register real DDL site adapters
-        RegisterAdapter("GetComics", () => new GetComicsAdapter());
+        // Register real DDL site adapters with dependency injection
+        RegisterAdapter("GetComics", () => 
+        {
+            var logger = _serviceProvider?.GetService<ILogger<GetComicsAdapter>>();
+            var rssFeedService = _serviceProvider?.GetService<IRssFeedService>();
+            var cloudflareService = _serviceProvider?.GetService<ICloudflareBypassService>();
+            var cookieService = _serviceProvider?.GetService<IDdlCookieService>();
+            return new GetComicsAdapter(logger, rssFeedService, cloudflareService, cookieService);
+        });
         RegisterAdapter("ReadComicOnline", () => new ReadComicOnlineAdapter());
         
         // Enable sites that provide actual file downloads by default
