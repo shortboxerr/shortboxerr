@@ -3290,7 +3290,7 @@ Currently, clicking "delete" on a series in the series list view uses a basic br
 - Series list page (`ui/src/pages/SeriesPage.tsx`)
 - Series endpoints (`src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs`)
 
-### 14.9 Workflow Connectivity Audit 📋 PLANNED
+### 14.9 Workflow Connectivity Audit 🔄 IN PROGRESS
 Audit all multi-step workflows to identify and document disconnected or incomplete integrations where one service produces output that another service should consume but doesn't.
 
 **Background:**
@@ -3302,46 +3302,62 @@ The AutoSearchService was finding search candidates but not initiating downloads
 - The `IDdlDownloadService` existed but was never invoked after search
 - **Fix:** Integrated DecisionEngine evaluation and auto-grab into AutoSearchService
 
-- [ ] **Audit: Search → Download workflow**
-  - AC: Verify auto-search triggers downloads when configured
-  - AC: Verify manual search UI allows grabbing found candidates
-  - AC: Document any gaps as separate backlog items
+- [x] **Audit: Search → Download workflow** ✅ CONNECTED
+  - AC: Verify auto-search triggers downloads when configured ✅
+  - AC: Verify manual search UI allows grabbing found candidates ✅
+  - AC: Document any gaps as separate backlog items ✅
+  - **Finding:** AutoSearchService properly integrates DecisionEngine and DdlDownloadService
+  - **Finding:** Manual grab via DdlEndpoints.GrabDdl initiates download correctly
 
-- [ ] **Audit: Download → Import workflow**
-  - AC: Verify completed downloads trigger import pipeline
-  - AC: Verify import pipeline updates issue status
-  - AC: Verify file organization occurs after import
-  - AC: Document any gaps as separate backlog items
+- [x] **Audit: Download → Import workflow** ⚠️ GAP FOUND
+  - AC: Verify completed downloads trigger import pipeline ⚠️ PARTIAL
+  - AC: Verify import pipeline updates issue status ✅ (when called)
+  - AC: Verify file organization occurs after import ✅ (when called)
+  - AC: Document any gaps as separate backlog items ✅
+  - **Finding:** Auto-search flow calls import inline after download ✅
+  - **GAP:** Manual DDL downloads via GrabDdl endpoint do NOT trigger automatic import
+  - **GAP:** NzbImportBackgroundService exists for NZB, but no equivalent for DDL
+  - **New backlog item:** 14.10 DDL Auto-Import Background Service
 
-- [ ] **Audit: Discovery → Pull List workflow**
-  - AC: Verify WalkSoftly data flows to pull list correctly
-  - AC: Verify Metron enrichment is applied to discovered issues
-  - AC: Verify ComicVine matching updates library status
-  - AC: Document any gaps as separate backlog items
+- [x] **Audit: Discovery → Pull List workflow** ✅ CONNECTED
+  - AC: Verify WalkSoftly data flows to pull list correctly ✅
+  - AC: Verify Metron enrichment is applied to discovered issues ✅
+  - AC: Verify ComicVine matching updates library status ✅
+  - AC: Document any gaps as separate backlog items ✅
+  - **Finding:** PullListService.GetWeeklyDiscoveryAsync fetches from WalkSoftly/ComicVine
+  - **Finding:** EnrichDiscoveryWithMetronCoversAsync adds Metron cover images
+  - **Finding:** AddSeriesFromDiscoveryAsync properly triggers metadata fetch
 
-- [ ] **Audit: Series Add → Metadata Refresh workflow**
-  - AC: Verify adding series triggers metadata fetch
-  - AC: Verify issue list is populated after series add
-  - AC: Verify covers are fetched for new issues
-  - AC: Document any gaps as separate backlog items
+- [x] **Audit: Series Add → Metadata Refresh workflow** ✅ CONNECTED
+  - AC: Verify adding series triggers metadata fetch ✅
+  - AC: Verify issue list is populated after series add ✅
+  - AC: Verify covers are fetched for new issues ✅
+  - AC: Document any gaps as separate backlog items ✅
+  - **Finding:** AddSeriesByComicVineIdAsync fetches volume and creates all issues
+  - **Finding:** Cover images fetched via ComicVine API during metadata sync
 
-- [ ] **Audit: Notification → External Services workflow**
+- [ ] **Audit: Notification → External Services workflow** (Deferred)
   - AC: Verify notification events are raised at appropriate points
   - AC: Verify notification providers receive and process events
   - AC: Verify failed notifications are retried/logged
   - AC: Document any gaps as separate backlog items
+  - **Status:** NotificationService exists with multiple providers (Webhook, Email, Pushover, Pushbullet, Telegram)
+  - **Status:** Called from AutoSearchBackgroundService and ReleaseDayBackgroundService
 
-- [ ] **Audit: Background Service → UI State workflow**
+- [ ] **Audit: Background Service → UI State workflow** (Deferred)
   - AC: Verify background service completions invalidate appropriate caches
   - AC: Verify UI receives updates for long-running operations
   - AC: Verify progress/status is communicated to users
   - AC: Document any gaps as separate backlog items
 
-- [ ] **Audit: NZB/Torrent → Download Client workflow**
-  - AC: Verify NZB candidates are sent to SABnzbd/NZBGet
-  - AC: Verify torrent candidates are sent to configured torrent clients
-  - AC: Verify queue status is polled and displayed
-  - AC: Document any gaps as separate backlog items
+- [x] **Audit: NZB/Torrent → Download Client workflow** ✅ CONNECTED
+  - AC: Verify NZB candidates are sent to SABnzbd/NZBGet ✅
+  - AC: Verify torrent candidates are sent to configured torrent clients ✅
+  - AC: Verify queue status is polled and displayed ✅
+  - AC: Document any gaps as separate backlog items ✅
+  - **Finding:** NzbImportBackgroundService monitors NZB clients for completed downloads
+  - **Finding:** QBittorrentDownloadProvider handles torrent client integration
+  - **Finding:** ProviderManager coordinates all download providers
 
 **Deliverables:**
 - Comprehensive audit report documenting each workflow's current state
@@ -3353,6 +3369,43 @@ The AutoSearchService was finding search candidates but not initiating downloads
 - DecisionEngine (`src/Shortboxerr.Core/Services/DecisionEngine.cs`)
 - All Background Services (`src/Shortboxerr.Infrastructure/BackgroundServices/`)
 - Pull List Service (`src/Shortboxerr.Infrastructure/PullList/PullListService.cs`)
+
+### 14.10 DDL Auto-Import Background Service 📋 READY
+*Discovered during 14.9 Workflow Connectivity Audit*
+
+When DDL downloads are initiated manually via the UI (GrabDdl endpoint), completed downloads sit in the download folder without automatic import processing. This creates a workflow gap where users must manually trigger the import.
+
+**Problem:**
+- Auto-search flow: SearchIssueAsync → DownloadAsync → ProcessDownloadAsync (inline import ✅)
+- Manual grab flow: GrabDdl → DownloadAsync → (no import ❌)
+
+**Solution:**
+Create a DdlImportBackgroundService (similar to NzbImportBackgroundService) that:
+1. Monitors the download folder for completed DDL downloads
+2. Tracks active downloads via DdlDownloadService
+3. Triggers import pipeline when downloads complete
+4. Adds completed items to history
+
+- [ ] **Create DdlImportBackgroundService**
+  - AC: Service polls for completed DDL downloads
+  - AC: Integrates with DdlImportService.ProcessDownloadAsync
+  - AC: Configurable check interval (default 30 seconds)
+  - AC: Respects auto-import settings
+
+- [ ] **Track download completion in DdlDownloadService**
+  - AC: Maintain list of completed downloads pending import
+  - AC: Remove from pending after successful import
+  - AC: Store download metadata for import matching
+
+- [ ] **Add settings for DDL auto-import**
+  - AC: Enable/disable auto-import for DDL downloads
+  - AC: Minimum confidence threshold for auto-matching
+  - AC: Manual review mode (hold for approval)
+
+**Related:**
+- `src/Shortboxerr.Infrastructure/BackgroundServices/NzbImportBackgroundService.cs` (reference implementation)
+- `src/Shortboxerr.Infrastructure/Ddl/DdlDownloadService.cs`
+- `src/Shortboxerr.Core/Ddl/IDdlImportService.cs`
 
 ---
 

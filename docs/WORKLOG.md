@@ -1,5 +1,76 @@
 # Worklog
 
+## Iteration 161 (2026-02-25)
+**EPIC 14.9: Workflow Connectivity Audit + History System Refactoring**
+
+### Summary
+1. Refactored Activity and History sections to follow Sonarr/Radarr patterns
+2. Implemented unified history service for tracking library events
+3. Conducted workflow connectivity audit identifying one significant gap
+4. Added "grabbed" event logging when DDL downloads start
+
+### Activity/History Refactoring
+
+**UI Changes:**
+- Renamed "Activity" page to "Queue" - shows only active/in-progress downloads
+- Enhanced "History" page to display all event types in unified feed
+- Added relative timestamps with full date/time tooltips
+- Added clear history button and event type filters
+
+**Backend Changes:**
+- Created `IHistoryService` interface for centralized event recording
+- Implemented `HistoryService` persisting events to `HistoryEvents` table
+- Added `DownloadHistory` entity for persistent download tracking
+- Unified `HistoryEndpoints` to aggregate both tables
+- Record "added/deleted" events for series and editions
+- Record "grabbed" events when DDL downloads start
+
+### Workflow Connectivity Audit (14.9)
+
+**Audited Workflows:**
+1. **Search → Download** ✅ CONNECTED - AutoSearchService properly integrates DecisionEngine and DdlDownloadService
+2. **Download → Import** ⚠️ GAP FOUND - Manual DDL downloads don't trigger auto-import
+3. **Discovery → Pull List** ✅ CONNECTED - WalkSoftly/ComicVine data flows correctly
+4. **Series Add → Metadata Refresh** ✅ CONNECTED - AddSeriesByComicVineIdAsync fetches all metadata
+5. **NZB/Torrent → Download Client** ✅ CONNECTED - Background services and providers integrated
+
+**Gap Identified:**
+- Manual DDL downloads via `GrabDdl` endpoint complete but don't trigger import pipeline
+- Created backlog item 14.10: DDL Auto-Import Background Service
+
+### Files Changed
+
+**New Files:**
+- `src/Shortboxerr.Core/Services/IHistoryService.cs`
+- `src/Shortboxerr.Infrastructure/Services/HistoryService.cs`
+- `src/Shortboxerr.Core/Entities/DownloadHistory.cs`
+- `src/Shortboxerr.Core/Activity/IDownloadHistoryService.cs`
+- `src/Shortboxerr.Infrastructure/Activity/DownloadHistoryService.cs`
+- `src/Shortboxerr.Infrastructure/Persistence/Migrations/20260225224248_AddDownloadHistory.cs`
+
+**Modified Files:**
+- `SeriesEndpoints.cs`, `EditionEndpoints.cs`, `DdlEndpoints.cs` - History event recording
+- `HistoryEndpoints.cs` - Unified history aggregation
+- `ActivityService.cs`, `DdlDownloadService.cs` - Download history persistence
+- `DependencyInjection.cs` - Service registrations
+- `ui/src/pages/ActivityPage.tsx`, `HistoryPage.tsx`, `Layout.tsx`, `client.ts` - UI changes
+
+### Commits
+1. `fix(ddl): improve GetComics error page detection and DI`
+2. `feat(history): add DownloadHistory entity for persistent download tracking`
+3. `feat(history): add unified IHistoryService for library event tracking`
+4. `feat(activity): persist DDL downloads to history and integrate with activity`
+5. `feat(api): record history events when modifying library content`
+6. `feat(api): unify history endpoint to aggregate all event types`
+7. `feat(ui): simplify Activity to Queue and enhance History page`
+
+### Build Status
+- ✅ Backend builds successfully
+- ✅ Frontend builds successfully
+- ✅ Server running on port 5000
+
+---
+
 ## Iteration 160 (2026-02-25)
 **EPIC 8.6: GetComics Mylar3 Full Parity**
 
