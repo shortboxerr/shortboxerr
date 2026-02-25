@@ -190,7 +190,8 @@ public class DdlSiteAdapterFactory : IDdlSiteAdapterFactory
         RegisterAdapter("GettyComics", () => new GettyComicsSiteAdapter());
         
         // Register real DDL site adapters
-        RegisterAdapter("GetComics", () => new GetComicsAdapter());
+        // Using GetComicsAdapterV2 for Mylar3 parity (better link extraction, modern hosts support)
+        RegisterAdapter("GetComics", () => new GetComicsAdapterV2());
         RegisterAdapter("ReadComicOnline", () => new ReadComicOnlineAdapter());
         
         // Enable real DDL sites by default for production use

@@ -14,9 +14,10 @@ public class ActivityService : IActivityService
     private readonly ILogger<ActivityService>? _logger;
 
     // In-memory history for recently completed/failed downloads
+    // Static to share across all scoped instances (since DdlDownloadService resolves in different scopes)
     // In a production system, this would be persisted to the database
-    private readonly List<DownloadActivity> _history = new();
-    private readonly object _historyLock = new();
+    private static readonly List<DownloadActivity> _history = new();
+    private static readonly object _historyLock = new();
     private const int MaxHistoryItems = 100;
 
     public ActivityService(IProviderManager providerManager, ILogger<ActivityService>? logger = null)

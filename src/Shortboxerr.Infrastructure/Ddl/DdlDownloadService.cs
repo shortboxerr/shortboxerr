@@ -820,24 +820,33 @@ public class DdlDownloadService : IDdlDownloadService
             {
                 using var scope = _serviceProvider.CreateScope();
                 var activityService = scope.ServiceProvider.GetService<IActivityService>();
-                activityService?.AddToHistory(new DownloadActivity
+                if (activityService != null)
                 {
-                    Id = result.DownloadId,
-                    SourceType = DownloadSourceType.Ddl,
-                    ClientName = "DDL",
-                    Title = candidate.ReleaseTitle,
-                    State = result.Success ? ActivityState.Completed : ActivityState.Failed,
-                    Progress = result.Success ? 100 : 0,
-                    TotalBytes = result.FileSize > 0 ? result.FileSize : null,
-                    DownloadedBytes = result.FileSize,
-                    StartedAt = startedAt,
-                    CompletedAt = completedAt,
-                    ErrorMessage = result.ErrorMessage,
-                    RetryCount = result.RetryAttempts,
-                    OutputPath = result.FilePath,
-                    SourceUrl = result.SourceUrl ?? candidate.DownloadLinks.FirstOrDefault()?.Url,
-                    Category = candidate.SourceSite
-                });
+                    activityService.AddToHistory(new DownloadActivity
+                    {
+                        Id = result.DownloadId,
+                        SourceType = DownloadSourceType.Ddl,
+                        ClientName = "DDL",
+                        Title = candidate.ReleaseTitle,
+                        State = result.Success ? ActivityState.Completed : ActivityState.Failed,
+                        Progress = result.Success ? 100 : 0,
+                        TotalBytes = result.FileSize > 0 ? result.FileSize : null,
+                        DownloadedBytes = result.FileSize,
+                        StartedAt = startedAt,
+                        CompletedAt = completedAt,
+                        ErrorMessage = result.ErrorMessage,
+                        RetryCount = result.RetryAttempts,
+                        OutputPath = result.FilePath,
+                        SourceUrl = result.SourceUrl ?? candidate.DownloadLinks.FirstOrDefault()?.Url,
+                        Category = candidate.SourceSite
+                    });
+                    _logger?.LogInformation("Added download to activity history: {Title}, Success: {Success}", 
+                        candidate.ReleaseTitle, result.Success);
+                }
+                else
+                {
+                    _logger?.LogWarning("ActivityService not available - could not record download history");
+                }
             }
             catch (Exception ex)
             {

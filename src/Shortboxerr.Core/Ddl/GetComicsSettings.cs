@@ -133,12 +133,12 @@ public enum GetComicsQualityVariant
 
 /// <summary>
 /// Link types for GetComics downloads.
-/// Based on Mylar3's link_type handling.
+/// Based on Mylar3's link_type handling plus additional hosts found on GetComics pages.
 /// </summary>
 public enum GetComicsLinkType
 {
     /// <summary>
-    /// Main GetComics server download.
+    /// Main GetComics server download (getcomics.org/dlds/ redirect).
     /// </summary>
     Main,
     
@@ -161,6 +161,31 @@ public enum GetComicsLinkType
     /// Pixeldrain hosted download.
     /// </summary>
     Pixeldrain,
+    
+    /// <summary>
+    /// Terabox hosted download (1024terabox.com).
+    /// </summary>
+    Terabox,
+    
+    /// <summary>
+    /// Rootz hosted download (rootz.so).
+    /// </summary>
+    Rootz,
+    
+    /// <summary>
+    /// VikingFile hosted download (vikingfile.com).
+    /// </summary>
+    VikingFile,
+    
+    /// <summary>
+    /// ZippyShare hosted download.
+    /// </summary>
+    Zippyshare,
+    
+    /// <summary>
+    /// Generic/other file host.
+    /// </summary>
+    Other,
     
     /// <summary>
     /// Unknown hosting service.

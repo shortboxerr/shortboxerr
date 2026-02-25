@@ -580,44 +580,68 @@ public partial class GetComicsAdapterV2 : IDdlSiteAdapter
             section.Links.Add(linkInfo);
         }
         
-        // Also try the alternate pattern for direct links
+        // Also try the alternate pattern for direct links to known file hosts
         var directMatches = KnownHostLinkMylar3Regex().Matches(html);
         foreach (Match match in directMatches)
         {
             var url = HttpUtility.HtmlDecode(match.Groups["url"].Value);
             var host = match.Groups["host"].Value.ToLowerInvariant();
             
-            var linkType = host switch
-            {
-                var h when h.Contains("mega") => GetComicsLinkType.Mega,
-                var h when h.Contains("mediafire") => GetComicsLinkType.MediaFire,
-                var h when h.Contains("pixeldrain") => GetComicsLinkType.Pixeldrain,
-                _ => GetComicsLinkType.Unknown
-            };
+            var linkType = DetectLinkTypeFromHost(host);
             
             if (linkType != GetComicsLinkType.Unknown)
             {
-                var section = sections.FirstOrDefault(s => s.QualityVariant == "normal") 
-                    ?? new GetComicsLinkSection { QualityVariant = "normal" };
-                
-                if (!sections.Contains(section))
-                {
-                    sections.Add(section);
-                }
-                
-                if (!section.Links.Any(l => l.Url == url))
-                {
-                    section.Links.Add(new GetComicsLink
-                    {
-                        Url = url,
-                        LinkType = linkType,
-                        QualityVariant = GetComicsQualityVariant.Normal
-                    });
-                }
+                AddLinkToSection(sections, url, linkType);
             }
         }
         
+        // Also try GetComics redirect links (getcomics.org/dlds/ pattern)
+        var redirectMatches = GetComicsRedirectLinkRegex().Matches(html);
+        foreach (Match match in redirectMatches)
+        {
+            var url = HttpUtility.HtmlDecode(match.Groups["url"].Value);
+            // These are encrypted redirects - treat as Main type
+            AddLinkToSection(sections, url, GetComicsLinkType.Main);
+            _logger?.LogDebug("Found GetComics redirect link: {Url}", url);
+        }
+        
         return sections;
+    }
+    
+    private static GetComicsLinkType DetectLinkTypeFromHost(string host)
+    {
+        return host switch
+        {
+            var h when h.Contains("mega") => GetComicsLinkType.Mega,
+            var h when h.Contains("mediafire") => GetComicsLinkType.MediaFire,
+            var h when h.Contains("pixeldrain") => GetComicsLinkType.Pixeldrain,
+            var h when h.Contains("terabox") => GetComicsLinkType.Terabox,
+            var h when h.Contains("rootz") => GetComicsLinkType.Rootz,
+            var h when h.Contains("vikingfile") => GetComicsLinkType.VikingFile,
+            var h when h.Contains("zippyshare") => GetComicsLinkType.Zippyshare,
+            _ => GetComicsLinkType.Other  // Return Other instead of Unknown to include it
+        };
+    }
+    
+    private static void AddLinkToSection(List<GetComicsLinkSection> sections, string url, GetComicsLinkType linkType)
+    {
+        var section = sections.FirstOrDefault(s => s.QualityVariant == "normal") 
+            ?? new GetComicsLinkSection { QualityVariant = "normal" };
+        
+        if (!sections.Contains(section))
+        {
+            sections.Add(section);
+        }
+        
+        if (!section.Links.Any(l => l.Url == url))
+        {
+            section.Links.Add(new GetComicsLink
+            {
+                Url = url,
+                LinkType = linkType,
+                QualityVariant = GetComicsQualityVariant.Normal
+            });
+        }
     }
     
     /// <summary>
@@ -637,6 +661,11 @@ public partial class GetComicsAdapterV2 : IDdlSiteAdapter
                 "mediafire" => GetComicsLinkType.MediaFire,
                 "main" => GetComicsLinkType.Main,
                 "mirror" => GetComicsLinkType.Mirror,
+                "terabox" => GetComicsLinkType.Terabox,
+                "rootz" => GetComicsLinkType.Rootz,
+                "vikingfile" => GetComicsLinkType.VikingFile,
+                "zippyshare" => GetComicsLinkType.Zippyshare,
+                "other" => GetComicsLinkType.Other,
                 _ => GetComicsLinkType.Unknown
             };
             
@@ -1039,10 +1068,18 @@ public partial class GetComicsAdapterV2 : IDdlSiteAdapter
     private static partial Regex DownloadButtonMylar3Regex();
     
     /// <summary>
-    /// Matches links to known file hosts.
+    /// Matches links to known file hosts (expanded list based on actual GetComics pages).
+    /// Includes: mega, mediafire, pixeldrain, terabox, rootz, vikingfile, zippyshare, etc.
     /// </summary>
-    [GeneratedRegex(@"href=[""'](?<url>https?://(?:www\.)?(?<host>mega\.nz|mega\.co\.nz|mediafire\.com|pixeldrain\.com)[^""']*)[""']", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"href=[""'](?<url>https?://(?:www\.)?(?:[\w-]+\.)?(?<host>mega\.nz|mega\.co\.nz|mediafire\.com|pixeldrain\.com|terabox\.com|1024terabox\.com|rootz\.so|vikingfile\.com|zippyshare\.com|userscloud\.com|uploadhaven\.com|racaty\.io|racaty\.net|dropapk\.to|katfile\.com|nitroflare\.com|turbobit\.net|uploaded\.net|rapidgator\.net|uploadgig\.com)[^""']*)[""']", RegexOptions.IgnoreCase)]
     private static partial Regex KnownHostLinkMylar3Regex();
+    
+    /// <summary>
+    /// Matches GetComics encrypted redirect links (getcomics.org/dlds/ pattern).
+    /// These are internal redirects that eventually lead to file hosts.
+    /// </summary>
+    [GeneratedRegex(@"href=[""'](?<url>https?://getcomics\.(?:org|info)/dlds/[^""']+)[""']", RegexOptions.IgnoreCase)]
+    private static partial Regex GetComicsRedirectLinkRegex();
     
     #endregion
     
