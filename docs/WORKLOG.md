@@ -1,5 +1,18 @@
 # Worklog
 
+## Iteration 156 (2026-02-24)
+**Planning Note: EPIC 11.25 queued as next recommended item**
+
+### Summary
+Added a new READY backlog item to address upcoming issues that lack a ComicVine issue ID from WalkSoftly (`walkSoftlyIssueId = null`), which currently causes series/volume fallback covers to appear instead of issue-specific covers.
+
+### Recommendation
+- Next implementation target: `11.25 ID-Less Upcoming Issue Matching for Metron Covers`
+- Rationale: Introduce a confidence-scored Metron matching path (title + issue number + publisher/date heuristics) for ID-less upcoming issues, while preventing false-positive cover assignments.
+- Expected outcome: Better issue-cover accuracy for unreleased issues until authoritative ComicVine issue metadata becomes available.
+
+---
+
 ## Iteration 155 (2026-02-24)
 **EPIC 11.23: Metron Cover Caching Parity + EPIC 11.24: Enrichment Status Tracking**
 
