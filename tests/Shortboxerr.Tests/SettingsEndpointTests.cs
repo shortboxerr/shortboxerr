@@ -350,6 +350,7 @@ public class SettingsEndpointTests : IClassFixture<CustomWebApplicationFactory>
         Assert.False(settings.Enabled);
         // Cache TTL should be reasonable
         Assert.InRange(settings.CacheTtlHours, 1, 168);
+        Assert.InRange(settings.MinMatchConfidence, 50, 100);
     }
 
     [Fact]
@@ -449,6 +450,22 @@ public class SettingsEndpointTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
+    public async Task UpdateMetronSettings_MinMatchConfidence_ClampedToValidRange()
+    {
+        var response = await _client.PutAsJsonAsync("/api/v1/settings/metron", new { minMatchConfidence = 10 });
+        response.EnsureSuccessStatusCode();
+        var settings = await response.Content.ReadFromJsonAsync<MetronSettingsResponse>();
+        Assert.NotNull(settings);
+        Assert.Equal(50, settings.MinMatchConfidence);
+
+        response = await _client.PutAsJsonAsync("/api/v1/settings/metron", new { minMatchConfidence = 150 });
+        response.EnsureSuccessStatusCode();
+        settings = await response.Content.ReadFromJsonAsync<MetronSettingsResponse>();
+        Assert.NotNull(settings);
+        Assert.Equal(100, settings.MinMatchConfidence);
+    }
+
+    [Fact]
     public async Task TestMetronConnection_WithoutCredentials_ReturnsNotConfigured()
     {
         // Check current settings - API doesn't support clearing credentials once set
@@ -514,6 +531,7 @@ public class MetronSettingsResponse
     public string Username { get; set; } = "";
     public bool HasPassword { get; set; }
     public int CacheTtlHours { get; set; }
+    public int MinMatchConfidence { get; set; }
     public int TimeoutSeconds { get; set; }
     public int MaxRequestsPerMinute { get; set; }
 }

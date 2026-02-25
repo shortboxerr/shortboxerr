@@ -403,6 +403,7 @@ public static class SettingsEndpoints
             Username = settings.Username ?? "",
             HasPassword = !string.IsNullOrEmpty(settings.Password),
             CacheTtlHours = settings.CacheTtlHours,
+            MinMatchConfidence = settings.MinMatchConfidence,
             TimeoutSeconds = MetronSettings.DefaultTimeoutSeconds,
             MaxRequestsPerMinute = MetronSettings.DefaultMaxRequestsPerMinute
         });
@@ -423,6 +424,8 @@ public static class SettingsEndpoints
             settings.Password = request.Password;
         if (request.CacheTtlHours.HasValue)
             settings.CacheTtlHours = Math.Clamp(request.CacheTtlHours.Value, 1, 168);
+        if (request.MinMatchConfidence.HasValue)
+            settings.MinMatchConfidence = Math.Clamp(request.MinMatchConfidence.Value, 50, 100);
 
         // Validate: cannot enable Metron without credentials
         if (request.Enabled == true)
@@ -447,6 +450,7 @@ public static class SettingsEndpoints
             Username = settings.Username ?? "",
             HasPassword = !string.IsNullOrEmpty(settings.Password),
             CacheTtlHours = settings.CacheTtlHours,
+            MinMatchConfidence = settings.MinMatchConfidence,
             TimeoutSeconds = MetronSettings.DefaultTimeoutSeconds,
             MaxRequestsPerMinute = MetronSettings.DefaultMaxRequestsPerMinute
         });
@@ -937,6 +941,12 @@ public class MetronSettingsRequest
     /// Cache TTL in hours (1-168).
     /// </summary>
     public int? CacheTtlHours { get; set; }
+
+    /// <summary>
+    /// Minimum confidence (50-100) for ID-less Metron issue matching.
+    /// Lower values increase recall but risk mismatched covers.
+    /// </summary>
+    public int? MinMatchConfidence { get; set; }
     
     // Note: TimeoutSeconds and MaxRequestsPerMinute are hardcoded to Metron's limits
     // and are not configurable via API to prevent exceeding rate limits.
@@ -966,6 +976,11 @@ public class MetronSettingsResponse
     /// Cache TTL in hours.
     /// </summary>
     public int CacheTtlHours { get; set; }
+
+    /// <summary>
+    /// Minimum confidence (50-100) for ID-less Metron issue matching.
+    /// </summary>
+    public int MinMatchConfidence { get; set; }
 
     /// <summary>
     /// Request timeout in seconds (read-only, hardcoded to Metron's default).

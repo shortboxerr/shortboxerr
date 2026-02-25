@@ -377,6 +377,17 @@ public class ComicVineIssue
     /// Null means the cover came from the original ComicVine discovery data.
     /// </summary>
     public string? CoverSource { get; set; }
+
+    /// <summary>
+    /// Matching method used for the current cover (e.g., CvId, IdLessHeuristic, VolumeFallback).
+    /// </summary>
+    public string? CoverMatchMethod { get; set; }
+
+    /// <summary>
+    /// Match confidence from 0.0 to 1.0 for heuristic cover matches.
+    /// Null for deterministic or unknown match paths.
+    /// </summary>
+    public double? CoverMatchConfidence { get; set; }
 }
 
 /// <summary>

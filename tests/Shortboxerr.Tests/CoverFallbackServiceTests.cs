@@ -11,6 +11,7 @@ namespace Shortboxerr.Tests;
 public class CoverFallbackServiceTests
 {
     private readonly Mock<IMetronClient> _metronClientMock;
+    private readonly Mock<ISettingsService> _settingsServiceMock;
     private readonly Mock<ILogger<CoverFallbackService>> _loggerMock;
     private readonly IMemoryCache _cache;
 
@@ -18,13 +19,17 @@ public class CoverFallbackServiceTests
     {
         _metronClientMock = new Mock<IMetronClient>();
         _metronClientMock.Setup(c => c.IsConfigured).Returns(true);
+        _settingsServiceMock = new Mock<ISettingsService>();
+        _settingsServiceMock
+            .Setup(s => s.GetAsync<MetronSettings>("metron", It.IsAny<MetronSettings>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MetronSettings { MinMatchConfidence = 85 });
         _loggerMock = new Mock<ILogger<CoverFallbackService>>();
         _cache = new MemoryCache(new MemoryCacheOptions());
     }
 
     private CoverFallbackService CreateService()
     {
-        return new CoverFallbackService(_metronClientMock.Object, _cache, _loggerMock.Object);
+        return new CoverFallbackService(_metronClientMock.Object, _settingsServiceMock.Object, _cache, _loggerMock.Object);
     }
 
     [Fact]
@@ -96,7 +101,7 @@ public class CoverFallbackServiceTests
             .ReturnsAsync(MetronIssueResult.Found(metronIssue));
 
         var freshCache = new MemoryCache(new MemoryCacheOptions());
-        var service = new CoverFallbackService(_metronClientMock.Object, freshCache, _loggerMock.Object);
+        var service = new CoverFallbackService(_metronClientMock.Object, _settingsServiceMock.Object, freshCache, _loggerMock.Object);
 
         var result1 = await service.GetCoverByCvIdAsync(67890);
         
@@ -208,7 +213,7 @@ public class CoverFallbackServiceTests
             }));
 
         var freshCache = new MemoryCache(new MemoryCacheOptions());
-        var service = new CoverFallbackService(metronClientMock.Object, freshCache, _loggerMock.Object);
+        var service = new CoverFallbackService(metronClientMock.Object, _settingsServiceMock.Object, freshCache, _loggerMock.Object);
 
         await service.GetCoverByCvIdAsync(1);
         await service.GetCoverByCvIdAsync(2);
@@ -235,7 +240,7 @@ public class CoverFallbackServiceTests
             .ReturnsAsync(MetronIssueResult.Found(metronIssue));
 
         var freshCache = new MemoryCache(new MemoryCacheOptions());
-        var service = new CoverFallbackService(_metronClientMock.Object, freshCache, _loggerMock.Object);
+        var service = new CoverFallbackService(_metronClientMock.Object, _settingsServiceMock.Object, freshCache, _loggerMock.Object);
 
         var result1 = await service.GetCoverByCvIdAsync(12345);
         Assert.False(result1.FromCache);
@@ -274,7 +279,7 @@ public class CoverFallbackServiceTests
         var metronClientMock = new Mock<IMetronClient>();
         metronClientMock.Setup(c => c.IsConfigured).Returns(false);
 
-        var service = new CoverFallbackService(metronClientMock.Object, _cache, _loggerMock.Object);
+        var service = new CoverFallbackService(metronClientMock.Object, _settingsServiceMock.Object, _cache, _loggerMock.Object);
 
         var result = await service.GetCoverByCvIdAsync(12345, volumeCoverUrl: "https://volume.jpg");
 
@@ -338,7 +343,7 @@ public class CoverFallbackServiceTests
             .ReturnsAsync(MetronIssueResult.Found(metronIssue));
 
         var freshCache = new MemoryCache(new MemoryCacheOptions());
-        var service = new CoverFallbackService(_metronClientMock.Object, freshCache, _loggerMock.Object);
+        var service = new CoverFallbackService(_metronClientMock.Object, _settingsServiceMock.Object, freshCache, _loggerMock.Object);
 
         var result = await service.GetCoverByCvIdAsync(12345);
 
@@ -359,7 +364,7 @@ public class CoverFallbackServiceTests
             .ReturnsAsync(MetronIssueResult.Found(metronIssue));
 
         var freshCache = new MemoryCache(new MemoryCacheOptions());
-        var service = new CoverFallbackService(_metronClientMock.Object, freshCache, _loggerMock.Object);
+        var service = new CoverFallbackService(_metronClientMock.Object, _settingsServiceMock.Object, freshCache, _loggerMock.Object);
 
         // First call (cache miss)
         await service.GetCoverByCvIdAsync(12345);
@@ -372,5 +377,88 @@ public class CoverFallbackServiceTests
 
         Assert.Equal(3, stats.TotalRequests);
         Assert.True(stats.CacheHitRatio >= 0.5);
+    }
+
+    [Fact]
+    public async Task GetCoverAsync_RejectsIdLessMatch_BelowConfidenceThreshold()
+    {
+        _settingsServiceMock
+            .Setup(s => s.GetAsync<MetronSettings>("metron", It.IsAny<MetronSettings>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MetronSettings { MinMatchConfidence = 95 });
+
+        _metronClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MetronSearchResult
+            {
+                Success = true,
+                Issues = new List<MetronIssue>
+                {
+                    new()
+                    {
+                        Id = 1,
+                        Number = "17",
+                        ImageUrl = "https://metron.cloud/aww17.jpg",
+                        StoreDate = DateTime.UtcNow.AddMonths(8),
+                        Series = new MetronSeries
+                        {
+                            Name = "Absolute Wonder Woman",
+                            Publisher = new MetronPublisher { Name = "DC Comics" }
+                        }
+                    }
+                }
+            });
+
+        var service = CreateService();
+        var result = await service.GetCoverAsync(
+            "Absolute Wonder Woman",
+            "17",
+            publisher: "DC Comics",
+            expectedStoreDate: DateTime.UtcNow,
+            volumeCoverUrl: "https://comicvine/volume.jpg");
+
+        Assert.True(result.Success);
+        Assert.Equal(CoverSource.ComicVineVolume, result.Source);
+        Assert.True(result.WasConfidenceRejected);
+    }
+
+    [Fact]
+    public async Task GetCoverAsync_UsesIdLessMetronMatch_WhenConfidencePassesThreshold()
+    {
+        _settingsServiceMock
+            .Setup(s => s.GetAsync<MetronSettings>("metron", It.IsAny<MetronSettings>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MetronSettings { MinMatchConfidence = 70 });
+
+        _metronClientMock.Setup(c => c.SearchIssueAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MetronSearchResult
+            {
+                Success = true,
+                Issues = new List<MetronIssue>
+                {
+                    new()
+                    {
+                        Id = 1,
+                        Number = "17",
+                        ImageUrl = "https://metron.cloud/aww17.jpg",
+                        StoreDate = DateTime.UtcNow.Date.AddDays(1),
+                        Series = new MetronSeries
+                        {
+                            Name = "Absolute Wonder Woman",
+                            Publisher = new MetronPublisher { Name = "DC Comics" }
+                        }
+                    }
+                }
+            });
+
+        var service = CreateService();
+        var result = await service.GetCoverAsync(
+            "Absolute Wonder Woman",
+            "17",
+            publisher: "DC Comics",
+            expectedStoreDate: DateTime.UtcNow.Date);
+
+        Assert.True(result.Success);
+        Assert.Equal(CoverSource.Metron, result.Source);
+        Assert.Equal("IdLessHeuristic", result.MatchMethod);
+        Assert.NotNull(result.MatchConfidence);
+        Assert.True(result.MatchConfidence > 0.70);
     }
 }

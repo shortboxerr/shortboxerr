@@ -17,6 +17,7 @@ namespace Shortboxerr.Infrastructure.Services;
 public class CoverFallbackService : ICoverFallbackService
 {
     private readonly IMetronClient _metronClient;
+    private readonly ISettingsService _settingsService;
     private readonly IMemoryCache _cache;
     private readonly ILogger<CoverFallbackService> _logger;
 
@@ -32,10 +33,12 @@ public class CoverFallbackService : ICoverFallbackService
 
     public CoverFallbackService(
         IMetronClient metronClient,
+        ISettingsService settingsService,
         IMemoryCache cache,
         ILogger<CoverFallbackService> logger)
     {
         _metronClient = metronClient;
+        _settingsService = settingsService;
         _cache = cache;
         _logger = logger;
     }
@@ -89,7 +92,7 @@ public class CoverFallbackService : ICoverFallbackService
         if (!result.Success && !string.IsNullOrEmpty(volumeCoverUrl))
         {
             Interlocked.Increment(ref _volumeHits);
-            result = CoverFallbackResult.Found(volumeCoverUrl, CoverSource.ComicVineVolume);
+            result = CoverFallbackResult.Found(volumeCoverUrl, CoverSource.ComicVineVolume, matchMethod: "VolumeFallback");
 
             _logger.LogDebug(
                 "Using volume cover as fallback for CV ID {CvId}",
@@ -120,6 +123,7 @@ public class CoverFallbackService : ICoverFallbackService
         string seriesName,
         string issueNumber,
         string? publisher = null,
+        DateTime? expectedStoreDate = null,
         string? volumeCoverUrl = null,
         CancellationToken cancellationToken = default)
     {
@@ -150,7 +154,7 @@ public class CoverFallbackService : ICoverFallbackService
 
         try
         {
-            result = await TryMetronBySearchAsync(seriesName, issueNumber, publisher, cancellationToken);
+            result = await TryMetronBySearchAsync(seriesName, issueNumber, publisher, expectedStoreDate, cancellationToken);
 
             if (result.Success)
             {
@@ -166,10 +170,12 @@ public class CoverFallbackService : ICoverFallbackService
             result = CoverFallbackResult.NotFound();
         }
 
+        var wasConfidenceRejected = result.WasConfidenceRejected;
         if (!result.Success && !string.IsNullOrEmpty(volumeCoverUrl))
         {
             Interlocked.Increment(ref _volumeHits);
-            result = CoverFallbackResult.Found(volumeCoverUrl, CoverSource.ComicVineVolume);
+            result = CoverFallbackResult.Found(volumeCoverUrl, CoverSource.ComicVineVolume, matchMethod: "VolumeFallback");
+            result.WasConfidenceRejected = wasConfidenceRejected;
 
             _logger.LogDebug(
                 "Using volume cover as fallback for {Series} #{Issue}",
@@ -215,7 +221,7 @@ public class CoverFallbackService : ICoverFallbackService
 
         if (!string.IsNullOrEmpty(metronResult.Issue.ImageUrl))
         {
-            return CoverFallbackResult.Found(metronResult.Issue.ImageUrl, CoverSource.Metron);
+            return CoverFallbackResult.Found(metronResult.Issue.ImageUrl, CoverSource.Metron, matchMethod: "CvId", matchConfidence: 1.0);
         }
 
         return CoverFallbackResult.NotFound("Metron issue found but no cover image available");
@@ -225,6 +231,7 @@ public class CoverFallbackService : ICoverFallbackService
         string seriesName,
         string issueNumber,
         string? publisher,
+        DateTime? expectedStoreDate,
         CancellationToken cancellationToken)
     {
         if (!_metronClient.IsConfigured)
@@ -240,21 +247,37 @@ public class CoverFallbackService : ICoverFallbackService
             return CoverFallbackResult.NotFound(searchResult.Error);
         }
 
-        var bestMatch = FindBestMatch(searchResult.Issues, seriesName, issueNumber, publisher);
+        var minConfidence = await GetMinMatchConfidenceAsync(cancellationToken);
+        var bestMatch = FindBestMatch(searchResult.Issues, seriesName, issueNumber, publisher, expectedStoreDate);
 
-        if (bestMatch != null && !string.IsNullOrEmpty(bestMatch.ImageUrl))
+        if (bestMatch != null && !string.IsNullOrEmpty(bestMatch.Issue.ImageUrl))
         {
-            return CoverFallbackResult.Found(bestMatch.ImageUrl, CoverSource.Metron);
+            if (bestMatch.Confidence < minConfidence / 100.0)
+            {
+                _logger.LogInformation(
+                    "Rejected ID-less Metron match for {Series} #{Issue}: score {Score:P0} below threshold {Threshold}%",
+                    seriesName, issueNumber, bestMatch.Confidence, minConfidence);
+                return CoverFallbackResult.NotFound(
+                    $"Metron candidate confidence {bestMatch.Confidence:P0} below threshold {minConfidence}%",
+                    wasConfidenceRejected: true);
+            }
+
+            return CoverFallbackResult.Found(
+                bestMatch.Issue.ImageUrl,
+                CoverSource.Metron,
+                matchMethod: "IdLessHeuristic",
+                matchConfidence: bestMatch.Confidence);
         }
 
         return CoverFallbackResult.NotFound("No matching issue found in Metron results");
     }
 
-    private static MetronIssue? FindBestMatch(
+    private static MetronMatchCandidate? FindBestMatch(
         List<MetronIssue> issues,
         string targetSeries,
         string targetIssueNumber,
-        string? targetPublisher)
+        string? targetPublisher,
+        DateTime? expectedStoreDate)
     {
         var normalizedTargetSeries = NormalizeName(targetSeries);
         var normalizedTargetIssue = NormalizeIssueNumber(targetIssueNumber);
@@ -268,14 +291,42 @@ public class CoverFallbackService : ICoverFallbackService
                 PublisherMatch = string.IsNullOrEmpty(targetPublisher) ||
                     (issue.Series?.Publisher?.Name != null &&
                         (issue.Series.Publisher.Name.Contains(targetPublisher, StringComparison.OrdinalIgnoreCase) ||
-                         targetPublisher.Contains(issue.Series.Publisher.Name, StringComparison.OrdinalIgnoreCase)))
+                         targetPublisher.Contains(issue.Series.Publisher.Name, StringComparison.OrdinalIgnoreCase))),
+                DateScore = CalculateDateProximity(issue.StoreDate, expectedStoreDate)
             })
             .Where(c => c.SeriesScore >= 0.7 && c.IssueMatch)
-            .OrderByDescending(c => c.PublisherMatch)
-            .ThenByDescending(c => c.SeriesScore)
+            .Select(c => new MetronMatchCandidate
+            {
+                Issue = c.Issue,
+                Confidence = (c.SeriesScore * 0.50) + (c.PublisherMatch ? 0.20 : 0.0) + (c.DateScore * 0.30)
+            })
+            .OrderByDescending(c => c.Confidence)
             .FirstOrDefault();
 
-        return candidates?.Issue;
+        return candidates;
+    }
+
+    private static double CalculateDateProximity(DateTime? candidateStoreDate, DateTime? expectedStoreDate)
+    {
+        if (!candidateStoreDate.HasValue || !expectedStoreDate.HasValue)
+            return 0.5;
+
+        var days = Math.Abs((candidateStoreDate.Value.Date - expectedStoreDate.Value.Date).TotalDays);
+        return days switch
+        {
+            <= 3 => 1.0,
+            <= 7 => 0.8,
+            <= 14 => 0.6,
+            <= 21 => 0.4,
+            _ => 0.1
+        };
+    }
+
+    private async Task<int> GetMinMatchConfidenceAsync(CancellationToken cancellationToken)
+    {
+        var settings = await _settingsService.GetAsync<MetronSettings>("metron", new MetronSettings(), cancellationToken)
+            ?? new MetronSettings();
+        return Math.Clamp(settings.MinMatchConfidence, 50, 100);
     }
 
     private static string NormalizeName(string? name)
@@ -335,6 +386,12 @@ public class CoverFallbackService : ICoverFallbackService
     {
         var normalized = $"{NormalizeName(seriesName)}_{NormalizeIssueNumber(issueNumber)}";
         return $"{CacheKeyPrefix}{normalized}";
+    }
+
+    private sealed class MetronMatchCandidate
+    {
+        public required MetronIssue Issue { get; init; }
+        public required double Confidence { get; init; }
     }
 
     public Task<CoverFallbackStats> GetStatsAsync(CancellationToken cancellationToken = default)

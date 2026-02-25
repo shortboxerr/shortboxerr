@@ -39,6 +39,7 @@ public interface ICoverFallbackService
         string seriesName,
         string issueNumber,
         string? publisher = null,
+        DateTime? expectedStoreDate = null,
         string? volumeCoverUrl = null,
         CancellationToken cancellationToken = default);
 
@@ -77,19 +78,43 @@ public class CoverFallbackResult
     /// <summary>Time taken to resolve the cover in milliseconds.</summary>
     public long ResolutionTimeMs { get; set; }
 
-    public static CoverFallbackResult NotFound(string? error = null) => new()
+    /// <summary>
+    /// Matching method used to select this cover (e.g., CvId, IdLessHeuristic, VolumeFallback).
+    /// </summary>
+    public string? MatchMethod { get; set; }
+
+    /// <summary>
+    /// Match confidence from 0.0 to 1.0 for heuristic matches.
+    /// Null for deterministic/non-heuristic paths.
+    /// </summary>
+    public double? MatchConfidence { get; set; }
+
+    /// <summary>
+    /// True when an ID-less Metron candidate was rejected for low confidence.
+    /// </summary>
+    public bool WasConfidenceRejected { get; set; }
+
+    public static CoverFallbackResult NotFound(string? error = null, bool wasConfidenceRejected = false) => new()
     {
         Success = false,
         Source = CoverSource.None,
-        Error = error ?? "No cover found in any source"
+        Error = error ?? "No cover found in any source",
+        WasConfidenceRejected = wasConfidenceRejected
     };
 
-    public static CoverFallbackResult Found(string coverUrl, CoverSource source, bool fromCache = false) => new()
+    public static CoverFallbackResult Found(
+        string coverUrl,
+        CoverSource source,
+        bool fromCache = false,
+        string? matchMethod = null,
+        double? matchConfidence = null) => new()
     {
         Success = true,
         CoverUrl = coverUrl,
         Source = source,
-        FromCache = fromCache
+        FromCache = fromCache,
+        MatchMethod = matchMethod,
+        MatchConfidence = matchConfidence
     };
 }
 

@@ -210,6 +210,12 @@ public class MetronSettings
     /// <summary>Cache TTL in hours (default: 24 hours).</summary>
     public int CacheTtlHours { get; set; } = 24;
 
+    /// <summary>
+    /// Minimum confidence (0-100) required for ID-less Metron issue matching.
+    /// Used when WalkSoftly does not provide a ComicVine issue ID.
+    /// </summary>
+    public int MinMatchConfidence { get; set; } = 85;
+
     /// <summary>Request timeout in seconds (hardcoded, not user-configurable).</summary>
     public int TimeoutSeconds { get; set; } = DefaultTimeoutSeconds;
 

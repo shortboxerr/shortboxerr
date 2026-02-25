@@ -133,6 +133,8 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         var metronHits = 0;
         var volumeHits = 0;
         var notFoundCount = 0;
+        var idlessMatched = 0;
+        var idlessRejected = 0;
         var weekIndex = 0;
 
         foreach (var cachedWeek in cachedWeeks)
@@ -142,13 +144,15 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
                 weekIndex, cachedWeeks.Count, cachedWeek.WeekStart.ToString("yyyy-MM-dd"));
             try
             {
-                var (enrichedCount, cvCount, metronCount, volumeCount, notFound) = await EnrichCachedWeekAsync(
+                var (enrichedCount, cvCount, metronCount, volumeCount, notFound, weekIdlessMatched, weekIdlessRejected) = await EnrichCachedWeekAsync(
                     cachedWeek, comicVineClient, coverFallbackService, coverService, dbContext, cancellationToken);
                 totalEnriched += enrichedCount;
                 comicVineHits += cvCount;
                 metronHits += metronCount;
                 volumeHits += volumeCount;
                 notFoundCount += notFound;
+                idlessMatched += weekIdlessMatched;
+                idlessRejected += weekIdlessRejected;
             }
             catch (Exception ex)
             {
@@ -159,12 +163,13 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         }
 
         _logger.LogInformation(
-            "Cover enrichment complete across {Weeks} weeks: enriched {Count} (ComicVine: {CV}, Metron: {Metron}, volume: {Volume}), not found: {NotFound}, skipped: {HasCV} have CV / {Recent} recently checked / {Already} already enriched",
-            cachedWeeks.Count, totalEnriched, comicVineHits, metronHits, volumeHits, notFoundCount, 
+            "Cover enrichment complete across {Weeks} weeks: enriched {Count} (ComicVine: {CV}, Metron: {Metron}, volume: {Volume}), idless matched: {IdlessMatched}, idless rejected: {IdlessRejected}, not found: {NotFound}, skipped: {HasCV} have CV / {Recent} recently checked / {Already} already enriched",
+            cachedWeeks.Count, totalEnriched, comicVineHits, metronHits, volumeHits,
+            idlessMatched, idlessRejected, notFoundCount,
             _skippedHasComicVine, _skippedRecentlyChecked, _skippedAlreadyEnriched);
     }
 
-    private async Task<(int enrichedCount, int comicVineCount, int metronCount, int volumeCount, int notFoundCount)> EnrichCachedWeekAsync(
+    private async Task<(int enrichedCount, int comicVineCount, int metronCount, int volumeCount, int notFoundCount, int idlessMatched, int idlessRejected)> EnrichCachedWeekAsync(
         Core.Entities.CachedDiscoveryWeek cachedWeek,
         IComicVineClient comicVineClient,
         ICoverFallbackService coverFallbackService,
@@ -182,12 +187,12 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             _logger.LogWarning(ex,
                 "Failed to deserialize cached issues for week {WeekStart}",
                 cachedWeek.WeekStart);
-            return (0, 0, 0, 0, 0);
+            return (0, 0, 0, 0, 0, 0, 0);
         }
 
         if (issues == null || issues.Count == 0)
         {
-            return (0, 0, 0, 0, 0);
+            return (0, 0, 0, 0, 0, 0, 0);
         }
 
         // First pass: identify issues that need tagging
@@ -254,7 +259,7 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             _logger.LogDebug(
                 "Week {WeekStart}: no issues need enrichment ({Total} total, {HasCV} have CV covers, {RecentlyChecked} recently checked)",
                 cachedWeek.WeekStart, issues.Count, _skippedHasComicVine, _skippedRecentlyChecked);
-            return (0, 0, 0, 0, 0);
+            return (0, 0, 0, 0, 0, 0, 0);
         }
 
         _logger.LogInformation(
@@ -315,6 +320,8 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         var metronCount = 0;
         var volumeCount = 0;
         var notFoundCount = 0;
+        var idlessMatched = 0;
+        var idlessRejected = 0;
 
         foreach (var issue in issuesToProcess)
         {
@@ -339,6 +346,8 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
                     issue.Image = cvIssueImage;
                     issue.EnrichmentStatus = CoverEnrichmentStatus.HasComicVineCover;
                     issue.CoverSource = "ComicVine";
+                    issue.CoverMatchMethod = "ComicVineIssue";
+                    issue.CoverMatchConfidence = null;
                     comicVineCount++;
                     enrichedCount++;
                     dataModified = true;
@@ -362,12 +371,18 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
                     seriesName,
                     issueNumber,
                     null,
+                    issue.StoreDate,
                     volumeCoverUrl,
                     cancellationToken);
             }
 
             if (fallbackResult.Success && !string.IsNullOrEmpty(fallbackResult.CoverUrl))
             {
+                if (issue.Id <= 0 && fallbackResult.WasConfidenceRejected)
+                {
+                    idlessRejected++;
+                }
+
                 // Download cover to local cache for Metron covers
                 if (fallbackResult.Source == CoverSource.Metron && issue.Id > 0)
                 {
@@ -390,6 +405,8 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
                         };
                         issue.EnrichmentStatus = CoverEnrichmentStatus.Enriched;
                         issue.CoverSource = "Metron";
+                        issue.CoverMatchMethod = fallbackResult.MatchMethod ?? "CvId";
+                        issue.CoverMatchConfidence = fallbackResult.MatchConfidence;
                         metronCount++;
                         enrichedCount++;
                         dataModified = true;
@@ -417,10 +434,30 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
                         };
                         issue.EnrichmentStatus = CoverEnrichmentStatus.Enriched;
                         issue.CoverSource = "Metron";
+                        issue.CoverMatchMethod = fallbackResult.MatchMethod ?? "CvId";
+                        issue.CoverMatchConfidence = fallbackResult.MatchConfidence;
                         metronCount++;
                         enrichedCount++;
                         dataModified = true;
                     }
+                }
+                else if (fallbackResult.Source == CoverSource.Metron)
+                {
+                    // ID-less Metron match (no ComicVine issue ID available yet).
+                    issue.Image = new ComicVineImage
+                    {
+                        MediumUrl = fallbackResult.CoverUrl,
+                        SmallUrl = fallbackResult.CoverUrl,
+                        OriginalUrl = fallbackResult.CoverUrl
+                    };
+                    issue.EnrichmentStatus = CoverEnrichmentStatus.Enriched;
+                    issue.CoverSource = "Metron";
+                    issue.CoverMatchMethod = fallbackResult.MatchMethod ?? "IdLessHeuristic";
+                    issue.CoverMatchConfidence = fallbackResult.MatchConfidence;
+                    metronCount++;
+                    enrichedCount++;
+                    idlessMatched++;
+                    dataModified = true;
                 }
                 else if (fallbackResult.Source == CoverSource.ComicVineVolume)
                 {
@@ -439,6 +476,10 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
                     }
                     // Keep or set status to HasVolumeFallback - still needs real issue cover
                     issue.EnrichmentStatus = CoverEnrichmentStatus.HasVolumeFallback;
+                    issue.CoverMatchMethod = fallbackResult.WasConfidenceRejected
+                        ? "IdLessHeuristicRejected"
+                        : "VolumeFallback";
+                    issue.CoverMatchConfidence = fallbackResult.MatchConfidence;
                     volumeCount++;
                     dataModified = true;
                 }
@@ -447,6 +488,10 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             {
                 // No cover found at all - mark as NotFound to apply cooldown
                 issue.EnrichmentStatus = CoverEnrichmentStatus.NotFound;
+                issue.CoverMatchMethod = fallbackResult.WasConfidenceRejected
+                    ? "IdLessHeuristicRejected"
+                    : issue.CoverMatchMethod;
+                issue.CoverMatchConfidence = fallbackResult.MatchConfidence;
                 notFoundCount++;
                 dataModified = true;
             }
@@ -461,12 +506,12 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             if (enrichedCount > 0)
             {
                 _logger.LogInformation(
-                    "Week {WeekStart}: enriched {Count} issues ({Metron} Metron, {Volume} volume), {NotFound} not found",
-                    cachedWeek.WeekStart, enrichedCount, metronCount, volumeCount, notFoundCount);
+                    "Week {WeekStart}: enriched {Count} issues ({ComicVine} ComicVine, {Metron} Metron, {Volume} volume), idless matched: {IdlessMatched}, idless rejected: {IdlessRejected}, {NotFound} not found",
+                    cachedWeek.WeekStart, enrichedCount, comicVineCount, metronCount, volumeCount, idlessMatched, idlessRejected, notFoundCount);
             }
         }
 
-        return (enrichedCount, comicVineCount, metronCount, volumeCount, notFoundCount);
+        return (enrichedCount, comicVineCount, metronCount, volumeCount, notFoundCount, idlessMatched, idlessRejected);
     }
 
     /// <summary>
