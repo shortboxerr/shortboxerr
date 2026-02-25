@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shortboxerr.Core.Activity;
 using Shortboxerr.Core.Ddl;
@@ -16,7 +17,7 @@ public class DdlDownloadService : IDdlDownloadService
     private readonly ILogger<DdlDownloadService>? _logger;
     private readonly IDownloadHostResolverFactory? _resolverFactory;
     private readonly IHostBlacklistService? _blacklistService;
-    private readonly IActivityService? _activityService;
+    private readonly IServiceProvider? _serviceProvider;
     private readonly ConcurrentDictionary<string, DdlDownloadStatus> _activeDownloads = new();
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _cancellationTokens = new();
     private readonly List<DdlDownloadHistoryEntry> _downloadHistory = new();
@@ -38,12 +39,12 @@ public class DdlDownloadService : IDdlDownloadService
         IDownloadHostResolverFactory? resolverFactory = null, 
         IHostBlacklistService? blacklistService = null,
         ILogger<DdlDownloadService>? logger = null,
-        IActivityService? activityService = null)
+        IServiceProvider? serviceProvider = null)
     {
         _resolverFactory = resolverFactory;
         _blacklistService = blacklistService;
         _logger = logger;
-        _activityService = activityService;
+        _serviceProvider = serviceProvider;
     }
 
     public async Task<DdlDownloadResult> DownloadAsync(DdlCandidate candidate, DdlDownloadOptions? options = null, CancellationToken cancellationToken = default)
@@ -812,24 +813,37 @@ public class DdlDownloadService : IDdlDownloadService
         }
         
         // Also add to unified activity service for Activity page visibility
-        _activityService?.AddToHistory(new DownloadActivity
+        // Use service locator pattern since ActivityService is scoped and this service is singleton
+        if (_serviceProvider != null)
         {
-            Id = result.DownloadId,
-            SourceType = DownloadSourceType.Ddl,
-            ClientName = "DDL",
-            Title = candidate.ReleaseTitle,
-            State = result.Success ? ActivityState.Completed : ActivityState.Failed,
-            Progress = result.Success ? 100 : 0,
-            TotalBytes = result.FileSize > 0 ? result.FileSize : null,
-            DownloadedBytes = result.FileSize,
-            StartedAt = startedAt,
-            CompletedAt = completedAt,
-            ErrorMessage = result.ErrorMessage,
-            RetryCount = result.RetryAttempts,
-            OutputPath = result.FilePath,
-            SourceUrl = result.SourceUrl ?? candidate.DownloadLinks.FirstOrDefault()?.Url,
-            Category = candidate.SourceSite
-        });
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var activityService = scope.ServiceProvider.GetService<IActivityService>();
+                activityService?.AddToHistory(new DownloadActivity
+                {
+                    Id = result.DownloadId,
+                    SourceType = DownloadSourceType.Ddl,
+                    ClientName = "DDL",
+                    Title = candidate.ReleaseTitle,
+                    State = result.Success ? ActivityState.Completed : ActivityState.Failed,
+                    Progress = result.Success ? 100 : 0,
+                    TotalBytes = result.FileSize > 0 ? result.FileSize : null,
+                    DownloadedBytes = result.FileSize,
+                    StartedAt = startedAt,
+                    CompletedAt = completedAt,
+                    ErrorMessage = result.ErrorMessage,
+                    RetryCount = result.RetryAttempts,
+                    OutputPath = result.FilePath,
+                    SourceUrl = result.SourceUrl ?? candidate.DownloadLinks.FirstOrDefault()?.Url,
+                    Category = candidate.SourceSite
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Failed to add download to activity history");
+            }
+        }
     }
 
     private bool IsLinkBlacklisted(DdlDownloadLink link)

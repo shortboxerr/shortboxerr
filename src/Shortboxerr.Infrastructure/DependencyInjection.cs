@@ -83,7 +83,7 @@ public static class DependencyInjection
         services.AddScoped<ISetupStatusService, SetupStatusService>();
         services.AddScoped<ISearchSettingsService, SearchSettingsService>();
         services.AddScoped<ISearchResultScorer, SearchResultScorer>();
-        services.AddSingleton<IActivityService, ActivityService>();
+        services.AddScoped<IActivityService, ActivityService>();
         services.AddSingleton<IArchiveExtractor, ArchiveExtractor>();
 
         // DDL services
@@ -119,8 +119,7 @@ public static class DependencyInjection
             var resolverFactory = sp.GetRequiredService<IDownloadHostResolverFactory>();
             var blacklistService = sp.GetRequiredService<IHostBlacklistService>();
             var logger = sp.GetService<ILogger<DdlDownloadService>>();
-            var activityService = sp.GetService<IActivityService>();
-            return new DdlDownloadService(resolverFactory, blacklistService, logger, activityService);
+            return new DdlDownloadService(resolverFactory, blacklistService, logger, sp);
         });
         services.AddScoped<IDdlImportService, DdlImportService>();
         services.AddScoped<IMylar3ConfigImporter, Mylar3ConfigImporter>();
