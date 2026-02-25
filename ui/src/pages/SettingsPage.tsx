@@ -4382,7 +4382,8 @@ function ProviderModal({
     implementation: provider?.implementation ?? '',
     isEnabled: provider?.isEnabled ?? true,
     baseUrl: provider?.baseUrl ?? '',
-    apiKey: provider?.apiKey ?? '',
+    // For SABnzbd, use apiKey from settings JSON (unmasked) instead of provider.apiKey (masked)
+    apiKey: existingSettings.apiKey ?? provider?.apiKey ?? '',
     username: provider?.username ?? '',
     password: '',
     settings: provider?.settings ?? '',
