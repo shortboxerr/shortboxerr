@@ -193,9 +193,15 @@ public class DdlSiteAdapterFactory : IDdlSiteAdapterFactory
         RegisterAdapter("GetComics", () => new GetComicsAdapter());
         RegisterAdapter("ReadComicOnline", () => new ReadComicOnlineAdapter());
         
-        // Enable real DDL sites by default for production use
+        // Enable sites that provide actual file downloads by default
         EnableSite("GetComics");
-        EnableSite("ReadComicOnline");
+        
+        // NOTE: ReadComicOnline is registered but NOT enabled by default.
+        // ReadComicOnline is primarily a comic READING site, not a DDL site.
+        // Its "download links" are reading page URLs that return HTML, not comic files.
+        // Users can manually enable it if they want metadata/search from RCO,
+        // but downloads will fail with HTML error detection.
+        // EnableSite("ReadComicOnline");
         
         // Note: MockDdl is available but not enabled by default
         // Enable it via settings or environment variable for testing:

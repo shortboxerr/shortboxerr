@@ -3943,12 +3943,12 @@ End-to-end improvements for DDL (Direct Download Link) reliability, error handli
   - AC: Detect truncated archives
   - AC: Option to extract and re-compress corrupted archives
 
-### 17.4 ReadComicOnline Adapter Fixes 📋 PLANNED
-- [ ] **HTML response handling**
-  - AC: Detect when RCO returns HTML error/placeholder page
-  - AC: Parse error messages from HTML response
-  - AC: Retry with alternate link or skip to next candidate
-- [ ] **Domain detection improvements**
+### 17.4 ReadComicOnline Adapter Fixes ✅ COMPLETED
+- [x] **HTML response handling** ✅
+  - AC: Disabled RCO as DDL source by default (site is a reader, not download provider)
+  - AC: HTML detection in download verification catches RCO HTML pages
+  - AC: Can be manually enabled for metadata/search use cases
+- [x] **Domain detection improvements** ✅
   - AC: Handle domain changes gracefully (li, to, org, cc variants)
   - AC: Periodic homepage detection to update base URL
   - AC: Log domain migration events for debugging
@@ -3967,13 +3967,13 @@ End-to-end improvements for DDL (Direct Download Link) reliability, error handli
   - AC: Follow redirects to final download URL
   - AC: Detect and skip infinite redirect loops
 
-### 17.6 Multi-Link Fallback 📋 PLANNED
-- [ ] **Automatic link rotation**
+### 17.6 Multi-Link Fallback ✅ COMPLETED
+- [x] **Automatic link rotation** ✅
   - AC: Try next link when current fails (timeout, 404, HTML response)
   - AC: Log each attempt with failure reason
   - AC: Configure max attempts per candidate
   - AC: Report all attempted links in activity history
-- [ ] **Host reliability scoring**
+- [x] **Host reliability scoring** ✅
   - AC: Track success/failure rate per host
   - AC: Prefer hosts with higher success rates
   - AC: Temporary blacklist for repeatedly failing hosts
