@@ -9,13 +9,16 @@ namespace Shortboxerr.Core.Ddl;
 public partial class DdlReleaseParser : IDdlReleaseParser
 {
     // Common edition type indicators
+    // NOTE: "Absolute" alone is NOT included because it's commonly a series name prefix
+    // (e.g., "Absolute Batman", "Absolute Martian Manhunter"). Only "Absolute Edition" 
+    // at the END of a title indicates a collection.
     private static readonly string[] CollectionTypes = new[]
     {
         "TPB", "Trade Paperback", "Trade",
         "HC", "Hardcover", "Hard Cover",
         "Omnibus", "Omni",
         "Deluxe", "Deluxe Edition",
-        "Absolute", "Absolute Edition",
+        "Absolute Edition", // Only "Absolute Edition", not standalone "Absolute"
         "Compendium",
         "Complete Collection", "Complete",
         "Library Edition",
@@ -31,6 +34,16 @@ public partial class DdlReleaseParser : IDdlReleaseParser
         "Scan", "Scanned", "c2c-Scan", "c2c",
         "HD", "HQ",
         "Proper", "Repack"
+    };
+    
+    // Pack indicators (Mylar3's pack_receipts)
+    private static readonly string[] PackIndicators = new[]
+    {
+        "+ TPBs", "+TPBs", "+ TPB", "+TPB",
+        "+ Deluxe Books", "+ Deluxe",
+        "+ Annuals", "+Annuals", "+ Annual",
+        " & ", " and ", "+ ",
+        "Weekly Pack", "Week Pack"
     };
     
     // Publishers (for extraction)
@@ -180,6 +193,17 @@ public partial class DdlReleaseParser : IDdlReleaseParser
         
         // Note: Quality extraction moved earlier in the pipeline (before issue extraction)
         // for proper handling of scene-style naming
+        
+        // Detect pack (multiple issues in one download) - Mylar3's pack_check
+        var (isPack, packIndicator, includesAnnuals, titleAfterPack) = DetectPack(workingTitle);
+        if (isPack)
+        {
+            info.IsPack = true;
+            info.PackIndicator = packIndicator;
+            info.IncludesAnnuals = includesAnnuals;
+            workingTitle = titleAfterPack;
+            confidence += 5;
+        }
         
         // Extract release group (typically at end after hyphen)
         var (releaseGroup, titleAfterGroup) = ExtractReleaseGroup(workingTitle);
@@ -453,7 +477,7 @@ public partial class DdlReleaseParser : IDdlReleaseParser
             "HC" or "HARDCOVER" or "HARD COVER" => "HC",
             "OMNIBUS" or "OMNI" => "Omnibus",
             "DELUXE" or "DELUXE EDITION" => "Deluxe",
-            "ABSOLUTE" or "ABSOLUTE EDITION" => "Absolute",
+            "ABSOLUTE EDITION" => "Absolute", // Only "Absolute Edition", not standalone "Absolute"
             "COMPENDIUM" => "Compendium",
             "COMPLETE COLLECTION" or "COMPLETE" => "Complete",
             "LIBRARY EDITION" => "Library",
@@ -545,6 +569,45 @@ public partial class DdlReleaseParser : IDdlReleaseParser
         }
         
         return (null, title);
+    }
+    
+    /// <summary>
+    /// Detect if title indicates a pack (multiple issues/volumes).
+    /// Based on Mylar3's pack_receipts and check_for_pack logic.
+    /// </summary>
+    private static (bool isPack, string? indicator, bool includesAnnuals, string remainingTitle) DetectPack(string title)
+    {
+        foreach (var indicator in PackIndicators)
+        {
+            var index = title.IndexOf(indicator, StringComparison.OrdinalIgnoreCase);
+            if (index >= 0)
+            {
+                var includesAnnuals = indicator.Contains("Annual", StringComparison.OrdinalIgnoreCase);
+                
+                // Remove pack indicator from title
+                var remaining = title.Remove(index, indicator.Length).Trim();
+                remaining = MultipleSpacesRegex().Replace(remaining, " ");
+                
+                return (true, indicator.Trim(), includesAnnuals, remaining);
+            }
+        }
+        
+        // Check for issue range pattern which indicates pack: "1 - 12" or "#1-12"
+        var rangeMatch = IssueRangeRegex().Match(title);
+        if (rangeMatch.Success)
+        {
+            // Has issue range = is a pack
+            return (true, null, false, title);
+        }
+        
+        // Check for year range which can indicate pack: "2020-2024"
+        var yearRangeMatch = YearRangeRegex().Match(title);
+        if (yearRangeMatch.Success)
+        {
+            return (true, null, false, title);
+        }
+        
+        return (false, null, false, title);
     }
 
     private static (string? publisher, string remainingTitle) ExtractPublisher(string title)
@@ -724,6 +787,9 @@ public partial class DdlReleaseParser : IDdlReleaseParser
     
     [GeneratedRegex(@"#?(\d+)\s*-\s*(\d+)")]
     private static partial Regex IssueRangeRegex();
+    
+    [GeneratedRegex(@"\b(19\d{2}|20\d{2})\s*-\s*(19\d{2}|20\d{2})\b")]
+    private static partial Regex YearRangeRegex();
     
     [GeneratedRegex(@"\(([^)]+)\)")]
     private static partial Regex PublisherInParensRegex();

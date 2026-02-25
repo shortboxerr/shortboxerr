@@ -93,6 +93,20 @@ public static class DependencyInjection
         services.AddSingleton<IDdlSiteAdapterFactory, DdlSiteAdapterFactory>();
         services.AddSingleton<IDdlSearchService, DdlSearchService>();
         
+        // DDL cookie persistence (Mylar3 parity)
+        services.AddSingleton<IDdlCookieService>(sp =>
+        {
+            var logger = sp.GetService<ILogger<DdlCookieService>>();
+            return new DdlCookieService(logger);
+        });
+        
+        // DDL post-processor for zip extraction (Mylar3's zip_zip)
+        services.AddSingleton<IDdlPostProcessor>(sp =>
+        {
+            var logger = sp.GetService<ILogger<DdlPostProcessor>>();
+            return new DdlPostProcessor(logger);
+        });
+        
         // Site health monitoring service (also runs as hosted service)
         services.AddSingleton<SiteHealthService>();
         services.AddSingleton<ISiteHealthService>(sp => sp.GetRequiredService<SiteHealthService>());

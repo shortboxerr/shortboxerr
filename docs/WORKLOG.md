@@ -1,5 +1,47 @@
 # Worklog
 
+## Iteration 160 (2026-02-25)
+**EPIC 8.6: GetComics Mylar3 Full Parity**
+
+### Summary
+Implemented full Mylar3 behavioral parity for GetComics.org DDL functionality. Analyzed Mylar3's `getcomics.py` script and replicated its session management, anti-bot measures, search logic, link extraction, and post-download processing.
+
+### What Changed
+
+**New Files Created:**
+- `IDdlCookieService.cs` - Interface for persistent cookie management across sessions
+- `DdlCookieService.cs` - JSON file storage with 7-day expiry (like Mylar3's `.gc_cookies.dat`)
+- `GetComicsSettings.cs` - Comprehensive settings model with link priority, quality preference, FlareSolverr config
+- `GetComicsAdapterV2.cs` - Complete rewrite with full Mylar3 feature parity
+- `IDdlPostProcessor.cs` - Interface for post-download processing (zip extraction)
+- `DdlPostProcessor.cs` - Handles zip file extraction like Mylar3's `zip_zip` function
+- `DdlPackInfo.cs` - Model for storing pack detection details (series, issue range, annuals)
+
+**Modified Files:**
+- `DdlReleaseParser.cs` - Added `PackIndicators` array, `DetectPack` method, `YearRangeRegex`
+- `DdlCandidate.cs` - Added `IsPack`, `PackIndicator`, `IncludesAnnuals` to `DdlParsedInfo`
+- `DependencyInjection.cs` - Registered `IDdlCookieService` and `IDdlPostProcessor` in DI container
+
+### Key Mylar3 Features Implemented
+1. **Session/Cookie Persistence** - Cookies saved to disk and reloaded across restarts
+2. **Anti-Bot Headers** - Firefox User-Agent and Referer headers matching Mylar3
+3. **Multiple Search Formats** - 4 query formats with fallback (`"{series} #{issue} ({year})"`, etc.)
+4. **Search Pagination** - Configurable max pages with rate limiting (`QueryDelaySeconds`)
+5. **Link Extraction** - Mylar3-style regex patterns for download buttons and known file hosts
+6. **Link Prioritization** - Configurable priority order (mega → pixeldrain → mediafire → main)
+7. **Quality Variants** - HD/SD detection and preference configuration
+8. **Pack Detection** - Identifies multi-issue releases (`+ TPBs`, `+ Annuals`, issue ranges)
+9. **Paywall Detection** - Flags links from `sh.st`, `adf.ly`, etc.
+10. **Error Page Detection** - Identifies Cloudflare challenges and HTML error pages
+11. **FlareSolverr Integration** - Optional Cloudflare bypass
+12. **Post-Processing** - Automatic zip extraction with delete-after-extract option
+
+### Build Status
+- ✅ Build succeeded with 0 warnings, 0 errors
+- ✅ All new services registered in DI container
+
+---
+
 ## Iteration 159 (2026-02-25)
 **EPIC 11.21: Upcoming Issues - Display Parity with Regular Issues**
 

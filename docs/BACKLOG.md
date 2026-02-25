@@ -461,6 +461,84 @@ Implement real DDL site adapters and download host resolvers matching Mylar3's s
   - AC: RSS feed service tests ✅
   - AC: Error handling and failure reason tests ✅
 
+### 8.6 GetComics Mylar3 Full Parity ✅ COMPLETED
+Deep integration with Mylar3's `getcomics.py` implementation for complete behavioral parity.
+Reference: Mylar3's getcomics.py script analyzed for implementation details.
+
+#### 8.6.1 Session & Cookie Persistence ✅ COMPLETED
+- [x] **IDdlCookieService interface** ✅
+  - AC: GetCookiesAsync/SaveCookiesAsync/ClearCookiesAsync methods
+  - AC: HasValidCookiesAsync for expiry checking
+- [x] **DdlCookieService implementation** ✅
+  - AC: JSON file storage (like Mylar3's .gc_cookies.dat)
+  - AC: 7-day cookie expiry (configurable)
+  - AC: Thread-safe with SemaphoreSlim
+  - AC: Registered in DI container
+
+#### 8.6.2 GetComicsAdapterV2 (Complete Rewrite) ✅ COMPLETED
+- [x] **Anti-bot measures** ✅
+  - AC: Firefox User-Agent matching Mylar3 (`Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1`)
+  - AC: Referer header set to GetComics base URL
+  - AC: Accept and Accept-Language headers
+  - AC: CookieContainer integration with IDdlCookieService
+  - AC: Optional FlareSolverr integration for Cloudflare bypass
+- [x] **Search logic (Mylar3 parity)** ✅
+  - AC: 4 search query formats with fallback (`"{series} #{issue} ({year})"`, `"{series} #{issue} ({year})"` unquoted, `"{series} #{issue}"`, `"{series} {issue}"`)
+  - AC: Configurable max search pages (default 5)
+  - AC: Rate limiting between queries (QueryDelaySeconds)
+  - AC: Pagination support (SearchWithPaginationAsync)
+- [x] **Link extraction (Mylar3 style)** ✅
+  - AC: DownloadButtonMylar3Regex for download buttons
+  - AC: KnownHostLinkMylar3Regex for file host links
+  - AC: HD/SD quality variant detection
+  - AC: Link section classification (main, mirrors, alternative)
+- [x] **Link prioritization** ✅
+  - AC: Configurable link priority (mega → pixeldrain → mediafire → main)
+  - AC: Quality preference (sd-digital → hd-digital → normal)
+  - AC: GetComicsLinkType and GetComicsQualityVariant enums
+- [x] **Error detection** ✅
+  - AC: Paywall link detection (sh.st, adf.ly, bc.vc, ouo.io)
+  - AC: HTML error page detection (Cloudflare, access denied, support pages)
+  - AC: IsPaywallLink and IsErrorPage helper methods
+
+#### 8.6.3 GetComicsSettings Model ✅ COMPLETED
+- [x] **Comprehensive configuration** ✅
+  - AC: BaseUrl, Enabled, QueryDelaySeconds, MaxSearchPages
+  - AC: LinkPriority list (configurable order)
+  - AC: QualityPreference list (sd/hd/normal)
+  - AC: PreferPacks option
+  - AC: UseFlareSolverr and FlareSolverrUrl
+  - AC: Custom UserAgent override
+  - AC: HttpProxy/HttpsProxy support
+  - AC: TimeoutSeconds, VerifySsl
+  - AC: DownloadLocation, AutoExtractZip, DeleteZipAfterExtract
+
+#### 8.6.4 Post-Download Processing ✅ COMPLETED
+- [x] **IDdlPostProcessor interface** ✅
+  - AC: ProcessAsync for post-download actions
+  - AC: NeedsExtraction to check if file requires extraction
+- [x] **DdlPostProcessor implementation** ✅
+  - AC: Zip file extraction (like Mylar3's zip_zip)
+  - AC: Distinguishes comic archives (.cbz, .cbr) from regular zips
+  - AC: Configurable extract location
+  - AC: Delete original zip after extraction option
+  - AC: Proper async with Task.Run for CPU-bound work
+  - AC: Registered in DI container
+
+#### 8.6.5 Enhanced Pack Detection ✅ COMPLETED
+- [x] **DdlPackInfo model** ✅
+  - AC: IsPack, Series, Year, IssueRange, Issues list
+  - AC: VolumeLabel, VolumeNumber, BookType enum
+  - AC: IncludesAnnuals flag
+  - AC: ParseIssueRange, ContainsIssue, ContainsRange helpers
+- [x] **DdlReleaseParser enhancements** ✅
+  - AC: PackIndicators array (`+ TPBs`, `+ Annuals`, `Weekly Pack`, etc.)
+  - AC: DetectPack method integrated into Parse flow
+  - AC: YearRangeRegex for year range detection (2020-2024)
+  - AC: IssueRangeRegex for issue range detection (#1-12)
+- [x] **DdlParsedInfo extensions** ✅
+  - AC: IsPack, PackIndicator, IncludesAnnuals properties
+
 ---
 
 ## EPIC 9: ComicVine Integration (Mylar3 Parity) 🔄 IN PROGRESS
@@ -3210,6 +3288,70 @@ Currently, clicking "delete" on a series in the series list view uses a basic br
 - Series-Annual Integration feature (EPIC 9)
 - Series list page (`ui/src/pages/SeriesPage.tsx`)
 - Series endpoints (`src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs`)
+
+### 14.9 Workflow Connectivity Audit 📋 PLANNED
+Audit all multi-step workflows to identify and document disconnected or incomplete integrations where one service produces output that another service should consume but doesn't.
+
+**Background:**
+The AutoSearchService was finding search candidates but not initiating downloads because the DecisionEngine and DdlDownloadService were never integrated. This pattern of "disconnected workflows" may exist elsewhere in the codebase. This audit will systematically examine all workflows to identify similar gaps.
+
+**Discovered Issue (Fixed in Iteration 160):**
+- `AutoSearchService.SearchIssueAsync()` found candidates but set `downloadId = null` with comment "Download not initiated automatically - requires user confirmation or download client"
+- The `DecisionEngine` existed with `CheckAutoGrab()` logic but was never called
+- The `IDdlDownloadService` existed but was never invoked after search
+- **Fix:** Integrated DecisionEngine evaluation and auto-grab into AutoSearchService
+
+- [ ] **Audit: Search → Download workflow**
+  - AC: Verify auto-search triggers downloads when configured
+  - AC: Verify manual search UI allows grabbing found candidates
+  - AC: Document any gaps as separate backlog items
+
+- [ ] **Audit: Download → Import workflow**
+  - AC: Verify completed downloads trigger import pipeline
+  - AC: Verify import pipeline updates issue status
+  - AC: Verify file organization occurs after import
+  - AC: Document any gaps as separate backlog items
+
+- [ ] **Audit: Discovery → Pull List workflow**
+  - AC: Verify WalkSoftly data flows to pull list correctly
+  - AC: Verify Metron enrichment is applied to discovered issues
+  - AC: Verify ComicVine matching updates library status
+  - AC: Document any gaps as separate backlog items
+
+- [ ] **Audit: Series Add → Metadata Refresh workflow**
+  - AC: Verify adding series triggers metadata fetch
+  - AC: Verify issue list is populated after series add
+  - AC: Verify covers are fetched for new issues
+  - AC: Document any gaps as separate backlog items
+
+- [ ] **Audit: Notification → External Services workflow**
+  - AC: Verify notification events are raised at appropriate points
+  - AC: Verify notification providers receive and process events
+  - AC: Verify failed notifications are retried/logged
+  - AC: Document any gaps as separate backlog items
+
+- [ ] **Audit: Background Service → UI State workflow**
+  - AC: Verify background service completions invalidate appropriate caches
+  - AC: Verify UI receives updates for long-running operations
+  - AC: Verify progress/status is communicated to users
+  - AC: Document any gaps as separate backlog items
+
+- [ ] **Audit: NZB/Torrent → Download Client workflow**
+  - AC: Verify NZB candidates are sent to SABnzbd/NZBGet
+  - AC: Verify torrent candidates are sent to configured torrent clients
+  - AC: Verify queue status is polled and displayed
+  - AC: Document any gaps as separate backlog items
+
+**Deliverables:**
+- Comprehensive audit report documenting each workflow's current state
+- List of new backlog items for any disconnected workflows found
+- Architecture diagram showing intended data/event flow vs actual
+
+**Related:**
+- AutoSearchService (`src/Shortboxerr.Infrastructure/Search/AutoSearchService.cs`)
+- DecisionEngine (`src/Shortboxerr.Core/Services/DecisionEngine.cs`)
+- All Background Services (`src/Shortboxerr.Infrastructure/BackgroundServices/`)
+- Pull List Service (`src/Shortboxerr.Infrastructure/PullList/PullListService.cs`)
 
 ---
 

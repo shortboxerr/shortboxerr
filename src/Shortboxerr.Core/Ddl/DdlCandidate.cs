@@ -147,6 +147,22 @@ public class DdlParsedInfo
     public string? IssueRange { get; set; }
     
     /// <summary>
+    /// Whether this is a pack (multiple issues in one download).
+    /// Based on Mylar3's pack detection.
+    /// </summary>
+    public bool IsPack { get; set; }
+    
+    /// <summary>
+    /// Pack indicator that was detected (e.g., "+ TPBs", "+ Annuals").
+    /// </summary>
+    public string? PackIndicator { get; set; }
+    
+    /// <summary>
+    /// Whether pack includes annuals.
+    /// </summary>
+    public bool IncludesAnnuals { get; set; }
+    
+    /// <summary>
     /// Release group or scene tag.
     /// </summary>
     public string? ReleaseGroup { get; set; }
