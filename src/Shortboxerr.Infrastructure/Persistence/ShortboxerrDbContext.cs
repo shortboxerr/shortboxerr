@@ -27,6 +27,7 @@ public class ShortboxerrDbContext : DbContext
     public DbSet<CachedDiscoveryWeek> CachedDiscoveryWeeks => Set<CachedDiscoveryWeek>();
     public DbSet<FallbackCoverEntry> FallbackCoverEntries => Set<FallbackCoverEntry>();
     public DbSet<VariantCoverEntity> VariantCovers => Set<VariantCoverEntity>();
+    public DbSet<DownloadHistory> DownloadHistories => Set<DownloadHistory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -263,6 +264,32 @@ public class ShortboxerrDbContext : DbContext
                 .WithMany(i => i.VariantCovers)
                 .HasForeignKey(e => e.IssueId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // DownloadHistory
+        modelBuilder.Entity<DownloadHistory>(entity =>
+        {
+            entity.ToTable("DownloadHistories");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.DownloadId).IsRequired().HasMaxLength(128);
+            entity.Property(e => e.SourceSite).HasMaxLength(128);
+            entity.Property(e => e.SourceUrl).HasMaxLength(2048);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(512);
+            entity.Property(e => e.DestinationPath).HasMaxLength(1024);
+            entity.Property(e => e.FailureReason).HasMaxLength(128);
+            entity.Property(e => e.ErrorMessage).HasMaxLength(2048);
+            entity.HasIndex(e => e.DownloadId);
+            entity.HasIndex(e => e.CompletedAt);
+            entity.HasIndex(e => e.SourceType);
+            entity.HasIndex(e => e.State);
+            entity.HasOne(e => e.Series)
+                .WithMany()
+                .HasForeignKey(e => e.SeriesId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(e => e.Issue)
+                .WithMany()
+                .HasForeignKey(e => e.IssueId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }
