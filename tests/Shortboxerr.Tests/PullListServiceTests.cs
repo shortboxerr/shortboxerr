@@ -1710,4 +1710,88 @@ public class PullListServiceTests : IDisposable
     }
 
     #endregion
+
+    #region Enrichment Status Tests (11.27)
+
+    [Fact]
+    public void EnrichmentStatus_DefaultIsPending()
+    {
+        // Arrange & Act
+        var issue = new DiscoverableIssue();
+        
+        // Assert
+        Assert.Equal(EnrichmentStatus.Pending, issue.EnrichmentStatus);
+        Assert.Equal(DataSource.WalkSoftly, issue.CoverSource);
+        Assert.Equal(DataSource.WalkSoftly, issue.MetadataSource);
+        Assert.Null(issue.EnrichedAt);
+        Assert.Null(issue.MetronIssueId);
+    }
+
+    [Fact]
+    public void EnrichmentStatus_CanBeSetToComicVineFinalized()
+    {
+        // Arrange
+        var issue = new DiscoverableIssue
+        {
+            ComicVineIssueId = 12345,
+            SeriesTitle = "Test Series"
+        };
+        
+        // Act
+        issue.EnrichmentStatus = EnrichmentStatus.ComicVineFinalized;
+        issue.CoverSource = DataSource.ComicVine;
+        issue.MetadataSource = DataSource.ComicVine;
+        issue.EnrichedAt = DateTime.UtcNow;
+        
+        // Assert
+        Assert.Equal(EnrichmentStatus.ComicVineFinalized, issue.EnrichmentStatus);
+        Assert.Equal(DataSource.ComicVine, issue.CoverSource);
+        Assert.Equal(DataSource.ComicVine, issue.MetadataSource);
+        Assert.NotNull(issue.EnrichedAt);
+    }
+
+    [Fact]
+    public void EnrichmentStatus_CanBeSetToMetronInterim()
+    {
+        // Arrange
+        var issue = new DiscoverableIssue
+        {
+            ComicVineIssueId = 0, // No CV issue ID - typical for new releases
+            ComicVineVolumeId = 12345,
+            SeriesTitle = "Test Series"
+        };
+        
+        // Act
+        issue.EnrichmentStatus = EnrichmentStatus.MetronInterim;
+        issue.CoverSource = DataSource.Metron;
+        issue.MetronIssueId = 67890;
+        issue.EnrichedAt = DateTime.UtcNow;
+        
+        // Assert
+        Assert.Equal(EnrichmentStatus.MetronInterim, issue.EnrichmentStatus);
+        Assert.Equal(DataSource.Metron, issue.CoverSource);
+        Assert.Equal(67890, issue.MetronIssueId);
+        Assert.NotNull(issue.EnrichedAt);
+    }
+
+    [Fact]
+    public void DataSource_AllValuesExist()
+    {
+        // Assert all expected data sources exist
+        Assert.Equal(0, (int)DataSource.WalkSoftly);
+        Assert.Equal(1, (int)DataSource.ComicVine);
+        Assert.Equal(2, (int)DataSource.Metron);
+        Assert.Equal(3, (int)DataSource.LocalLibrary);
+    }
+
+    [Fact]
+    public void EnrichmentStatus_AllValuesExist()
+    {
+        // Assert all expected enrichment statuses exist
+        Assert.Equal(0, (int)EnrichmentStatus.Pending);
+        Assert.Equal(1, (int)EnrichmentStatus.MetronInterim);
+        Assert.Equal(2, (int)EnrichmentStatus.ComicVineFinalized);
+    }
+
+    #endregion
 }
