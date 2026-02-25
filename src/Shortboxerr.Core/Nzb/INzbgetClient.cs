@@ -1,3 +1,5 @@
+using Shortboxerr.Core.Services;
+
 namespace Shortboxerr.Core.Nzb;
 
 /// <summary>
@@ -82,6 +84,7 @@ public class NzbgetSettings
     /// Password for authentication.
     /// Default in NZBGet is "tegbzn6789".
     /// </summary>
+    [SensitiveCredential]
     public required string Password { get; set; }
 
     /// <summary>

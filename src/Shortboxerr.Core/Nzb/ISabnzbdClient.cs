@@ -1,3 +1,5 @@
+using Shortboxerr.Core.Services;
+
 namespace Shortboxerr.Core.Nzb;
 
 /// <summary>
@@ -62,6 +64,7 @@ public class SabnzbdSettings
     /// <summary>
     /// API key for authentication.
     /// </summary>
+    [SensitiveCredential]
     public required string ApiKey { get; set; }
 
     /// <summary>

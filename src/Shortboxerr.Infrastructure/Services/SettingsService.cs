@@ -315,53 +315,95 @@ public class SettingsService : ISettingsService
 
     /// <summary>
     /// Encrypts all string properties marked with [SensitiveCredential] attribute.
+    /// Recursively processes nested objects.
     /// </summary>
     private void EncryptSensitiveFields<T>(T obj)
     {
         if (obj == null) return;
+        EncryptSensitiveFieldsRecursive(obj, obj.GetType(), new HashSet<object>());
+    }
 
-        var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(p => p.PropertyType == typeof(string) && 
-                        p.GetCustomAttribute<SensitiveCredentialAttribute>() != null &&
-                        p.CanRead && p.CanWrite);
+    private void EncryptSensitiveFieldsRecursive(object obj, Type type, HashSet<object> visited)
+    {
+        if (obj == null || !visited.Add(obj)) return;
+
+        var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.CanRead && p.CanWrite);
 
         foreach (var property in properties)
         {
-            var value = property.GetValue(obj) as string;
-            if (!string.IsNullOrEmpty(value) && !_encryptionService.IsEncrypted(value))
+            // Handle string properties with [SensitiveCredential]
+            if (property.PropertyType == typeof(string) && 
+                property.GetCustomAttribute<SensitiveCredentialAttribute>() != null)
             {
-                var encrypted = _encryptionService.Encrypt(value);
-                property.SetValue(obj, encrypted);
+                var value = property.GetValue(obj) as string;
+                if (!string.IsNullOrEmpty(value) && !_encryptionService.IsEncrypted(value))
+                {
+                    var encrypted = _encryptionService.Encrypt(value);
+                    property.SetValue(obj, encrypted);
+                }
+            }
+            // Recursively process nested objects (non-primitive, non-string, non-collection class types)
+            else if (property.PropertyType.IsClass && 
+                     property.PropertyType != typeof(string) &&
+                     !typeof(System.Collections.IEnumerable).IsAssignableFrom(property.PropertyType))
+            {
+                var nestedObj = property.GetValue(obj);
+                if (nestedObj != null)
+                {
+                    EncryptSensitiveFieldsRecursive(nestedObj, property.PropertyType, visited);
+                }
             }
         }
     }
 
     /// <summary>
     /// Decrypts all string properties marked with [SensitiveCredential] attribute.
+    /// Recursively processes nested objects.
     /// </summary>
     private void DecryptSensitiveFields<T>(T obj)
     {
         if (obj == null) return;
+        DecryptSensitiveFieldsRecursive(obj, obj.GetType(), new HashSet<object>());
+    }
 
-        var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(p => p.PropertyType == typeof(string) && 
-                        p.GetCustomAttribute<SensitiveCredentialAttribute>() != null &&
-                        p.CanRead && p.CanWrite);
+    private void DecryptSensitiveFieldsRecursive(object obj, Type type, HashSet<object> visited)
+    {
+        if (obj == null || !visited.Add(obj)) return;
+
+        var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.CanRead && p.CanWrite);
 
         foreach (var property in properties)
         {
-            var value = property.GetValue(obj) as string;
-            if (!string.IsNullOrEmpty(value) && _encryptionService.IsEncrypted(value))
+            // Handle string properties with [SensitiveCredential]
+            if (property.PropertyType == typeof(string) && 
+                property.GetCustomAttribute<SensitiveCredentialAttribute>() != null)
             {
-                try
+                var value = property.GetValue(obj) as string;
+                if (!string.IsNullOrEmpty(value) && _encryptionService.IsEncrypted(value))
                 {
-                    var decrypted = _encryptionService.Decrypt(value);
-                    property.SetValue(obj, decrypted);
+                    try
+                    {
+                        var decrypted = _encryptionService.Decrypt(value);
+                        property.SetValue(obj, decrypted);
+                    }
+                    catch
+                    {
+                        // If decryption fails (e.g., migrated from different machine),
+                        // leave the value as-is - it will need to be re-entered
+                    }
                 }
-                catch
+            }
+            // Recursively process nested objects (non-primitive, non-string, non-collection class types)
+            else if (property.PropertyType.IsClass && 
+                     property.PropertyType != typeof(string) &&
+                     !typeof(System.Collections.IEnumerable).IsAssignableFrom(property.PropertyType))
+            {
+                var nestedObj = property.GetValue(obj);
+                if (nestedObj != null)
                 {
-                    // If decryption fails (e.g., migrated from different machine),
-                    // leave the value as-is - it will need to be re-entered
+                    DecryptSensitiveFieldsRecursive(nestedObj, property.PropertyType, visited);
                 }
             }
         }
