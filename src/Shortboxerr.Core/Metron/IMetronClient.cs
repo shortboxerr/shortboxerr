@@ -111,6 +111,71 @@ public interface IMetronClient
     /// Checks if the client is configured with credentials.
     /// </summary>
     bool IsConfigured { get; }
+
+    /// <summary>
+    /// Gets current rate limit statistics.
+    /// </summary>
+    MetronRateLimitStats GetRateLimitStats();
+}
+
+/// <summary>
+/// Rate limit statistics for Metron API usage.
+/// </summary>
+public class MetronRateLimitStats
+{
+    /// <summary>Number of requests made in the current minute window.</summary>
+    public int RequestsThisMinute { get; set; }
+
+    /// <summary>Maximum requests allowed per minute (30).</summary>
+    public int MaxRequestsPerMinute { get; set; } = 30;
+
+    /// <summary>Number of requests made today (UTC).</summary>
+    public int RequestsToday { get; set; }
+
+    /// <summary>Maximum requests allowed per day (10,000).</summary>
+    public int MaxRequestsPerDay { get; set; } = 10_000;
+
+    /// <summary>Remaining requests this minute.</summary>
+    public int RemainingThisMinute => Math.Max(0, MaxRequestsPerMinute - RequestsThisMinute);
+
+    /// <summary>Remaining requests today.</summary>
+    public int RemainingToday => Math.Max(0, MaxRequestsPerDay - RequestsToday);
+
+    /// <summary>Whether we're at or near the per-minute limit.</summary>
+    public bool IsMinuteLimitExhausted => RequestsThisMinute >= MaxRequestsPerMinute;
+
+    /// <summary>Whether we're at or near the daily limit.</summary>
+    public bool IsDailyLimitExhausted => RequestsToday >= MaxRequestsPerDay;
+
+    /// <summary>Estimated time until next request can be made without exceeding limits.</summary>
+    public TimeSpan? EstimatedWaitTime { get; set; }
+
+    /// <summary>When the minute window resets.</summary>
+    public DateTime MinuteWindowResetsAt { get; set; }
+
+    /// <summary>When the daily counter resets (midnight UTC).</summary>
+    public DateTime DailyResetsAt { get; set; }
+
+    /// <summary>Whether the circuit breaker is currently open.</summary>
+    public bool CircuitBreakerOpen { get; set; }
+
+    /// <summary>When the circuit breaker will reset (if open).</summary>
+    public DateTime? CircuitBreakerResetsAt { get; set; }
+}
+
+/// <summary>
+/// Exception thrown when Metron rate limits are exceeded.
+/// </summary>
+public class MetronRateLimitException : Exception
+{
+    /// <summary>How long to wait before retrying.</summary>
+    public TimeSpan RetryAfter { get; }
+
+    public MetronRateLimitException(string message, TimeSpan retryAfter)
+        : base(message)
+    {
+        RetryAfter = retryAfter;
+    }
 }
 
 /// <summary>

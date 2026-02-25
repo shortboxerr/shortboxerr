@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Shortboxerr.Core.Metron;
 using Shortboxerr.Core.PullList;
 using Shortboxerr.Infrastructure.Persistence;
 
@@ -48,6 +49,17 @@ public static class SystemEndpoints
             .WithOpenApi()
             .Produces(204)
             .Produces(404);
+
+        group.MapGet("/metron/rate-limits", GetMetronRateLimits)
+            .WithName("GetMetronRateLimits")
+            .WithOpenApi()
+            .Produces<MetronRateLimitStats>(200);
+    }
+
+    private static IResult GetMetronRateLimits(IMetronClient metronClient)
+    {
+        var stats = metronClient.GetRateLimitStats();
+        return Results.Ok(stats);
     }
 
     private static IResult GetLogFileContent(string filename, int? lines = 500, string? level = null, string? search = null)

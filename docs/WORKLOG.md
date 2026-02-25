@@ -1,5 +1,45 @@
 # Worklog
 
+## Iteration 159 (2026-02-25)
+**EPIC 11.21: Upcoming Issues - Display Parity with Regular Issues**
+
+### Summary
+Enhanced upcoming issue display in series detail view to match regular issue metadata display. Upcoming issues now show full information including issue number, title, release timing indicator, and proper list view integration.
+
+### What Changed
+
+**Series Detail Page - Cover View:**
+- Upcoming issues now use backend-provided `releaseTiming` (e.g., "In 3 days", "Tomorrow") for release date display
+- Added fallback `formatDaysUntilRelease()` helper function for frontend calculation
+- Release timing displayed in accent-info color for visual distinction
+
+**Series Detail Page - List View:**
+- Implemented inline table rendering to support mixed regular/upcoming issues
+- Upcoming issues display in same columns as regular issues:
+  - Issue number (styled consistently)
+  - Title (or "TBA" if not available)
+  - Release date with timing indicator
+  - Status column shows "Upcoming" badge with clock icon
+  - Tags column shows Annual/Special indicators
+- Upcoming rows have subtle background differentiation
+- Selection checkboxes disabled for upcoming issues (can't mark as wanted)
+
+**Helper Functions:**
+- Added `formatDaysUntilRelease(releaseDate)` - formats release date as relative time
+  - Returns: "Today", "Tomorrow", "In X days", "Next week", or formatted date
+
+### Files Changed
+- `ui/src/pages/SeriesDetailPage.tsx` - Enhanced upcoming issue rendering in both views
+
+### Tests
+- No new tests required (UI-only changes, backend API unchanged)
+
+### Build Status
+- Frontend: ✅ Builds successfully
+- No TypeScript errors
+
+---
+
 ## Iteration 158 (2026-02-25)
 **EPIC 11.27: Pull List Data Flow Refactoring - Phase 2 (Background Upgrade Service)**
 

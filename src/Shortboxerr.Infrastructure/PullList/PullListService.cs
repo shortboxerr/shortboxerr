@@ -1406,6 +1406,9 @@ public class PullListService : IPullListService
                     existingSeries.Monitored = true;
                     existingSeries.MonitoringMode = monitoringMode;
                     await _dbContext.SaveChangesAsync(cancellationToken);
+                    
+                    // Invalidate cache since monitoring status changed
+                    _cacheService.RemoveByPrefix(CacheKeys.SeriesList);
                 }
 
                 // Mark specific issue as wanted if requested
@@ -1468,6 +1471,9 @@ public class PullListService : IPullListService
 
             _logger.LogInformation("Added series from discovery: {SeriesTitle} with {IssueCount} issues", 
                 addResult.Title, addResult.IssuesCreated);
+
+            // Invalidate series list cache so the new series appears immediately
+            _cacheService.RemoveByPrefix(CacheKeys.SeriesList);
 
             return new AddFromDiscoveryResult
             {
@@ -1855,9 +1861,11 @@ public class PullListService : IPullListService
                 localSeries = seriesByVolume;
             }
             
-            // Second: title + publisher fallback for when WalkSoftly provides incorrect volume IDs
-            // (e.g., French edition ID instead of English edition)
-            if (localSeries == null && localSeriesByTitle.TryGetValue(seriesTitle.ToUpperInvariant(), out var seriesByTitle))
+            // Second: title + publisher fallback ONLY when no ComicVine volume ID is available
+            // (i.e., unreleased issues not yet indexed by ComicVine)
+            // When volumeId > 0, we require exact match to avoid false matches between different volumes
+            // of same-titled series (e.g., Batman Vol. 3 vs Batman Vol. 4)
+            if (localSeries == null && volumeId == 0 && localSeriesByTitle.TryGetValue(seriesTitle.ToUpperInvariant(), out var seriesByTitle))
             {
                 // If there's only one match, use it
                 if (seriesByTitle.Count == 1)
@@ -2120,6 +2128,127 @@ public class PullListService : IPullListService
             MaxLocalIssueNumber = maxLocalIssueNumber,
             WeeksSearched = weeksAhead
         };
+    }
+
+    /// <inheritdoc />
+    public async Task<Dictionary<int, int>> GetUpcomingCountsBySeriesAsync(
+        IEnumerable<int> seriesIds,
+        int weeksAhead = 4,
+        CancellationToken cancellationToken = default)
+    {
+        var result = new Dictionary<int, int>();
+        var seriesIdList = seriesIds.ToList();
+        
+        if (seriesIdList.Count == 0)
+            return result;
+
+        // Get all series with their issues in one query
+        var seriesList = await _dbContext.Series
+            .Include(s => s.Issues)
+            .Where(s => seriesIdList.Contains(s.Id))
+            .ToListAsync(cancellationToken);
+
+        if (seriesList.Count == 0)
+            return result;
+
+        // Build lookup dictionaries for efficient matching
+        var seriesLookup = new Dictionary<string, List<(int SeriesId, string? Publisher, decimal? MaxIssue, HashSet<int> ExistingCvIds)>>();
+        
+        foreach (var series in seriesList)
+        {
+            var normalizedTitle = NormalizeTitle(series.Title);
+            var maxIssue = series.Issues
+                .Where(i => !i.IsAnnual)
+                .Select(i => (decimal?)i.IssueNumber)
+                .DefaultIfEmpty()
+                .Max();
+            var existingCvIds = series.Issues
+                .Where(i => i.ComicVineId.HasValue)
+                .Select(i => i.ComicVineId!.Value)
+                .ToHashSet();
+
+            if (!seriesLookup.TryGetValue(normalizedTitle, out var list))
+            {
+                list = new List<(int, string?, decimal?, HashSet<int>)>();
+                seriesLookup[normalizedTitle] = list;
+            }
+            list.Add((series.Id, series.Publisher, maxIssue, existingCvIds));
+            
+            // Initialize count to 0
+            result[series.Id] = 0;
+        }
+
+        // Query cached WalkSoftly data for upcoming weeks
+        var today = DateTime.UtcNow.Date;
+        var startDate = GetWeekStart(today);
+        var endDate = startDate.AddDays(weeksAhead * 7);
+
+        var cachedWeeks = await _dbContext.CachedDiscoveryWeeks
+            .Where(c => c.WeekStart >= startDate && c.WeekStart < endDate)
+            .OrderBy(c => c.WeekStart)
+            .ToListAsync(cancellationToken);
+
+        // Track which issues we've counted per series to avoid duplicates
+        var countedIssues = new Dictionary<int, HashSet<decimal>>();
+        foreach (var id in seriesIdList)
+            countedIssues[id] = new HashSet<decimal>();
+
+        foreach (var cachedWeek in cachedWeeks)
+        {
+            try
+            {
+                var issues = JsonSerializer.Deserialize<List<ComicVineIssue>>(cachedWeek.IssuesJson);
+                if (issues == null) continue;
+
+                foreach (var issue in issues)
+                {
+                    var volumeName = issue.Volume?.Name;
+                    if (string.IsNullOrEmpty(volumeName)) continue;
+
+                    var normalizedVolumeName = NormalizeTitle(volumeName);
+
+                    // Check if we have any series with this title
+                    if (!seriesLookup.TryGetValue(normalizedVolumeName, out var matchingSeries))
+                        continue;
+
+                    // Parse issue number
+                    if (!decimal.TryParse(issue.IssueNumber, out var issueNum))
+                        continue;
+
+                    foreach (var (seriesId, publisher, maxIssue, existingCvIds) in matchingSeries)
+                    {
+                        // Check publisher match if both are available
+                        if (!string.IsNullOrEmpty(publisher) && !string.IsNullOrEmpty(issue.Publisher))
+                        {
+                            if (!string.Equals(publisher, issue.Publisher, StringComparison.OrdinalIgnoreCase))
+                                continue;
+                        }
+
+                        // Only count if issue number is greater than max local issue
+                        if (maxIssue.HasValue && issueNum <= maxIssue.Value)
+                            continue;
+
+                        // Check if we already have this issue in local DB (by ComicVine ID)
+                        if (issue.Id > 0 && existingCvIds.Contains(issue.Id))
+                            continue;
+
+                        // Check if we've already counted this issue number for this series
+                        if (countedIssues[seriesId].Contains(issueNum))
+                            continue;
+
+                        // Count this issue
+                        countedIssues[seriesId].Add(issueNum);
+                        result[seriesId]++;
+                    }
+                }
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex, "Failed to parse cached discovery week {WeekStart}", cachedWeek.WeekStart);
+            }
+        }
+
+        return result;
     }
 
     /// <summary>

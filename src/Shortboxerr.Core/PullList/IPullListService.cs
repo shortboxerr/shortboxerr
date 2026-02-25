@@ -222,6 +222,19 @@ public interface IPullListService
         int weeksAhead = 4,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Gets upcoming release counts for multiple series in a single batch operation.
+    /// More efficient than calling GetSeriesUpcomingReleasesAsync for each series.
+    /// </summary>
+    /// <param name="seriesIds">List of series IDs to get counts for</param>
+    /// <param name="weeksAhead">Number of weeks ahead to look for releases</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Dictionary mapping series ID to upcoming release count</returns>
+    Task<Dictionary<int, int>> GetUpcomingCountsBySeriesAsync(
+        IEnumerable<int> seriesIds,
+        int weeksAhead = 4,
+        CancellationToken cancellationToken = default);
+
     #endregion
 
     #region Weekly Export (Mylar3 Parity)

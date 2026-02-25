@@ -18,6 +18,7 @@ public record SeriesDto
     public string? Overview { get; init; }
     public bool Monitored { get; init; }
     public int IssueCount { get; init; }
+    public int UpcomingIssueCount { get; init; }
     public int IssueFileCount { get; init; }
     public int EditionCount { get; init; }
     public DateTime CreatedAt { get; init; }
@@ -46,7 +47,7 @@ public record SeriesDto
     /// </summary>
     public List<LinkedAnnualSeriesDto> LinkedAnnualSeries { get; init; } = new();
 
-    public static SeriesDto FromEntity(Series series) => new()
+    public static SeriesDto FromEntity(Series series, int upcomingIssueCount = 0) => new()
     {
         Id = series.Id,
         Title = series.Title,
@@ -62,6 +63,7 @@ public record SeriesDto
         Overview = series.Overview,
         Monitored = series.Monitored,
         IssueCount = series.Issues?.Count ?? 0,
+        UpcomingIssueCount = upcomingIssueCount,
         IssueFileCount = series.Issues?.Count(i => i.HasFile) ?? 0,
         EditionCount = series.Editions?.Count ?? 0,
         CreatedAt = series.CreatedAt,

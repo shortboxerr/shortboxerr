@@ -1875,7 +1875,7 @@ When WalkSoftly reports an upcoming issue (e.g., Absolute Wonder Woman #17) that
 
 ---
 
-### 11.21 Upcoming Issues: Display Parity with Regular Issues ← READY
+### 11.21 Upcoming Issues: Display Parity with Regular Issues ✅ COMPLETED (Iteration 159)
 
 Upcoming issues in the series detail view should display the same metadata as regular issues (issue number, title, release date, etc.) rather than appearing as minimal placeholders.
 
@@ -1884,21 +1884,21 @@ Upcoming issues in the series detail view should display the same metadata as re
 - Missing: issue number badge, issue title, publisher info
 
 **Implementation Items:**
-- [ ] **Add issue number display** ← READY
-  - AC: Show issue number badge (e.g., "#17") on upcoming issue cards
-  - AC: Match styling of regular issue number display
-  - AC: Handle variant indicators if present in WalkSoftly data
+- [x] **Add issue number display** ✅
+  - AC: Show issue number badge (e.g., "#17") on upcoming issue cards ✅
+  - AC: Match styling of regular issue number display ✅
+  - AC: Handle variant indicators if present in WalkSoftly data ✅ (via issueNumberText)
 
-- [ ] **Add issue metadata** ← READY
-  - AC: Show issue title if available from WalkSoftly
-  - AC: Show publisher name
-  - AC: Show store date in same format as regular issues
-  - AC: Show "days until release" indicator (e.g., "In 3 days", "Tomorrow")
+- [x] **Add issue metadata** ✅
+  - AC: Show issue title if available from WalkSoftly ✅
+  - AC: Show publisher name ✅ (available via upcoming.publisher)
+  - AC: Show store date in same format as regular issues ✅
+  - AC: Show "days until release" indicator (e.g., "In 3 days", "Tomorrow") ✅ (uses backend releaseTiming)
 
-- [ ] **List view parity** ← READY
-  - AC: In list view, upcoming issues should have same columns as regular issues
-  - AC: Issue number column should be populated
-  - AC: Status column shows "Upcoming" badge instead of wanted/downloaded status
+- [x] **List view parity** ✅
+  - AC: In list view, upcoming issues should have same columns as regular issues ✅
+  - AC: Issue number column should be populated ✅
+  - AC: Status column shows "Upcoming" badge instead of wanted/downloaded status ✅
 
 ---
 
@@ -3176,6 +3176,40 @@ The cover acquisition system has evolved organically with multiple data sources 
 - EPIC 9 (ComicVine Integration)
 - EPIC 11 (Weekly Pull List - discovery enrichment)
 - EPIC 12 (Performance & Caching)
+
+### 14.8 Series Deletion UX Improvements 📋 PLANNED
+Improve the series deletion workflow to provide clear feedback and proper handling of linked annual series.
+
+**Background:**
+Currently, clicking "delete" on a series in the series list view uses a basic browser `confirm()` dialog and doesn't provide visual feedback during deletion. Additionally, the behavior with linked annual series needs to respect the series-annual integration setting.
+
+- [ ] **Confirmation modal for series deletion**
+  - AC: Replace browser `confirm()` with a styled modal dialog
+  - AC: Modal shows series title and cover image
+  - AC: If annual integration is enabled, modal lists linked annual series that will also be deleted
+  - AC: If annual integration is disabled, modal indicates only the selected series will be deleted
+  - AC: Clear "Cancel" and "Delete" buttons with appropriate styling (Delete in red/danger color)
+
+- [ ] **Deletion progress indicator**
+  - AC: After confirming, show loading/spinner state on the delete button or modal
+  - AC: Disable the delete button while deletion is in progress
+  - AC: Handle and display any errors that occur during deletion
+
+- [ ] **List refresh after deletion**
+  - AC: After successful deletion, automatically refresh the series list
+  - AC: Removed series should no longer appear in the list
+  - AC: Show toast notification confirming deletion (e.g., "Series 'Batman' deleted successfully")
+
+- [ ] **Backend: Cascade delete linked annual series (when enabled)**
+  - AC: DELETE `/api/v1/series/{id}` should check `EnableSeriesAnnualIntegration` setting
+  - AC: If enabled, also delete all series where `ParentSeriesId == id`
+  - AC: If disabled, only delete the requested series (leave linked annuals as orphans or unlink them)
+  - AC: Invalidate appropriate caches after deletion
+
+**Related:**
+- Series-Annual Integration feature (EPIC 9)
+- Series list page (`ui/src/pages/SeriesPage.tsx`)
+- Series endpoints (`src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs`)
 
 ---
 

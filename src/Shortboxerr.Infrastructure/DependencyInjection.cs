@@ -165,7 +165,15 @@ public static class DependencyInjection
 
         // Metron client for cover image fallback (official API with ComicVine ID mapping)
         // MetronClient loads settings from ISettingsService, no IOptions configuration needed
-        services.AddHttpClient<Core.Metron.IMetronClient, Metron.MetronClient>();
+        // Registered as singleton to preserve rate limit tracking state across requests
+        services.AddHttpClient("MetronClient", client =>
+        {
+            client.BaseAddress = new Uri("https://metron.cloud/api/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.UserAgent.Clear();
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Shortboxerr/1.0 (+https://github.com/shortboxerr/shortboxerr)");
+        });
+        services.AddSingleton<Core.Metron.IMetronClient, Metron.MetronClient>();
 
         // Cover fallback service for enrichment when ComicVine doesn't have issue covers
         services.AddScoped<Core.Services.ICoverFallbackService, Services.CoverFallbackService>();

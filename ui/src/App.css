@@ -2599,7 +2599,7 @@ body {
 .pull-list-card-badge {
   position: absolute;
   top: 8px;
-  left: 8px;
+  right: 8px;
 }
 
 .pull-list-card-monitored {

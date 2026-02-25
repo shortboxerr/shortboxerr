@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Shortboxerr.Core.Caching;
 using Shortboxerr.Core.ComicVine;
 using Shortboxerr.Core.Entities;
 using Shortboxerr.Core.Services;
@@ -39,6 +40,7 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
     private readonly TimeSpan _notFoundCooldown = TimeSpan.FromDays(7);
     private readonly int _maxVolumesPerBatch = 50;
     private readonly int _maxIssuesPerRefreshBatch = 25;
+    private readonly int _incrementalSaveBatchSize = 5; // Save and invalidate cache every N enriched issues
     
     private DateTime _lastCoverRefresh = DateTime.MinValue;
     
@@ -105,6 +107,7 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         var comicVineClient = scope.ServiceProvider.GetRequiredService<IComicVineClient>();
         var coverFallbackService = scope.ServiceProvider.GetRequiredService<ICoverFallbackService>();
         var coverService = scope.ServiceProvider.GetRequiredService<ICoverService>();
+        var cacheService = scope.ServiceProvider.GetRequiredService<ICacheService>();
 
         var allCachedWeeks = await dbContext.CachedDiscoveryWeeks
             .Where(c => c.ExpiresAt > DateTime.UtcNow)
@@ -149,7 +152,7 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             try
             {
                 var (enrichedCount, cvCount, metronCount, volumeCount, notFound, weekIdlessMatched, weekIdlessRejected) = await EnrichCachedWeekAsync(
-                    cachedWeek, comicVineClient, coverFallbackService, coverService, dbContext, force, cancellationToken);
+                    cachedWeek, comicVineClient, coverFallbackService, coverService, cacheService, dbContext, force, cancellationToken);
                 totalEnriched += enrichedCount;
                 comicVineHits += cvCount;
                 metronHits += metronCount;
@@ -178,6 +181,7 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         IComicVineClient comicVineClient,
         ICoverFallbackService coverFallbackService,
         ICoverService coverService,
+        ICacheService cacheService,
         ShortboxerrDbContext dbContext,
         bool bypassCache,
         CancellationToken cancellationToken)
@@ -329,6 +333,26 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         var notFoundCount = 0;
         var idlessMatched = 0;
         var idlessRejected = 0;
+        var enrichedSinceLastSave = 0;
+
+        // Helper to save incrementally and invalidate cache for immediate UI updates
+        async Task SaveIncrementallyAsync()
+        {
+            if (enrichedSinceLastSave > 0 && dataModified)
+            {
+                cachedWeek.IssuesJson = JsonSerializer.Serialize(issues);
+                cachedWeek.LastRefreshed = DateTime.UtcNow;
+                await dbContext.SaveChangesAsync(cancellationToken);
+                
+                var memoryCacheKey = cacheService.GenerateKey(CacheKeys.PullListDiscovery, cachedWeek.WeekStart.ToString("yyyy-MM-dd"));
+                cacheService.Remove(memoryCacheKey);
+                
+                _logger.LogDebug(
+                    "Incremental save: {Count} covers updated for week {WeekStart}",
+                    enrichedSinceLastSave, cachedWeek.WeekStart.ToString("yyyy-MM-dd"));
+                enrichedSinceLastSave = 0;
+            }
+        }
 
         foreach (var issue in issuesToProcess)
         {
@@ -357,7 +381,11 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
                     issue.CoverMatchConfidence = null;
                     comicVineCount++;
                     enrichedCount++;
+                    enrichedSinceLastSave++;
                     dataModified = true;
+                    
+                    if (enrichedSinceLastSave >= _incrementalSaveBatchSize)
+                        await SaveIncrementallyAsync();
                     continue;
                 }
             }
@@ -387,6 +415,14 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
                     volumeCoverUrl,
                     bypassCache,
                     cancellationToken);
+            }
+
+            // Handle rate limiting - pause to let circuit breaker cool down
+            if (fallbackResult.WasRateLimited)
+            {
+                _logger.LogWarning(
+                    "Rate limited during cover enrichment. Pausing for 5 minutes before continuing...");
+                await Task.Delay(TimeSpan.FromMinutes(5), cancellationToken);
             }
 
             if (fallbackResult.Success && !string.IsNullOrEmpty(fallbackResult.CoverUrl))
@@ -422,6 +458,7 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
                         issue.CoverMatchConfidence = fallbackResult.MatchConfidence;
                         metronCount++;
                         enrichedCount++;
+                        enrichedSinceLastSave++;
                         dataModified = true;
 
                         // Track Metron covers for future ComicVine refresh checks
@@ -451,8 +488,12 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
                         issue.CoverMatchConfidence = fallbackResult.MatchConfidence;
                         metronCount++;
                         enrichedCount++;
+                        enrichedSinceLastSave++;
                         dataModified = true;
                     }
+                    
+                    if (enrichedSinceLastSave >= _incrementalSaveBatchSize)
+                        await SaveIncrementallyAsync();
                 }
                 else if (fallbackResult.Source == CoverSource.Metron)
                 {
@@ -469,8 +510,12 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
                     issue.CoverMatchConfidence = fallbackResult.MatchConfidence;
                     metronCount++;
                     enrichedCount++;
+                    enrichedSinceLastSave++;
                     idlessMatched++;
                     dataModified = true;
+                    
+                    if (enrichedSinceLastSave >= _incrementalSaveBatchSize)
+                        await SaveIncrementallyAsync();
                 }
                 else if (fallbackResult.Source == CoverSource.ComicVineVolume)
                 {
@@ -515,6 +560,11 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             cachedWeek.IssuesJson = JsonSerializer.Serialize(issues);
             cachedWeek.LastRefreshed = DateTime.UtcNow;
             await dbContext.SaveChangesAsync(cancellationToken);
+
+            // Invalidate in-memory cache so API serves fresh data
+            var memoryCacheKey = cacheService.GenerateKey(CacheKeys.PullListDiscovery, cachedWeek.WeekStart.ToString("yyyy-MM-dd"));
+            cacheService.Remove(memoryCacheKey);
+            _logger.LogDebug("Invalidated memory cache for week {WeekStart}", cachedWeek.WeekStart);
 
             if (enrichedCount > 0)
             {

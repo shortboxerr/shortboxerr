@@ -94,8 +94,8 @@ public class CoverFallbackService : ICoverFallbackService
             result = CoverFallbackResult.NotFound();
         }
 
-        // Priority 2: Try Metron by CV volume ID + issue number
-        if (!result.Success && comicVineVolumeId.HasValue && !string.IsNullOrEmpty(issueNumber))
+        // Priority 2: Try Metron by CV volume ID + issue number (skip if rate limited)
+        if (!result.Success && !result.WasRateLimited && comicVineVolumeId.HasValue && !string.IsNullOrEmpty(issueNumber))
         {
             try
             {
@@ -116,7 +116,7 @@ public class CoverFallbackService : ICoverFallbackService
             }
         }
 
-        // Priority 3: Volume cover fallback
+        // Priority 3: Volume cover fallback (use even if rate limited)
         if (!result.Success && !string.IsNullOrEmpty(volumeCoverUrl))
         {
             Interlocked.Increment(ref _volumeHits);
@@ -204,8 +204,8 @@ public class CoverFallbackService : ICoverFallbackService
             }
         }
 
-        // Priority 2: Try Metron by series name/issue number search
-        if (!result.Success)
+        // Priority 2: Try Metron by series name/issue number search (skip if rate limited)
+        if (!result.Success && !result.WasRateLimited)
         {
             try
             {
@@ -226,13 +226,15 @@ public class CoverFallbackService : ICoverFallbackService
             }
         }
 
-        // Priority 3: Volume cover fallback
+        // Priority 3: Volume cover fallback (use even if rate limited)
         var wasConfidenceRejected = result.WasConfidenceRejected;
+        var wasRateLimited = result.WasRateLimited;
         if (!result.Success && !string.IsNullOrEmpty(volumeCoverUrl))
         {
             Interlocked.Increment(ref _volumeHits);
             result = CoverFallbackResult.Found(volumeCoverUrl, CoverSource.ComicVineVolume, matchMethod: "VolumeFallback");
             result.WasConfidenceRejected = wasConfidenceRejected;
+            result.WasRateLimited = wasRateLimited;
 
             _logger.LogDebug(
                 "Using volume cover as fallback for {Series} #{Issue}",
@@ -266,6 +268,12 @@ public class CoverFallbackService : ICoverFallbackService
     {
         var metronResult = await _metronClient.GetIssueByCvIdAsync(comicVineIssueId, bypassCache, cancellationToken);
 
+        if (metronResult.StatusCode == 429)
+        {
+            _logger.LogWarning("Rate limited by Metron API during issue lookup for CV issue ID {CvId}", comicVineIssueId);
+            return CoverFallbackResult.RateLimited();
+        }
+
         if (!metronResult.Success || metronResult.Issue == null)
         {
             return CoverFallbackResult.NotFound(metronResult.Error);
@@ -288,6 +296,12 @@ public class CoverFallbackService : ICoverFallbackService
         // Step 1: Look up Metron series by CV volume ID
         var seriesResult = await _metronClient.GetSeriesByCvIdAsync(comicVineVolumeId, bypassCache, cancellationToken);
 
+        if (seriesResult.StatusCode == 429)
+        {
+            _logger.LogWarning("Rate limited by Metron API during series lookup for CV volume ID {VolumeId}", comicVineVolumeId);
+            return CoverFallbackResult.RateLimited();
+        }
+
         if (!seriesResult.Success || seriesResult.Series == null)
         {
             _logger.LogDebug("No Metron series found for CV volume ID {VolumeId}: {Error}", 
@@ -301,6 +315,12 @@ public class CoverFallbackService : ICoverFallbackService
 
         // Step 2: Look up issue by Metron series ID + issue number
         var issueResult = await _metronClient.GetIssueBySeriesIdAsync(metronSeriesId, issueNumber, bypassCache, cancellationToken);
+
+        if (issueResult.StatusCode == 429)
+        {
+            _logger.LogWarning("Rate limited by Metron API during issue lookup for series {SeriesId} issue #{Number}", metronSeriesId, issueNumber);
+            return CoverFallbackResult.RateLimited();
+        }
 
         if (!issueResult.Success || issueResult.Issue == null)
         {
@@ -331,6 +351,12 @@ public class CoverFallbackService : ICoverFallbackService
     {
         // MetronClient checks configuration internally after loading settings from database
         var searchResult = await _metronClient.SearchIssueAsync(seriesName, issueNumber, bypassCache, cancellationToken);
+
+        if (searchResult.StatusCode == 429)
+        {
+            _logger.LogWarning("Rate limited by Metron API during search for {Series} #{Issue}", seriesName, issueNumber);
+            return CoverFallbackResult.RateLimited();
+        }
 
         if (!searchResult.Success || searchResult.Issues.Count == 0)
         {

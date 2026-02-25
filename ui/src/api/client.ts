@@ -88,6 +88,7 @@ interface ApiSeries {
   overview: string | null;
   monitored: boolean;
   issueCount: number;
+  upcomingIssueCount: number;
   issueFileCount: number;
   editionCount: number;
   comicVineId: number | null;
@@ -103,6 +104,7 @@ export interface Series {
   publisher: string | null;
   status: string;
   issueCount: number;
+  upcomingIssueCount: number;
   filesCount: number;
   coverImageUrl: string | null;
 }
@@ -132,6 +134,7 @@ function toSeries(api: ApiSeries): Series {
     publisher: api.publisher,
     status,
     issueCount: api.issueCount,
+    upcomingIssueCount: api.upcomingIssueCount ?? 0,
     filesCount: api.issueFileCount,
     coverImageUrl: api.coverImageUrl,
   };

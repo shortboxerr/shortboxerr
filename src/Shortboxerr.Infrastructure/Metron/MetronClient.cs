@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shortboxerr.Core.Metron;
 using Shortboxerr.Core.Services;
@@ -25,10 +26,12 @@ namespace Shortboxerr.Infrastructure.Metron;
 /// </summary>
 public class MetronClient : IMetronClient
 {
-    private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly IMemoryCache _cache;
     private readonly ILogger<MetronClient>? _logger;
-    private readonly ISettingsService _settingsService;
+    private readonly IServiceScopeFactory _scopeFactory;
+    
+    private const string HttpClientName = "MetronClient";
     private readonly SemaphoreSlim _rateLimiter = new(1, 1);
     private DateTime _lastRequestTime = DateTime.MinValue;
     
@@ -38,7 +41,17 @@ public class MetronClient : IMetronClient
 
     private const string BaseUrl = "https://metron.cloud/api/";
     private const string CacheKeyPrefix = "metron:";
+    
+    // Rate limit configuration (Metron API limits)
+    private const int MaxRequestsPerMinute = 30;
+    private const int MaxRequestsPerDay = 10_000;
     private const int MinDelayMs = 2000; // 30 requests/min = 2s between requests
+    
+    // Rate limit tracking - sliding window for minute, daily counter
+    private readonly Queue<DateTime> _minuteWindow = new();
+    private int _dailyRequestCount;
+    private DateTime _dailyResetDate = DateTime.MinValue;
+    private readonly object _rateLimitLock = new();
     
     // Circuit breaker state
     private int _consecutiveErrors;
@@ -55,23 +68,18 @@ public class MetronClient : IMetronClient
     };
 
     public MetronClient(
-        HttpClient httpClient,
+        IHttpClientFactory httpClientFactory,
         IMemoryCache cache,
-        ISettingsService settingsService,
+        IServiceScopeFactory scopeFactory,
         ILogger<MetronClient>? logger = null)
     {
-        _httpClient = httpClient;
+        _httpClientFactory = httpClientFactory;
         _cache = cache;
-        _settingsService = settingsService;
+        _scopeFactory = scopeFactory;
         _logger = logger;
-
-        _httpClient.BaseAddress = new Uri(BaseUrl);
-        _httpClient.Timeout = TimeSpan.FromSeconds(MetronSettings.DefaultTimeoutSeconds);
-
-        // Set User-Agent (required by Metron - must not be a browser agent)
-        _httpClient.DefaultRequestHeaders.UserAgent.Clear();
-        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Shortboxerr/1.0 (+https://github.com/shortboxerr/shortboxerr)");
     }
+
+    private HttpClient GetHttpClient() => _httpClientFactory.CreateClient(HttpClientName);
     
     private async Task<MetronSettings> GetSettingsAsync(CancellationToken cancellationToken = default)
     {
@@ -80,26 +88,31 @@ public class MetronClient : IMetronClient
             return _cachedSettings;
         }
         
-        _cachedSettings = await _settingsService.GetAsync<MetronSettings>("metron", new MetronSettings(), cancellationToken) 
+        using var scope = _scopeFactory.CreateScope();
+        var settingsService = scope.ServiceProvider.GetRequiredService<ISettingsService>();
+        _cachedSettings = await settingsService.GetAsync<MetronSettings>("metron", new MetronSettings(), cancellationToken) 
             ?? new MetronSettings();
         _settingsCacheTime = DateTime.UtcNow;
         return _cachedSettings;
     }
     
-    private async Task ConfigureAuthAsync(CancellationToken cancellationToken)
+    private async Task<HttpRequestMessage> CreateRequestAsync(HttpMethod method, string url, CancellationToken cancellationToken)
     {
+        var request = new HttpRequestMessage(method, url);
         var settings = await GetSettingsAsync(cancellationToken);
         if (settings.IsConfigured)
         {
             var credentials = Convert.ToBase64String(
                 Encoding.ASCII.GetBytes($"{settings.Username}:{settings.Password}"));
-            _httpClient.DefaultRequestHeaders.Authorization = 
-                new AuthenticationHeaderValue("Basic", credentials);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
         }
-        else
-        {
-            _httpClient.DefaultRequestHeaders.Authorization = null;
-        }
+        return request;
+    }
+
+    private async Task<HttpResponseMessage> SendAsync(string url, CancellationToken cancellationToken)
+    {
+        var request = await CreateRequestAsync(HttpMethod.Get, url, cancellationToken);
+        return await GetHttpClient().SendAsync(request, cancellationToken);
     }
 
     public bool IsConfigured => _cachedSettings?.IsConfigured ?? false;
@@ -121,8 +134,6 @@ public class MetronClient : IMetronClient
             return MetronIssueResult.Failed("Metron credentials not configured");
         }
         
-        await ConfigureAuthAsync(cancellationToken);
-
         var cacheKey = $"{CacheKeyPrefix}cv:{comicVineIssueId}";
 
         if (!bypassCache && _cache.TryGetValue(cacheKey, out MetronIssueResult? cachedResult) && cachedResult != null)
@@ -139,7 +150,7 @@ public class MetronClient : IMetronClient
             await RateLimitAsync(cancellationToken);
 
             var url = $"issue/?cv_id={comicVineIssueId}";
-            var response = await _httpClient.GetAsync(url, cancellationToken);
+            var response = await SendAsync(url, cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
@@ -225,8 +236,6 @@ public class MetronClient : IMetronClient
             return MetronSeriesResult.Failed("Metron credentials not configured");
         }
         
-        await ConfigureAuthAsync(cancellationToken);
-
         var cacheKey = $"{CacheKeyPrefix}series_cv:{comicVineVolumeId}";
 
         if (!bypassCache && _cache.TryGetValue(cacheKey, out MetronSeriesResult? cachedResult) && cachedResult != null)
@@ -243,7 +252,7 @@ public class MetronClient : IMetronClient
             await RateLimitAsync(cancellationToken);
 
             var url = $"series/?cv_id={comicVineVolumeId}";
-            var response = await _httpClient.GetAsync(url, cancellationToken);
+            var response = await SendAsync(url, cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
@@ -330,8 +339,6 @@ public class MetronClient : IMetronClient
             return MetronIssueResult.Failed("Metron credentials not configured");
         }
         
-        await ConfigureAuthAsync(cancellationToken);
-
         var normalizedNumber = NormalizeIssueNumber(issueNumber);
         var cacheKey = $"{CacheKeyPrefix}series_issue:{metronSeriesId}:{normalizedNumber}";
 
@@ -351,7 +358,7 @@ public class MetronClient : IMetronClient
 
             var encodedNumber = Uri.EscapeDataString(normalizedNumber);
             var url = $"issue/?series_id={metronSeriesId}&number={encodedNumber}";
-            var response = await _httpClient.GetAsync(url, cancellationToken);
+            var response = await SendAsync(url, cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
@@ -453,8 +460,6 @@ public class MetronClient : IMetronClient
             return new MetronSearchResult { Success = false, Error = "Metron credentials not configured" };
         }
         
-        await ConfigureAuthAsync(cancellationToken);
-
         var cacheKey = $"{CacheKeyPrefix}search:{seriesName.ToLowerInvariant()}:{issueNumber.ToLowerInvariant()}";
 
         if (!bypassCache && _cache.TryGetValue(cacheKey, out MetronSearchResult? cachedResult) && cachedResult != null)
@@ -474,7 +479,7 @@ public class MetronClient : IMetronClient
             var encodedNumber = Uri.EscapeDataString(issueNumber.TrimStart('#'));
             var url = $"issue/?series_name={encodedSeries}&number={encodedNumber}";
 
-            var response = await _httpClient.GetAsync(url, cancellationToken);
+            var response = await SendAsync(url, cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
@@ -550,8 +555,6 @@ public class MetronClient : IMetronClient
             return MetronIssueListResult.Failed(metronSeriesId, "Metron credentials not configured");
         }
         
-        await ConfigureAuthAsync(cancellationToken);
-
         var cacheKey = $"{CacheKeyPrefix}series_issues:{metronSeriesId}";
 
         if (!bypassCache && _cache.TryGetValue(cacheKey, out MetronIssueListResult? cachedResult) && cachedResult != null)
@@ -568,7 +571,7 @@ public class MetronClient : IMetronClient
             await RateLimitAsync(cancellationToken);
 
             var url = $"series/{metronSeriesId}/issue_list/";
-            var response = await _httpClient.GetAsync(url, cancellationToken);
+            var response = await SendAsync(url, cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
@@ -661,8 +664,6 @@ public class MetronClient : IMetronClient
             return MetronIssueResult.Failed("Metron credentials not configured");
         }
         
-        await ConfigureAuthAsync(cancellationToken);
-
         var cacheKey = $"{CacheKeyPrefix}issue:{metronIssueId}";
 
         if (!bypassCache && _cache.TryGetValue(cacheKey, out MetronIssueResult? cachedResult) && cachedResult != null)
@@ -679,7 +680,7 @@ public class MetronClient : IMetronClient
             await RateLimitAsync(cancellationToken);
 
             var url = $"issue/{metronIssueId}/";
-            var response = await _httpClient.GetAsync(url, cancellationToken);
+            var response = await SendAsync(url, cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
@@ -764,15 +765,13 @@ public class MetronClient : IMetronClient
             return false;
         }
         
-        await ConfigureAuthAsync(cancellationToken);
-
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(TimeSpan.FromSeconds(5));
 
             // Make a simple authenticated request
-            var response = await _httpClient.GetAsync("publisher/?page=1", cts.Token);
+            var response = await SendAsync("publisher/?page=1", cts.Token);
             return response.IsSuccessStatusCode;
         }
         catch
@@ -794,15 +793,73 @@ public class MetronClient : IMetronClient
                     "Metron circuit breaker is open. Waiting {Seconds:F0}s before retry",
                     waitTime.TotalSeconds);
                 await Task.Delay(waitTime, cancellationToken);
-                // Reset circuit breaker after waiting
                 _consecutiveErrors = 0;
             }
             
-            // Calculate delay with exponential backoff
+            // Update rate limit tracking
+            var now = DateTime.UtcNow;
+            lock (_rateLimitLock)
+            {
+                // Reset daily counter at midnight UTC
+                if (_dailyResetDate.Date != now.Date)
+                {
+                    _dailyResetDate = now.Date;
+                    _dailyRequestCount = 0;
+                    _logger?.LogInformation("Metron daily request counter reset. New day: {Date:yyyy-MM-dd}", now.Date);
+                }
+                
+                // Clean expired entries from minute window (older than 60 seconds)
+                var windowStart = now.AddMinutes(-1);
+                while (_minuteWindow.Count > 0 && _minuteWindow.Peek() < windowStart)
+                {
+                    _minuteWindow.Dequeue();
+                }
+            }
+            
+            // Check if we're at daily limit
+            if (_dailyRequestCount >= MaxRequestsPerDay)
+            {
+                var nextReset = now.Date.AddDays(1);
+                var waitTime = nextReset - now;
+                _logger?.LogWarning(
+                    "Metron daily limit reached ({Count}/{Max}). Waiting until {ResetTime:HH:mm:ss} UTC",
+                    _dailyRequestCount, MaxRequestsPerDay, nextReset);
+                throw new MetronRateLimitException(
+                    $"Daily rate limit exceeded ({_dailyRequestCount}/{MaxRequestsPerDay}). Resets at midnight UTC.",
+                    waitTime);
+            }
+            
+            // Check if we need to wait for minute window
+            int requestsInWindow;
+            lock (_rateLimitLock)
+            {
+                requestsInWindow = _minuteWindow.Count;
+            }
+            
+            if (requestsInWindow >= MaxRequestsPerMinute)
+            {
+                // Calculate how long until the oldest request falls out of the window
+                DateTime oldestRequest;
+                lock (_rateLimitLock)
+                {
+                    oldestRequest = _minuteWindow.Peek();
+                }
+                var waitUntil = oldestRequest.AddMinutes(1);
+                var delayMs = (int)(waitUntil - now).TotalMilliseconds;
+                
+                if (delayMs > 0)
+                {
+                    _logger?.LogDebug(
+                        "Metron per-minute limit reached ({Count}/{Max}). Waiting {Delay}ms",
+                        requestsInWindow, MaxRequestsPerMinute, delayMs);
+                    await Task.Delay(delayMs + 100, cancellationToken); // Add 100ms buffer
+                }
+            }
+            
+            // Calculate delay with exponential backoff for errors
             var baseDelay = MinDelayMs;
             if (_consecutiveErrors > 0)
             {
-                // Exponential backoff: 2s, 4s, 8s, 16s, max 30s
                 var backoffMs = Math.Min(
                     baseDelay * (int)Math.Pow(2, _consecutiveErrors),
                     (int)MaxBackoffDelay.TotalMilliseconds);
@@ -812,18 +869,92 @@ public class MetronClient : IMetronClient
                     backoffMs, _consecutiveErrors);
             }
             
-            var elapsed = DateTime.UtcNow - _lastRequestTime;
+            // Ensure minimum delay between requests
+            var elapsed = now - _lastRequestTime;
             if (elapsed.TotalMilliseconds < baseDelay)
             {
                 var delayMs = baseDelay - (int)elapsed.TotalMilliseconds;
                 await Task.Delay(delayMs, cancellationToken);
             }
+            
+            // Record this request
             _lastRequestTime = DateTime.UtcNow;
+            lock (_rateLimitLock)
+            {
+                _minuteWindow.Enqueue(_lastRequestTime);
+                _dailyRequestCount++;
+            }
+            
+            // Log periodically
+            if (_dailyRequestCount % 100 == 0)
+            {
+                _logger?.LogInformation(
+                    "Metron API usage: {Daily}/{DailyMax} today, {Minute}/{MinuteMax} this minute",
+                    _dailyRequestCount, MaxRequestsPerDay, _minuteWindow.Count, MaxRequestsPerMinute);
+            }
         }
         finally
         {
             _rateLimiter.Release();
         }
+    }
+    
+    /// <summary>
+    /// Gets current rate limit statistics.
+    /// </summary>
+    public MetronRateLimitStats GetRateLimitStats()
+    {
+        var now = DateTime.UtcNow;
+        int requestsThisMinute;
+        int requestsToday;
+        
+        lock (_rateLimitLock)
+        {
+            // Clean expired entries from minute window
+            var windowStart = now.AddMinutes(-1);
+            while (_minuteWindow.Count > 0 && _minuteWindow.Peek() < windowStart)
+            {
+                _minuteWindow.Dequeue();
+            }
+            
+            requestsThisMinute = _minuteWindow.Count;
+            requestsToday = _dailyResetDate.Date == now.Date ? _dailyRequestCount : 0;
+        }
+        
+        var stats = new MetronRateLimitStats
+        {
+            RequestsThisMinute = requestsThisMinute,
+            MaxRequestsPerMinute = MaxRequestsPerMinute,
+            RequestsToday = requestsToday,
+            MaxRequestsPerDay = MaxRequestsPerDay,
+            MinuteWindowResetsAt = now.AddMinutes(1),
+            DailyResetsAt = now.Date.AddDays(1),
+            CircuitBreakerOpen = IsCircuitBreakerOpen(),
+            CircuitBreakerResetsAt = IsCircuitBreakerOpen() ? _circuitBreakerResetTime : null
+        };
+        
+        // Calculate estimated wait time
+        if (stats.IsDailyLimitExhausted)
+        {
+            stats.EstimatedWaitTime = stats.DailyResetsAt - now;
+        }
+        else if (stats.IsMinuteLimitExhausted)
+        {
+            DateTime oldestInWindow;
+            lock (_rateLimitLock)
+            {
+                oldestInWindow = _minuteWindow.Count > 0 ? _minuteWindow.Peek() : now;
+            }
+            stats.EstimatedWaitTime = oldestInWindow.AddMinutes(1) - now;
+            if (stats.EstimatedWaitTime < TimeSpan.Zero)
+                stats.EstimatedWaitTime = TimeSpan.Zero;
+        }
+        else if (stats.CircuitBreakerOpen && stats.CircuitBreakerResetsAt.HasValue)
+        {
+            stats.EstimatedWaitTime = stats.CircuitBreakerResetsAt.Value - now;
+        }
+        
+        return stats;
     }
     
     private bool IsCircuitBreakerOpen()

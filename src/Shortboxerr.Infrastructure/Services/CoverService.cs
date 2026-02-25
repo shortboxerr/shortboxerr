@@ -1019,7 +1019,12 @@ public class CoverService : ICoverService
             _ => "medium"
         };
 
-        return Path.Combine(cacheDirectory, typeDir, entityId.ToString(), $"{sizeDir}.jpg");
+        // Ensure cache directory is an absolute path for Results.File to work correctly
+        var absoluteCacheDir = Path.IsPathRooted(cacheDirectory) 
+            ? cacheDirectory 
+            : Path.GetFullPath(cacheDirectory);
+
+        return Path.Combine(absoluteCacheDir, typeDir, entityId.ToString(), $"{sizeDir}.jpg");
     }
 
     private static string GetSizedUrl(string originalUrl, CoverSize size)

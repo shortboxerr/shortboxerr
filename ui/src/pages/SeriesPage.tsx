@@ -326,7 +326,7 @@ export function SeriesPage() {
                         {item.status}
                       </span>
                     </td>
-                    <td>{item.issueCount}</td>
+                    <td>{item.issueCount + item.upcomingIssueCount}{item.upcomingIssueCount > 0 && <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}> ({item.upcomingIssueCount} upcoming)</span>}</td>
                     <td>{item.filesCount}</td>
                     <td className="table-actions" onClick={(e) => e.stopPropagation()}>
                       <button className="btn btn-icon" title="Edit">

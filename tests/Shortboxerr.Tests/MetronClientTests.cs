@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
@@ -39,7 +40,18 @@ public class MetronClientTests
                 It.IsAny<MetronSettings>(), 
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(settings ?? _defaultSettings);
-        return new MetronClient(httpClient, _cache, mockSettingsService.Object, _loggerMock.Object);
+        
+        var mockFactory = new Mock<IHttpClientFactory>();
+        mockFactory.Setup(f => f.CreateClient("MetronClient")).Returns(httpClient);
+        
+        var mockScope = new Mock<IServiceScope>();
+        mockScope.Setup(s => s.ServiceProvider.GetService(typeof(ISettingsService)))
+            .Returns(mockSettingsService.Object);
+        
+        var mockScopeFactory = new Mock<IServiceScopeFactory>();
+        mockScopeFactory.Setup(f => f.CreateScope()).Returns(mockScope.Object);
+        
+        return new MetronClient(mockFactory.Object, _cache, mockScopeFactory.Object, _loggerMock.Object);
     }
 
     private static HttpClient CreateMockHttpClient(HttpStatusCode statusCode, string? content = null)
@@ -246,7 +258,18 @@ public class MetronClientTests
                 It.IsAny<MetronSettings>(), 
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(_defaultSettings);
-        var client = new MetronClient(httpClient, freshCache, mockSettingsService.Object, _loggerMock.Object);
+        
+        var mockFactory = new Mock<IHttpClientFactory>();
+        mockFactory.Setup(f => f.CreateClient("MetronClient")).Returns(httpClient);
+        
+        var mockScope = new Mock<IServiceScope>();
+        mockScope.Setup(s => s.ServiceProvider.GetService(typeof(ISettingsService)))
+            .Returns(mockSettingsService.Object);
+        
+        var mockScopeFactory = new Mock<IServiceScopeFactory>();
+        mockScopeFactory.Setup(f => f.CreateScope()).Returns(mockScope.Object);
+        
+        var client = new MetronClient(mockFactory.Object, freshCache, mockScopeFactory.Object, _loggerMock.Object);
 
         var result1 = await client.GetIssueByCvIdAsync(67890);
         Assert.True(result1.Success);

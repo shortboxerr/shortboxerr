@@ -114,12 +114,26 @@ public class CoverFallbackResult
     /// </summary>
     public bool WasConfidenceRejected { get; set; }
 
+    /// <summary>
+    /// True when the lookup was rate limited by the upstream API.
+    /// Callers should pause and retry later.
+    /// </summary>
+    public bool WasRateLimited { get; set; }
+
     public static CoverFallbackResult NotFound(string? error = null, bool wasConfidenceRejected = false) => new()
     {
         Success = false,
         Source = CoverSource.None,
         Error = error ?? "No cover found in any source",
         WasConfidenceRejected = wasConfidenceRejected
+    };
+
+    public static CoverFallbackResult RateLimited() => new()
+    {
+        Success = false,
+        Source = CoverSource.None,
+        Error = "Rate limited by upstream API",
+        WasRateLimited = true
     };
 
     public static CoverFallbackResult Found(

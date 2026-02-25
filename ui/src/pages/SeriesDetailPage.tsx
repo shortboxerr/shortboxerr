@@ -271,21 +271,65 @@ export function SeriesDetailPage() {
   const allAnnuals = annualsData?.annuals ?? [];
   const linkedAnnualSeriesCount = annualsData?.linkedAnnualSeriesCount ?? 0;
 
-  // Separate regular issues from annuals (regular issues exclude those marked as annual)
+  // Type for unified display of both regular issues and upcoming releases
+  type DisplayIssue = {
+    issueNumber: number;
+    issueNumberText?: string;
+    title?: string | null;
+    coverImageUrl?: string | null;
+    storeDate?: string | null;
+    releaseDate?: string;
+    isUpcoming: boolean;
+    // Regular issue fields
+    issue?: typeof allIssues[0];
+    // Upcoming release fields  
+    upcoming?: typeof upcomingReleases[0];
+  };
+
+  // Separate regular issues from annuals, and merge with upcoming releases
   const { regularIssues, annualIssues } = useMemo(() => {
     // Filter regular issues (excluding annuals from the main issues list)
-    const regular = allIssues.filter(issue => {
-      // Exclude annuals from regular view (they're shown in the Annuals section)
-      if (issue.isAnnual) return false;
-      
-      // Filter by status
-      if (statusFilter !== 'all') {
-        const status = getIssueStatus(issue);
-        if (status !== statusFilter) return false;
-      }
-      
-      return true;
-    });
+    const regularFromDb: DisplayIssue[] = allIssues
+      .filter(issue => {
+        // Exclude annuals from regular view (they're shown in the Annuals section)
+        if (issue.isAnnual) return false;
+        
+        // Filter by status
+        if (statusFilter !== 'all') {
+          const status = getIssueStatus(issue);
+          if (status !== statusFilter) return false;
+        }
+        
+        return true;
+      })
+      .map(issue => ({
+        issueNumber: issue.issueNumber,
+        issueNumberText: issue.issueNumber?.toString(),
+        title: issue.title,
+        coverImageUrl: issue.coverImageUrl,
+        storeDate: issue.storeDate,
+        isUpcoming: false,
+        issue,
+      }));
+    
+    // Convert upcoming releases to DisplayIssue format
+    const upcomingAsDisplay: DisplayIssue[] = upcomingReleases
+      .filter(release => !release.isAnnual) // Exclude annual upcoming releases from main list
+      .map(release => ({
+        issueNumber: release.issueNumber,
+        issueNumberText: release.issueNumberText || release.issueNumber?.toString(),
+        title: release.title,
+        coverImageUrl: release.coverImageUrl,
+        releaseDate: release.releaseDate,
+        isUpcoming: true,
+        upcoming: release,
+      }));
+    
+    // Merge and sort by issue number (respects current sort direction)
+    const regular = [...regularFromDb, ...upcomingAsDisplay]
+      .sort((a, b) => sortDir === 'desc' 
+        ? b.issueNumber - a.issueNumber 
+        : a.issueNumber - b.issueNumber);
     
     // Filter annuals from the annuals endpoint
     const annuals = allAnnuals.filter(issue => {
@@ -298,11 +342,12 @@ export function SeriesDetailPage() {
     });
     
     return { regularIssues: regular, annualIssues: annuals };
-  }, [allIssues, allAnnuals, statusFilter]);
+  }, [allIssues, allAnnuals, upcomingReleases, statusFilter, sortDir]);
 
-  // Combined filtered issues (for selection purposes)
+  // Combined filtered issues (for selection purposes) - only includes actual issues, not upcoming
   const filteredIssues = useMemo(() => {
-    return showAnnuals ? [...regularIssues, ...annualIssues] : regularIssues;
+    const regularOnly = regularIssues.filter(d => !d.isUpcoming && d.issue).map(d => d.issue!);
+    return showAnnuals ? [...regularOnly, ...annualIssues] : regularOnly;
   }, [regularIssues, annualIssues, showAnnuals]);
 
   // Count annuals for display
@@ -497,7 +542,7 @@ export function SeriesDetailPage() {
             <div className="series-detail-stats">
               <div className="series-detail-stat">
                 <BookOpen size={16} />
-                <span>{series.issueCount} issues</span>
+                <span>{series.issueCount + upcomingReleases.length} issues{upcomingReleases.length > 0 && ` (${upcomingReleases.length} upcoming)`}</span>
               </div>
               <div className="series-detail-stat">
                 <HardDrive size={16} />
@@ -694,42 +739,157 @@ export function SeriesDetailPage() {
             </div>
           ) : (
             <>
-              {/* Regular Issues Section */}
+              {/* Regular Issues Section (now includes merged upcoming releases) */}
               {regularIssues.length > 0 && (
                 <>
                   {viewMode === 'cover' ? (
                     <div className="issues-grid">
-                      {paginatedRegularIssues.map((issue) => (
-                        <IssueCoverCard 
-                          key={issue.id} 
-                          issue={issue} 
-                          selected={selectedIssues.has(issue.id)}
-                          onSelect={() => toggleIssueSelection(issue.id)}
-                          onMarkWanted={() => handleMarkAsWanted([issue.id])}
-                          onMarkSkipped={() => handleMarkAsSkipped([issue.id])}
-                          onSearch={() => handleSearchIssue(issue.id)}
-                          isUpdating={updateIssueStatus.isPending}
-                          isSearching={searchIssue.isPending && searchIssue.variables === issue.id}
-                        />
+                      {paginatedRegularIssues.map((displayItem) => (
+                        displayItem.isUpcoming ? (
+                          // Render upcoming release card
+                          <div 
+                            key={`upcoming-${displayItem.issueNumber}`}
+                            className="issue-card issue-card-wanted upcoming"
+                            style={{
+                              border: '1px dashed var(--accent-info)',
+                            }}
+                          >
+                            <div className="issue-card-cover-wrapper">
+                              <img
+                                src={displayItem.coverImageUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="150" viewBox="0 0 100 150"%3E%3Crect fill="%232a2d35" width="100" height="150"/%3E%3Ctext fill="%236b7280" font-family="sans-serif" font-size="10" x="50" y="75" text-anchor="middle"%3ENo Cover%3C/text%3E%3C/svg%3E'}
+                                alt={`Issue ${displayItem.issueNumberText || displayItem.issueNumber}`}
+                                className="issue-card-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="150" viewBox="0 0 100 150"%3E%3Crect fill="%232a2d35" width="100" height="150"/%3E%3Ctext fill="%236b7280" font-family="sans-serif" font-size="10" x="50" y="75" text-anchor="middle"%3ENo Cover%3C/text%3E%3C/svg%3E';
+                                }}
+                              />
+                              <div className="issue-card-status" style={{ background: 'var(--accent-info)' }}>
+                                <Clock size={14} />
+                              </div>
+                              <span 
+                                className="issue-card-badge"
+                                style={{
+                                  position: 'absolute',
+                                  top: '6px',
+                                  left: '6px',
+                                  background: 'var(--accent-info)',
+                                  color: 'white',
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  fontSize: '10px',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                UPCOMING
+                              </span>
+                            </div>
+                            <div className="issue-card-info">
+                              <div className="issue-card-number">{displayItem.issueNumberText || displayItem.issueNumber}</div>
+                              <div className="issue-card-title">{displayItem.title || 'TBA'}</div>
+                              {displayItem.upcoming && (
+                                <div className="issue-card-date" style={{ fontSize: '11px', color: 'var(--accent-info)', fontWeight: 500 }}>
+                                  {displayItem.upcoming.releaseTiming || formatDaysUntilRelease(displayItem.releaseDate!)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ) : displayItem.issue ? (
+                          // Render regular issue card
+                          <IssueCoverCard 
+                            key={displayItem.issue.id} 
+                            issue={displayItem.issue} 
+                            selected={selectedIssues.has(displayItem.issue.id)}
+                            onSelect={() => toggleIssueSelection(displayItem.issue!.id)}
+                            onMarkWanted={() => handleMarkAsWanted([displayItem.issue!.id])}
+                            onMarkSkipped={() => handleMarkAsSkipped([displayItem.issue!.id])}
+                            onSearch={() => handleSearchIssue(displayItem.issue!.id)}
+                            isUpdating={updateIssueStatus.isPending}
+                            isSearching={searchIssue.isPending && searchIssue.variables === displayItem.issue.id}
+                          />
+                        ) : null
                       ))}
                     </div>
                   ) : (
-                    <IssueListView 
-                      issues={paginatedRegularIssues}
-                      selectedIds={selectedIssues}
-                      onSelect={toggleIssueSelection}
-                      onToggleSelectAll={toggleSelectAllIssues}
-                      allSelected={allIssuesSelected}
-                      someSelected={someIssuesSelected}
-                      sortKey={sortKey}
-                      sortDir={sortDir}
-                      onSort={toggleSort}
-                      onMarkWanted={handleMarkAsWanted}
-                      onMarkSkipped={handleMarkAsSkipped}
-                      onSearch={handleSearchIssue}
-                      isUpdating={updateIssueStatus.isPending}
-                      searchingIssueId={searchIssue.isPending ? searchIssue.variables : undefined}
-                    />
+                    // List view with both regular and upcoming issues
+                    <div className="issues-table-wrapper">
+                      <table className="issues-table">
+                        <thead>
+                          <tr>
+                            <th className="col-checkbox">
+                              <input 
+                                type="checkbox" 
+                                checked={allIssuesSelected}
+                                onChange={toggleSelectAllIssues}
+                              />
+                            </th>
+                            <th className="col-number sortable" onClick={() => toggleSort('issueNumber')}>
+                              # {sortKey === 'issueNumber' && (sortDir === 'asc' ? <SortAsc size={12} /> : <SortDesc size={12} />)}
+                            </th>
+                            <th className="col-title sortable" onClick={() => toggleSort('title')}>
+                              Title {sortKey === 'title' && (sortDir === 'asc' ? <SortAsc size={12} /> : <SortDesc size={12} />)}
+                            </th>
+                            <th className="col-date sortable" onClick={() => toggleSort('releaseDate')}>
+                              Release Date {sortKey === 'releaseDate' && (sortDir === 'asc' ? <SortAsc size={12} /> : <SortDesc size={12} />)}
+                            </th>
+                            <th className="col-status sortable" onClick={() => toggleSort('status')}>
+                              Status {sortKey === 'status' && (sortDir === 'asc' ? <SortAsc size={12} /> : <SortDesc size={12} />)}
+                            </th>
+                            <th className="col-tags">Tags</th>
+                            <th className="col-actions">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {paginatedRegularIssues.map((displayItem) => (
+                            displayItem.isUpcoming && displayItem.upcoming ? (
+                              // Upcoming issue row
+                              <tr key={`upcoming-${displayItem.issueNumber}`} className="issue-row upcoming" style={{ background: 'var(--bg-secondary)' }}>
+                                <td className="col-checkbox">
+                                  {/* No selection for upcoming issues */}
+                                </td>
+                                <td className="col-number" style={{ fontWeight: 600 }}>
+                                  {displayItem.issueNumberText || displayItem.issueNumber}
+                                </td>
+                                <td className="col-title">
+                                  <span style={{ color: displayItem.title ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                                    {displayItem.title || 'TBA'}
+                                  </span>
+                                </td>
+                                <td className="col-date">
+                                  <span style={{ color: 'var(--accent-info)', fontWeight: 500 }}>
+                                    {displayItem.upcoming.releaseTiming || formatDate(displayItem.releaseDate || null)}
+                                  </span>
+                                </td>
+                                <td className="col-status">
+                                  <span className="badge badge-info" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                    <Clock size={12} /> Upcoming
+                                  </span>
+                                </td>
+                                <td className="col-tags">
+                                  {displayItem.upcoming.isAnnual && <span className="tag tag-annual">Annual</span>}
+                                  {displayItem.upcoming.isSpecial && <span className="tag tag-special">Special</span>}
+                                </td>
+                                <td className="col-actions">
+                                  {/* No actions for upcoming issues */}
+                                </td>
+                              </tr>
+                            ) : displayItem.issue ? (
+                              // Regular issue row
+                              <IssueListRow
+                                key={displayItem.issue.id}
+                                issue={displayItem.issue}
+                                selected={selectedIssues.has(displayItem.issue.id)}
+                                onSelect={() => toggleIssueSelection(displayItem.issue!.id)}
+                                onMarkWanted={() => handleMarkAsWanted([displayItem.issue!.id])}
+                                onMarkSkipped={() => handleMarkAsSkipped([displayItem.issue!.id])}
+                                onSearch={() => handleSearchIssue(displayItem.issue!.id)}
+                                isUpdating={updateIssueStatus.isPending}
+                                isSearching={searchIssue.isPending && searchIssue.variables === displayItem.issue.id}
+                              />
+                            ) : null
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
 
                   {/* Pagination Controls */}
@@ -795,136 +955,11 @@ export function SeriesDetailPage() {
                 </>
               )}
 
-              {/* Upcoming Releases Section (from WalkSoftly, not yet in ComicVine) */}
-              {upcomingReleases.length > 0 && (
-                <div className="upcoming-section" style={{ marginTop: regularIssues.length > 0 ? '32px' : '0' }}>
-                  <div className="section-header" style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '8px',
-                    marginBottom: '16px',
-                    paddingBottom: '12px',
-                    borderBottom: '1px solid var(--border-color)'
-                  }}>
-                    <Clock size={18} style={{ color: 'var(--accent-info)' }} />
-                    <h3 style={{ 
-                      margin: 0, 
-                      fontSize: '16px', 
-                      fontWeight: 600,
-                      color: 'var(--text-primary)'
-                    }}>
-                      Upcoming
-                    </h3>
-                    <span style={{ 
-                      fontSize: '13px', 
-                      color: 'var(--text-muted)',
-                      marginLeft: '4px'
-                    }}>
-                      ({upcomingReleases.length})
-                    </span>
-                    <span style={{ 
-                      fontSize: '11px', 
-                      color: 'var(--text-muted)',
-                      background: 'var(--bg-secondary)',
-                      padding: '2px 8px',
-                      borderRadius: '10px',
-                      marginLeft: '8px'
-                    }}>
-                      Upcoming
-                    </span>
-                  </div>
-                  
-                  {viewMode === 'cover' ? (
-                    <div className="issues-grid">
-                      {upcomingReleases.map((release) => (
-                        <div 
-                          key={`upcoming-${release.issueNumber}`}
-                          className="issue-card issue-card-wanted upcoming"
-                          style={{
-                            border: '1px dashed var(--accent-info)',
-                          }}
-                        >
-                          <div className="issue-card-cover-wrapper">
-                            <img 
-                              src={release.coverImageUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="150" viewBox="0 0 100 150"%3E%3Crect fill="%232a2d35" width="100" height="150"/%3E%3Ctext fill="%236b7280" font-family="sans-serif" font-size="10" x="50" y="75" text-anchor="middle"%3ENo Cover%3C/text%3E%3C/svg%3E'} 
-                              alt={`Issue #${release.issueNumber}`}
-                              className="issue-card-cover"
-                              style={{ filter: 'grayscale(30%)' }}
-                            />
-                            <div className="issue-card-status" style={{ 
-                              background: 'var(--accent-info)',
-                              padding: '2px 8px',
-                              borderRadius: '10px',
-                              fontSize: '10px'
-                            }}>
-                              <Clock size={14} />
-                            </div>
-                          </div>
-                          <div className="issue-card-info">
-                            <div className="issue-card-number">
-                              {release.issueNumberText || release.issueNumber}
-                            </div>
-                            {release.title && (
-                              <div className="issue-card-title" title={release.title}>
-                                {release.title}
-                              </div>
-                            )}
-                            <div className="issue-card-date">
-                              <Calendar size={10} />
-                              {new Date(release.releaseDate).toLocaleDateString()}
-                            </div>
-                            <div style={{ 
-                              fontSize: '11px', 
-                              color: 'var(--accent-info)', 
-                              marginTop: '4px',
-                              fontWeight: 500
-                            }}>
-                              {release.releaseTiming}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="table-container">
-                      <table className="table">
-                        <thead>
-                          <tr>
-                            <th style={{ width: '80px' }}>#</th>
-                            <th>Title</th>
-                            <th>Release Date</th>
-                            <th>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {upcomingReleases.map((release) => (
-                            <tr key={`upcoming-list-${release.issueNumber}`} style={{ opacity: 0.9 }}>
-                              <td style={{ fontWeight: 600 }}>
-                                {release.issueNumberText || release.issueNumber}
-                              </td>
-                              <td style={{ color: release.title ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                                {release.title || 'Untitled'}
-                              </td>
-                              <td>
-                                {new Date(release.releaseDate).toLocaleDateString()}
-                              </td>
-                              <td>
-                                <span className="badge badge-info">
-                                  {release.releaseTiming}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              )}
+              {/* Upcoming releases are now integrated into the main issues grid above */}
 
               {/* Annuals Section */}
               {showAnnuals && annualIssues.length > 0 && (
-                <div className="annuals-section" style={{ marginTop: (regularIssues.length > 0 || upcomingReleases.length > 0) ? '32px' : '0' }}>
+                <div className="annuals-section" style={{ marginTop: regularIssues.length > 0 ? '32px' : '0' }}>
                   <div className="section-header" style={{ 
                     display: 'flex', 
                     alignItems: 'center', 
@@ -1833,6 +1868,23 @@ function formatDate(dateStr: string | null): string {
   if (!dateStr) return '';
   const date = new Date(dateStr);
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatDaysUntilRelease(releaseDate: string): string {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const release = new Date(releaseDate);
+  release.setHours(0, 0, 0, 0);
+  
+  const diffTime = release.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 0) return 'Released';
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Tomorrow';
+  if (diffDays <= 7) return `In ${diffDays} days`;
+  if (diffDays <= 14) return 'Next week';
+  return formatDate(releaseDate);
 }
 
 // Generate page numbers with ellipsis for large page counts

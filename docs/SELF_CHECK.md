@@ -1,76 +1,77 @@
-# Self-Check: Iteration 158
+# Self-Check: Iteration 159
 
 ## Summary
-Implemented Phase 2 of EPIC 11.27 (Pull List Data Flow Refactoring) by creating the background upgrade service that periodically upgrades interim Metron data to authoritative ComicVine data.
+Implemented EPIC 11.21 (Upcoming Issues - Display Parity with Regular Issues). Enhanced the series detail view to display upcoming issues with the same metadata as regular issues, including proper list view integration.
 
 ## Checklist
 
-### 11.27 Pull List Data Flow Refactoring - Phase 2
+### 11.21 Upcoming Issues Display Parity
 
 | Item | Status | Notes |
 |------|--------|-------|
-| DiscoveryUpgradeBackgroundService | ✅ | Periodically checks cached weeks for non-finalized issues |
-| Re-query WalkSoftly | ✅ | Detects newly available CV issue IDs |
-| Batch CV fetch | ✅ | Fetches full data for issues with new CV IDs |
-| Update cached issues | ✅ | Marks upgraded issues as `ComicVineFinalized` |
-| Settings: DiscoveryUpgradeEnabled | ✅ | Default: true |
-| Settings: DiscoveryUpgradeIntervalHours | ✅ | Default: 4 (Mylar3 parity) |
-| Settings: DiscoveryUpgradeWeeksAhead | ✅ | Default: 4 |
-| DI registration | ✅ | Singleton hosted service |
-| Unit tests | ✅ | 11 tests for settings and state transitions |
+| Issue number display | ✅ | Shows issueNumberText or issueNumber |
+| Issue title | ✅ | Shows title or "TBA" if not available |
+| Release timing indicator | ✅ | Uses backend releaseTiming ("In 3 days", "Tomorrow", etc.) |
+| formatDaysUntilRelease helper | ✅ | Fallback frontend calculation |
+| List view: same columns | ✅ | #, Title, Release Date, Status, Tags, Actions |
+| List view: issue number | ✅ | Populated with styled number |
+| List view: Upcoming badge | ✅ | Blue badge with clock icon |
+| List view: Annual/Special tags | ✅ | Shown when applicable |
+| Visual differentiation | ✅ | Subtle background on upcoming rows |
 
 ## Build & Test Results
 
 ```
-Build: SUCCESS (0 warnings, 0 errors)
-
-Targeted tests:
-- DiscoveryUpgradeBackgroundServiceTests: 11 passed
-
-Pre-existing failures (not introduced by this iteration):
-- PullListServiceTests.GetDiscoveryPublishersAsync_* (GroupBy not supported by InMemory provider)
-- DownloadHostResolverTests.Factory_CanResolve_ReturnsFalseForUnsupportedUrl
+Frontend Build: SUCCESS (0 warnings, 0 errors)
+TypeScript: No errors
+Bundle size: 602.79 kB (gzip: 153.03 kB)
 ```
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/Shortboxerr.Core/PullList/IPullListService.cs` | Added `DiscoveryUpgradeEnabled`, `DiscoveryUpgradeIntervalHours`, `DiscoveryUpgradeWeeksAhead` settings |
-| `src/Shortboxerr.Infrastructure/BackgroundServices/DiscoveryUpgradeBackgroundService.cs` | New background service for MetronInterim→ComicVineFinalized upgrades |
-| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Registered DiscoveryUpgradeBackgroundService |
-| `tests/Shortboxerr.Tests/DiscoveryUpgradeBackgroundServiceTests.cs` | 11 unit tests |
-| `docs/WORKLOG.md` | Added Iteration 158 details |
-| `docs/BACKLOG.md` | Updated 11.27 background upgrade service as complete |
+| `ui/src/pages/SeriesDetailPage.tsx` | Added formatDaysUntilRelease(), updated cover view release timing, implemented list view with mixed regular/upcoming issues |
+| `docs/WORKLOG.md` | Added Iteration 159 details |
+| `docs/BACKLOG.md` | Marked 11.21 as complete |
 
 ## Commits
 
-1. `feat(pulllist): add background discovery upgrade service (EPIC 11.27 Phase 2)`
+1. `feat(ui): add upcoming issues display parity in series view (EPIC 11.21)`
 
-## Algorithm
+## Implementation Details
 
-```
-Every 4 hours (configurable):
-  For each cached week (current + N weeks ahead):
-    1. Deserialize cached issues from JSON
-    2. Filter to non-finalized issues (Id <= 0 OR status != HasComicVineCover)
-    3. Re-query WalkSoftly for that week
-    4. Build lookup: (series title, issue number) → WalkSoftly release
-    5. For each non-finalized issue:
-       - If WalkSoftly now has a CV issue ID → add to upgrade list
-    6. Batch fetch CV data for upgrade list
-    7. Apply CV data, mark as finalized
-    8. Save updated cache to database
+### Cover View Changes
+- Release timing now uses backend-provided `releaseTiming` field
+- Falls back to `formatDaysUntilRelease()` if releaseTiming unavailable
+- Styled in accent-info color for visual distinction
+
+### List View Changes
+- Replaced filtered IssueListView with inline table rendering
+- Supports mixed DisplayIssue array (regular + upcoming)
+- Upcoming rows:
+  - No selection checkbox (can't mark as wanted)
+  - Issue number displayed consistently
+  - Title shows "TBA" for unknown titles
+  - Status shows "Upcoming" badge with Clock icon
+  - Tags show Annual/Special when applicable
+  - No actions (can't search/mark)
+- Regular rows: Use existing IssueListRow component
+
+### Helper Function
+```typescript
+function formatDaysUntilRelease(releaseDate: string): string {
+  // Returns: "Today", "Tomorrow", "In X days", "Next week", or formatted date
+}
 ```
 
 ## Next Steps
 
-- [ ] Evaluate 11.26 (local cover caching routing issue) relevance
-- [ ] Consider 11.21 (Upcoming Issues Display Parity) as next priority
-- [ ] Add integration tests for Metron→ComicVine upgrade flow
+- [ ] Consider adding publisher info to upcoming issue display
+- [ ] Evaluate EPIC 14.8 (Series Deletion UX) priority
+- [ ] Consider other P1 backlog items
 
 ## Notes
-- This completes the core implementation of EPIC 11.27
-- Background service respects settings and can be disabled
-- 4-hour interval matches Mylar3's refresh behavior
-- Upgrade only triggers when WalkSoftly provides new CV issue IDs
+- UI-only changes, no backend modifications needed
+- Backend already provides releaseTiming in UpcomingRelease response
+- List view now properly integrates upcoming issues instead of filtering them out

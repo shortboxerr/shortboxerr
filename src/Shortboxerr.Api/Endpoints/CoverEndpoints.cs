@@ -30,6 +30,14 @@ public static class CoverEndpoints
             .Produces(404);
 
         // Get discovery cover (Metron covers cached by ComicVine issue ID)
+        // Supports both route segment and query parameter for size
+        group.MapGet("/discovery/{comicVineIssueId:int}/{size}", GetDiscoveryCoverWithSize)
+            .WithName("GetDiscoveryCoverWithSize")
+            .WithDescription("Gets a cached discovery cover by ComicVine issue ID with size in route (used for Pull List enrichment).")
+            .WithOpenApi()
+            .Produces(200, contentType: "image/jpeg")
+            .Produces(404);
+        
         group.MapGet("/discovery/{comicVineIssueId:int}", GetDiscoveryCover)
             .WithName("GetDiscoveryCover")
             .WithDescription("Gets a cached discovery cover by ComicVine issue ID (used for Pull List enrichment).")
@@ -195,10 +203,34 @@ public static class CoverEndpoints
         return Results.File(result.FilePath, result.ContentType ?? "image/jpeg");
     }
 
+    private static async Task<IResult> GetDiscoveryCoverWithSize(
+        HttpContext httpContext,
+        int comicVineIssueId,
+        string size,
+        ICoverService coverService,
+        CancellationToken cancellationToken)
+    {
+        if (!Enum.TryParse<CoverSize>(size, ignoreCase: true, out var coverSize))
+        {
+            coverSize = CoverSize.Medium;
+        }
+        return await GetDiscoveryCoverInternal(httpContext, comicVineIssueId, coverSize, coverService, cancellationToken);
+    }
+
     private static async Task<IResult> GetDiscoveryCover(
         HttpContext httpContext,
         int comicVineIssueId,
-        [FromQuery] CoverSize size,
+        [FromQuery] CoverSize? size,
+        ICoverService coverService,
+        CancellationToken cancellationToken)
+    {
+        return await GetDiscoveryCoverInternal(httpContext, comicVineIssueId, size ?? CoverSize.Medium, coverService, cancellationToken);
+    }
+
+    private static async Task<IResult> GetDiscoveryCoverInternal(
+        HttpContext httpContext,
+        int comicVineIssueId,
+        CoverSize size,
         ICoverService coverService,
         CancellationToken cancellationToken)
     {

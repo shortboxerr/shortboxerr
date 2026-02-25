@@ -106,8 +106,12 @@ public static class SeriesEndpoints
                     .Take(pageSize)
                     .ToListAsync();
 
+                // Get upcoming counts for all series in the page
+                var seriesIds = records.Select(s => s.Id).ToList();
+                var upcomingCounts = await pullListService.GetUpcomingCountsBySeriesAsync(seriesIds);
+
                 return PagedResult<SeriesDto>.Create(
-                    records.Select(SeriesDto.FromEntity).ToList(),
+                    records.Select(s => SeriesDto.FromEntity(s, upcomingCounts.GetValueOrDefault(s.Id, 0))).ToList(),
                     page,
                     pageSize,
                     totalRecords);
