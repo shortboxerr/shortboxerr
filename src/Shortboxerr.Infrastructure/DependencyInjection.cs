@@ -84,13 +84,15 @@ public static class DependencyInjection
         services.AddScoped<ISearchSettingsService, SearchSettingsService>();
         services.AddScoped<ISearchResultScorer, SearchResultScorer>();
         services.AddScoped<IActivityService, ActivityService>();
+        services.AddScoped<IDownloadHistoryService, DownloadHistoryService>();
+        services.AddScoped<IHistoryService, HistoryService>();
         services.AddSingleton<IArchiveExtractor, ArchiveExtractor>();
 
         // DDL services
         services.AddSingleton<IDdlReleaseParser, DdlReleaseParser>();
         services.AddSingleton<IDdlFilter, DdlFilter>();
         services.AddSingleton<IDdlRateLimiter, DdlRateLimiter>();
-        services.AddSingleton<IDdlSiteAdapterFactory, DdlSiteAdapterFactory>();
+        services.AddSingleton<IDdlSiteAdapterFactory>(sp => new DdlSiteAdapterFactory(sp));
         services.AddSingleton<IDdlSearchService, DdlSearchService>();
         
         // DDL cookie persistence (Mylar3 parity)
