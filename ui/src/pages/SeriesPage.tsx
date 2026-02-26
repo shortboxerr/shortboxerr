@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Plus, RefreshCw, Trash2, Edit, BookOpen, Search, X, Loader2, AlertCircle, ExternalLink, Filter, ArrowUpDown, ArrowUp, ArrowDown, Grid, List } from 'lucide-react';
+import { Plus, RefreshCw, Trash2, Edit, BookOpen, Search, X, Loader2, AlertCircle, ExternalLink, Filter, ArrowUpDown, ArrowUp, ArrowDown, Grid, List, FolderSync, Check, AlertTriangle } from 'lucide-react';
 import { api } from '../api/client';
 import type { SeriesMatchCandidate } from '../api/client';
 
@@ -10,6 +10,7 @@ export function SeriesPage() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [showAddModal, setShowAddModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [showOrganizeModal, setShowOrganizeModal] = useState(false);
   
   // Filter and sort state
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -191,6 +192,14 @@ export function SeriesPage() {
                 {selectedIds.size} selected
               </span>
               <button 
+                className="btn" 
+                onClick={() => setShowOrganizeModal(true)}
+                title="Organize files for selected series"
+              >
+                <FolderSync size={16} />
+                Organize
+              </button>
+              <button 
                 className="btn btn-danger" 
                 onClick={handleDeleteSelected}
                 disabled={deleteMutation.isPending}
@@ -360,6 +369,19 @@ export function SeriesPage() {
 
       {showAddModal && (
         <AddSeriesModal onClose={() => setShowAddModal(false)} onAdded={handleSeriesAdded} />
+      )}
+
+      {showOrganizeModal && (
+        <BulkOrganizeModal
+          seriesIds={Array.from(selectedIds)}
+          seriesList={series.filter(s => selectedIds.has(s.id))}
+          onClose={() => setShowOrganizeModal(false)}
+          onOrganized={async () => {
+            await queryClient.invalidateQueries({ queryKey: ['series'] });
+            setSelectedIds(new Set());
+            setShowOrganizeModal(false);
+          }}
+        />
       )}
     </>
   );
@@ -709,4 +731,318 @@ function SeriesSearchResult({ candidate, isSelected, onSelect, compact = false }
 function stripHtml(html: string): string {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   return doc.body.textContent || '';
+}
+
+// Bulk Organize Modal Component
+interface BulkOrganizeModalProps {
+  seriesIds: number[];
+  seriesList: Array<{ id: number; title: string }>;
+  onClose: () => void;
+  onOrganized: () => Promise<void>;
+}
+
+function BulkOrganizeModal({ seriesIds, seriesList: _seriesList, onClose, onOrganized }: BulkOrganizeModalProps) {
+  void _seriesList; // Available for future use (e.g., fallback display)
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [executionResults, setExecutionResults] = useState<{
+    successful: number;
+    failed: number;
+    totalFilesRenamed: number;
+    errors: string[];
+  } | null>(null);
+
+  const { data: preview, isLoading } = useQuery({
+    queryKey: ['series', 'organize', 'bulk-preview', seriesIds.join(',')],
+    queryFn: () => api.getBulkOrganizePreview(seriesIds),
+  });
+
+  const executeMutation = useMutation({
+    mutationFn: () => api.executeBulkOrganize(seriesIds),
+    onSuccess: async (result) => {
+      const errors = result.results
+        .filter(r => !r.success && r.error)
+        .map(r => `${r.seriesTitle}: ${r.error}`);
+      
+      setExecutionResults({
+        successful: result.successful,
+        failed: result.failed,
+        totalFilesRenamed: result.totalFilesRenamed,
+        errors,
+      });
+
+      if (result.successful > 0) {
+        setIsExecuting(true);
+        try {
+          await onOrganized();
+        } finally {
+          setIsExecuting(false);
+        }
+      }
+    },
+    onError: (e) => {
+      setError(e instanceof Error ? e.message : 'Failed to organize files');
+    },
+  });
+
+  const handleExecute = () => {
+    setError(null);
+    setExecutionResults(null);
+    executeMutation.mutate();
+  };
+
+  const formatBytes = (bytes: number): string => {
+    if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+    if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${bytes} B`;
+  };
+
+  const isPending = executeMutation.isPending || isExecuting;
+  const hasChanges = preview && (preview.seriesWithChanges > 0 || preview.filesWithChanges > 0);
+  const noChangesNeeded = preview && !hasChanges && !preview.hasErrors;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '650px' }}>
+        <div className="modal-header">
+          <h2 className="modal-title">Organize Files</h2>
+          <button className="btn btn-icon" onClick={onClose}>
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="modal-body">
+          <div style={{ 
+            background: 'var(--bg-secondary)', 
+            padding: '12px 16px', 
+            borderRadius: 'var(--radius-md)', 
+            marginBottom: '16px',
+            border: '1px solid var(--border-color)'
+          }}>
+            <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>
+              {seriesIds.length} Series Selected
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Rename files and folders to match current naming format settings
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className="loading" style={{ padding: '40px 0' }}>
+              <div className="spinner" />
+              <div style={{ marginTop: '12px', color: 'var(--text-muted)' }}>Analyzing {seriesIds.length} series...</div>
+            </div>
+          ) : executionResults ? (
+            // Show execution results
+            <div>
+              {executionResults.successful > 0 && (
+                <div className="alert alert-success" style={{ marginBottom: '16px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Check size={20} />
+                  <div>
+                    <strong>Organization Complete</strong>
+                    <div style={{ fontSize: '13px', marginTop: '4px' }}>
+                      {executionResults.successful} series organized, {executionResults.totalFilesRenamed} files renamed
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {executionResults.failed > 0 && (
+                <div className="alert alert-danger" style={{ padding: '12px 14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: executionResults.errors.length > 0 ? '12px' : 0 }}>
+                    <AlertCircle size={20} />
+                    <strong>{executionResults.failed} series failed</strong>
+                  </div>
+                  {executionResults.errors.length > 0 && (
+                    <ul style={{ margin: '0', paddingLeft: '20px', fontSize: '13px' }}>
+                      {executionResults.errors.slice(0, 5).map((err, idx) => (
+                        <li key={idx}>{err}</li>
+                      ))}
+                      {executionResults.errors.length > 5 && (
+                        <li style={{ color: 'var(--text-muted)' }}>...and {executionResults.errors.length - 5} more</li>
+                      )}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : preview ? (
+            <>
+              {error && (
+                <div className="alert alert-danger" style={{ marginBottom: '16px', padding: '10px 14px' }}>
+                  {error}
+                </div>
+              )}
+
+              {preview.hasErrors && (
+                <div className="alert alert-warning" style={{ marginBottom: '16px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <AlertTriangle size={18} />
+                  <span>Some series have errors and will be skipped</span>
+                </div>
+              )}
+
+              {noChangesNeeded ? (
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '32px 20px',
+                  background: 'var(--bg-tertiary)',
+                  borderRadius: 'var(--radius-md)'
+                }}>
+                  <Check size={48} style={{ color: 'var(--accent-success)', marginBottom: '12px' }} />
+                  <div style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-primary)' }}>
+                    All files are already organized
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                    All {seriesIds.length} series match the current naming format
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Summary Stats */}
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(3, 1fr)', 
+                    gap: '12px',
+                    marginBottom: '16px'
+                  }}>
+                    <div style={{ 
+                      background: 'var(--bg-tertiary)', 
+                      padding: '16px', 
+                      borderRadius: 'var(--radius-sm)',
+                      textAlign: 'center'
+                    }}>
+                      <div style={{ fontSize: '24px', fontWeight: 600, color: 'var(--accent-primary)' }}>
+                        {preview.seriesWithChanges}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        Series to update
+                      </div>
+                    </div>
+                    <div style={{ 
+                      background: 'var(--bg-tertiary)', 
+                      padding: '16px', 
+                      borderRadius: 'var(--radius-sm)',
+                      textAlign: 'center'
+                    }}>
+                      <div style={{ fontSize: '24px', fontWeight: 600, color: 'var(--accent-primary)' }}>
+                        {preview.filesWithChanges}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        Files to rename
+                      </div>
+                    </div>
+                    <div style={{ 
+                      background: 'var(--bg-tertiary)', 
+                      padding: '16px', 
+                      borderRadius: 'var(--radius-sm)',
+                      textAlign: 'center'
+                    }}>
+                      <div style={{ fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {formatBytes(preview.previews.reduce((sum, p) => sum + p.totalSize, 0))}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        Total size
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Series List */}
+                  <div style={{ 
+                    fontSize: '12px', 
+                    color: 'var(--text-muted)', 
+                    marginBottom: '8px', 
+                    textTransform: 'uppercase', 
+                    letterSpacing: '0.5px'
+                  }}>
+                    Series Changes
+                  </div>
+                  <div style={{ 
+                    maxHeight: '250px', 
+                    overflow: 'auto',
+                    background: 'var(--bg-tertiary)', 
+                    borderRadius: 'var(--radius-sm)'
+                  }}>
+                    {preview.previews.map((p, idx) => (
+                      <div 
+                        key={p.seriesId}
+                        style={{
+                          padding: '12px',
+                          borderBottom: idx < preview.previews.length - 1 ? '1px solid var(--border-color)' : 'none',
+                        }}
+                      >
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center',
+                          marginBottom: p.errors.length > 0 || (p.willMove || p.willCreate) ? '8px' : 0
+                        }}>
+                          <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
+                            {p.seriesTitle}
+                          </span>
+                          {p.canRename ? (
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                              {p.files.filter(f => f.willRename || f.willMove).length} files
+                            </span>
+                          ) : (
+                            <span className="badge badge-danger" style={{ fontSize: '10px' }}>Error</span>
+                          )}
+                        </div>
+                        
+                        {p.errors.length > 0 && (
+                          <div style={{ fontSize: '12px', color: 'var(--accent-danger)' }}>
+                            {p.errors[0]}
+                          </div>
+                        )}
+                        
+                        {p.willMove && (
+                          <div style={{ fontSize: '11px', color: 'var(--accent-success)' }}>
+                            → {p.newPath}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            <div className="alert alert-danger" style={{ padding: '10px 14px' }}>
+              Failed to load preview
+            </div>
+          )}
+        </div>
+
+        <div className="modal-footer">
+          <button className="btn" onClick={onClose} disabled={isPending}>
+            {executionResults ? 'Close' : 'Cancel'}
+          </button>
+          {!executionResults && (
+            <button 
+              className="btn btn-primary" 
+              onClick={handleExecute} 
+              disabled={!preview || preview.seriesWithChanges === 0 || isPending || !!noChangesNeeded}
+            >
+              {isPending ? (
+                <>
+                  <Loader2 size={16} className="spinning" />
+                  Organizing...
+                </>
+              ) : noChangesNeeded ? (
+                <>
+                  <Check size={16} />
+                  No Changes Needed
+                </>
+              ) : (
+                <>
+                  <FolderSync size={16} />
+                  Organize {preview?.seriesWithChanges ?? 0} Series
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
