@@ -207,10 +207,11 @@ Reorganize existing library files to match current naming format settings.
 - [x] Series page bulk "Organize" action (Iteration 166)
 - [x] Series Detail Page "Organize" button (Iteration 165)
 
-### 18.4 File Rename Within Series
-- [ ] Issue file rename preview (IssueFileFormat tokens)
-- [ ] Edition/Collection file rename preview (CollectionFileFormat tokens)
-- [ ] Conflict detection
+### 18.4 File Rename Within Series ✅ COMPLETED
+- [x] Issue file rename preview (IssueFileFormat tokens) (Iteration 164)
+- [x] Edition/Collection file rename preview (CollectionFileFormat tokens) (Iteration 164)
+- [x] Conflict detection (Iteration 164)
+- [x] Enhanced preview UI with filtering and type grouping (Iteration 172)
 
 ### 18.5 Bulk Organization Tools 🔄 IN PROGRESS
 - [x] "Organize All" system task (Iteration 169)

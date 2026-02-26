@@ -1,5 +1,35 @@
 # Worklog
 
+## Iteration 172 (2026-02-26)
+**EPIC 18.4: File Rename Within Series - Enhanced Preview UI**
+
+### Summary
+Enhanced the OrganizeModal with view filtering tabs and file type grouping for better clarity when previewing file renames.
+
+### Implementation
+
+**Frontend (SeriesDetailPage.tsx - OrganizeModal):**
+- Added view filter tabs: "All Changes", "Folder", "Files"
+- Grouped file renames by type: Issues vs Collections/TPBs
+- Added visual badges showing issue numbers (#001, #002, etc.)
+- Added TPB badge for collection files
+- Improved summary to show issue/collection counts separately
+- Calculated file sizes per group
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `ui/src/pages/SeriesDetailPage.tsx` | Enhanced OrganizeModal with filtering and type grouping |
+
+### Commits
+- `feat(ui): enhance file rename preview with filtering and type grouping (EPIC 18.4)`
+
+### Testing Results
+- Frontend TypeScript: SUCCESS (no lint errors)
+
+---
+
 ## Iteration 171 (2026-02-26)
 **EPIC 18.7: UI Indicators - Settings Format Change Warning**
 

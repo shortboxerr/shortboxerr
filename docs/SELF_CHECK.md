@@ -1,3 +1,70 @@
+# Self-Check: Iteration 172
+
+## Summary
+Completed EPIC 18.4 - File Rename Within Series. Enhanced OrganizeModal UI with view filtering tabs and file type grouping to provide clearer visibility of issue vs collection file renames.
+
+## Checklist
+
+### 18.4 File Rename Within Series
+
+| Item | Status | Notes |
+|------|--------|-------|
+| View filter tabs (All/Folder/Files) | ✅ | Allows focused preview of changes |
+| Group issues separately | ✅ | Shows issue number badge |
+| Group collections/TPBs separately | ✅ | Shows TPB badge |
+| Size per group | ✅ | Each section shows total size |
+| Improved summary | ✅ | Shows issue/collection counts separately |
+| Issue file format tokens | ✅ | Already implemented in Iteration 164 |
+| Collection file format tokens | ✅ | Already implemented in Iteration 164 |
+| Conflict detection | ✅ | Already implemented in Iteration 164 |
+
+## Build & Test Results
+
+```
+Frontend TypeScript: SUCCESS (no lint errors)
+```
+
+## Files Changed
+
+| File | Change |
+|------|--------|
+| `ui/src/pages/SeriesDetailPage.tsx` | Enhanced OrganizeModal with filtering and type grouping |
+
+## Commits
+
+1. `feat(ui): enhance file rename preview with filtering and type grouping (EPIC 18.4)`
+
+## Implementation Details
+
+### View Filter Tabs
+- "All Changes" - Shows both folder and file changes (default)
+- "Folder" - Shows only folder rename preview
+- "Files" - Shows only file renames (grouped by type)
+- Tabs disabled when no changes of that type exist
+
+### File Type Grouping
+- **Issues Section**: Blue badge with issue number (#001, #002, etc.)
+- **Collections Section**: Orange TPB badge
+- Each section has own size display and scrollable list
+- Current → New filename clearly shown
+
+### Summary Enhancement
+- Shows "X issues and Y collections will be renamed"
+- More informative than previous generic "N files will be organized"
+
+## Notes
+- Core file rename preview functionality was already in Iteration 164
+- This iteration focused on UI enhancements for clarity
+- EPIC 18.4 is now complete
+
+## Next Steps
+
+- [ ] EPIC 18.5: Scheduled organization option
+- [ ] EPIC 18.6: Safety & Rollback (Dry-run mode, Atomic operations)
+- [ ] EPIC 11.27: Update local cover caching (integrates 11.26)
+
+---
+
 # Self-Check: Iteration 171
 
 ## Summary
@@ -53,9 +120,9 @@ Frontend TypeScript: SUCCESS
 
 ## Next Steps
 
+- [x] EPIC 18.4: File Rename Within Series (Iteration 172)
 - [ ] EPIC 18.5: Scheduled organization option
 - [ ] EPIC 11.27: Update local cover caching (integrates 11.26)
-- [ ] EPIC 18.4: File Rename Within Series
 
 ---
 
