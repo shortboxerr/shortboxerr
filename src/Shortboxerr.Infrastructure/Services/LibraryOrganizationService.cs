@@ -186,11 +186,16 @@ public class LibraryOrganizationService : ILibraryOrganizationService
             await _db.SaveChangesAsync(cancellationToken);
             
             // Clean up all source directories that are now empty
+            _logger.LogInformation("Attempting to clean up {Count} source directories for series {SeriesTitle}", 
+                sourceDirectories.Count, series.Title);
             foreach (var sourceDir in sourceDirectories)
             {
+                _logger.LogInformation("Checking source directory: {SourceDir}, NewPath: {NewPath}, Exists: {Exists}", 
+                    sourceDir, preview.NewPath, Directory.Exists(sourceDir));
                 if (!string.Equals(sourceDir, preview.NewPath, StringComparison.OrdinalIgnoreCase) &&
                     Directory.Exists(sourceDir))
                 {
+                    _logger.LogInformation("Calling TryRemoveEmptyDirectory for: {SourceDir}", sourceDir);
                     TryRemoveEmptyDirectory(sourceDir);
                 }
             }
@@ -203,6 +208,9 @@ public class LibraryOrganizationService : ILibraryOrganizationService
             {
                 TryRemoveEmptyDirectory(previousPath);
             }
+
+            // Also scan library root for any empty directories (orphan cleanup)
+            CleanupOrphanedEmptyDirectories();
 
             result.Success = result.FilesFailed == 0;
             if (result.FilesFailed > 0)
@@ -467,26 +475,75 @@ public class LibraryOrganizationService : ILibraryOrganizationService
         return result;
     }
 
+    private void CleanupOrphanedEmptyDirectories()
+    {
+        foreach (var libraryRoot in _libraryRoots)
+        {
+            if (!Directory.Exists(libraryRoot))
+                continue;
+
+            _logger.LogInformation("Scanning for orphaned empty directories in: {Root}", libraryRoot);
+            
+            try
+            {
+                // Get all directories recursively, deepest first
+                var allDirs = Directory.GetDirectories(libraryRoot, "*", SearchOption.AllDirectories)
+                    .OrderByDescending(d => d.Length) // Process deepest directories first
+                    .ToList();
+
+                foreach (var dir in allDirs)
+                {
+                    try
+                    {
+                        if (Directory.Exists(dir) && Directory.GetFileSystemEntries(dir).Length == 0)
+                        {
+                            Directory.Delete(dir);
+                            _logger.LogInformation("Removed orphaned empty directory: {Directory}", dir);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug(ex, "Could not remove directory: {Directory}", dir);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error scanning for orphaned directories in: {Root}", libraryRoot);
+            }
+        }
+    }
+
     private void TryRemoveEmptyDirectory(string path)
     {
+        _logger.LogInformation("TryRemoveEmptyDirectory called with path: {Path}", path);
         try
         {
             var dir = path;
             while (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
             {
+                _logger.LogInformation("Checking directory: {Dir}, LibraryRoots: {Roots}", 
+                    dir, string.Join(", ", _libraryRoots));
+                
                 if (_libraryRoots.Any(r => string.Equals(dir, r, StringComparison.OrdinalIgnoreCase)))
                 {
+                    _logger.LogInformation("Reached library root, stopping: {Dir}", dir);
                     break;
                 }
 
-                if (Directory.GetFileSystemEntries(dir).Length == 0)
+                var entries = Directory.GetFileSystemEntries(dir);
+                _logger.LogInformation("Directory {Dir} has {Count} entries", dir, entries.Length);
+                
+                if (entries.Length == 0)
                 {
                     Directory.Delete(dir);
-                    _logger.LogDebug("Removed empty directory: {Directory}", dir);
+                    _logger.LogInformation("Removed empty directory: {Directory}", dir);
                     dir = Path.GetDirectoryName(dir);
                 }
                 else
                 {
+                    _logger.LogInformation("Directory not empty, stopping: {Dir}, entries: {Entries}", 
+                        dir, string.Join(", ", entries.Take(5)));
                     break;
                 }
             }
