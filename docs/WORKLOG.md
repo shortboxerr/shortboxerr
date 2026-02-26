@@ -1,5 +1,58 @@
 # Worklog
 
+## Iteration 163 (2026-02-25)
+**EPIC 15.19: Manual Import & Parser Improvements**
+
+### Summary
+Fixed Manual Import UI display issues and improved filename parser to correctly handle DC's Absolute series line and "Issue #X" patterns.
+
+### Problems Addressed
+
+1. **Manual Import "No match found"**: UI showed "No match found" even when series matched because backend DTO only returned series ID without title.
+
+2. **DC Absolute series misidentified**: Parser treated "Absolute Batman", "Absolute Wonder Woman" etc. as having an "Absolute" edition indicator, stripping it from the series name and preventing matches.
+
+3. **"Issue #X" pattern not recognized**: Files using "Series Issue #9" naming (common from ReadComicOnline) weren't parsed correctly.
+
+4. **Manual Import actions failing**: Reject and Import actions failed due to missing environment variable configuration for paths.
+
+### Implementation
+
+**Manual Import Display Fix:**
+- Added `SuggestedSeriesTitle` to `StagedItem` model and `StagedItemDto`
+- `StagingService.TryMatchSeriesAsync` now populates series title when matching
+- `StagingService.UpdateMatchAsync` fetches and stores series title
+- `MatchOverride` record extended to include series title
+- Frontend `client.ts` updated to use `suggestedSeriesId`/`suggestedSeriesTitle`
+
+**Parser Improvements:**
+- Added regex to detect DC Absolute series line: `^absolute\s+(batman|wonder\s*woman|superman|flash|green\s*lantern|martian\s*manhunter|aquaman|cyborg|power\s*girl)`
+- Skip "absolute" in CollectionIndicators when it's part of series name
+- Added `IssueWordPattern()` regex: `\bIssue\s*#?\s*(\d+(?:\.\d+)?)`
+- Parse "Issue #X" pattern before standard hash pattern
+
+### Files Changed
+
+**Modified Files:**
+- `src/Shortboxerr.Core/Models/StagedItem.cs` - Added SuggestedSeriesTitle property
+- `src/Shortboxerr.Api/Dtos/ManualImportDto.cs` - Added SuggestedSeriesTitle to DTO
+- `src/Shortboxerr.Infrastructure/Services/StagingService.cs` - Populate series title, extended MatchOverride
+- `src/Shortboxerr.Core/Services/FilenameParser.cs` - Absolute line detection, Issue #X pattern
+- `ui/src/api/client.ts` - Use suggestedSeriesId/Title fields
+
+### Commits
+- `fix(manualimport): fix matching display and parser improvements`
+
+### Testing Results
+- Parser correctly handles "Absolute Wonder Woman #17 (2026).cbz" → series: "Absolute Wonder Woman", issue: 17
+- Parser correctly handles "Absolute Martian Manhunter Issue #9.cbz" → series: "Absolute Martian Manhunter", issue: 9
+- Manual Import shows matched series with title
+- Update match correctly updates and displays series title
+- Reject moves files to failed folder
+- Import moves files to library
+
+---
+
 ## Iteration 162 (2026-02-25)
 **EPIC 14.10: DDL Auto-Import Background Service**
 

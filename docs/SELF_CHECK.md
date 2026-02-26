@@ -1,3 +1,79 @@
+# Self-Check: Iteration 163
+
+## Summary
+Fixed Manual Import UI issues and improved filename parser to handle DC's Absolute series line and "Issue #X" patterns. All three Manual Import actions (reject, import, update match) now work correctly.
+
+## Checklist
+
+### 15.19 Manual Import & Parser Improvements
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Add SuggestedSeriesTitle to model/DTO | ✅ | StagedItem and StagedItemDto updated |
+| StagingService populates series title | ✅ | TryMatchSeriesAsync sets title |
+| UpdateMatchAsync fetches series title | ✅ | Queries database for title |
+| Frontend uses correct fields | ✅ | Uses suggestedSeriesId/Title |
+| Recognize DC Absolute series line | ✅ | Regex detects 9 character names |
+| Skip "absolute" in CollectionIndicators | ✅ | When part of series name |
+| Parse "Issue #X" pattern | ✅ | IssueWordPattern regex added |
+| Reject action works | ✅ | Moves to failed folder |
+| Import action works | ✅ | Moves to library |
+| Update match action works | ✅ | Updates and displays title |
+
+## Build & Test Results
+
+```
+Backend Build: SUCCESS (0 warnings, 0 errors)
+Frontend Build: SUCCESS (0 warnings)
+Parser Tests: 
+  - "Absolute Wonder Woman #17 (2026).cbz" → series: "Absolute Wonder Woman", issue: 17 ✅
+  - "Absolute Martian Manhunter Issue #9.cbz" → series: "Absolute Martian Manhunter", issue: 9 ✅
+```
+
+## Files Changed
+
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Models/StagedItem.cs` | Added SuggestedSeriesTitle property |
+| `src/Shortboxerr.Api/Dtos/ManualImportDto.cs` | Added SuggestedSeriesTitle to DTO |
+| `src/Shortboxerr.Infrastructure/Services/StagingService.cs` | Populate series title, extended MatchOverride |
+| `src/Shortboxerr.Core/Services/FilenameParser.cs` | Absolute line detection, Issue #X pattern |
+| `ui/src/api/client.ts` | Use suggestedSeriesId/Title fields |
+| `docs/BACKLOG.md` | Added 15.19 as complete |
+| `docs/WORKLOG.md` | Added Iteration 163 details |
+
+## Commits
+
+1. `fix(manualimport): fix matching display and parser improvements`
+
+## Implementation Details
+
+### Parser Changes
+- Added regex to detect DC Absolute series line: `^absolute\s+(batman|wonder\s*woman|superman|flash|green\s*lantern|martian\s*manhunter|aquaman|cyborg|power\s*girl)`
+- Added `IssueWordPattern()` regex: `\bIssue\s*#?\s*(\d+(?:\.\d+)?)`
+- Skip "absolute" in CollectionIndicators when it's part of series name
+- Parse "Issue #X" before standard hash pattern
+
+### Backend Changes
+- Extended `MatchOverride` record with `SeriesTitle` parameter
+- `UpdateMatchAsync` queries database to fetch series title
+- `TryMatchSeriesAsync` sets both SuggestedSeriesId and SuggestedSeriesTitle
+- `ApplyMatchOverrides` applies both ID and title from override
+
+### Frontend Changes
+- Client now uses `suggestedSeriesId` (number) instead of `suggestedSeries.id`
+- Client uses `suggestedSeriesTitle` for display
+- Falls back to `Series #${id}` if title unavailable
+
+## Notes
+- Environment variables required for proper path configuration:
+  - `SHORTBOXERR_STAGING` - staging folder path
+  - `SHORTBOXERR_FAILED` - failed folder path
+  - `SHORTBOXERR_LIBRARY_ROOT` - library root path
+- Default paths (`/data/...`) may require Docker volume configuration
+
+---
+
 # Self-Check: Iteration 162
 
 ## Summary

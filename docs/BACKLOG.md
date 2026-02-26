@@ -3888,6 +3888,35 @@ Build produced 24+ compiler warnings for nullable reference handling and async p
   - AC: Build completes with 0 warnings ✅
   - AC: All existing tests continue to pass ✅
 
+### 15.19 Manual Import & Parser Improvements ✅ COMPLETED (Iteration 163)
+Manual Import UI shows "No match found" even when series exists in library. Several parser issues prevent correct matching.
+
+**Root Causes Identified:**
+1. **DTO missing series title**: Backend DTO only returned `SuggestedSeriesId`, not the series title for display
+2. **DC Absolute line misidentified**: Parser treated "Absolute" as an edition indicator (like "Absolute Edition") instead of recognizing DC's Absolute series line (Absolute Batman, Absolute Wonder Woman, etc.)
+3. **"Issue #X" pattern not recognized**: Files from ReadComicOnline use "Issue #9" pattern which wasn't parsed
+
+- [x] **Manual Import display fix**
+  - AC: Add `SuggestedSeriesTitle` to StagedItem model and DTO ✅
+  - AC: StagingService populates series title when matching ✅
+  - AC: UpdateMatchAsync fetches series title when user manually selects match ✅
+  - AC: Frontend client uses `suggestedSeriesId`/`suggestedSeriesTitle` fields ✅
+
+- [x] **DC Absolute series line recognition**
+  - AC: Parser recognizes "Absolute Batman", "Absolute Wonder Woman", "Absolute Superman", "Absolute Flash", "Absolute Green Lantern", "Absolute Martian Manhunter", "Absolute Aquaman", "Absolute Cyborg", "Absolute Power Girl" as series names, not editions ✅
+  - AC: Files with Absolute prefix not treated as collections ✅
+  - AC: Issue number correctly extracted (e.g., "Absolute Wonder Woman #17" → issue 17) ✅
+
+- [x] **"Issue #X" pattern parsing**
+  - AC: Parser extracts issue number from "Series Issue #9" pattern ✅
+  - AC: Pattern supported: `Issue\s*#?\s*(\d+)` ✅
+  - AC: Commonly used by ReadComicOnline and similar sites ✅
+
+- [x] **Manual Import actions**
+  - AC: Reject moves file to failed folder ✅ (requires SHORTBOXERR_FAILED env var)
+  - AC: Import moves file to library ✅ (requires SHORTBOXERR_LIBRARY_ROOT env var)
+  - AC: Update match stores series ID and fetches/displays series title ✅
+
 ---
 
 ## EPIC 16: End-to-End Testing Infrastructure ✅ COMPLETED
