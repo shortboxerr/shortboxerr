@@ -1,3 +1,73 @@
+# Self-Check: Iteration 168
+
+## Summary
+Completed EPIC 14.8 - Series Deletion UX Improvements. Added a confirmation modal for series deletion that shows what will be deleted, including linked annual series that cascade delete.
+
+## Checklist
+
+### 14.8 Series Deletion UX Improvements
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Confirmation modal for series deletion | ✅ | DeleteSeriesModal component |
+| Deletion progress indicator | ✅ | Spinner during deletion |
+| List refresh after deletion | ✅ | Navigate to /series list |
+| Backend: Cascade delete linked annual series | ✅ | DELETE endpoint updated |
+| Delete preview endpoint | ✅ | GET /api/v1/series/{id}/delete/preview |
+| Show linked annuals in preview | ✅ | Warning with count |
+| Issue/edition counts in preview | ✅ | Detailed breakdown |
+| Danger alert about irreversibility | ✅ | Warning message |
+
+## Build & Test Results
+
+```
+Backend Build: SUCCESS (0 warnings, 0 errors)
+Frontend TypeScript: SUCCESS
+```
+
+## Files Changed
+
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | Added delete preview endpoint, cascade delete |
+| `src/Shortboxerr.Api/Dtos/SeriesDto.cs` | Added SeriesDeletePreviewDto, LinkedSeriesDto, SeriesDeleteResultDto |
+| `ui/src/api/client.ts` | Added types and getSeriesDeletePreview method |
+| `ui/src/pages/SeriesDetailPage.tsx` | Added DeleteSeriesModal component |
+
+## Commits
+
+1. `feat(series): add deletion confirmation modal with cascade delete`
+
+## Implementation Details
+
+### DeleteSeriesModal Features
+- Fetches deletion preview via `getSeriesDeletePreview(seriesId)`
+- Displays main series with issue/edition counts
+- Lists linked annual series that will also be deleted
+- Warning alert when linked annuals exist
+- Danger alert about action being irreversible
+- Delete button shows count of total series to delete
+
+### Backend Changes
+- `GET /api/v1/series/{id}/delete/preview` returns `SeriesDeletePreviewDto`
+- `DELETE /api/v1/series/{id}` now returns `SeriesDeleteResultDto` instead of 204 No Content
+- Cascade deletes all linked annual series
+- Records history events for each deleted series
+- Invalidates caches for all deleted series
+
+## Notes
+- Files on disk are NOT deleted (data loss prevention)
+- List refresh happens via navigation to /series after deletion
+- Success toast shows summary of what was deleted
+
+## Next Steps
+
+- [ ] EPIC 11.27: Update local cover caching (integrates 11.26)
+- [ ] EPIC 18.5: Bulk Organization Tools
+- [ ] EPIC 18.4: File Rename Within Series
+
+---
+
 # Self-Check: Iteration 167
 
 ## Summary
@@ -42,7 +112,7 @@ Backend Build: SUCCESS (0 warnings, 0 errors)
 
 - [ ] EPIC 11.27: Update local cover caching (integrates 11.26)
 - [ ] EPIC 18.5: Bulk Organization Tools
-- [ ] EPIC 14.8: Series Deletion UX Improvements
+- [x] EPIC 14.8: Series Deletion UX Improvements (Iteration 168)
 
 ---
 

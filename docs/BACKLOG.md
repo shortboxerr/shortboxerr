@@ -172,11 +172,11 @@ Comprehensive examination of the issue data and cover acquisition pipeline.
 - 14.7.4 Refactoring Candidates
 - 14.7.5 Edge Case Handling
 
-#### 14.8 Series Deletion UX Improvements 📋 PLANNED
-- [ ] Confirmation modal for series deletion
-- [ ] Deletion progress indicator
-- [ ] List refresh after deletion
-- [ ] Backend: Cascade delete linked annual series
+#### 14.8 Series Deletion UX Improvements ✅ COMPLETED (Iteration 168)
+- [x] Confirmation modal for series deletion
+- [x] Deletion progress indicator
+- [x] List refresh after deletion (via navigate to /series)
+- [x] Backend: Cascade delete linked annual series
 
 ### Remaining Deferred Items
 | Item | EPIC | Effort | Status |

@@ -1,5 +1,48 @@
 # Worklog
 
+## Iteration 168 (2026-02-26)
+**EPIC 14.8: Series Deletion UX Improvements**
+
+### Summary
+Added a confirmation modal for series deletion that shows what will be deleted, including linked annual series that cascade delete. Replaced browser `confirm()` with a proper modal component.
+
+### Implementation
+
+**Backend Changes:**
+- Added `GET /api/v1/series/{id}/delete/preview` endpoint
+- Returns deletion preview with series, issue count, edition count, and linked annuals
+- Updated `DELETE /api/v1/series/{id}` to cascade delete linked annual series
+- Returns deletion result with summary of what was deleted
+- Added DTOs: `SeriesDeletePreviewDto`, `LinkedSeriesDto`, `SeriesDeleteResultDto`
+
+**Frontend Changes:**
+- Added `DeleteSeriesModal` component with:
+  - Loading state while fetching preview
+  - List of items to be deleted (main series + linked annuals)
+  - Warning about linked annual series cascade deletion
+  - Danger alert about irreversibility
+  - Progress indicator during deletion
+- Updated `deleteSeries` mutation to handle the new response format
+- Success toast shows count of deleted series
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | Added delete preview endpoint, cascade delete logic |
+| `src/Shortboxerr.Api/Dtos/SeriesDto.cs` | Added deletion DTOs |
+| `ui/src/api/client.ts` | Added types and getSeriesDeletePreview method |
+| `ui/src/pages/SeriesDetailPage.tsx` | Added DeleteSeriesModal component |
+
+### Commits
+- `feat(series): add deletion confirmation modal with cascade delete`
+
+### Testing Results
+- Backend build: SUCCESS
+- Frontend TypeScript: SUCCESS
+
+---
+
 ## Iteration 167 (2026-02-26)
 **EPIC 11.27: Fix Discovery Cover Endpoint Parameter Naming**
 
