@@ -1,5 +1,37 @@
 # Worklog
 
+## Iteration 166 (2026-02-26)
+**EPIC 18.3: Library Organization - Bulk Series Organize**
+
+### Summary
+Added "Organize" button to Series page bulk actions toolbar with BulkOrganizeModal for preview and batch execution of file organization across multiple series.
+
+### Implementation
+
+**UI Components:**
+- `BulkOrganizeModal` - Shows bulk preview summary and execution results
+- FolderSync icon button in bulk actions toolbar (appears when series selected)
+
+**Modal Features:**
+- Summary stats: series to update, files to rename, total size
+- Per-series change list with folder rename paths
+- Error handling with per-series error display
+- Execution results showing success/failure counts
+
+### Files Changed
+
+**Modified Files:**
+- `ui/src/pages/SeriesPage.tsx` - Added BulkOrganizeModal and bulk action button
+
+### Commits
+- `feat(ui): add bulk Organize action to Series page (EPIC 18.3)`
+
+### Testing Results
+- Frontend build: SUCCESS
+- Backend build: SUCCESS (unchanged)
+
+---
+
 ## Iteration 165 (2026-02-26)
 **EPIC 18.3: Library Organization - Series Detail Page UI**
 

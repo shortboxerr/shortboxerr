@@ -1,3 +1,70 @@
+# Self-Check: Iteration 166
+
+## Summary
+Completed EPIC 18.3 (Library Organization - Mass Editor Integration). Added "Organize" bulk action to Series page for organizing files across multiple selected series.
+
+## Checklist
+
+### 18.3 Mass Editor Integration
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Series page bulk "Organize" button | ✅ | FolderSync icon in toolbar |
+| BulkOrganizeModal component | ✅ | Preview and execute bulk organization |
+| Preview summary stats | ✅ | Series count, file count, total size |
+| Per-series change list | ✅ | Shows folder path changes |
+| Error handling | ✅ | Per-series errors displayed |
+| Execution results | ✅ | Success/failure counts shown |
+| "No changes needed" state | ✅ | Success checkmark when organized |
+
+## Build & Test Results
+
+```
+Frontend Build: SUCCESS
+Backend Build: SUCCESS (unchanged)
+```
+
+## Files Changed
+
+| File | Change |
+|------|--------|
+| `ui/src/pages/SeriesPage.tsx` | Added BulkOrganizeModal, FolderSync button |
+| `src/Shortboxerr.Api/wwwroot/` | Rebuilt frontend assets |
+
+## Commits
+
+1. `feat(ui): add bulk Organize action to Series page (EPIC 18.3)`
+
+## Implementation Details
+
+### BulkOrganizeModal Flow
+1. Load preview via `api.getBulkOrganizePreview(seriesIds)`
+2. Display summary stats (series/files/size)
+3. Show per-series changes in scrollable list
+4. Execute via `api.executeBulkOrganize(seriesIds)`
+5. Display execution results
+6. Invalidate cache on success
+
+### UI States
+- Loading: Shows spinner with series count
+- Preview: Summary cards + series list
+- No changes: Success checkmark
+- Executing: Spinning loader
+- Results: Success/failure counts with errors
+
+## Notes
+- Button only appears when series are selected
+- Uses existing bulk API endpoints from iteration 164
+- Completes EPIC 18.3 (both single and bulk)
+
+## Next Steps
+
+- [ ] 18.5 Bulk Organization Tools ("Organize All" system task)
+- [ ] 18.4 File Rename Within Series (individual file rename preview)
+- [ ] Consider 11.27 completion (Pull List endpoint fix)
+
+---
+
 # Self-Check: Iteration 165
 
 ## Summary

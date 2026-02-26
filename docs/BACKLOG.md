@@ -203,8 +203,8 @@ Reorganize existing library files to match current naming format settings.
 - [x] **Single series endpoint**: POST /api/v1/series/{id}/organize (Iteration 164)
 - [x] **Single series preview**: GET /api/v1/series/{id}/organize/preview (Iteration 164)
 
-### 18.3 Mass Editor Integration
-- [ ] Series Mass Editor "Organize" action
+### 18.3 Mass Editor Integration ✅ COMPLETED
+- [x] Series page bulk "Organize" action (Iteration 166)
 - [x] Series Detail Page "Organize" button (Iteration 165)
 
 ### 18.4 File Rename Within Series
