@@ -4,7 +4,7 @@
 **EPIC 15.19: Manual Import & Parser Improvements**
 
 ### Summary
-Fixed Manual Import UI display issues and improved filename parser to correctly handle DC's Absolute series line and "Issue #X" patterns.
+Fixed Manual Import UI display issues, improved filename parser to correctly handle DC's Absolute series line and "Issue #X" patterns, and added publisher folder support in series folder format.
 
 ### Problems Addressed
 
@@ -15,6 +15,8 @@ Fixed Manual Import UI display issues and improved filename parser to correctly 
 3. **"Issue #X" pattern not recognized**: Files using "Series Issue #9" naming (common from ReadComicOnline) weren't parsed correctly.
 
 4. **Manual Import actions failing**: Reject and Import actions failed due to missing environment variable configuration for paths.
+
+5. **Publisher folder not used**: Imported files went to `/library/Series Title/` instead of `/library/Publisher/Series Title (Year)/`.
 
 ### Implementation
 
@@ -31,17 +33,27 @@ Fixed Manual Import UI display issues and improved filename parser to correctly 
 - Added `IssueWordPattern()` regex: `\bIssue\s*#?\s*(\d+(?:\.\d+)?)`
 - Parse "Issue #X" pattern before standard hash pattern
 
+**Publisher Folder Format:**
+- `StagingService` now uses `SeriesFolderFormat` setting via `ISettingsService`
+- Added `ExpandSeriesFolderFormat()` to replace tokens: `{Publisher}`, `{Series Title}`, `{Year}`, `{Status}`
+- Default format changed from `{Series Title} ({Year})` to `{Publisher}/{Series Title} ({Year})`
+- "/" in format creates subdirectories (e.g., "DC Comics/Absolute Batman (2024)")
+- Bulk import endpoint now uses matched series from staging scan
+
 ### Files Changed
 
 **Modified Files:**
 - `src/Shortboxerr.Core/Models/StagedItem.cs` - Added SuggestedSeriesTitle property
 - `src/Shortboxerr.Api/Dtos/ManualImportDto.cs` - Added SuggestedSeriesTitle to DTO
-- `src/Shortboxerr.Infrastructure/Services/StagingService.cs` - Populate series title, extended MatchOverride
+- `src/Shortboxerr.Infrastructure/Services/StagingService.cs` - Populate series title, folder format expansion, ISettingsService injection
 - `src/Shortboxerr.Core/Services/FilenameParser.cs` - Absolute line detection, Issue #X pattern
+- `src/Shortboxerr.Core/Services/ISettingsService.cs` - Updated default SeriesFolderFormat
+- `src/Shortboxerr.Api/Endpoints/ManualImportEndpoints.cs` - Bulk import uses matched series
 - `ui/src/api/client.ts` - Use suggestedSeriesId/Title fields
 
 ### Commits
 - `fix(manualimport): fix matching display and parser improvements`
+- `feat(import): add publisher folder support in series folder format`
 
 ### Testing Results
 - Parser correctly handles "Absolute Wonder Woman #17 (2026).cbz" → series: "Absolute Wonder Woman", issue: 17
@@ -49,7 +61,7 @@ Fixed Manual Import UI display issues and improved filename parser to correctly 
 - Manual Import shows matched series with title
 - Update match correctly updates and displays series title
 - Reject moves files to failed folder
-- Import moves files to library
+- Import places files in publisher folder: `/library/DC Comics/Absolute Wonder Woman (2024)/Absolute Wonder Woman #19 (2026).cbz`
 
 ---
 

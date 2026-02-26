@@ -1,7 +1,7 @@
 # Self-Check: Iteration 163
 
 ## Summary
-Fixed Manual Import UI issues and improved filename parser to handle DC's Absolute series line and "Issue #X" patterns. All three Manual Import actions (reject, import, update match) now work correctly.
+Fixed Manual Import UI issues, improved filename parser to handle DC's Absolute series line and "Issue #X" patterns, and added publisher folder support. All three Manual Import actions (reject, import, update match) now work correctly with proper folder organization.
 
 ## Checklist
 
@@ -17,8 +17,10 @@ Fixed Manual Import UI issues and improved filename parser to handle DC's Absolu
 | Skip "absolute" in CollectionIndicators | ✅ | When part of series name |
 | Parse "Issue #X" pattern | ✅ | IssueWordPattern regex added |
 | Reject action works | ✅ | Moves to failed folder |
-| Import action works | ✅ | Moves to library |
+| Import action works | ✅ | Moves to library with publisher folder |
 | Update match action works | ✅ | Updates and displays title |
+| Publisher folder in path | ✅ | Default format: `{Publisher}/{Series Title} ({Year})` |
+| Bulk import uses matched series | ✅ | Looks up series from staging scan |
 
 ## Build & Test Results
 
@@ -28,6 +30,8 @@ Frontend Build: SUCCESS (0 warnings)
 Parser Tests: 
   - "Absolute Wonder Woman #17 (2026).cbz" → series: "Absolute Wonder Woman", issue: 17 ✅
   - "Absolute Martian Manhunter Issue #9.cbz" → series: "Absolute Martian Manhunter", issue: 9 ✅
+Import Test:
+  - Destination: /library/DC Comics/Absolute Wonder Woman (2024)/Absolute Wonder Woman #19 (2026).cbz ✅
 ```
 
 ## Files Changed
@@ -36,8 +40,10 @@ Parser Tests:
 |------|--------|
 | `src/Shortboxerr.Core/Models/StagedItem.cs` | Added SuggestedSeriesTitle property |
 | `src/Shortboxerr.Api/Dtos/ManualImportDto.cs` | Added SuggestedSeriesTitle to DTO |
-| `src/Shortboxerr.Infrastructure/Services/StagingService.cs` | Populate series title, extended MatchOverride |
+| `src/Shortboxerr.Infrastructure/Services/StagingService.cs` | Populate series title, folder format expansion, ISettingsService injection |
 | `src/Shortboxerr.Core/Services/FilenameParser.cs` | Absolute line detection, Issue #X pattern |
+| `src/Shortboxerr.Core/Services/ISettingsService.cs` | Updated default SeriesFolderFormat to include publisher |
+| `src/Shortboxerr.Api/Endpoints/ManualImportEndpoints.cs` | Bulk import uses matched series from scan |
 | `ui/src/api/client.ts` | Use suggestedSeriesId/Title fields |
 | `docs/BACKLOG.md` | Added 15.19 as complete |
 | `docs/WORKLOG.md` | Added Iteration 163 details |
@@ -45,6 +51,7 @@ Parser Tests:
 ## Commits
 
 1. `fix(manualimport): fix matching display and parser improvements`
+2. `feat(import): add publisher folder support in series folder format`
 
 ## Implementation Details
 
@@ -60,6 +67,14 @@ Parser Tests:
 - `TryMatchSeriesAsync` sets both SuggestedSeriesId and SuggestedSeriesTitle
 - `ApplyMatchOverrides` applies both ID and title from override
 
+### Folder Format Changes
+- `StagingService` now uses `SeriesFolderFormat` setting via `ISettingsService`
+- Added `ExpandSeriesFolderFormat()` method with token support
+- Tokens: `{Publisher}`, `{Series Title}`, `{Year}`, `{Status}`
+- "/" in format creates subdirectories
+- Default changed from `{Series Title} ({Year})` to `{Publisher}/{Series Title} ({Year})`
+- Bulk import endpoint now looks up matched series from staging scan
+
 ### Frontend Changes
 - Client now uses `suggestedSeriesId` (number) instead of `suggestedSeries.id`
 - Client uses `suggestedSeriesTitle` for display
@@ -71,6 +86,7 @@ Parser Tests:
   - `SHORTBOXERR_FAILED` - failed folder path
   - `SHORTBOXERR_LIBRARY_ROOT` - library root path
 - Default paths (`/data/...`) may require Docker volume configuration
+- Series folder format configurable via Settings > General > Series Folder Format
 
 ---
 
