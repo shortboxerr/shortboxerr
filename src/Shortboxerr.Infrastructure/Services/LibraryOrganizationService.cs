@@ -152,9 +152,19 @@ public class LibraryOrganizationService : ILibraryOrganizationService
                 _logger.LogInformation("Created directory: {Directory}", newDir);
             }
 
+            // Track source directories for cleanup
+            var sourceDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
             // Move/rename files
             foreach (var filePreview in preview.Files)
             {
+                // Track source directory before moving
+                var sourceDir = Path.GetDirectoryName(filePreview.CurrentPath);
+                if (!string.IsNullOrEmpty(sourceDir))
+                {
+                    sourceDirectories.Add(sourceDir);
+                }
+
                 var fileResult = await MoveFileAsync(filePreview, cancellationToken);
                 result.FileResults.Add(fileResult);
                 
@@ -175,8 +185,19 @@ public class LibraryOrganizationService : ILibraryOrganizationService
             
             await _db.SaveChangesAsync(cancellationToken);
             
-            // Remove old directory if empty and different from new
+            // Clean up all source directories that are now empty
+            foreach (var sourceDir in sourceDirectories)
+            {
+                if (!string.Equals(sourceDir, preview.NewPath, StringComparison.OrdinalIgnoreCase) &&
+                    Directory.Exists(sourceDir))
+                {
+                    TryRemoveEmptyDirectory(sourceDir);
+                }
+            }
+            
+            // Also try to remove the old series.Path if different
             if (!string.IsNullOrEmpty(previousPath) && 
+                !sourceDirectories.Contains(previousPath) &&
                 !string.Equals(previousPath, preview.NewPath, StringComparison.OrdinalIgnoreCase) &&
                 Directory.Exists(previousPath))
             {
