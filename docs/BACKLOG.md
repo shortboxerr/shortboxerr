@@ -221,9 +221,9 @@ Reorganize existing library files to match current naming format settings.
 - [ ] Atomic operations (per-series)
 - [ ] Undo support (stretch goal)
 
-### 18.7 UI Indicators 🔄 IN PROGRESS
+### 18.7 UI Indicators ✅ COMPLETED
 - [x] Series list path mismatch indicator (Iteration 170)
-- [ ] Settings format change warning
+- [x] Settings format change warning (Iteration 171)
 
 ### Implementation Priority
 **P1 - Core:** 18.1, 18.2, 18.3 (single series)

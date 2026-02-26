@@ -1,5 +1,36 @@
 # Worklog
 
+## Iteration 171 (2026-02-26)
+**EPIC 18.7: UI Indicators - Settings Format Change Warning**
+
+### Summary
+Added a warning banner in the General Settings page that appears when the Series Folder Format is changed, alerting users that existing series may need reorganization.
+
+### Implementation
+
+**Frontend (SettingsPage.tsx - GeneralSettings):**
+- Track original series folder format on initial settings load
+- Detect when saved format differs from original after save completes
+- Show warning banner with:
+  - Alert icon and "Series Folder Format Changed" title
+  - Explanation that existing series may need reorganization
+  - "Go to System Tasks" button to navigate to Organize All
+  - "Dismiss" button to hide the warning
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `ui/src/pages/SettingsPage.tsx` | Added format change tracking and warning banner |
+
+### Commits
+- `feat(ui): add settings format change warning (EPIC 18.7)`
+
+### Testing Results
+- Frontend TypeScript: SUCCESS
+
+---
+
 ## Iteration 170 (2026-02-26)
 **EPIC 18.7: UI Indicators - Series List Path Mismatch**
 

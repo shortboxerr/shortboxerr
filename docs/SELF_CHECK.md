@@ -1,3 +1,64 @@
+# Self-Check: Iteration 171
+
+## Summary
+Completed EPIC 18.7 - Settings format change warning. Added a warning banner that appears in General Settings when the Series Folder Format is changed, alerting users that existing series may need reorganization.
+
+## Checklist
+
+### 18.7 UI Indicators - Settings Format Change Warning
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Track original format on load | ✅ | useState with null initial |
+| Detect format change after save | ✅ | Compare to original |
+| Warning banner UI | ✅ | AlertTriangle icon, explanation text |
+| "Go to System Tasks" button | ✅ | Uses setSearchParams to navigate |
+| Dismiss button | ✅ | Hides warning |
+
+## Build & Test Results
+
+```
+Frontend TypeScript: SUCCESS
+```
+
+## Files Changed
+
+| File | Change |
+|------|--------|
+| `ui/src/pages/SettingsPage.tsx` | Added format change tracking and warning banner |
+
+## Commits
+
+1. `feat(ui): add settings format change warning (EPIC 18.7)`
+
+## Implementation Details
+
+### State Management
+- `originalSeriesFormat`: Tracks the format loaded from API (set once on initial load)
+- `showFormatChangedWarning`: Controls visibility of the warning banner
+- Warning triggered when save succeeds AND new format differs from original
+
+### Warning Banner Features
+- Orange/warning-themed styling
+- AlertTriangle icon
+- Title: "Series Folder Format Changed"
+- Explanation text about reorganization
+- "Go to System Tasks" button (navigates via URL param)
+- "Dismiss" button to hide
+
+## Notes
+- Warning only shows when format actually changes from what was loaded
+- URL-based navigation ensures proper tab change
+- EPIC 18.7 is now fully complete
+
+## Next Steps
+
+- [ ] EPIC 18.5: Scheduled organization option
+- [ ] EPIC 11.27: Update local cover caching (integrates 11.26)
+- [ ] EPIC 18.4: File Rename Within Series
+
+---
+
 # Self-Check: Iteration 170
 
 ## Summary
@@ -70,7 +131,7 @@ Frontend TypeScript: SUCCESS
 
 ## Next Steps
 
-- [ ] EPIC 18.7: Settings format change warning
+- [x] EPIC 18.7: Settings format change warning (Iteration 171)
 - [ ] EPIC 18.5: Scheduled organization option
 - [ ] EPIC 11.27: Update local cover caching (integrates 11.26)
 
