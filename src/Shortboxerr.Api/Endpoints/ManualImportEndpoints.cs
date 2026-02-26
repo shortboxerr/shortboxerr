@@ -76,13 +76,27 @@ public static class ManualImportEndpoints
             var results = new List<ImportResultDto>();
             var errors = new List<string>();
 
+            // Get staging scan to retrieve matched series/edition IDs
+            var stagedFiles = await stagingService.ScanStagingFolderAsync(cancellationToken);
+            var stagedLookup = stagedFiles.ToDictionary(f => f.Path, StringComparer.OrdinalIgnoreCase);
+
             foreach (var filePath in request.Files)
             {
+                // Look up the matched series/edition from the staging scan
+                int? seriesId = null;
+                int? editionId = null;
+                
+                if (stagedLookup.TryGetValue(filePath, out var stagedItem))
+                {
+                    seriesId = stagedItem.SuggestedSeriesId;
+                    editionId = stagedItem.SuggestedEditionId;
+                }
+
                 var result = await stagingService.ImportAsync(
                     filePath,
-                    seriesId: null, // Auto-matched series from staging
+                    seriesId: seriesId,
                     issueId: null,
-                    editionId: null,
+                    editionId: editionId,
                     cancellationToken);
 
                 results.Add(ImportResultDto.FromModel(result));

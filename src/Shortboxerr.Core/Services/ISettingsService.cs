@@ -150,8 +150,10 @@ public class GeneralSettings
 {
     /// <summary>
     /// Pattern for organizing series folders.
+    /// Supports tokens: {Publisher}, {Series Title}, {Year}, {Status}
+    /// Use "/" to create subdirectories (e.g., "{Publisher}/{Series Title}")
     /// </summary>
-    public string SeriesFolderFormat { get; set; } = "{Series Title} ({Year})";
+    public string SeriesFolderFormat { get; set; } = "{Publisher}/{Series Title} ({Year})";
 
     /// <summary>
     /// Pattern for naming issue files.

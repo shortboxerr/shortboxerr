@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -15,6 +16,7 @@ public class StagingService : IStagingService
 {
     private readonly ShortboxerrDbContext _db;
     private readonly IFilenameParser _parser;
+    private readonly ISettingsService _settingsService;
     private readonly ILogger<StagingService> _logger;
     private readonly string _stagingFolder;
     private readonly string _failedFolder;
@@ -28,11 +30,13 @@ public class StagingService : IStagingService
     public StagingService(
         ShortboxerrDbContext db,
         IFilenameParser parser,
+        ISettingsService settingsService,
         IConfiguration configuration,
         ILogger<StagingService> logger)
     {
         _db = db;
         _parser = parser;
+        _settingsService = settingsService;
         _logger = logger;
         
         _stagingFolder = Environment.GetEnvironmentVariable("SHORTBOXERR_STAGING") 
@@ -164,7 +168,19 @@ public class StagingService : IStagingService
             }
 
             seriesTitle = series.Title;
-            destinationFolder = series.Path ?? Path.Combine(_libraryRoots[0], SanitizePath(series.Title));
+            
+            // Use existing path if set, otherwise generate from folder format
+            if (!string.IsNullOrEmpty(series.Path))
+            {
+                destinationFolder = series.Path;
+            }
+            else
+            {
+                var generalSettings = await _settingsService.GetGeneralSettingsAsync(cancellationToken);
+                var folderFormat = generalSettings.SeriesFolderFormat;
+                var seriesFolderName = ExpandSeriesFolderFormat(folderFormat, series);
+                destinationFolder = Path.Combine(_libraryRoots[0], seriesFolderName);
+            }
         }
         else
         {
@@ -558,6 +574,41 @@ public class StagingService : IStagingService
                     item.Path, matchOverride.SeriesId, matchOverride.SeriesTitle, matchOverride.EditionId);
             }
         }
+    }
+
+    /// <summary>
+    /// Expands series folder format tokens into actual folder path.
+    /// Supports tokens: {Series Title}, {Series Year}, {Publisher}, {Status}
+    /// Publisher token creates a subdirectory: "DC/Absolute Batman (2024)"
+    /// </summary>
+    private string ExpandSeriesFolderFormat(string format, Series series)
+    {
+        if (string.IsNullOrWhiteSpace(format))
+        {
+            // Fallback to series title only
+            return SanitizePath(series.Title);
+        }
+
+        var result = format;
+        
+        // Replace tokens with actual values
+        result = Regex.Replace(result, @"\{Series Title\}", series.Title ?? "Unknown Series", RegexOptions.IgnoreCase);
+        result = Regex.Replace(result, @"\{Series Year\}", series.StartYear?.ToString() ?? "", RegexOptions.IgnoreCase);
+        result = Regex.Replace(result, @"\{Year\}", series.StartYear?.ToString() ?? "", RegexOptions.IgnoreCase);
+        result = Regex.Replace(result, @"\{Publisher\}", series.Publisher ?? "Unknown Publisher", RegexOptions.IgnoreCase);
+        result = Regex.Replace(result, @"\{Status\}", series.Status.ToString(), RegexOptions.IgnoreCase);
+        
+        // Clean up empty parentheses from missing year: "Series ()" -> "Series"
+        result = Regex.Replace(result, @"\s*\(\s*\)", "");
+        
+        // Clean up double spaces
+        result = Regex.Replace(result, @"\s+", " ").Trim();
+        
+        // Split by / to handle publisher subdirectory, then sanitize each part
+        var parts = result.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        var sanitizedParts = parts.Select(SanitizePath).ToArray();
+        
+        return Path.Combine(sanitizedParts);
     }
 }
 
