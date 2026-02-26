@@ -538,7 +538,134 @@ public static class SeriesEndpoints
         .WithDescription("Gets upcoming releases from the release schedule cache that haven't been indexed by ComicVine yet")
         .Produces<SeriesUpcomingReleasesResult>(200)
         .Produces(404);
+
+        // POST preview organization for multiple series (Sonarr/Radarr parity)
+        group.MapPost("/organize/preview", async (
+            ILibraryOrganizationService organizationService,
+            OrganizePreviewRequest request,
+            CancellationToken ct) =>
+        {
+            var previews = await organizationService.GetSeriesRenamePreviewsAsync(
+                request.SeriesIds ?? Array.Empty<int>(), ct);
+            
+            return Results.Ok(new OrganizePreviewResponse
+            {
+                Previews = previews.ToList(),
+                TotalSeries = previews.Count,
+                SeriesWithChanges = previews.Count(p => p.WillMove || p.Files.Any(f => f.WillRename)),
+                TotalFiles = previews.Sum(p => p.FileCount),
+                FilesWithChanges = previews.Sum(p => p.Files.Count(f => f.WillRename || f.WillMove)),
+                HasErrors = previews.Any(p => !p.CanRename)
+            });
+        })
+        .WithName("PreviewSeriesOrganization")
+        .WithSummary("Preview how series folders and files would be renamed")
+        .WithDescription("Returns a preview of changes based on current naming format settings. If seriesIds is empty, previews all series.");
+
+        // POST execute organization for multiple series
+        group.MapPost("/organize/execute", async (
+            ILibraryOrganizationService organizationService,
+            ICacheService cacheService,
+            OrganizeExecuteRequest request,
+            CancellationToken ct) =>
+        {
+            if (request.SeriesIds == null || request.SeriesIds.Length == 0)
+            {
+                return Results.BadRequest(new { message = "Must provide at least one series ID" });
+            }
+
+            var results = await organizationService.ExecuteSeriesRenameAsync(request.SeriesIds, ct);
+            
+            // Invalidate caches for modified series
+            foreach (var result in results.Where(r => r.Success))
+            {
+                cacheService.Remove(cacheService.GenerateKey(CacheKeys.SeriesDetail, result.SeriesId));
+            }
+            cacheService.RemoveByPrefix(CacheKeys.SeriesList);
+
+            return Results.Ok(new OrganizeExecuteResponse
+            {
+                Results = results.ToList(),
+                TotalSeries = results.Count,
+                Successful = results.Count(r => r.Success),
+                Failed = results.Count(r => !r.Success),
+                TotalFilesRenamed = results.Sum(r => r.FilesRenamed),
+                TotalFilesFailed = results.Sum(r => r.FilesFailed)
+            });
+        })
+        .WithName("ExecuteSeriesOrganization")
+        .WithSummary("Execute organization/rename for specified series");
+
+        // GET preview organization for single series
+        group.MapGet("/{id:int}/organize/preview", async (
+            ILibraryOrganizationService organizationService,
+            int id,
+            CancellationToken ct) =>
+        {
+            var preview = await organizationService.GetSeriesRenamePreviewAsync(id, ct);
+            
+            if (preview == null)
+                return Results.NotFound(new { message = $"Series {id} not found" });
+
+            return Results.Ok(preview);
+        })
+        .WithName("PreviewSingleSeriesOrganization")
+        .WithSummary("Preview how a single series folder and files would be renamed");
+
+        // POST execute organization for single series
+        group.MapPost("/{id:int}/organize", async (
+            ILibraryOrganizationService organizationService,
+            ICacheService cacheService,
+            int id,
+            CancellationToken ct) =>
+        {
+            var result = await organizationService.ExecuteSeriesRenameAsync(id, ct);
+            
+            if (!result.Success && result.Error == "Series not found")
+                return Results.NotFound(new { message = $"Series {id} not found" });
+
+            // Invalidate cache
+            if (result.Success)
+            {
+                cacheService.Remove(cacheService.GenerateKey(CacheKeys.SeriesDetail, id));
+                cacheService.RemoveByPrefix(CacheKeys.SeriesList);
+            }
+
+            return Results.Ok(result);
+        })
+        .WithName("ExecuteSingleSeriesOrganization")
+        .WithSummary("Execute organization/rename for a single series");
     }
+}
+
+public record OrganizePreviewRequest
+{
+    public int[]? SeriesIds { get; init; }
+}
+
+public record OrganizeExecuteRequest
+{
+    public int[]? SeriesIds { get; init; }
+}
+
+public record OrganizePreviewResponse
+{
+    public List<SeriesRenamePreview> Previews { get; init; } = new();
+    public int TotalSeries { get; init; }
+    public int SeriesWithChanges { get; init; }
+    public int TotalFiles { get; init; }
+    public int FilesWithChanges { get; init; }
+    public bool HasErrors { get; init; }
+}
+
+public record OrganizeExecuteResponse
+{
+    public List<SeriesRenameResult> Results { get; init; } = new();
+    public int TotalSeries { get; init; }
+    public int Successful { get; init; }
+    public int Failed { get; init; }
+    public int TotalFilesRenamed { get; init; }
+    public int TotalFilesFailed { get; init; }
 }
 
 public record SetSeriesStatusRequest

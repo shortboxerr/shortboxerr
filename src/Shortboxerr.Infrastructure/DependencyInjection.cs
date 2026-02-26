@@ -87,6 +87,7 @@ public static class DependencyInjection
         services.AddScoped<IDownloadHistoryService, DownloadHistoryService>();
         services.AddScoped<IHistoryService, HistoryService>();
         services.AddSingleton<IArchiveExtractor, ArchiveExtractor>();
+        services.AddScoped<ILibraryOrganizationService, LibraryOrganizationService>();
 
         // DDL services
         services.AddSingleton<IDdlReleaseParser, DdlReleaseParser>();
