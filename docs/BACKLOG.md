@@ -4078,6 +4078,155 @@ End-to-end improvements for DDL (Direct Download Link) reliability, error handli
 
 ---
 
+## EPIC 18: Library Organization & Rename (Sonarr/Radarr Parity)
+
+Reorganize existing library files to match current naming format settings. Mimics Sonarr/Radarr "Organize & Rename" functionality.
+
+### 18.1 Series Folder Rename Service
+
+- [ ] **ILibraryOrganizationService interface**
+  - AC: `GetSeriesRenamePreviews(int[] seriesIds)` returns list of planned moves
+  - AC: `ExecuteSeriesRename(int[] seriesIds)` performs the actual moves
+  - AC: `GetSeriesRenamePreview(int seriesId)` for single series preview
+  - AC: Service handles folder creation, file moves, and database updates atomically
+
+- [ ] **SeriesRenamePreview model**
+  - AC: Fields: SeriesId, SeriesTitle, CurrentPath, NewPath, WillMove (bool)
+  - AC: Includes list of FileRenamePreview for files within the series
+  - AC: Fields: FileId, CurrentFileName, NewFileName, CurrentPath, NewPath, WillRename (bool), WillMove (bool)
+  - AC: Error field for any conflicts or issues (e.g., destination exists)
+
+- [ ] **LibraryOrganizationService implementation**
+  - AC: Uses SeriesFolderFormat from ISettingsService to compute new folder path
+  - AC: Uses IssueFileFormat/CollectionFileFormat for file renaming
+  - AC: Handles series with no path set (creates new folder)
+  - AC: Handles series with existing path (moves if different from computed)
+  - AC: Creates parent directories as needed (Publisher folder, etc.)
+  - AC: Updates Series.Path in database after successful move
+  - AC: Updates FileAsset.Path for all moved files
+  - AC: Handles move failures gracefully (rollback on error)
+  - AC: Logs all operations to HistoryEvents
+
+### 18.2 Series Rename API Endpoints
+
+- [ ] **Preview endpoint**
+  - AC: POST /api/v1/series/organize/preview with body `{ seriesIds: [1,2,3] }`
+  - AC: Returns array of SeriesRenamePreviewDto
+  - AC: Empty seriesIds array previews ALL series in library
+  - AC: Supports query param `?seriesId=123` for single series preview
+
+- [ ] **Execute endpoint**
+  - AC: POST /api/v1/series/organize/execute with body `{ seriesIds: [1,2,3] }`
+  - AC: Returns execution results (success/failure per series)
+  - AC: Returns list of errors for failed operations
+  - AC: Empty seriesIds array not allowed for execute (safety)
+
+- [ ] **Single series endpoint (convenience)**
+  - AC: POST /api/v1/series/{id}/organize with optional `?preview=true`
+  - AC: Preview mode returns SeriesRenamePreviewDto
+  - AC: Execute mode performs rename and returns result
+
+### 18.3 Mass Editor Integration
+
+- [ ] **Series Mass Editor "Organize" action**
+  - AC: Checkbox column for series selection
+  - AC: "Organize Selected" button in toolbar
+  - AC: Opens confirmation modal with preview
+  - AC: Modal shows:
+    - Table of series with Current Path → New Path
+    - Count of files to be moved/renamed
+    - Any warnings or conflicts (highlighted in red)
+    - "Cancel" and "Organize" buttons
+  - AC: Progress indicator during execution
+  - AC: Success/failure toast notifications
+
+- [ ] **Series Detail Page "Organize" button**
+  - AC: Button in series toolbar (next to Refresh Metadata, etc.)
+  - AC: Shows preview modal for single series
+  - AC: Lists all files with current → new paths
+  - AC: Execute button to perform organization
+
+### 18.4 File Rename Within Series
+
+- [ ] **Issue file rename preview**
+  - AC: Compute new filename using IssueFileFormat setting
+  - AC: Tokens: `{Series Title}`, `{Issue}`, `{Issue Title}`, `{Year}`, `{Quality}`
+  - AC: Handle issue numbers with leading zeros (001 vs 1)
+  - AC: Handle decimal issue numbers (#1.5)
+
+- [ ] **Edition/Collection file rename preview**
+  - AC: Compute new filename using CollectionFileFormat setting
+  - AC: Tokens: `{Series Title}`, `{Edition Type}`, `{Volume}`, `{Year}`, `{Publisher}`
+  - AC: Handle TPB, Hardcover, Omnibus, etc.
+
+- [ ] **Conflict detection**
+  - AC: Detect if destination file already exists
+  - AC: Detect if two files would be renamed to same name
+  - AC: Report conflicts in preview (block execution)
+  - AC: Option to skip conflicting files during execution
+
+### 18.5 Bulk Organization Tools
+
+- [ ] **"Organize All" system task**
+  - AC: System → Tasks → "Organize Library" button
+  - AC: Shows preview count: "X series, Y files will be organized"
+  - AC: Confirmation required before execution
+  - AC: Runs as background task with progress tracking
+  - AC: Activity log shows progress and completion
+
+- [ ] **Scheduled organization option**
+  - AC: Settings → Media Management → "Auto-Organize on Format Change" toggle
+  - AC: When enabled, prompts to organize after saving new format
+  - AC: Default: disabled (matches Sonarr/Radarr behavior)
+
+### 18.6 Safety & Rollback
+
+- [ ] **Dry-run mode**
+  - AC: All preview endpoints are true dry-runs (no filesystem changes)
+  - AC: Logging indicates dry-run mode
+
+- [ ] **Atomic operations**
+  - AC: Per-series operations are atomic (all files move or none)
+  - AC: Database updates happen only after successful filesystem ops
+  - AC: Failed series don't block other series in batch
+
+- [ ] **Undo support (stretch goal)**
+  - AC: Store original paths in HistoryEvent
+  - AC: "Undo" button in recent history for organization events
+  - AC: Undo reverts filesystem and database changes
+
+### 18.7 UI Indicators
+
+- [ ] **Series list path mismatch indicator**
+  - AC: Warning icon on series where current path doesn't match format
+  - AC: Tooltip: "Folder structure doesn't match current format"
+  - AC: Clickable to open organize modal
+
+- [ ] **Settings format change warning**
+  - AC: When saving new folder/file format, show info message
+  - AC: Message: "Changes apply to new imports only. Use Series → Mass Editor → Organize to update existing files."
+  - AC: Link to Mass Editor page
+
+---
+
+### 18.8 Implementation Priority
+
+#### P1 - Core Functionality
+1. **18.1** ILibraryOrganizationService + implementation
+2. **18.2** API endpoints for preview/execute
+3. **18.3** Series detail page organize button
+
+#### P2 - Batch Operations
+4. **18.3** Mass Editor integration
+5. **18.5** Organize All system task
+
+#### P3 - Polish
+6. **18.4** File rename (not just folder)
+7. **18.6** Safety features
+8. **18.7** UI indicators
+
+---
+
 ## Story Ordering Notes
 
 **EPIC 4 Implementation Order:**
