@@ -212,8 +212,8 @@ Reorganize existing library files to match current naming format settings.
 - [ ] Edition/Collection file rename preview (CollectionFileFormat tokens)
 - [ ] Conflict detection
 
-### 18.5 Bulk Organization Tools
-- [ ] "Organize All" system task
+### 18.5 Bulk Organization Tools 🔄 IN PROGRESS
+- [x] "Organize All" system task (Iteration 169)
 - [ ] Scheduled organization option (auto-organize on format change)
 
 ### 18.6 Safety & Rollback

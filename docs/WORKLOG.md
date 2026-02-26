@@ -1,5 +1,52 @@
 # Worklog
 
+## Iteration 169 (2026-02-26)
+**EPIC 18.5: Bulk Organization Tools - "Organize All" System Task**
+
+### Summary
+Added "Organize All" system task that allows users to preview and execute organization for all series in the library at once.
+
+### Implementation
+
+**Backend (SystemEndpoints.cs):**
+- `GET /api/v1/system/tasks/organize-all/preview` - Returns preview summary for all series
+- `POST /api/v1/system/tasks/organize-all` - Executes organization for all series
+- Summary DTOs: `OrganizeAllPreviewResponse`, `SeriesOrganizePreviewSummary`, `OrganizeAllResultResponse`, `SeriesOrganizeResultSummary`
+- Logs task start/completion with counts
+
+**Frontend (SettingsPage.tsx):**
+- Added "System Tasks" tab with Wrench icon
+- `SystemTasksSettings` component with:
+  - "Organize All Series" task card
+  - Preview modal showing:
+    - Stats grid (total series, series with changes, files to rename, total size)
+    - "All organized" message when no changes needed
+    - Scrollable list of series to update with path transitions
+    - Error warnings for problematic series
+  - Execute button with loading state
+  - Success/failure result display
+
+**API Client (client.ts):**
+- Added types: `SeriesOrganizePreviewSummary`, `OrganizeAllPreviewResponse`, `SeriesOrganizeResultSummary`, `OrganizeAllResultResponse`
+- Added methods: `getOrganizeAllPreview()`, `executeOrganizeAll()`
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Endpoints/SystemEndpoints.cs` | Added organize-all endpoints and DTOs |
+| `ui/src/api/client.ts` | Added types and API methods |
+| `ui/src/pages/SettingsPage.tsx` | Added System Tasks tab and component |
+
+### Commits
+- `feat(tasks): add 'Organize All' system task (EPIC 18.5)`
+
+### Testing Results
+- Backend build: SUCCESS
+- Frontend TypeScript: SUCCESS
+
+---
+
 ## Iteration 168 (2026-02-26)
 **EPIC 14.8: Series Deletion UX Improvements**
 

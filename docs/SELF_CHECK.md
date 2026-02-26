@@ -1,3 +1,73 @@
+# Self-Check: Iteration 169
+
+## Summary
+Completed EPIC 18.5 (partial) - "Organize All" System Task. Added ability to preview and execute organization for all series in the library via System > Settings > System Tasks.
+
+## Checklist
+
+### 18.5 Bulk Organization Tools
+
+| Item | Status | Notes |
+|------|--------|-------|
+| "Organize All" preview endpoint | ✅ | GET /api/v1/system/tasks/organize-all/preview |
+| "Organize All" execute endpoint | ✅ | POST /api/v1/system/tasks/organize-all |
+| Summary response DTOs | ✅ | OrganizeAllPreviewResponse, OrganizeAllResultResponse |
+| System Tasks tab in Settings | ✅ | New tab with Wrench icon |
+| Preview modal with stats | ✅ | Total series, changes needed, files, size |
+| Series changes list | ✅ | Scrollable list with path transitions |
+| "All organized" state | ✅ | Message when no changes needed |
+| Error handling | ✅ | Shows series with errors |
+| Execution with progress | ✅ | Loading spinner during execution |
+| Success/failure summary | ✅ | Shows counts after completion |
+
+## Build & Test Results
+
+```
+Backend Build: SUCCESS (0 warnings, 0 errors)
+Frontend TypeScript: SUCCESS
+```
+
+## Files Changed
+
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Endpoints/SystemEndpoints.cs` | Added organize-all endpoints and DTOs |
+| `ui/src/api/client.ts` | Added types and API methods |
+| `ui/src/pages/SettingsPage.tsx` | Added System Tasks tab and component |
+
+## Commits
+
+1. `feat(tasks): add 'Organize All' system task (EPIC 18.5)`
+
+## Implementation Details
+
+### Backend Endpoints
+- Preview analyzes all series, returns summary + list of series with changes
+- Execute runs organization for all series, invalidates caches
+- Uses ILoggerFactory for logging (static class workaround)
+
+### Frontend UI
+- "System Tasks" tab added to Settings navigation
+- Task card shows "Organize All Series" with description
+- Preview modal shows:
+  - 4-stat grid: Total, Need Changes, Files to Rename, Total Size
+  - List of series with current→new path transitions
+  - Error indicators for problematic series
+- Execute button disabled when no changes needed
+
+## Notes
+- Excludes linked annual series (organized with parent)
+- Preview only shows series with actual changes
+- Result summary persists after modal closes
+
+## Next Steps
+
+- [ ] EPIC 18.5: Scheduled organization option (auto-organize on format change)
+- [ ] EPIC 11.27: Update local cover caching (integrates 11.26)
+- [ ] EPIC 18.4: File Rename Within Series
+
+---
+
 # Self-Check: Iteration 168
 
 ## Summary
@@ -62,8 +132,8 @@ Frontend TypeScript: SUCCESS
 
 ## Next Steps
 
+- [x] EPIC 18.5: Bulk Organization Tools ("Organize All" - Iteration 169)
 - [ ] EPIC 11.27: Update local cover caching (integrates 11.26)
-- [ ] EPIC 18.5: Bulk Organization Tools
 - [ ] EPIC 18.4: File Rename Within Series
 
 ---
