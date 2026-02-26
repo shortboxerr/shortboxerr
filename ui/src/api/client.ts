@@ -260,6 +260,65 @@ export interface SeriesDetail {
   linkedAnnualSeries: LinkedAnnualSeries[];
 }
 
+// Library Organization types (Sonarr/Radarr parity - EPIC 18)
+export interface SeriesRenamePreview {
+  seriesId: number;
+  seriesTitle: string;
+  currentPath: string | null;
+  newPath: string;
+  willMove: boolean;
+  willCreate: boolean;
+  fileCount: number;
+  totalSize: number;
+  files: FileRenamePreview[];
+  errors: string[];
+  warnings: string[];
+  canRename: boolean;
+}
+
+export interface FileRenamePreview {
+  fileId: number;
+  currentFileName: string;
+  newFileName: string;
+  currentPath: string;
+  newPath: string;
+  willRename: boolean;
+  willMove: boolean;
+  size: number;
+  isCollection: boolean;
+  issueNumber: number | null;
+  error: string | null;
+}
+
+export interface SeriesRenameResult {
+  seriesId: number;
+  seriesTitle: string;
+  success: boolean;
+  error: string | null;
+  previousPath: string | null;
+  newPath: string | null;
+  filesRenamed: number;
+  filesFailed: number;
+}
+
+export interface OrganizePreviewResponse {
+  previews: SeriesRenamePreview[];
+  totalSeries: number;
+  seriesWithChanges: number;
+  totalFiles: number;
+  filesWithChanges: number;
+  hasErrors: boolean;
+}
+
+export interface OrganizeExecuteResponse {
+  results: SeriesRenameResult[];
+  totalSeries: number;
+  successful: number;
+  failed: number;
+  totalFilesRenamed: number;
+  totalFilesFailed: number;
+}
+
 // Map API series detail to UI series detail
 function toSeriesDetail(api: ApiSeriesDetail): SeriesDetail {
   // Handle both string (new JSON serialization) and number (legacy) status values
@@ -1665,6 +1724,33 @@ export const api = {
 
   deleteSeries: async (id: number): Promise<void> => {
     await fetchApi(`/api/v1/series/${id}`, { method: 'DELETE' });
+  },
+
+  // Library Organization (Sonarr/Radarr parity - EPIC 18)
+  getSeriesOrganizePreview: async (seriesId: number): Promise<SeriesRenamePreview | null> => {
+    try {
+      return await fetchApi<SeriesRenamePreview>(`/api/v1/series/${seriesId}/organize/preview`);
+    } catch {
+      return null;
+    }
+  },
+
+  executeSeriesOrganize: async (seriesId: number): Promise<SeriesRenameResult> => {
+    return fetchApi<SeriesRenameResult>(`/api/v1/series/${seriesId}/organize`, { method: 'POST' });
+  },
+
+  getBulkOrganizePreview: async (seriesIds: number[]): Promise<OrganizePreviewResponse> => {
+    return fetchApi<OrganizePreviewResponse>('/api/v1/series/organize/preview', {
+      method: 'POST',
+      body: JSON.stringify({ seriesIds }),
+    });
+  },
+
+  executeBulkOrganize: async (seriesIds: number[]): Promise<OrganizeExecuteResponse> => {
+    return fetchApi<OrganizeExecuteResponse>('/api/v1/series/organize/execute', {
+      method: 'POST',
+      body: JSON.stringify({ seriesIds }),
+    });
   },
 
   getSeriesById: async (id: number): Promise<SeriesDetail | null> => {
