@@ -22,13 +22,15 @@ public static class SeriesEndpoints
             ShortboxerrDbContext db,
             ICacheService cacheService,
             IPullListService pullListService,
+            ILibraryOrganizationService organizationService,
             int page = 1,
             int pageSize = 20,
             string? sortKey = "title",
             string? sortDir = "asc",
             string? status = null,
             string? publisher = null,
-            bool? monitored = null) =>
+            bool? monitored = null,
+            bool includePathMismatch = false) =>
         {
             // Check if series-annual integration is enabled (defaults to true)
             var settings = await pullListService.GetSettingsAsync();
@@ -47,7 +49,7 @@ public static class SeriesEndpoints
                 hideLinkedAnnuals.ToString());
 
             // Cache for 2 minutes
-            var result = await cacheService.GetOrCreateAsync(cacheKey, async () =>
+            var (cachedItems, totalRecords, seriesIds) = await cacheService.GetOrCreateAsync(cacheKey, async () =>
             {
                 var query = db.Series
                     .Include(s => s.Issues)
@@ -101,23 +103,32 @@ public static class SeriesEndpoints
                     _ => query.OrderBy(s => s.SortTitle ?? s.Title)
                 };
 
-                var totalRecords = await query.CountAsync();
+                var total = await query.CountAsync();
                 var records = await query
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
 
-                // Get upcoming counts for all series in the page
-                var seriesIds = records.Select(s => s.Id).ToList();
-                var upcomingCounts = await pullListService.GetUpcomingCountsBySeriesAsync(seriesIds);
-
-                return PagedResult<SeriesDto>.Create(
-                    records.Select(s => SeriesDto.FromEntity(s, upcomingCounts.GetValueOrDefault(s.Id, 0))).ToList(),
-                    page,
-                    pageSize,
-                    totalRecords);
+                var ids = records.Select(s => s.Id).ToArray();
+                return (records, total, ids);
             }, TimeSpan.FromMinutes(2));
 
+            // Get upcoming counts for all series in the page
+            var upcomingCounts = await pullListService.GetUpcomingCountsBySeriesAsync(seriesIds.ToList());
+
+            // Optionally get path mismatch status (not cached - depends on settings)
+            IReadOnlyDictionary<int, PathMismatchInfo>? pathMismatches = null;
+            if (includePathMismatch)
+            {
+                pathMismatches = await organizationService.GetPathMismatchStatusAsync(seriesIds);
+            }
+
+            var dtos = cachedItems.Select(s => SeriesDto.FromEntity(
+                s, 
+                upcomingCounts.GetValueOrDefault(s.Id, 0),
+                pathMismatches?.GetValueOrDefault(s.Id))).ToList();
+
+            var result = PagedResult<SeriesDto>.Create(dtos, page, pageSize, totalRecords);
             return Results.Ok(result);
         })
         .WithName("GetAllSeries")

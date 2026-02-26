@@ -8,7 +8,7 @@ import {
   FolderSync
 } from 'lucide-react';
 import { api } from '../api/client';
-import type { Issue, IssueStatus, SeriesPullListSettingsDto, SeriesMatchCandidate, SeriesDeletePreview } from '../api/client';
+import type { Issue, IssueStatus, SeriesPullListSettingsDto, SeriesMatchCandidate } from '../api/client';
 import { useToast } from '../components/Toast';
 
 type ViewMode = 'cover' | 'list';

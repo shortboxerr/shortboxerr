@@ -147,6 +147,8 @@ interface ApiSeries {
   editionCount: number;
   comicVineId: number | null;
   coverImageUrl: string | null;
+  pathMismatch?: boolean | null;
+  expectedPath?: string | null;
 }
 
 // UI-friendly format for Series
@@ -161,6 +163,9 @@ export interface Series {
   upcomingIssueCount: number;
   filesCount: number;
   coverImageUrl: string | null;
+  pathMismatch?: boolean;
+  currentPath?: string | null;
+  expectedPath?: string | null;
 }
 
 // Filter options for series list
@@ -191,6 +196,9 @@ function toSeries(api: ApiSeries): Series {
     upcomingIssueCount: api.upcomingIssueCount ?? 0,
     filesCount: api.issueFileCount,
     coverImageUrl: api.coverImageUrl,
+    pathMismatch: api.pathMismatch ?? undefined,
+    currentPath: api.path,
+    expectedPath: api.expectedPath ?? undefined,
   };
 }
 
@@ -1762,6 +1770,7 @@ export const api = {
     status?: string;
     publisher?: string;
     monitored?: boolean;
+    includePathMismatch?: boolean;
   }): Promise<PagedResult<Series>> => {
     const query = new URLSearchParams();
     if (params.search) query.set('search', params.search);
@@ -1772,6 +1781,7 @@ export const api = {
     if (params.status) query.set('status', params.status);
     if (params.publisher) query.set('publisher', params.publisher);
     if (params.monitored !== undefined) query.set('monitored', String(params.monitored));
+    if (params.includePathMismatch) query.set('includePathMismatch', 'true');
 
     try {
       const response = await fetchApi<ApiPagedResult<ApiSeries>>(`/api/v1/series?${query}`);

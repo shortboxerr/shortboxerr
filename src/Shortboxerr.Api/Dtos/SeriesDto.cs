@@ -1,4 +1,5 @@
 using Shortboxerr.Core.Entities;
+using Shortboxerr.Core.Services;
 
 namespace Shortboxerr.Api.Dtos;
 
@@ -47,6 +48,18 @@ public record SeriesDto
     /// </summary>
     public List<LinkedAnnualSeriesDto> LinkedAnnualSeries { get; init; } = new();
 
+    /// <summary>
+    /// Whether the series folder path doesn't match the configured format.
+    /// Null if path check was not requested.
+    /// </summary>
+    public bool? PathMismatch { get; init; }
+
+    /// <summary>
+    /// The expected path based on current format settings.
+    /// Null if path check was not requested or no mismatch exists.
+    /// </summary>
+    public string? ExpectedPath { get; init; }
+
     public static SeriesDto FromEntity(Series series, int upcomingIssueCount = 0) => new()
     {
         Id = series.Id,
@@ -88,6 +101,13 @@ public record SeriesDto
             })
             .ToList() ?? new()
     };
+
+    public static SeriesDto FromEntity(Series series, int upcomingIssueCount, PathMismatchInfo? pathMismatch) =>
+        FromEntity(series, upcomingIssueCount) with
+        {
+            PathMismatch = pathMismatch?.HasMismatch,
+            ExpectedPath = pathMismatch?.HasMismatch == true ? pathMismatch.ExpectedPath : null
+        };
 }
 
 /// <summary>

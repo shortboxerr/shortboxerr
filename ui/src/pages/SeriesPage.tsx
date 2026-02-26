@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Plus, RefreshCw, Trash2, Edit, BookOpen, Search, X, Loader2, AlertCircle, ExternalLink, Filter, ArrowUpDown, ArrowUp, ArrowDown, Grid, List, FolderSync, Check, AlertTriangle } from 'lucide-react';
+import { Plus, RefreshCw, Trash2, Edit, BookOpen, Search, X, Loader2, AlertCircle, ExternalLink, Filter, ArrowUpDown, ArrowUp, ArrowDown, Grid, List, FolderSync, Check, AlertTriangle, FolderX } from 'lucide-react';
 import { api } from '../api/client';
 import type { SeriesMatchCandidate } from '../api/client';
 
@@ -38,6 +38,7 @@ export function SeriesPage() {
       publisher: publisherFilter !== 'all' ? publisherFilter : undefined,
       sortKey,
       sortDir,
+      includePathMismatch: true,
     }),
   });
 
@@ -312,6 +313,7 @@ export function SeriesPage() {
                   <th>Status</th>
                   <th>Issues</th>
                   <th>Files</th>
+                  <th style={{ width: '50px', textAlign: 'center' }} title="Path Status">Path</th>
                   <th className="table-actions"></th>
                 </tr>
               </thead>
@@ -337,6 +339,25 @@ export function SeriesPage() {
                     </td>
                     <td>{item.issueCount + item.upcomingIssueCount}{item.upcomingIssueCount > 0 && <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}> ({item.upcomingIssueCount} upcoming)</span>}</td>
                     <td>{item.filesCount}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      {item.pathMismatch === true ? (
+                        <span 
+                          title={`Path mismatch!\nCurrent: ${item.currentPath || '(none)'}\nExpected: ${item.expectedPath}`}
+                          style={{ color: 'var(--warning)', cursor: 'help' }}
+                        >
+                          <FolderX size={16} />
+                        </span>
+                      ) : item.pathMismatch === false ? (
+                        <span 
+                          title="Path matches format"
+                          style={{ color: 'var(--success)', cursor: 'help' }}
+                        >
+                          <Check size={14} />
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)' }}>-</span>
+                      )}
+                    </td>
                     <td className="table-actions" onClick={(e) => e.stopPropagation()}>
                       <button className="btn btn-icon" title="Edit">
                         <Edit size={16} />

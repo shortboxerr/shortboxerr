@@ -45,6 +45,38 @@ public interface ILibraryOrganizationService
     Task<SeriesRenameResult> ExecuteSeriesRenameAsync(
         int seriesId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets path mismatch status for multiple series.
+    /// This is a lightweight check that doesn't include file details.
+    /// </summary>
+    /// <param name="seriesIds">Series IDs to check.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Dictionary mapping series ID to path mismatch info.</returns>
+    Task<IReadOnlyDictionary<int, PathMismatchInfo>> GetPathMismatchStatusAsync(
+        int[] seriesIds,
+        CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Lightweight path mismatch info for series list display.
+/// </summary>
+public class PathMismatchInfo
+{
+    /// <summary>
+    /// Whether the current path differs from the expected path.
+    /// </summary>
+    public bool HasMismatch { get; set; }
+
+    /// <summary>
+    /// Current folder path (may be null if series has no files).
+    /// </summary>
+    public string? CurrentPath { get; set; }
+
+    /// <summary>
+    /// Expected folder path based on current format settings.
+    /// </summary>
+    public string ExpectedPath { get; set; } = string.Empty;
 }
 
 /// <summary>

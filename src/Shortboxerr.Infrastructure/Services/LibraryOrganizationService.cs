@@ -203,6 +203,54 @@ public class LibraryOrganizationService : ILibraryOrganizationService
         return result;
     }
 
+    public async Task<IReadOnlyDictionary<int, PathMismatchInfo>> GetPathMismatchStatusAsync(
+        int[] seriesIds,
+        CancellationToken cancellationToken = default)
+    {
+        var result = new Dictionary<int, PathMismatchInfo>();
+        
+        var query = _db.Series.Where(s => s.ParentSeriesId == null);
+        
+        if (seriesIds.Length > 0)
+        {
+            query = query.Where(s => seriesIds.Contains(s.Id));
+        }
+
+        var seriesList = await query
+            .Select(s => new { s.Id, s.Title, s.StartYear, s.Publisher, s.Status, s.Path })
+            .ToListAsync(cancellationToken);
+        
+        var settings = await _settingsService.GetGeneralSettingsAsync(cancellationToken);
+        var libraryRoot = _libraryRoots.FirstOrDefault() ?? "/data/library";
+        
+        foreach (var series in seriesList)
+        {
+            var mockSeries = new Series
+            {
+                Id = series.Id,
+                Title = series.Title,
+                StartYear = series.StartYear,
+                Publisher = series.Publisher,
+                Status = series.Status
+            };
+            
+            var expectedFolder = ExpandSeriesFolderFormat(settings.SeriesFolderFormat, mockSeries);
+            var expectedPath = Path.Combine(libraryRoot, expectedFolder);
+            
+            var hasMismatch = !string.IsNullOrEmpty(series.Path) && 
+                !string.Equals(series.Path, expectedPath, StringComparison.OrdinalIgnoreCase);
+            
+            result[series.Id] = new PathMismatchInfo
+            {
+                HasMismatch = hasMismatch,
+                CurrentPath = series.Path,
+                ExpectedPath = expectedPath
+            };
+        }
+        
+        return result;
+    }
+
     private async Task<SeriesRenamePreview> BuildSeriesPreviewAsync(
         Series series,
         GeneralSettings settings,
