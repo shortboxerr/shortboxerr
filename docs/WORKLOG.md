@@ -1,5 +1,61 @@
 # Worklog
 
+## Iteration 170 (2026-02-26)
+**EPIC 18.7: UI Indicators - Series List Path Mismatch**
+
+### Summary
+Added a path mismatch indicator column to the series list that shows which series have folder paths that don't match the configured naming format.
+
+### Implementation
+
+**Backend (ILibraryOrganizationService.cs, LibraryOrganizationService.cs):**
+- Added `GetPathMismatchStatusAsync()` method for efficient bulk path checking
+- Added `PathMismatchInfo` class with `HasMismatch`, `CurrentPath`, and `ExpectedPath` properties
+- Lightweight implementation that doesn't load file details (unlike full preview)
+
+**Backend (SeriesEndpoints.cs):**
+- Added `includePathMismatch` query parameter to `GET /api/v1/series`
+- When enabled, fetches path mismatch info and includes in response
+- Path mismatch data computed fresh (not cached) since it depends on settings
+
+**Backend (SeriesDto.cs):**
+- Added `PathMismatch` (nullable bool) property
+- Added `ExpectedPath` (nullable string) property
+- Added `FromEntity` overload accepting `PathMismatchInfo`
+
+**Frontend (client.ts):**
+- Added `pathMismatch`, `currentPath`, `expectedPath` to `Series` interface
+- Added `pathMismatch`, `expectedPath` to `ApiSeries` interface
+- Added `includePathMismatch` parameter to `getSeries()` method
+- Updated `toSeries()` to map path mismatch fields
+
+**Frontend (SeriesPage.tsx):**
+- Added "Path" column header
+- Added path status cell with icons:
+  - `FolderX` icon (warning color) when mismatch detected
+  - `Check` icon (success color) when path matches
+- Tooltip shows current path and expected path on hover
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Services/ILibraryOrganizationService.cs` | Added `GetPathMismatchStatusAsync`, `PathMismatchInfo` |
+| `src/Shortboxerr.Infrastructure/Services/LibraryOrganizationService.cs` | Implemented path mismatch checking |
+| `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | Added `includePathMismatch` parameter |
+| `src/Shortboxerr.Api/Dtos/SeriesDto.cs` | Added path mismatch properties |
+| `ui/src/api/client.ts` | Added path mismatch types and param |
+| `ui/src/pages/SeriesPage.tsx` | Added path column with indicator |
+
+### Commits
+- `feat(ui): add path mismatch indicator to series list (EPIC 18.7)`
+
+### Testing Results
+- Backend build: SUCCESS
+- Frontend TypeScript: SUCCESS
+
+---
+
 ## Iteration 169 (2026-02-26)
 **EPIC 18.5: Bulk Organization Tools - "Organize All" System Task**
 

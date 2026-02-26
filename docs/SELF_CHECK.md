@@ -1,3 +1,81 @@
+# Self-Check: Iteration 170
+
+## Summary
+Implemented EPIC 18.7 (partial) - Series list path mismatch indicator. Added a column to the series list showing whether each series' folder path matches the configured naming format.
+
+## Checklist
+
+### 18.7 UI Indicators - Series List Path Mismatch
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Backend: GetPathMismatchStatusAsync method | ✅ | Efficient bulk path checking |
+| Backend: PathMismatchInfo model | ✅ | HasMismatch, CurrentPath, ExpectedPath |
+| API: includePathMismatch query parameter | ✅ | Optional on GET /api/v1/series |
+| DTO: PathMismatch property | ✅ | Nullable bool in SeriesDto |
+| DTO: ExpectedPath property | ✅ | Nullable string in SeriesDto |
+| Frontend: Series interface updates | ✅ | pathMismatch, currentPath, expectedPath |
+| Frontend: API method update | ✅ | includePathMismatch parameter |
+| Frontend: Path column header | ✅ | Added to series table |
+| Frontend: FolderX mismatch icon | ✅ | Warning color when mismatch |
+| Frontend: Check match icon | ✅ | Success color when organized |
+| Frontend: Tooltip with paths | ✅ | Shows current vs expected |
+
+## Build & Test Results
+
+```
+Backend Build: SUCCESS (0 warnings, 0 errors)
+Frontend TypeScript: SUCCESS
+```
+
+## Files Changed
+
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Services/ILibraryOrganizationService.cs` | Added GetPathMismatchStatusAsync, PathMismatchInfo |
+| `src/Shortboxerr.Infrastructure/Services/LibraryOrganizationService.cs` | Implemented path mismatch checking |
+| `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | Added includePathMismatch parameter |
+| `src/Shortboxerr.Api/Dtos/SeriesDto.cs` | Added PathMismatch, ExpectedPath properties |
+| `ui/src/api/client.ts` | Added path mismatch types and param |
+| `ui/src/pages/SeriesPage.tsx` | Added Path column with indicator |
+
+## Commits
+
+1. `feat(ui): add path mismatch indicator to series list (EPIC 18.7)`
+
+## Implementation Details
+
+### Backend Service
+- `GetPathMismatchStatusAsync` method efficiently queries series without loading file details
+- Creates mock Series objects for format expansion (only needs metadata fields)
+- Returns dictionary mapping series ID to PathMismatchInfo
+- Compares current path to expected path (case-insensitive)
+
+### API Changes
+- Series list endpoint accepts `includePathMismatch=true` query param
+- Path mismatch info fetched separately (not cached) since depends on settings
+- Only included in response when requested (performance optimization)
+
+### Frontend UI
+- New "Path" column in series table
+- FolderX icon in warning color for mismatched paths
+- Check icon in success color for organized paths
+- Tooltip shows "Current: X, Expected: Y" on hover
+- Dash displayed when mismatch status unknown
+
+## Notes
+- Path mismatch is computed fresh (not cached) because it depends on SeriesFolderFormat setting
+- Only series with non-null paths are checked (new series without paths show as match)
+- Lightweight compared to full preview - doesn't scan files
+
+## Next Steps
+
+- [ ] EPIC 18.7: Settings format change warning
+- [ ] EPIC 18.5: Scheduled organization option
+- [ ] EPIC 11.27: Update local cover caching (integrates 11.26)
+
+---
+
 # Self-Check: Iteration 169
 
 ## Summary
