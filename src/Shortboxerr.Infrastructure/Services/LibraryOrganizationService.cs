@@ -186,16 +186,11 @@ public class LibraryOrganizationService : ILibraryOrganizationService
             await _db.SaveChangesAsync(cancellationToken);
             
             // Clean up all source directories that are now empty
-            _logger.LogInformation("Attempting to clean up {Count} source directories for series {SeriesTitle}", 
-                sourceDirectories.Count, series.Title);
             foreach (var sourceDir in sourceDirectories)
             {
-                _logger.LogInformation("Checking source directory: {SourceDir}, NewPath: {NewPath}, Exists: {Exists}", 
-                    sourceDir, preview.NewPath, Directory.Exists(sourceDir));
                 if (!string.Equals(sourceDir, preview.NewPath, StringComparison.OrdinalIgnoreCase) &&
                     Directory.Exists(sourceDir))
                 {
-                    _logger.LogInformation("Calling TryRemoveEmptyDirectory for: {SourceDir}", sourceDir);
                     TryRemoveEmptyDirectory(sourceDir);
                 }
             }
@@ -516,34 +511,24 @@ public class LibraryOrganizationService : ILibraryOrganizationService
 
     private void TryRemoveEmptyDirectory(string path)
     {
-        _logger.LogInformation("TryRemoveEmptyDirectory called with path: {Path}", path);
         try
         {
             var dir = path;
             while (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
             {
-                _logger.LogInformation("Checking directory: {Dir}, LibraryRoots: {Roots}", 
-                    dir, string.Join(", ", _libraryRoots));
-                
                 if (_libraryRoots.Any(r => string.Equals(dir, r, StringComparison.OrdinalIgnoreCase)))
                 {
-                    _logger.LogInformation("Reached library root, stopping: {Dir}", dir);
                     break;
                 }
 
-                var entries = Directory.GetFileSystemEntries(dir);
-                _logger.LogInformation("Directory {Dir} has {Count} entries", dir, entries.Length);
-                
-                if (entries.Length == 0)
+                if (Directory.GetFileSystemEntries(dir).Length == 0)
                 {
                     Directory.Delete(dir);
-                    _logger.LogInformation("Removed empty directory: {Directory}", dir);
+                    _logger.LogDebug("Removed empty directory: {Directory}", dir);
                     dir = Path.GetDirectoryName(dir);
                 }
                 else
                 {
-                    _logger.LogInformation("Directory not empty, stopping: {Dir}, entries: {Entries}", 
-                        dir, string.Join(", ", entries.Take(5)));
                     break;
                 }
             }
