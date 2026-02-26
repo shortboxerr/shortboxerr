@@ -1,5 +1,44 @@
 # Worklog
 
+## Iteration 165 (2026-02-26)
+**EPIC 18.3: Library Organization - Series Detail Page UI**
+
+### Summary
+Added "Organize Files" button to Series Detail page header with OrganizeModal for preview and execution of file organization.
+
+### Implementation
+
+**UI Components:**
+- `OrganizeModal` - Shows preview of changes before execution
+- FolderSync icon button in Series Detail toolbar
+
+**API Client Methods:**
+- `getSeriesOrganizePreview(seriesId)` - Fetch rename preview
+- `executeSeriesOrganize(seriesId)` - Execute organization
+- `getBulkOrganizePreview(seriesIds)` - Batch preview
+- `executeBulkOrganize(seriesIds)` - Batch execute
+
+**Types Added:**
+- `SeriesRenamePreview`, `FileRenamePreview`
+- `SeriesRenameResult`
+- `OrganizePreviewResponse`, `OrganizeExecuteResponse`
+
+### Files Changed
+
+**Modified Files:**
+- `ui/src/api/client.ts` - Added organize types and API methods
+- `ui/src/pages/SeriesDetailPage.tsx` - Added OrganizeModal and button
+
+### Commits
+- `feat(ui): add Organize button to Series Detail Page (EPIC 18.3)`
+
+### Testing Results
+- Frontend build: SUCCESS
+- Backend build: SUCCESS
+- LibraryOrganizationService tests: 13 passing
+
+---
+
 ## Iteration 164 (2026-02-26)
 **EPIC 18.1-18.2: Library Organization Service & API**
 

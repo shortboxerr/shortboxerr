@@ -1,3 +1,76 @@
+# Self-Check: Iteration 165
+
+## Summary
+Implemented EPIC 18.3 (Library Organization - Series Detail Page UI). Added "Organize Files" button to Series Detail header with OrganizeModal for preview and execution.
+
+## Checklist
+
+### 18.3 Series Detail Page "Organize" Button
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Add FolderSync icon button to toolbar | ✅ | Next to delete button |
+| OrganizeModal component | ✅ | Shows preview before execution |
+| API client organize methods | ✅ | getSeriesOrganizePreview, executeSeriesOrganize |
+| Preview loading state | ✅ | Spinner while analyzing files |
+| Show folder rename preview | ✅ | Current → New path display |
+| Show file rename preview | ✅ | Scrollable list of changes |
+| Error display | ✅ | Alerts for errors/warnings |
+| "No changes needed" state | ✅ | Success checkmark when organized |
+| Execute button disabled states | ✅ | When errors, pending, or no changes |
+| Cache invalidation on success | ✅ | Refetches series data |
+
+## Build & Test Results
+
+```
+Frontend Build: SUCCESS
+Backend Build: SUCCESS (unchanged)
+Unit Tests: 13 LibraryOrganizationService tests passing
+```
+
+## Files Changed
+
+| File | Change |
+|------|--------|
+| `ui/src/api/client.ts` | Added organize types and API methods |
+| `ui/src/pages/SeriesDetailPage.tsx` | Added OrganizeModal component and button |
+| `src/Shortboxerr.Api/wwwroot/` | Rebuilt frontend assets |
+
+## Commits
+
+1. `feat(ui): add Organize button to Series Detail Page (EPIC 18.3)`
+
+## Implementation Details
+
+### OrganizeModal Flow
+1. Load preview via `api.getSeriesOrganizePreview(seriesId)`
+2. Display folder change (if any)
+3. Display file changes list (scrollable)
+4. Show errors/warnings from preview
+5. Execute via `api.executeSeriesOrganize(seriesId)`
+6. Invalidate cache and close modal on success
+
+### API Types Added
+- `SeriesRenamePreview` - Full preview with files array
+- `FileRenamePreview` - Individual file rename info
+- `SeriesRenameResult` - Execution result
+- `OrganizePreviewResponse` - Bulk preview response
+- `OrganizeExecuteResponse` - Bulk execute response
+
+## Notes
+- Button uses FolderSync icon from lucide-react
+- Modal shows "Files are already organized" when no changes needed
+- Total file size displayed in file changes header
+- Errors block execution (button disabled)
+
+## Next Steps
+
+- [ ] 18.3 Mass Editor "Organize" action
+- [ ] Consider 18.5 bulk organization tools
+- [ ] Evaluate 11.26/11.27 completion
+
+---
+
 # Self-Check: Iteration 164
 
 ## Summary

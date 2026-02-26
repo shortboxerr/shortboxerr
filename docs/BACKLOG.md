@@ -205,7 +205,7 @@ Reorganize existing library files to match current naming format settings.
 
 ### 18.3 Mass Editor Integration
 - [ ] Series Mass Editor "Organize" action
-- [ ] Series Detail Page "Organize" button
+- [x] Series Detail Page "Organize" button (Iteration 165)
 
 ### 18.4 File Rename Within Series
 - [ ] Issue file rename preview (IssueFileFormat tokens)
