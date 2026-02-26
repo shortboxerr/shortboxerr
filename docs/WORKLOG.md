@@ -1,5 +1,57 @@
 # Worklog
 
+## Iteration 164 (2026-02-26)
+**EPIC 18.1-18.2: Library Organization Service & API**
+
+### Summary
+Implemented library organization/rename feature for Sonarr/Radarr parity. Created `ILibraryOrganizationService` with preview/execute capabilities and RESTful API endpoints for reorganizing existing library files to match current naming format settings.
+
+### Implementation
+
+**Core Service (`ILibraryOrganizationService`):**
+- `GetSeriesRenamePreviewAsync(int seriesId)` - preview single series
+- `GetSeriesRenamePreviewsAsync(int[] seriesIds)` - batch preview (empty array = all series)
+- `ExecuteSeriesRenameAsync(int seriesId)` - execute single series
+- `ExecuteSeriesRenameAsync(int[] seriesIds)` - batch execute
+
+**Models:**
+- `SeriesRenamePreview` - current/new path, file count, errors, warnings
+- `FileRenamePreview` - current/new filename, WillRename/WillMove flags
+- `SeriesRenameResult` - execution result with file counts
+- `FileRenameResult` - individual file move result
+
+**API Endpoints:**
+- `POST /api/v1/series/organize/preview` - batch preview
+- `POST /api/v1/series/organize/execute` - batch execute
+- `GET /api/v1/series/{id}/organize/preview` - single series preview
+- `POST /api/v1/series/{id}/organize` - single series execute
+
+**Format Token Expansion:**
+- Series folder: `{Publisher}`, `{Series Title}`, `{Year}`, `{Status}`
+- Issue file: `{Series Title}`, `{Issue}`, `{Year}`, `{Publisher}`, `{Issue Title}`, `{Quality}`
+- Collection file: `{Series Title}`, `{Edition Type}`, `{Volume}`, `{Year}`, `{Publisher}`
+
+### Files Changed
+
+**New Files:**
+- `src/Shortboxerr.Core/Services/ILibraryOrganizationService.cs` - Interface and models
+- `src/Shortboxerr.Infrastructure/Services/LibraryOrganizationService.cs` - Implementation
+- `tests/Shortboxerr.Tests/LibraryOrganizationServiceTests.cs` - Unit tests
+
+**Modified Files:**
+- `src/Shortboxerr.Infrastructure/DependencyInjection.cs` - Service registration
+- `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` - API endpoints
+
+### Commits
+- `feat(organize): add library organization service for Sonarr/Radarr parity (EPIC 18.1-18.2)`
+
+### Testing Results
+- Backend build: SUCCESS
+- Unit tests: 12 tests for LibraryOrganizationService
+- Note: Pre-existing test failures in GetComicsAdapterTests.cs (unrelated)
+
+---
+
 ## Iteration 163 (2026-02-25)
 **EPIC 15.19: Manual Import & Parser Improvements**
 

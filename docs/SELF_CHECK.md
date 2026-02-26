@@ -1,3 +1,107 @@
+# Self-Check: Iteration 164
+
+## Summary
+Implemented EPIC 18.1 and 18.2 (Library Organization & Rename - Core Service and API Endpoints). Created `ILibraryOrganizationService` with preview/execute capabilities and API endpoints for Sonarr/Radarr parity file organization.
+
+## Checklist
+
+### 18.1 Series Folder Rename Service
+
+| Item | Status | Notes |
+|------|--------|-------|
+| ILibraryOrganizationService interface | ✅ | Preview and execute methods defined |
+| SeriesRenamePreview model | ✅ | Includes file previews, errors, warnings |
+| FileRenamePreview model | ✅ | Tracks current/new paths, rename flags |
+| SeriesRenameResult model | ✅ | Execution results with file counts |
+| LibraryOrganizationService implementation | ✅ | Full preview and execute logic |
+| Folder format token expansion | ✅ | {Publisher}, {Series Title}, {Year}, {Status} |
+| Issue file format tokens | ✅ | {Series Title}, {Issue}, {Year}, {Publisher}, {Issue Title} |
+| Collection file format tokens | ✅ | {Series Title}, {Edition Type}, {Volume}, {Year} |
+| Empty directory cleanup | ✅ | Removes empty dirs after move |
+| Conflict detection | ✅ | Duplicate destinations flagged as errors |
+| DI registration | ✅ | Scoped service in DependencyInjection.cs |
+
+### 18.2 Series Rename API Endpoints
+
+| Item | Status | Notes |
+|------|--------|-------|
+| POST /api/v1/series/organize/preview | ✅ | Batch preview with summary stats |
+| POST /api/v1/series/organize/execute | ✅ | Batch execute with cache invalidation |
+| GET /api/v1/series/{id}/organize/preview | ✅ | Single series preview |
+| POST /api/v1/series/{id}/organize | ✅ | Single series execute |
+
+## Build & Test Results
+
+```
+Backend Build: SUCCESS (0 warnings, 0 errors)
+Note: Pre-existing test failures in GetComicsAdapterTests.cs (unrelated to this change)
+Unit Tests: 12 tests added for LibraryOrganizationService
+```
+
+## Files Changed
+
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Services/ILibraryOrganizationService.cs` | New - Interface and models |
+| `src/Shortboxerr.Infrastructure/Services/LibraryOrganizationService.cs` | New - Implementation |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Registered ILibraryOrganizationService |
+| `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | Added organization endpoints and DTOs |
+| `tests/Shortboxerr.Tests/LibraryOrganizationServiceTests.cs` | New - Unit tests |
+| `docs/BACKLOG.md` | Marked 18.1, 18.2 as complete |
+| `docs/WORKLOG.md` | Added Iteration 164 details |
+
+## Commits
+
+1. `feat(organize): add library organization service for Sonarr/Radarr parity (EPIC 18.1-18.2)`
+
+## Implementation Details
+
+### Preview Flow
+1. Load series with issues and editions
+2. Query FileAssets for all related files
+3. Calculate new path from folder format + series metadata
+4. Build file previews with new filenames
+5. Detect conflicts (duplicate destinations)
+6. Return preview with CanRename flag
+
+### Execute Flow
+1. Generate preview
+2. Create destination directory if needed
+3. Move each file (update FileAsset.Path in DB)
+4. Update series.Path
+5. Remove old empty directories
+6. Invalidate relevant caches
+
+### Format Token Support
+- Series folder: `{Publisher}/{Series Title} ({Year})` → `DC Comics/Batman (2016)`
+- Issue file: `{Series Title} #{Issue} ({Year})` → `Batman #001 (2016).cbz`
+- Collection file: `{Series Title} - {Edition Type} Vol. {Volume} ({Year})` → `Batman - TPB Vol. 1 (2016).cbz`
+
+### API Response Models
+```csharp
+OrganizePreviewResponse {
+  Previews, TotalSeries, SeriesWithChanges, TotalFiles, FilesWithChanges, HasErrors
+}
+
+OrganizeExecuteResponse {
+  Results, TotalSeries, Successful, Failed, TotalFilesRenamed, TotalFilesFailed
+}
+```
+
+## Notes
+- Excludes linked annual series (they're organized with parent)
+- Library roots configurable via MediaManagement:RootFolders
+- Sanitizes invalid characters from paths
+- Handles decimal issue numbers (54.1 → 054.1)
+
+## Next Steps
+
+- [ ] 18.3 Mass Editor / Series Detail Page UI integration
+- [ ] Consider 11.26/11.27 completion (Pull List cover caching)
+- [ ] Evaluate remaining EPIC 14 items
+
+---
+
 # Self-Check: Iteration 163
 
 ## Summary
@@ -87,153 +191,3 @@ Import Test:
   - `SHORTBOXERR_LIBRARY_ROOT` - library root path
 - Default paths (`/data/...`) may require Docker volume configuration
 - Series folder format configurable via Settings > General > Series Folder Format
-
----
-
-# Self-Check: Iteration 162
-
-## Summary
-Implemented EPIC 14.10 (DDL Auto-Import Background Service). Created a background service that monitors completed DDL downloads and automatically triggers the import pipeline, closing the workflow gap identified in iteration 161.
-
-## Checklist
-
-### 14.10 DDL Auto-Import Background Service
-
-| Item | Status | Notes |
-|------|--------|-------|
-| Create DdlImportBackgroundService | ✅ | Polls for pending imports every 30s |
-| Integrate with DdlImportService | ✅ | Calls ProcessDownloadAsync |
-| Configurable check interval | ✅ | `ddl_auto_import_interval_seconds` setting |
-| Respect auto-import settings | ✅ | `ddl_auto_import_enabled` setting |
-| Track pending downloads | ✅ | GetPendingImportDownloads() method |
-| Mark downloads as imported | ✅ | MarkAsImported() method |
-| Store candidate for matching | ✅ | Candidate stored in DdlDownloadHistoryEntry |
-| Enable/disable setting | ✅ | `ddl_auto_import_enabled` |
-| Confidence threshold | ✅ | `ddl_auto_import_min_confidence` |
-| Manual review mode | ✅ | PendingManualReview flow supported |
-
-## Build & Test Results
-
-```
-Backend Build: SUCCESS (0 warnings, 0 errors)
-Tests: 6 new tests added (DdlImportBackgroundServiceTests)
-Note: Pre-existing test failures in GetComicsAdapterTests.cs (not related to this change)
-```
-
-## Files Changed
-
-| File | Change |
-|------|--------|
-| `src/Shortboxerr.Infrastructure/BackgroundServices/DdlImportBackgroundService.cs` | New - Background service implementation |
-| `src/Shortboxerr.Core/Ddl/IDdlDownloadService.cs` | Added GetPendingImportDownloads, MarkAsImported, import tracking fields |
-| `src/Shortboxerr.Infrastructure/Ddl/DdlDownloadService.cs` | Implemented tracking methods |
-| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Registered background service |
-| `tests/Shortboxerr.Tests/DdlImportBackgroundServiceTests.cs` | New - Unit tests |
-| `docs/BACKLOG.md` | Marked 14.10 as complete |
-| `docs/WORKLOG.md` | Added Iteration 162 details |
-
-## Commits
-
-1. `feat(ddl): add DdlImportBackgroundService for auto-import`
-2. `test(ddl): add DdlImportBackgroundService tests`
-
-## Implementation Details
-
-### Background Service
-- Starts 15 seconds after app launch (initial delay)
-- Polls every 30 seconds (configurable via settings)
-- Uses scoped services for proper DI
-- Handles consecutive errors with backoff
-
-### Download Tracking
-- DdlDownloadHistoryEntry extended with:
-  - `ImportProcessed` (bool)
-  - `ImportProcessedAt` (DateTime?)
-  - `Candidate` (DdlCandidate?) for import matching
-- `GetPendingImportDownloads()` filters: Success=true, ImportProcessed=false, DestinationPath not empty
-
-### Settings (generic API at /api/v1/settings/{key})
-- `ddl_auto_import_enabled`: Enable/disable feature (default: true)
-- `ddl_auto_import_interval_seconds`: Poll interval (default: 30)
-- `ddl_auto_import`: Auto-import on match (default: true)
-- `ddl_auto_import_min_confidence`: Threshold for auto-approve (default: 80)
-
----
-
-# Self-Check: Iteration 159
-
-## Summary
-Implemented EPIC 11.21 (Upcoming Issues - Display Parity with Regular Issues). Enhanced the series detail view to display upcoming issues with the same metadata as regular issues, including proper list view integration.
-
-## Checklist
-
-### 11.21 Upcoming Issues Display Parity
-
-| Item | Status | Notes |
-|------|--------|-------|
-| Issue number display | ✅ | Shows issueNumberText or issueNumber |
-| Issue title | ✅ | Shows title or "TBA" if not available |
-| Release timing indicator | ✅ | Uses backend releaseTiming ("In 3 days", "Tomorrow", etc.) |
-| formatDaysUntilRelease helper | ✅ | Fallback frontend calculation |
-| List view: same columns | ✅ | #, Title, Release Date, Status, Tags, Actions |
-| List view: issue number | ✅ | Populated with styled number |
-| List view: Upcoming badge | ✅ | Blue badge with clock icon |
-| List view: Annual/Special tags | ✅ | Shown when applicable |
-| Visual differentiation | ✅ | Subtle background on upcoming rows |
-
-## Build & Test Results
-
-```
-Frontend Build: SUCCESS (0 warnings, 0 errors)
-TypeScript: No errors
-Bundle size: 602.79 kB (gzip: 153.03 kB)
-```
-
-## Files Changed
-
-| File | Change |
-|------|--------|
-| `ui/src/pages/SeriesDetailPage.tsx` | Added formatDaysUntilRelease(), updated cover view release timing, implemented list view with mixed regular/upcoming issues |
-| `docs/WORKLOG.md` | Added Iteration 159 details |
-| `docs/BACKLOG.md` | Marked 11.21 as complete |
-
-## Commits
-
-1. `feat(ui): add upcoming issues display parity in series view (EPIC 11.21)`
-
-## Implementation Details
-
-### Cover View Changes
-- Release timing now uses backend-provided `releaseTiming` field
-- Falls back to `formatDaysUntilRelease()` if releaseTiming unavailable
-- Styled in accent-info color for visual distinction
-
-### List View Changes
-- Replaced filtered IssueListView with inline table rendering
-- Supports mixed DisplayIssue array (regular + upcoming)
-- Upcoming rows:
-  - No selection checkbox (can't mark as wanted)
-  - Issue number displayed consistently
-  - Title shows "TBA" for unknown titles
-  - Status shows "Upcoming" badge with Clock icon
-  - Tags show Annual/Special when applicable
-  - No actions (can't search/mark)
-- Regular rows: Use existing IssueListRow component
-
-### Helper Function
-```typescript
-function formatDaysUntilRelease(releaseDate: string): string {
-  // Returns: "Today", "Tomorrow", "In X days", "Next week", or formatted date
-}
-```
-
-## Next Steps
-
-- [ ] Consider adding publisher info to upcoming issue display
-- [ ] Evaluate EPIC 14.8 (Series Deletion UX) priority
-- [ ] Consider other P1 backlog items
-
-## Notes
-- UI-only changes, no backend modifications needed
-- Backend already provides releaseTiming in UpcomingRelease response
-- List view now properly integrates upcoming issues instead of filtering them out

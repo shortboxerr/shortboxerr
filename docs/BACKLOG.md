@@ -22,7 +22,7 @@
 | ✅ | EPIC 15 | UI Bug Fixes | [Archive](./COMPLETED.md#epic-15-ui-bug-fixes--improvements--completed) |
 | ✅ | EPIC 16 | E2E Testing Infrastructure | [Archive](./COMPLETED.md#epic-16-end-to-end-testing-infrastructure--completed) |
 | ✅ | EPIC 17 | DDL Download Robustness | [Archive](./COMPLETED.md#epic-17-ddl-download-link-robustness--completed) |
-| 📋 | [EPIC 18](#epic-18-library-organization--rename-sonarradarr-parity) | Library Organization | Planned |
+| 🔄 | [EPIC 18](#epic-18-library-organization--rename-sonarradarr-parity--in-progress) | Library Organization | In Progress |
 
 **Legend:** ✅ Completed | 🔄 In Progress | 📋 Planned
 
@@ -188,19 +188,20 @@ Comprehensive examination of the issue data and cover acquisition pipeline.
 
 ---
 
-## EPIC 18: Library Organization & Rename (Sonarr/Radarr Parity)
+## EPIC 18: Library Organization & Rename (Sonarr/Radarr Parity) 🔄 IN PROGRESS
 
 Reorganize existing library files to match current naming format settings.
 
-### 18.1 Series Folder Rename Service
-- [ ] **ILibraryOrganizationService interface**
-- [ ] **SeriesRenamePreview model**
-- [ ] **LibraryOrganizationService implementation**
+### 18.1 Series Folder Rename Service ✅ COMPLETED
+- [x] **ILibraryOrganizationService interface** (Iteration 164)
+- [x] **SeriesRenamePreview model** (Iteration 164)
+- [x] **LibraryOrganizationService implementation** (Iteration 164)
 
-### 18.2 Series Rename API Endpoints
-- [ ] **Preview endpoint**: POST /api/v1/series/organize/preview
-- [ ] **Execute endpoint**: POST /api/v1/series/organize/execute
-- [ ] **Single series endpoint**: POST /api/v1/series/{id}/organize
+### 18.2 Series Rename API Endpoints ✅ COMPLETED
+- [x] **Preview endpoint**: POST /api/v1/series/organize/preview (Iteration 164)
+- [x] **Execute endpoint**: POST /api/v1/series/organize/execute (Iteration 164)
+- [x] **Single series endpoint**: POST /api/v1/series/{id}/organize (Iteration 164)
+- [x] **Single series preview**: GET /api/v1/series/{id}/organize/preview (Iteration 164)
 
 ### 18.3 Mass Editor Integration
 - [ ] Series Mass Editor "Organize" action
