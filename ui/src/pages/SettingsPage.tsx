@@ -457,11 +457,16 @@ function NamingFormatField({
 }
 
 function GeneralSettings() {
+  const [, setSearchParams] = useSearchParams();
   const [seriesFolderFormat, setSeriesFolderFormat] = useState('{Series Title} ({Year})');
   const [issueFileFormat, setIssueFileFormat] = useState('{Series Title} #{Issue} ({Year})');
   const [collectionFileFormat, setCollectionFileFormat] = useState('{Series Title} - {Edition Type} Vol. {Volume} ({Year})');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const saveTimeoutRef = useRef<number | null>(null);
+  
+  // Track original format to show reorganization warning
+  const [originalSeriesFormat, setOriginalSeriesFormat] = useState<string | null>(null);
+  const [showFormatChangedWarning, setShowFormatChangedWarning] = useState(false);
   
   // API Key state
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -513,8 +518,12 @@ function GeneralSettings() {
       setSeriesFolderFormat(generalSettings.seriesFolderFormat);
       setIssueFileFormat(generalSettings.issueFileFormat);
       setCollectionFileFormat(generalSettings.collectionFileFormat);
+      // Track original format on first load (for change detection)
+      if (originalSeriesFormat === null) {
+        setOriginalSeriesFormat(generalSettings.seriesFolderFormat);
+      }
     }
-  }, [generalSettings]);
+  }, [generalSettings, originalSeriesFormat]);
 
   // Auto-save with debounce when formats change
   const saveFormats = async (series: string, issue: string, collection: string) => {
@@ -526,6 +535,10 @@ function GeneralSettings() {
         collectionFileFormat: collection,
       });
       setSaveStatus('saved');
+      // Show warning if series folder format changed from original
+      if (originalSeriesFormat && series !== originalSeriesFormat) {
+        setShowFormatChangedWarning(true);
+      }
       // Reset to idle after 2 seconds
       setTimeout(() => setSaveStatus('idle'), 2000);
     } catch (e) {
@@ -626,6 +639,46 @@ function GeneralSettings() {
           tokens={namingTokens.seriesFolderTokens}
           inputRef={seriesInputRef}
         />
+        
+        {showFormatChangedWarning && (
+          <div style={{
+            padding: '12px 16px',
+            marginBottom: '16px',
+            borderRadius: 'var(--radius-sm)',
+            background: 'rgba(240, 173, 78, 0.1)',
+            border: '1px solid var(--warning)',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px',
+          }}>
+            <AlertTriangle size={20} style={{ color: 'var(--warning)', flexShrink: 0, marginTop: '2px' }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 500, marginBottom: '4px', color: 'var(--warning)' }}>
+                Series Folder Format Changed
+              </div>
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                Existing series folders may not match the new format. 
+                Use "Organize All" in System Tasks to update your library.
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  className="btn btn-sm"
+                  style={{ background: 'var(--warning)', color: 'var(--bg-primary)' }}
+                  onClick={() => setSearchParams({ tab: 'tasks' })}
+                >
+                  <FolderSync size={14} />
+                  Go to System Tasks
+                </button>
+                <button 
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => setShowFormatChangedWarning(false)}
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         
         <NamingFormatField
           label="Issue File Format"
