@@ -342,6 +342,52 @@ export interface OrganizeExecuteResponse {
   totalFilesFailed: number;
 }
 
+// Organize All System Task types (EPIC 18.5)
+export interface SeriesOrganizePreviewSummary {
+  seriesId: number;
+  seriesTitle: string;
+  currentPath: string | null;
+  newPath: string;
+  willMove: boolean;
+  willCreate: boolean;
+  fileCount: number;
+  filesWithChanges: number;
+  totalSizeBytes: number;
+  hasErrors: boolean;
+  errorCount: number;
+}
+
+export interface OrganizeAllPreviewResponse {
+  totalSeries: number;
+  seriesWithChanges: number;
+  totalFiles: number;
+  filesWithChanges: number;
+  totalSizeBytes: number;
+  totalSizeFormatted: string;
+  hasErrors: boolean;
+  previews: SeriesOrganizePreviewSummary[];
+}
+
+export interface SeriesOrganizeResultSummary {
+  seriesId: number;
+  seriesTitle: string;
+  success: boolean;
+  error: string | null;
+  filesRenamed: number;
+  filesFailed: number;
+  folderMoved: boolean;
+  newPath: string | null;
+}
+
+export interface OrganizeAllResultResponse {
+  totalSeries: number;
+  successful: number;
+  failed: number;
+  totalFilesRenamed: number;
+  totalFilesFailed: number;
+  results: SeriesOrganizeResultSummary[];
+}
+
 // Map API series detail to UI series detail
 function toSeriesDetail(api: ApiSeriesDetail): SeriesDetail {
   // Handle both string (new JSON serialization) and number (legacy) status values
@@ -1777,6 +1823,17 @@ export const api = {
     return fetchApi<OrganizeExecuteResponse>('/api/v1/series/organize/execute', {
       method: 'POST',
       body: JSON.stringify({ seriesIds }),
+    });
+  },
+
+  // System Tasks - Organize All (EPIC 18.5)
+  getOrganizeAllPreview: async (): Promise<OrganizeAllPreviewResponse> => {
+    return fetchApi<OrganizeAllPreviewResponse>('/api/v1/system/tasks/organize-all/preview');
+  },
+
+  executeOrganizeAll: async (): Promise<OrganizeAllResultResponse> => {
+    return fetchApi<OrganizeAllResultResponse>('/api/v1/system/tasks/organize-all', {
+      method: 'POST',
     });
   },
 

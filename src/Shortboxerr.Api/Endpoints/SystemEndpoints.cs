@@ -3,8 +3,10 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Shortboxerr.Core.Caching;
 using Shortboxerr.Core.Metron;
 using Shortboxerr.Core.PullList;
+using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.Persistence;
 
 namespace Shortboxerr.Api.Endpoints;
@@ -54,12 +56,149 @@ public static class SystemEndpoints
             .WithName("GetMetronRateLimits")
             .WithOpenApi()
             .Produces<MetronRateLimitStats>(200);
+
+        // System Tasks - Organize All Library
+        group.MapGet("/tasks/organize-all/preview", GetOrganizeAllPreview)
+            .WithName("GetOrganizeAllPreview")
+            .WithSummary("Preview what would change if organizing all series in library")
+            .WithOpenApi()
+            .Produces<OrganizeAllPreviewResponse>(200);
+
+        group.MapPost("/tasks/organize-all", ExecuteOrganizeAll)
+            .WithName("ExecuteOrganizeAll")
+            .WithSummary("Organize all series in library according to current naming format")
+            .WithOpenApi()
+            .Produces<OrganizeAllResultResponse>(200);
     }
 
     private static IResult GetMetronRateLimits(IMetronClient metronClient)
     {
         var stats = metronClient.GetRateLimitStats();
         return Results.Ok(stats);
+    }
+
+    private static async Task<IResult> GetOrganizeAllPreview(
+        ShortboxerrDbContext db,
+        ILibraryOrganizationService organizationService,
+        CancellationToken ct)
+    {
+        // Get all series IDs (exclude linked annuals - they're organized with parent)
+        var seriesIds = await db.Series
+            .Where(s => !s.ParentSeriesId.HasValue)
+            .Select(s => s.Id)
+            .ToArrayAsync(ct);
+
+        if (seriesIds.Length == 0)
+        {
+            return Results.Ok(new OrganizeAllPreviewResponse
+            {
+                TotalSeries = 0,
+                SeriesWithChanges = 0,
+                TotalFiles = 0,
+                FilesWithChanges = 0,
+                TotalSizeBytes = 0,
+                HasErrors = false,
+                Previews = new List<SeriesOrganizePreviewSummary>()
+            });
+        }
+
+        var previews = await organizationService.GetSeriesRenamePreviewsAsync(seriesIds, ct);
+        
+        // Create summary for each series (don't include full file details to keep response size manageable)
+        var summaries = previews.Select(p => new SeriesOrganizePreviewSummary
+        {
+            SeriesId = p.SeriesId,
+            SeriesTitle = p.SeriesTitle,
+            CurrentPath = p.CurrentPath,
+            NewPath = p.NewPath,
+            WillMove = p.WillMove,
+            WillCreate = p.WillCreate,
+            FileCount = p.FileCount,
+            FilesWithChanges = p.Files.Count(f => f.WillRename || f.WillMove),
+            TotalSizeBytes = p.TotalSize,
+            HasErrors = !p.CanRename,
+            ErrorCount = p.Errors.Count
+        }).ToList();
+
+        return Results.Ok(new OrganizeAllPreviewResponse
+        {
+            TotalSeries = summaries.Count,
+            SeriesWithChanges = summaries.Count(s => s.WillMove || s.WillCreate || s.FilesWithChanges > 0),
+            TotalFiles = summaries.Sum(s => s.FileCount),
+            FilesWithChanges = summaries.Sum(s => s.FilesWithChanges),
+            TotalSizeBytes = summaries.Sum(s => s.TotalSizeBytes),
+            HasErrors = summaries.Any(s => s.HasErrors),
+            Previews = summaries.Where(s => s.WillMove || s.WillCreate || s.FilesWithChanges > 0 || s.HasErrors).ToList()
+        });
+    }
+
+    private static async Task<IResult> ExecuteOrganizeAll(
+        ShortboxerrDbContext db,
+        ILibraryOrganizationService organizationService,
+        ICacheService cacheService,
+        ILoggerFactory loggerFactory,
+        CancellationToken ct)
+    {
+        var logger = loggerFactory.CreateLogger("OrganizeAllTask");
+        
+        // Get all series IDs (exclude linked annuals)
+        var seriesIds = await db.Series
+            .Where(s => !s.ParentSeriesId.HasValue)
+            .Select(s => s.Id)
+            .ToArrayAsync(ct);
+
+        if (seriesIds.Length == 0)
+        {
+            return Results.Ok(new OrganizeAllResultResponse
+            {
+                TotalSeries = 0,
+                Successful = 0,
+                Failed = 0,
+                TotalFilesRenamed = 0,
+                TotalFilesFailed = 0,
+                Results = new List<SeriesOrganizeResultSummary>()
+            });
+        }
+
+        logger.LogInformation("Starting 'Organize All' system task for {Count} series", seriesIds.Length);
+
+        var results = await organizationService.ExecuteSeriesRenameAsync(seriesIds, ct);
+        
+        // Invalidate caches for modified series
+        foreach (var result in results.Where(r => r.Success))
+        {
+            cacheService.Remove(cacheService.GenerateKey(CacheKeys.SeriesDetail, result.SeriesId));
+        }
+        cacheService.RemoveByPrefix(CacheKeys.SeriesList);
+
+        // Create summary for response
+        var summaries = results.Select(r => new SeriesOrganizeResultSummary
+        {
+            SeriesId = r.SeriesId,
+            SeriesTitle = r.SeriesTitle,
+            Success = r.Success,
+            Error = r.Error,
+            FilesRenamed = r.FilesRenamed,
+            FilesFailed = r.FilesFailed,
+            FolderMoved = r.PreviousPath != r.NewPath && !string.IsNullOrEmpty(r.NewPath),
+            NewPath = r.NewPath
+        }).ToList();
+
+        var successful = results.Count(r => r.Success);
+        var failed = results.Count(r => !r.Success);
+
+        logger.LogInformation("'Organize All' complete: {Successful} succeeded, {Failed} failed, {Files} files renamed",
+            successful, failed, results.Sum(r => r.FilesRenamed));
+
+        return Results.Ok(new OrganizeAllResultResponse
+        {
+            TotalSeries = results.Count,
+            Successful = successful,
+            Failed = failed,
+            TotalFilesRenamed = results.Sum(r => r.FilesRenamed),
+            TotalFilesFailed = results.Sum(r => r.FilesFailed),
+            Results = summaries.Where(s => !s.Success || s.FilesRenamed > 0 || s.FolderMoved).ToList()
+        });
     }
 
     private static IResult GetLogFileContent(string filename, int? lines = 500, string? level = null, string? search = null)
@@ -548,6 +687,70 @@ public class LogLine
     public string? Level { get; set; }
     public string? Category { get; set; }
     public string? Message { get; set; }
+}
+
+// Organize All System Task DTOs
+public class OrganizeAllPreviewResponse
+{
+    public int TotalSeries { get; set; }
+    public int SeriesWithChanges { get; set; }
+    public int TotalFiles { get; set; }
+    public int FilesWithChanges { get; set; }
+    public long TotalSizeBytes { get; set; }
+    public bool HasErrors { get; set; }
+    public List<SeriesOrganizePreviewSummary> Previews { get; set; } = new();
+    
+    public string TotalSizeFormatted => FormatBytes(TotalSizeBytes);
+    
+    private static string FormatBytes(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len /= 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+}
+
+public class SeriesOrganizePreviewSummary
+{
+    public int SeriesId { get; set; }
+    public required string SeriesTitle { get; set; }
+    public string? CurrentPath { get; set; }
+    public required string NewPath { get; set; }
+    public bool WillMove { get; set; }
+    public bool WillCreate { get; set; }
+    public int FileCount { get; set; }
+    public int FilesWithChanges { get; set; }
+    public long TotalSizeBytes { get; set; }
+    public bool HasErrors { get; set; }
+    public int ErrorCount { get; set; }
+}
+
+public class OrganizeAllResultResponse
+{
+    public int TotalSeries { get; set; }
+    public int Successful { get; set; }
+    public int Failed { get; set; }
+    public int TotalFilesRenamed { get; set; }
+    public int TotalFilesFailed { get; set; }
+    public List<SeriesOrganizeResultSummary> Results { get; set; } = new();
+}
+
+public class SeriesOrganizeResultSummary
+{
+    public int SeriesId { get; set; }
+    public required string SeriesTitle { get; set; }
+    public bool Success { get; set; }
+    public string? Error { get; set; }
+    public int FilesRenamed { get; set; }
+    public int FilesFailed { get; set; }
+    public bool FolderMoved { get; set; }
+    public string? NewPath { get; set; }
 }
 
 #endregion
