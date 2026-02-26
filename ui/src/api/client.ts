@@ -203,6 +203,29 @@ export interface LinkedAnnualSeries {
   coverImageUrl: string | null;
 }
 
+// Series deletion preview (EPIC 14.8)
+export interface LinkedSeriesForDelete {
+  id: number;
+  title: string;
+  issueCount: number;
+}
+
+export interface SeriesDeletePreview {
+  seriesId: number;
+  seriesTitle: string;
+  issueCount: number;
+  editionCount: number;
+  linkedAnnualSeries: LinkedSeriesForDelete[];
+  totalSeriesToDelete: number;
+}
+
+export interface SeriesDeleteResult {
+  success: boolean;
+  seriesDeleted: string;
+  linkedAnnualsDeleted: string[];
+  totalDeleted: number;
+}
+
 // API response format for detailed series
 interface ApiSeriesDetail {
   id: number;
@@ -1722,8 +1745,12 @@ export const api = {
     return fetchApi<SeriesFilterOptions>('/api/v1/series/filter-options');
   },
 
-  deleteSeries: async (id: number): Promise<void> => {
-    await fetchApi(`/api/v1/series/${id}`, { method: 'DELETE' });
+  deleteSeries: async (id: number): Promise<SeriesDeleteResult> => {
+    return fetchApi<SeriesDeleteResult>(`/api/v1/series/${id}`, { method: 'DELETE' });
+  },
+
+  getSeriesDeletePreview: async (seriesId: number): Promise<SeriesDeletePreview> => {
+    return fetchApi<SeriesDeletePreview>(`/api/v1/series/${seriesId}/delete/preview`);
   },
 
   // Library Organization (Sonarr/Radarr parity - EPIC 18)

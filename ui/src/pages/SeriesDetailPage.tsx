@@ -8,7 +8,7 @@ import {
   FolderSync
 } from 'lucide-react';
 import { api } from '../api/client';
-import type { Issue, IssueStatus, SeriesPullListSettingsDto, SeriesMatchCandidate } from '../api/client';
+import type { Issue, IssueStatus, SeriesPullListSettingsDto, SeriesMatchCandidate, SeriesDeletePreview } from '../api/client';
 import { useToast } from '../components/Toast';
 
 type ViewMode = 'cover' | 'list';
@@ -40,6 +40,7 @@ export function SeriesDetailPage() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [showOrganizeModal, setShowOrganizeModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -219,10 +220,13 @@ export function SeriesDetailPage() {
   // Delete series mutation
   const deleteSeries = useMutation({
     mutationFn: () => api.deleteSeries(seriesId),
-    onSuccess: async () => {
+    onSuccess: async (result) => {
       await queryClient.invalidateQueries({ queryKey: ['series'] });
       await queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      toast.success('Series deleted');
+      const msg = result.totalDeleted > 1 
+        ? `Deleted ${result.seriesDeleted} and ${result.linkedAnnualsDeleted.length} linked annual series`
+        : `Deleted ${result.seriesDeleted}`;
+      toast.success(msg);
       navigate('/series');
     },
     onError: () => {
@@ -231,9 +235,7 @@ export function SeriesDetailPage() {
   });
 
   const handleDeleteSeries = () => {
-    if (confirm(`Delete "${series?.title}"? This will remove the series and all its issues from your library. This cannot be undone.`)) {
-      deleteSeries.mutate();
-    }
+    setShowDeleteModal(true);
   };
 
   const { data: series, isLoading: isLoadingSeries, refetch: refetchSeries } = useQuery({
@@ -1118,6 +1120,17 @@ export function SeriesDetailPage() {
           }}
         />
       )}
+
+      {/* Delete Series Modal (EPIC 14.8) */}
+      {showDeleteModal && (
+        <DeleteSeriesModal
+          seriesId={seriesId}
+          seriesTitle={series.title}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={() => deleteSeries.mutate()}
+          isDeleting={deleteSeries.isPending}
+        />
+      )}
     </>
   );
 }
@@ -1748,6 +1761,115 @@ function OrganizeModal({ seriesId, seriesTitle, onClose, onOrganized }: Organize
               <>
                 <FolderSync size={16} />
                 Organize Files
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// === Delete Series Modal (EPIC 14.8) ===
+interface DeleteSeriesModalProps {
+  seriesId: number;
+  seriesTitle: string;
+  onClose: () => void;
+  onConfirm: () => void;
+  isDeleting: boolean;
+}
+
+function DeleteSeriesModal({ seriesId, seriesTitle, onClose, onConfirm, isDeleting }: DeleteSeriesModalProps) {
+  const { data: preview, isLoading } = useQuery({
+    queryKey: ['series', seriesId, 'delete', 'preview'],
+    queryFn: () => api.getSeriesDeletePreview(seriesId),
+  });
+
+  const hasLinkedAnnuals = preview && preview.linkedAnnualSeries.length > 0;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+        <div className="modal-header">
+          <h2 className="modal-title" style={{ color: 'var(--accent-danger)' }}>Delete Series</h2>
+          <button className="btn btn-icon" onClick={onClose} disabled={isDeleting}>
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="modal-body">
+          {isLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}>
+              <Loader2 size={32} className="spinning" />
+            </div>
+          ) : preview ? (
+            <>
+              <div style={{ 
+                padding: '16px',
+                background: 'var(--bg-secondary)',
+                borderRadius: 'var(--radius-sm)',
+                marginBottom: '16px'
+              }}>
+                <p style={{ margin: 0, fontSize: '14px' }}>
+                  Are you sure you want to delete <strong>&quot;{seriesTitle}&quot;</strong>?
+                </p>
+                <p style={{ margin: '12px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>
+                  This will remove the series and all its metadata from your library.
+                </p>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontWeight: 500, marginBottom: '8px', fontSize: '13px' }}>Will be deleted:</div>
+                <ul style={{ margin: 0, padding: '0 0 0 20px', fontSize: '13px' }}>
+                  <li style={{ marginBottom: '4px' }}>
+                    <strong>{seriesTitle}</strong>
+                    {preview.issueCount > 0 && ` (${preview.issueCount} issue${preview.issueCount !== 1 ? 's' : ''})`}
+                    {preview.editionCount > 0 && `, ${preview.editionCount} edition${preview.editionCount !== 1 ? 's' : ''}`}
+                  </li>
+                  {hasLinkedAnnuals && preview.linkedAnnualSeries.map(annual => (
+                    <li key={annual.id} style={{ marginBottom: '4px' }}>
+                      <strong>{annual.title}</strong>
+                      {annual.issueCount > 0 && ` (${annual.issueCount} issue${annual.issueCount !== 1 ? 's' : ''})`}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {hasLinkedAnnuals && (
+                <div className="alert alert-warning" style={{ padding: '10px 14px', fontSize: '13px' }}>
+                  <strong>Note:</strong> This series has {preview.linkedAnnualSeries.length} linked annual series that will also be deleted.
+                </div>
+              )}
+
+              <div className="alert alert-danger" style={{ padding: '10px 14px', fontSize: '13px' }}>
+                <strong>Warning:</strong> This action cannot be undone. Files on disk will not be affected.
+              </div>
+            </>
+          ) : (
+            <div className="alert alert-danger" style={{ padding: '10px 14px' }}>
+              Failed to load deletion preview
+            </div>
+          )}
+        </div>
+
+        <div className="modal-footer">
+          <button className="btn" onClick={onClose} disabled={isDeleting}>
+            Cancel
+          </button>
+          <button 
+            className="btn btn-danger" 
+            onClick={onConfirm} 
+            disabled={isDeleting || isLoading || !preview}
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 size={16} className="spinning" />
+                Deleting...
+              </>
+            ) : (
+              <>
+                <Trash2 size={16} />
+                Delete{preview && preview.totalSeriesToDelete > 1 ? ` (${preview.totalSeriesToDelete} series)` : ''}
               </>
             )}
           </button>

@@ -147,3 +147,37 @@ public record UpdateSeriesRequest
     public bool? Monitored { get; init; }
 }
 
+/// <summary>
+/// Preview of what will be deleted when deleting a series.
+/// </summary>
+public record SeriesDeletePreviewDto
+{
+    public int SeriesId { get; init; }
+    public required string SeriesTitle { get; init; }
+    public int IssueCount { get; init; }
+    public int EditionCount { get; init; }
+    public List<LinkedSeriesDto> LinkedAnnualSeries { get; init; } = new();
+    public int TotalSeriesToDelete { get; init; }
+}
+
+/// <summary>
+/// Summary of a linked series for deletion preview.
+/// </summary>
+public record LinkedSeriesDto
+{
+    public int Id { get; init; }
+    public required string Title { get; init; }
+    public int IssueCount { get; init; }
+}
+
+/// <summary>
+/// Result of a series deletion operation.
+/// </summary>
+public record SeriesDeleteResultDto
+{
+    public bool Success { get; init; }
+    public required string SeriesDeleted { get; init; }
+    public List<string> LinkedAnnualsDeleted { get; init; } = new();
+    public int TotalDeleted { get; init; }
+}
+

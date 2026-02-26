@@ -421,7 +421,47 @@ public static class SeriesEndpoints
         })
         .WithName("UpdateSeries");
 
-        // DELETE series
+        // GET deletion preview (what will be deleted)
+        group.MapGet("/{id:int}/delete/preview", async (
+            ShortboxerrDbContext db,
+            int id,
+            CancellationToken ct = default) =>
+        {
+            var series = await db.Series
+                .Include(s => s.LinkedAnnualSeries)
+                .Include(s => s.Issues)
+                .Include(s => s.Editions)
+                .FirstOrDefaultAsync(s => s.Id == id, ct);
+
+            if (series is null)
+                return Results.NotFound(new { message = $"Series {id} not found" });
+
+            var linkedAnnuals = series.LinkedAnnualSeries.Select(a => new
+            {
+                a.Id,
+                a.Title,
+                IssueCount = a.Issues?.Count ?? 0
+            }).ToList();
+
+            return Results.Ok(new SeriesDeletePreviewDto
+            {
+                SeriesId = series.Id,
+                SeriesTitle = series.Title,
+                IssueCount = series.Issues?.Count ?? 0,
+                EditionCount = series.Editions?.Count ?? 0,
+                LinkedAnnualSeries = linkedAnnuals.Select(a => new LinkedSeriesDto
+                {
+                    Id = a.Id,
+                    Title = a.Title,
+                    IssueCount = a.IssueCount
+                }).ToList(),
+                TotalSeriesToDelete = 1 + linkedAnnuals.Count
+            });
+        })
+        .WithName("GetSeriesDeletePreview")
+        .WithDescription("Gets a preview of what will be deleted when deleting a series, including linked annual series.");
+
+        // DELETE series (cascades to linked annual series)
         group.MapDelete("/{id:int}", async (
             ShortboxerrDbContext db,
             ICacheService cacheService,
@@ -430,28 +470,56 @@ public static class SeriesEndpoints
             bool deleteFiles = false,
             CancellationToken ct = default) =>
         {
-            var series = await db.Series.FindAsync(new object[] { id }, ct);
+            var series = await db.Series
+                .Include(s => s.LinkedAnnualSeries)
+                .FirstOrDefaultAsync(s => s.Id == id, ct);
+
             if (series is null)
                 return Results.NotFound(new { message = $"Series {id} not found" });
 
             var seriesTitle = series.Title;
+            var linkedAnnualIds = series.LinkedAnnualSeries.Select(a => a.Id).ToList();
+            var linkedAnnualTitles = series.LinkedAnnualSeries.Select(a => a.Title).ToList();
 
             // TODO: If deleteFiles is true, delete associated file assets from disk
 
+            // Remove linked annual series first (cascade)
+            foreach (var annualSeries in series.LinkedAnnualSeries.ToList())
+            {
+                db.Series.Remove(annualSeries);
+            }
+
+            // Remove the main series
             db.Series.Remove(series);
             await db.SaveChangesAsync(ct);
 
-            // Record history event (pass null for seriesId since the series is now deleted)
+            // Record history events
             await historyService.RecordSeriesDeletedAsync(null, seriesTitle, deleteFiles, ct);
+            foreach (var annualTitle in linkedAnnualTitles)
+            {
+                await historyService.RecordSeriesDeletedAsync(null, annualTitle, deleteFiles, ct);
+            }
 
-            // Invalidate caches for this series and list
+            // Invalidate caches for this series, linked annuals, and list
             cacheService.RemoveByPrefix(CacheKeys.SeriesList);
             cacheService.Remove(cacheService.GenerateKey(CacheKeys.SeriesDetail, id));
             cacheService.Remove(cacheService.GenerateKey(CacheKeys.Series, id, "issues"));
+            foreach (var annualId in linkedAnnualIds)
+            {
+                cacheService.Remove(cacheService.GenerateKey(CacheKeys.SeriesDetail, annualId));
+                cacheService.Remove(cacheService.GenerateKey(CacheKeys.Series, annualId, "issues"));
+            }
 
-            return Results.NoContent();
+            return Results.Ok(new SeriesDeleteResultDto
+            {
+                Success = true,
+                SeriesDeleted = seriesTitle,
+                LinkedAnnualsDeleted = linkedAnnualTitles,
+                TotalDeleted = 1 + linkedAnnualTitles.Count
+            });
         })
-        .WithName("DeleteSeries");
+        .WithName("DeleteSeries")
+        .WithDescription("Deletes a series and all its linked annual series.");
 
         // PUT set series status manually
         group.MapPut("/{id:int}/status", async (
