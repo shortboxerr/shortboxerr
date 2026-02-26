@@ -1516,9 +1516,12 @@ interface OrganizeModalProps {
   onOrganized: () => Promise<void>;
 }
 
+type OrganizeViewFilter = 'all' | 'folder' | 'files';
+
 function OrganizeModal({ seriesId, seriesTitle, onClose, onOrganized }: OrganizeModalProps) {
   const [isExecuting, setIsExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [viewFilter, setViewFilter] = useState<OrganizeViewFilter>('all');
 
   const { data: preview, isLoading } = useQuery({
     queryKey: ['series', seriesId, 'organize', 'preview'],
@@ -1560,6 +1563,16 @@ function OrganizeModal({ seriesId, seriesTitle, onClose, onOrganized }: Organize
   const hasChanges = preview && (preview.willMove || preview.willCreate || preview.files.some(f => f.willRename || f.willMove));
   const noChangesNeeded = preview && !hasChanges && preview.errors.length === 0;
 
+  const hasFolderChanges = preview && (preview.willMove || preview.willCreate);
+  const filesWithChanges = preview?.files.filter(f => f.willRename || f.willMove) ?? [];
+  const hasFileChanges = filesWithChanges.length > 0;
+
+  const issueFiles = filesWithChanges.filter(f => !f.isCollection);
+  const collectionFiles = filesWithChanges.filter(f => f.isCollection);
+
+  const showFolderSection = viewFilter === 'all' || viewFilter === 'folder';
+  const showFilesSection = viewFilter === 'all' || viewFilter === 'files';
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
@@ -1585,6 +1598,42 @@ function OrganizeModal({ seriesId, seriesTitle, onClose, onOrganized }: Organize
               Rename files and folders to match current naming format settings
             </div>
           </div>
+
+          {/* View Filter Tabs */}
+          {preview && hasChanges && (
+            <div style={{ 
+              display: 'flex', 
+              gap: '4px', 
+              marginBottom: '16px',
+              padding: '4px',
+              background: 'var(--bg-tertiary)',
+              borderRadius: 'var(--radius-sm)'
+            }}>
+              <button
+                className={`btn btn-sm ${viewFilter === 'all' ? 'btn-primary' : ''}`}
+                onClick={() => setViewFilter('all')}
+                style={{ flex: 1 }}
+              >
+                All Changes
+              </button>
+              <button
+                className={`btn btn-sm ${viewFilter === 'folder' ? 'btn-primary' : ''}`}
+                onClick={() => setViewFilter('folder')}
+                disabled={!hasFolderChanges}
+                style={{ flex: 1 }}
+              >
+                Folder
+              </button>
+              <button
+                className={`btn btn-sm ${viewFilter === 'files' ? 'btn-primary' : ''}`}
+                onClick={() => setViewFilter('files')}
+                disabled={!hasFileChanges}
+                style={{ flex: 1 }}
+              >
+                Files ({filesWithChanges.length})
+              </button>
+            </div>
+          )}
 
           {isLoading ? (
             <div className="loading" style={{ padding: '40px 0' }}>
@@ -1639,7 +1688,7 @@ function OrganizeModal({ seriesId, seriesTitle, onClose, onOrganized }: Organize
               ) : (
                 <>
                   {/* Folder Change */}
-                  {(preview.willMove || preview.willCreate) && (
+                  {showFolderSection && (preview.willMove || preview.willCreate) && (
                     <div style={{ marginBottom: '16px' }}>
                       <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                         Series Folder
@@ -1662,53 +1711,134 @@ function OrganizeModal({ seriesId, seriesTitle, onClose, onOrganized }: Organize
                     </div>
                   )}
 
-                  {/* File Changes */}
-                  {preview.files.length > 0 && preview.files.some(f => f.willRename || f.willMove) && (
+                  {/* File Changes - Grouped by Type */}
+                  {showFilesSection && hasFileChanges && (
                     <div>
-                      <div style={{ 
-                        fontSize: '12px', 
-                        color: 'var(--text-muted)', 
-                        marginBottom: '8px', 
-                        textTransform: 'uppercase', 
-                        letterSpacing: '0.5px',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}>
-                        <span>File Changes ({preview.files.filter(f => f.willRename || f.willMove).length})</span>
-                        <span style={{ textTransform: 'none', letterSpacing: 'normal' }}>
-                          {formatBytes(preview.totalSize)}
-                        </span>
-                      </div>
-                      <div style={{ 
-                        maxHeight: '200px', 
-                        overflow: 'auto',
-                        background: 'var(--bg-tertiary)', 
-                        borderRadius: 'var(--radius-sm)'
-                      }}>
-                        {preview.files.filter(f => f.willRename || f.willMove).map((file, idx) => (
-                          <div 
-                            key={file.fileId}
-                            style={{
-                              padding: '10px 12px',
-                              borderBottom: idx < preview.files.length - 1 ? '1px solid var(--border-color)' : 'none',
-                              fontSize: '12px'
-                            }}
-                          >
-                            <div style={{ color: 'var(--text-muted)', marginBottom: '4px' }}>
-                              {file.currentFileName}
-                            </div>
-                            <div style={{ color: 'var(--accent-success)' }}>
-                              → {file.newFileName}
-                            </div>
-                            {file.error && (
-                              <div style={{ color: 'var(--accent-danger)', marginTop: '4px', fontSize: '11px' }}>
-                                Error: {file.error}
-                              </div>
-                            )}
+                      {/* Issues Section */}
+                      {issueFiles.length > 0 && (
+                        <div style={{ marginBottom: collectionFiles.length > 0 ? '16px' : 0 }}>
+                          <div style={{ 
+                            fontSize: '12px', 
+                            color: 'var(--text-muted)', 
+                            marginBottom: '8px', 
+                            textTransform: 'uppercase', 
+                            letterSpacing: '0.5px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
+                            <span>Issues ({issueFiles.length})</span>
+                            <span style={{ textTransform: 'none', letterSpacing: 'normal' }}>
+                              {formatBytes(issueFiles.reduce((sum, f) => sum + f.size, 0))}
+                            </span>
                           </div>
-                        ))}
-                      </div>
+                          <div style={{ 
+                            maxHeight: '180px', 
+                            overflow: 'auto',
+                            background: 'var(--bg-tertiary)', 
+                            borderRadius: 'var(--radius-sm)'
+                          }}>
+                            {issueFiles.map((file, idx) => (
+                              <div 
+                                key={file.fileId}
+                                style={{
+                                  padding: '10px 12px',
+                                  borderBottom: idx < issueFiles.length - 1 ? '1px solid var(--border-color)' : 'none',
+                                  fontSize: '12px'
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                  {file.issueNumber !== null && (
+                                    <span style={{ 
+                                      background: 'var(--accent-primary)', 
+                                      color: 'white',
+                                      padding: '2px 6px',
+                                      borderRadius: '4px',
+                                      fontSize: '10px',
+                                      fontWeight: 600
+                                    }}>
+                                      #{file.issueNumber}
+                                    </span>
+                                  )}
+                                  <span style={{ color: 'var(--text-muted)' }}>
+                                    {file.currentFileName}
+                                  </span>
+                                </div>
+                                <div style={{ color: 'var(--accent-success)', paddingLeft: file.issueNumber !== null ? '0' : '0' }}>
+                                  → {file.newFileName}
+                                </div>
+                                {file.error && (
+                                  <div style={{ color: 'var(--accent-danger)', marginTop: '4px', fontSize: '11px' }}>
+                                    Error: {file.error}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Collections Section */}
+                      {collectionFiles.length > 0 && (
+                        <div>
+                          <div style={{ 
+                            fontSize: '12px', 
+                            color: 'var(--text-muted)', 
+                            marginBottom: '8px', 
+                            textTransform: 'uppercase', 
+                            letterSpacing: '0.5px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
+                            <span>Collections/TPBs ({collectionFiles.length})</span>
+                            <span style={{ textTransform: 'none', letterSpacing: 'normal' }}>
+                              {formatBytes(collectionFiles.reduce((sum, f) => sum + f.size, 0))}
+                            </span>
+                          </div>
+                          <div style={{ 
+                            maxHeight: '180px', 
+                            overflow: 'auto',
+                            background: 'var(--bg-tertiary)', 
+                            borderRadius: 'var(--radius-sm)'
+                          }}>
+                            {collectionFiles.map((file, idx) => (
+                              <div 
+                                key={file.fileId}
+                                style={{
+                                  padding: '10px 12px',
+                                  borderBottom: idx < collectionFiles.length - 1 ? '1px solid var(--border-color)' : 'none',
+                                  fontSize: '12px'
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                  <span style={{ 
+                                    background: 'var(--accent-warning)', 
+                                    color: 'var(--bg-primary)',
+                                    padding: '2px 6px',
+                                    borderRadius: '4px',
+                                    fontSize: '10px',
+                                    fontWeight: 600
+                                  }}>
+                                    TPB
+                                  </span>
+                                  <span style={{ color: 'var(--text-muted)' }}>
+                                    {file.currentFileName}
+                                  </span>
+                                </div>
+                                <div style={{ color: 'var(--accent-success)' }}>
+                                  → {file.newFileName}
+                                </div>
+                                {file.error && (
+                                  <div style={{ color: 'var(--accent-danger)', marginTop: '4px', fontSize: '11px' }}>
+                                    Error: {file.error}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -1723,9 +1853,16 @@ function OrganizeModal({ seriesId, seriesTitle, onClose, onOrganized }: Organize
                       color: 'var(--text-muted)'
                     }}>
                       <strong style={{ color: 'var(--text-primary)' }}>Summary:</strong>{' '}
-                      {preview.fileCount} file{preview.fileCount !== 1 ? 's' : ''} will be organized
-                      {preview.willMove && ', folder will be moved'}
-                      {preview.willCreate && ', folder will be created'}
+                      {filesWithChanges.length > 0 && (
+                        <>
+                          {issueFiles.length > 0 && `${issueFiles.length} issue${issueFiles.length !== 1 ? 's' : ''}`}
+                          {issueFiles.length > 0 && collectionFiles.length > 0 && ' and '}
+                          {collectionFiles.length > 0 && `${collectionFiles.length} collection${collectionFiles.length !== 1 ? 's' : ''}`}
+                          {' will be renamed'}
+                        </>
+                      )}
+                      {preview.willMove && (filesWithChanges.length > 0 ? ', folder will be moved' : 'Folder will be moved')}
+                      {preview.willCreate && (filesWithChanges.length > 0 ? ', folder will be created' : 'Folder will be created')}
                     </div>
                   )}
                 </>
