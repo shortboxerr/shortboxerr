@@ -37,8 +37,10 @@ public static class SeriesEndpoints
             var hideLinkedAnnuals = settings.EnableSeriesAnnualIntegration ?? true;
             
             // Generate cache key including query parameters
+            // v2 suffix added to invalidate old cache entries after schema change
             var cacheKey = cacheService.GenerateKey(
                 CacheKeys.SeriesList,
+                "v2",
                 page,
                 pageSize,
                 sortKey ?? "title",
@@ -48,70 +50,66 @@ public static class SeriesEndpoints
                 monitored?.ToString() ?? "all",
                 hideLinkedAnnuals.ToString());
 
-            // Cache for 2 minutes
-            var (cachedItems, totalRecords, seriesIds) = await cacheService.GetOrCreateAsync(cacheKey, async () =>
+            // Build the query
+            var query = db.Series
+                .Include(s => s.Issues)
+                .Include(s => s.Editions)
+                .AsQueryable();
+
+            // If series-annual integration is enabled, exclude linked annual series
+            // They appear through their parent series' Annuals section instead
+            if (hideLinkedAnnuals)
             {
-                var query = db.Series
-                    .Include(s => s.Issues)
-                    .Include(s => s.Editions)
-                    .AsQueryable();
+                query = query.Where(s => !s.ParentSeriesId.HasValue);
+            }
 
-                // If series-annual integration is enabled, exclude linked annual series
-                // They appear through their parent series' Annuals section instead
-                if (hideLinkedAnnuals)
+            // Apply status filter
+            if (!string.IsNullOrEmpty(status) && status.ToLowerInvariant() != "all")
+            {
+                if (Enum.TryParse<SeriesStatus>(status, ignoreCase: true, out var parsedStatus))
                 {
-                    query = query.Where(s => !s.ParentSeriesId.HasValue);
+                    query = query.Where(s => s.Status == parsedStatus);
                 }
+            }
 
-                // Apply status filter
-                if (!string.IsNullOrEmpty(status) && status.ToLowerInvariant() != "all")
-                {
-                    if (Enum.TryParse<SeriesStatus>(status, ignoreCase: true, out var parsedStatus))
-                    {
-                        query = query.Where(s => s.Status == parsedStatus);
-                    }
-                }
+            // Apply publisher filter
+            if (!string.IsNullOrEmpty(publisher) && publisher.ToLowerInvariant() != "all")
+            {
+                query = query.Where(s => s.Publisher != null && 
+                    s.Publisher.ToLower().Contains(publisher.ToLower()));
+            }
 
-                // Apply publisher filter
-                if (!string.IsNullOrEmpty(publisher) && publisher.ToLowerInvariant() != "all")
-                {
-                    query = query.Where(s => s.Publisher != null && 
-                        s.Publisher.ToLower().Contains(publisher.ToLower()));
-                }
+            // Apply monitored filter
+            if (monitored.HasValue)
+            {
+                query = query.Where(s => s.Monitored == monitored.Value);
+            }
 
-                // Apply monitored filter
-                if (monitored.HasValue)
-                {
-                    query = query.Where(s => s.Monitored == monitored.Value);
-                }
+            // Apply sorting
+            query = (sortKey?.ToLowerInvariant(), sortDir?.ToLowerInvariant()) switch
+            {
+                ("title", "desc") => query.OrderByDescending(s => s.SortTitle ?? s.Title),
+                ("title", _) => query.OrderBy(s => s.SortTitle ?? s.Title),
+                ("startyear", "desc") => query.OrderByDescending(s => s.StartYear),
+                ("startyear", _) => query.OrderBy(s => s.StartYear),
+                ("createdat", "desc") => query.OrderByDescending(s => s.CreatedAt),
+                ("createdat", _) => query.OrderBy(s => s.CreatedAt),
+                ("status", "desc") => query.OrderByDescending(s => s.Status),
+                ("status", _) => query.OrderBy(s => s.Status),
+                ("publisher", "desc") => query.OrderByDescending(s => s.Publisher),
+                ("publisher", _) => query.OrderBy(s => s.Publisher),
+                ("issuecount", "desc") => query.OrderByDescending(s => s.Issues.Count),
+                ("issuecount", _) => query.OrderBy(s => s.Issues.Count),
+                _ => query.OrderBy(s => s.SortTitle ?? s.Title)
+            };
 
-                // Apply sorting
-                query = (sortKey?.ToLowerInvariant(), sortDir?.ToLowerInvariant()) switch
-                {
-                    ("title", "desc") => query.OrderByDescending(s => s.SortTitle ?? s.Title),
-                    ("title", _) => query.OrderBy(s => s.SortTitle ?? s.Title),
-                    ("startyear", "desc") => query.OrderByDescending(s => s.StartYear),
-                    ("startyear", _) => query.OrderBy(s => s.StartYear),
-                    ("createdat", "desc") => query.OrderByDescending(s => s.CreatedAt),
-                    ("createdat", _) => query.OrderBy(s => s.CreatedAt),
-                    ("status", "desc") => query.OrderByDescending(s => s.Status),
-                    ("status", _) => query.OrderBy(s => s.Status),
-                    ("publisher", "desc") => query.OrderByDescending(s => s.Publisher),
-                    ("publisher", _) => query.OrderBy(s => s.Publisher),
-                    ("issuecount", "desc") => query.OrderByDescending(s => s.Issues.Count),
-                    ("issuecount", _) => query.OrderBy(s => s.Issues.Count),
-                    _ => query.OrderBy(s => s.SortTitle ?? s.Title)
-                };
+            var totalRecords = await query.CountAsync();
+            var seriesList = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
 
-                var total = await query.CountAsync();
-                var records = await query
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToListAsync();
-
-                var ids = records.Select(s => s.Id).ToArray();
-                return (records, total, ids);
-            }, TimeSpan.FromMinutes(2));
+            var seriesIds = seriesList.Select(s => s.Id).ToArray();
 
             // Get upcoming counts for all series in the page
             var upcomingCounts = await pullListService.GetUpcomingCountsBySeriesAsync(seriesIds.ToList());
@@ -123,7 +121,7 @@ public static class SeriesEndpoints
                 pathMismatches = await organizationService.GetPathMismatchStatusAsync(seriesIds);
             }
 
-            var dtos = cachedItems.Select(s => SeriesDto.FromEntity(
+            var dtos = seriesList.Select(s => SeriesDto.FromEntity(
                 s, 
                 upcomingCounts.GetValueOrDefault(s.Id, 0),
                 pathMismatches?.GetValueOrDefault(s.Id))).ToList();
