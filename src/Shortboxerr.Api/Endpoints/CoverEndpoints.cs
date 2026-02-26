@@ -29,18 +29,18 @@ public static class CoverEndpoints
             .Produces(200, contentType: "image/jpeg")
             .Produces(404);
 
-        // Get discovery cover (Metron covers cached by ComicVine issue ID)
-        // Supports both route segment and query parameter for size
-        group.MapGet("/discovery/{comicVineIssueId:int}/{size}", GetDiscoveryCoverWithSize)
+        // Get discovery cover (covers for Pull List items not yet in library)
+        // The coverId is the cache key used when downloading (Metron ID, DB issue ID, etc.)
+        group.MapGet("/discovery/{coverId:int}/{size}", GetDiscoveryCoverWithSize)
             .WithName("GetDiscoveryCoverWithSize")
-            .WithDescription("Gets a cached discovery cover by ComicVine issue ID with size in route (used for Pull List enrichment).")
+            .WithDescription("Gets a cached discovery cover by cache ID with size in route. The ID corresponds to the key used when caching (Metron ID for external enrichment, DB issue ID for known issues).")
             .WithOpenApi()
             .Produces(200, contentType: "image/jpeg")
             .Produces(404);
         
-        group.MapGet("/discovery/{comicVineIssueId:int}", GetDiscoveryCover)
+        group.MapGet("/discovery/{coverId:int}", GetDiscoveryCover)
             .WithName("GetDiscoveryCover")
-            .WithDescription("Gets a cached discovery cover by ComicVine issue ID (used for Pull List enrichment).")
+            .WithDescription("Gets a cached discovery cover by cache ID. The ID corresponds to the key used when caching (Metron ID for external enrichment, DB issue ID for known issues).")
             .WithOpenApi()
             .Produces(200, contentType: "image/jpeg")
             .Produces(404);
@@ -205,7 +205,7 @@ public static class CoverEndpoints
 
     private static async Task<IResult> GetDiscoveryCoverWithSize(
         HttpContext httpContext,
-        int comicVineIssueId,
+        int coverId,
         string size,
         ICoverService coverService,
         CancellationToken cancellationToken)
@@ -214,27 +214,27 @@ public static class CoverEndpoints
         {
             coverSize = CoverSize.Medium;
         }
-        return await GetDiscoveryCoverInternal(httpContext, comicVineIssueId, coverSize, coverService, cancellationToken);
+        return await GetDiscoveryCoverInternal(httpContext, coverId, coverSize, coverService, cancellationToken);
     }
 
     private static async Task<IResult> GetDiscoveryCover(
         HttpContext httpContext,
-        int comicVineIssueId,
+        int coverId,
         [FromQuery] CoverSize? size,
         ICoverService coverService,
         CancellationToken cancellationToken)
     {
-        return await GetDiscoveryCoverInternal(httpContext, comicVineIssueId, size ?? CoverSize.Medium, coverService, cancellationToken);
+        return await GetDiscoveryCoverInternal(httpContext, coverId, size ?? CoverSize.Medium, coverService, cancellationToken);
     }
 
     private static async Task<IResult> GetDiscoveryCoverInternal(
         HttpContext httpContext,
-        int comicVineIssueId,
+        int coverId,
         CoverSize size,
         ICoverService coverService,
         CancellationToken cancellationToken)
     {
-        var result = await coverService.GetDiscoveryCoverAsync(comicVineIssueId, size, cancellationToken);
+        var result = await coverService.GetDiscoveryCoverAsync(coverId, size, cancellationToken);
 
         if (!result.Success || string.IsNullOrEmpty(result.FilePath))
         {
@@ -251,7 +251,7 @@ public static class CoverEndpoints
         
         // Add ETag based on file modification time
         var fileInfo = new FileInfo(result.FilePath);
-        var etag = ETagHelper.GenerateETag(comicVineIssueId, fileInfo.LastWriteTimeUtc);
+        var etag = ETagHelper.GenerateETag(coverId, fileInfo.LastWriteTimeUtc);
         
         if (ETagHelper.IsNotModified(httpContext.Request, etag))
         {

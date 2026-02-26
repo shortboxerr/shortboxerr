@@ -205,14 +205,15 @@ public class CoverService : ICoverService
     }
 
     public async Task<CoverResult> GetDiscoveryCoverAsync(
-        int comicVineIssueId, 
+        int coverId, 
         CoverSize size = CoverSize.Medium, 
         CancellationToken cancellationToken = default)
     {
         var settings = await GetSettingsAsync(cancellationToken);
 
         // Check if discovery cover exists in cache
-        var cachedPath = GetCachePath(settings.CacheDirectory, CoverType.Discovery, comicVineIssueId, size);
+        // The coverId is the cache key used when downloading (Metron ID, DB issue ID, etc.)
+        var cachedPath = GetCachePath(settings.CacheDirectory, CoverType.Discovery, coverId, size);
         if (File.Exists(cachedPath))
         {
             Interlocked.Increment(ref _hits);
@@ -223,11 +224,11 @@ public class CoverService : ICoverService
             TouchFile(cachedPath);
             
             var metadata = await LoadCoverMetadataAsync(cachedPath, cancellationToken);
-            return CreateCoverResult(cachedPath, CoverType.Discovery, comicVineIssueId, size, metadata?.SourceUrl);
+            return CreateCoverResult(cachedPath, CoverType.Discovery, coverId, size, metadata?.SourceUrl);
         }
 
         // Discovery cover not found - return not found (no fallback)
-        return CoverResult.NotFound($"Discovery cover for ComicVine issue {comicVineIssueId} not found");
+        return CoverResult.NotFound($"Discovery cover {coverId} not found");
     }
 
     public async Task<CoverResult> DownloadCoverAsync(

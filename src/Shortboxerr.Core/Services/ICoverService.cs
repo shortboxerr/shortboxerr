@@ -117,7 +117,11 @@ public interface ICoverService
     /// <summary>
     /// Gets a discovery cover (Metron cover cached by ComicVine issue ID).
     /// </summary>
-    Task<CoverResult> GetDiscoveryCoverAsync(int comicVineIssueId, CoverSize size = CoverSize.Medium, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Gets a cached discovery cover by its cache key ID.
+    /// The coverId corresponds to the key used when caching (Metron ID, DB issue ID, etc.).
+    /// </summary>
+    Task<CoverResult> GetDiscoveryCoverAsync(int coverId, CoverSize size = CoverSize.Medium, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the path to the placeholder image.
