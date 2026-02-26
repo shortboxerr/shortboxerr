@@ -1,5 +1,40 @@
 # Worklog
 
+## Iteration 167 (2026-02-26)
+**EPIC 11.27: Fix Discovery Cover Endpoint Parameter Naming**
+
+### Summary
+Fixed the misleading parameter naming in the discovery cover endpoints. The endpoint parameter was named `comicVineIssueId` but actually accepts any cache key (Metron ID, DB issue ID, etc.). Renamed to `coverId` with clear documentation.
+
+### Problem
+The `/api/v1/covers/discovery/{id}` endpoint parameter was named `comicVineIssueId`, but the actual usage varied:
+- `PullListService` uses Metron issue ID
+- `DiscoveryCoverEnrichmentService` uses DB issue ID
+
+This caused confusion about what ID to use when calling the endpoint.
+
+### Solution
+- Renamed endpoint parameter from `comicVineIssueId` to `coverId`
+- Updated `ICoverService.GetDiscoveryCoverAsync` parameter name
+- Updated `CoverService` implementation
+- Added documentation clarifying the ID is a cache key
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Endpoints/CoverEndpoints.cs` | Renamed parameter, improved descriptions |
+| `src/Shortboxerr.Core/Services/ICoverService.cs` | Updated method signature and docs |
+| `src/Shortboxerr.Infrastructure/Services/CoverService.cs` | Updated implementation |
+
+### Commits
+- `fix(covers): clarify discovery cover endpoint parameter naming (EPIC 11.27)`
+
+### Testing Results
+- Backend build: SUCCESS
+
+---
+
 ## Iteration 166 (2026-02-26)
 **EPIC 18.3: Library Organization - Bulk Series Organize**
 

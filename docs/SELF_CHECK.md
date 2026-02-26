@@ -1,3 +1,51 @@
+# Self-Check: Iteration 167
+
+## Summary
+Fixed EPIC 11.27 - Discovery cover endpoint parameter naming. Renamed the misleading `comicVineIssueId` parameter to generic `coverId` since the endpoint accepts various ID types (Metron ID, DB issue ID, etc.).
+
+## Checklist
+
+### 11.27 Discovery Cover Endpoint Fix
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Renamed endpoint parameter | ✅ | `comicVineIssueId` → `coverId` |
+| Updated ICoverService interface | ✅ | Added documentation |
+| Updated CoverService implementation | ✅ | Generic parameter name |
+| Improved OpenAPI descriptions | ✅ | Clarifies ID is cache key |
+
+## Build & Test Results
+
+```
+Backend Build: SUCCESS (0 warnings, 0 errors)
+```
+
+## Files Changed
+
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Endpoints/CoverEndpoints.cs` | Renamed parameter, updated descriptions |
+| `src/Shortboxerr.Core/Services/ICoverService.cs` | Updated signature with docs |
+| `src/Shortboxerr.Infrastructure/Services/CoverService.cs` | Updated implementation |
+
+## Commits
+
+1. `fix(covers): clarify discovery cover endpoint parameter naming (EPIC 11.27)`
+
+## Notes
+- The endpoint `/api/v1/covers/discovery/{coverId}` now correctly documents that:
+  - `coverId` is a cache key, not necessarily a ComicVine ID
+  - May be Metron ID (for external enrichment) or DB issue ID (for known issues)
+- No functional changes - only naming and documentation improvements
+
+## Next Steps
+
+- [ ] EPIC 11.27: Update local cover caching (integrates 11.26)
+- [ ] EPIC 18.5: Bulk Organization Tools
+- [ ] EPIC 14.8: Series Deletion UX Improvements
+
+---
+
 # Self-Check: Iteration 166
 
 ## Summary

@@ -108,7 +108,7 @@ Refactor Pull List data retrieval and enrichment to establish a clear hierarchy 
 
 **Remaining:**
 - [ ] Update local cover caching (integrates 11.26)
-- [ ] Fix `/api/v1/covers/discovery/{id}` endpoint routing
+- [x] Fix `/api/v1/covers/discovery/{id}` endpoint naming (Iteration 167)
 
 ---
 
