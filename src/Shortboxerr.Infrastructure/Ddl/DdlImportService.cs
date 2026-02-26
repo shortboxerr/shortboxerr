@@ -1,10 +1,12 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Shortboxerr.Core.Ddl;
 using Shortboxerr.Core.Entities;
+using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.Persistence;
 
 namespace Shortboxerr.Infrastructure.Ddl;
@@ -18,6 +20,7 @@ public class DdlImportService : IDdlImportService
     private readonly ShortboxerrDbContext _dbContext;
     private readonly IDdlReleaseParser _releaseParser;
     private readonly IConfiguration _configuration;
+    private readonly ISettingsService _settingsService;
     private readonly ILogger<DdlImportService>? _logger;
     
     private readonly ConcurrentDictionary<string, DdlPendingImport> _pendingImports = new();
@@ -32,11 +35,13 @@ public class DdlImportService : IDdlImportService
         ShortboxerrDbContext dbContext, 
         IDdlReleaseParser releaseParser,
         IConfiguration configuration,
+        ISettingsService settingsService,
         ILogger<DdlImportService>? logger = null)
     {
         _dbContext = dbContext;
         _releaseParser = releaseParser;
         _configuration = configuration;
+        _settingsService = settingsService;
         _logger = logger;
     }
 
@@ -432,13 +437,22 @@ public class DdlImportService : IDdlImportService
                     match.Explanation ?? "No series match found");
             }
             
-            // Determine library path
+            // Determine library path using folder format from settings
             var libraryRoot = GetLibraryFolder();
-            var seriesFolder = Path.Combine(libraryRoot, SanitizeFilename(match.Series.Title));
+            var settings = await _settingsService.GetGeneralSettingsAsync(cancellationToken);
+            var seriesFolderName = ExpandSeriesFolderFormat(settings.SeriesFolderFormat, match.Series);
+            var seriesFolder = Path.Combine(libraryRoot, seriesFolderName);
             
             if (!Directory.Exists(seriesFolder))
             {
                 Directory.CreateDirectory(seriesFolder);
+            }
+            
+            // Update series.Path if not already set
+            if (string.IsNullOrEmpty(match.Series.Path))
+            {
+                match.Series.Path = seriesFolder;
+                match.Series.UpdatedAt = DateTime.UtcNow;
             }
             
             var filename = Path.GetFileName(stagedFilePath);
@@ -770,6 +784,32 @@ public class DdlImportService : IDdlImportService
         if (bytes >= 1_000_000) return $"{bytes / 1_000_000.0:F1}MB";
         if (bytes >= 1_000) return $"{bytes / 1_000.0:F1}KB";
         return $"{bytes}B";
+    }
+
+    private static string ExpandSeriesFolderFormat(string format, Series series)
+    {
+        if (string.IsNullOrWhiteSpace(format))
+        {
+            return SanitizeFilename(series.Title);
+        }
+
+        var result = format;
+        
+        result = Regex.Replace(result, @"\{Series Title\}", series.Title ?? "Unknown Series", RegexOptions.IgnoreCase);
+        result = Regex.Replace(result, @"\{Series Year\}", series.StartYear?.ToString() ?? "", RegexOptions.IgnoreCase);
+        result = Regex.Replace(result, @"\{Year\}", series.StartYear?.ToString() ?? "", RegexOptions.IgnoreCase);
+        result = Regex.Replace(result, @"\{Publisher\}", series.Publisher ?? "Unknown Publisher", RegexOptions.IgnoreCase);
+        result = Regex.Replace(result, @"\{Status\}", series.Status.ToString(), RegexOptions.IgnoreCase);
+        
+        // Clean up empty parentheses and extra whitespace
+        result = Regex.Replace(result, @"\s*\(\s*\)", "");
+        result = Regex.Replace(result, @"\s+", " ").Trim();
+        
+        // Split by path separator and sanitize each part
+        var parts = result.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        var sanitizedParts = parts.Select(SanitizeFilename).ToArray();
+        
+        return Path.Combine(sanitizedParts);
     }
 }
 

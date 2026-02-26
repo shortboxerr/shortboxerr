@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Moq;
 using Shortboxerr.Core.Ddl;
 using Shortboxerr.Core.Entities;
+using Shortboxerr.Core.Services;
 using Shortboxerr.Infrastructure.Ddl;
 using Shortboxerr.Infrastructure.Persistence;
 
@@ -13,6 +15,7 @@ public class DdlImportServiceTests : IDisposable
     private readonly DdlImportService _service;
     private readonly DdlReleaseParser _parser;
     private readonly IConfiguration _configuration;
+    private readonly Mock<ISettingsService> _settingsServiceMock;
     private readonly string _testFolder;
 
     public DdlImportServiceTests()
@@ -35,7 +38,17 @@ public class DdlImportServiceTests : IDisposable
             .AddInMemoryCollection(inMemorySettings)
             .Build();
         
-        _service = new DdlImportService(_context, _parser, _configuration);
+        // Setup settings service mock with default folder format
+        _settingsServiceMock = new Mock<ISettingsService>();
+        _settingsServiceMock.Setup(s => s.GetGeneralSettingsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GeneralSettings
+            {
+                SeriesFolderFormat = "{Publisher}/{Series Title} ({Year})",
+                IssueFileFormat = "{Series Title} #{Issue} ({Year})",
+                CollectionFileFormat = "{Series Title} - {Edition Type} Vol. {Volume}"
+            });
+        
+        _service = new DdlImportService(_context, _parser, _configuration, _settingsServiceMock.Object);
     }
 
     public void Dispose()
