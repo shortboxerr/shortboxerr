@@ -257,11 +257,14 @@ The auto-matching logic that matches downloaded files to series/issues must be r
 - [x] Add RejectMismatchedPublishers setting for strict mode
 - [x] Add Publisher Matching section in UI
 
-### 19.3 Release Parser Improvements ← READY
-- [ ] Improve year extraction from various filename formats
-- [ ] Handle volume indicators (Vol. 1, Vol. 2, v1, v2)
-- [ ] Detect reboot/revival indicators in release names
-- [ ] Extract publisher hints from release group naming conventions
+### 19.3 Release Parser Improvements ✅ COMPLETED (Iteration 175)
+- [x] Improve year extraction from various filename formats (brackets, standalone)
+- [x] Handle volume indicators (Vol. 1, Vol. 2, v1, v2, Vol. One, (v1))
+- [x] Detect reboot/revival indicators (New 52, Rebirth, Dawn of X, etc.)
+- [x] Extract publisher hints from release group naming conventions (DC-Empire, Marvel-Minutemen)
+- [x] Add disambiguation year detection for modern series runs
+- [x] Add series version detection (Second Series, 2nd Series, etc.)
+- [x] Add DdlParsedInfo properties: RebootIndicator, SeriesVersion, DisambiguationYear, PublisherHint
 
 ### 19.4 Match Verification & Confirmation ← READY
 - [ ] Add "low confidence" flag to questionable matches

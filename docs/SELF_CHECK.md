@@ -1,61 +1,56 @@
-# Self-Check: Iteration 174
+# Self-Check: Iteration 175
 
 ## Checklist
 
-- [x] Code compiles without errors (Core, Infrastructure, API)
-- [x] Frontend builds successfully
-- [x] Unit tests pass (18 DdlImportService tests, including 5 new)
+- [x] Code compiles without errors (Core)
+- [x] Unit tests pass (43 parser tests)
 - [x] Changes committed with conventional commit format
 - [x] WORKLOG.md updated
-- [x] BACKLOG.md updated (EPIC 19.2 marked complete)
+- [x] BACKLOG.md updated (EPIC 19.3 marked complete)
 
 ## Build Results
 
 ```
-Backend: SUCCESS
-Frontend: SUCCESS  
-Tests: 18 passed, 0 failed
+Backend (Core): SUCCESS
+Tests: 43 parser tests passed (18 new)
 ```
 
 ## Changed Files
 
 ### Backend
-- `src/Shortboxerr.Core/Ddl/IDdlImportService.cs` - ConfidenceBreakdown class
-- `src/Shortboxerr.Core/Services/ISettingsService.cs` - Publisher settings
-- `src/Shortboxerr.Infrastructure/Ddl/DdlImportService.cs` - Detailed scoring
-- `src/Shortboxerr.Infrastructure/Services/SettingsService.cs` - Persistence
-- `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` - API endpoint updates
-
-### Frontend
-- `ui/src/api/client.ts` - AutoMatchSettings interface
-- `ui/src/pages/SettingsPage.tsx` - Publisher Matching section
+- `src/Shortboxerr.Core/Ddl/DdlCandidate.cs` - New DdlParsedInfo properties
+- `src/Shortboxerr.Core/Ddl/DdlReleaseParser.cs` - Enhanced extraction
 
 ### Tests
-- `tests/Shortboxerr.Tests/DdlImportServiceTests.cs` - 5 new tests
+- `tests/Shortboxerr.Tests/DdlReleaseParserTests.cs` - 18 new tests
 
 ## Commits
 
-1. `feat(automatch): add publisher disambiguation for series matching (EPIC 19.2)`
-2. `feat(ui): add publisher matching settings in Import settings tab`
-3. `test(automatch): add publisher disambiguation tests (EPIC 19.2)`
+1. `feat(parser): enhance release parser with improved extraction (EPIC 19.3)`
 
-## New Settings Summary
+## New Features Summary
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| PublisherMatchBonus | 15 | Confidence boost for matching publisher |
-| PublisherMismatchPenalty | 20 | Confidence reduction for mismatched publisher |
-| PreferPublisherMatchForAmbiguous | true | Filter by publisher when ambiguous |
-| RejectMismatchedPublishers | false | Hard reject on publisher mismatch |
+| Feature | Description |
+|---------|-------------|
+| Year in brackets | Extracts year from `[2023]` format |
+| Volume ordinals | Parses "Vol. One", "Volume Two" to numbers |
+| Volume in parens | Parses `(v1)`, `(v2)` format |
+| Reboot indicators | Detects New 52, Rebirth, Dawn of X, etc. |
+| Series versions | Detects Second Series, 2nd Series, etc. |
+| Publisher hints | Extracts from release groups like DC-Empire |
+| Disambiguation year | Identifies years used to disambiguate series |
 
-## Pre-existing Issues (Not Addressed)
+## New DdlParsedInfo Properties
 
-- GetComicsAdapter tests have compilation errors (unrelated to EPIC 19)
-- These tests reference methods that no longer exist in the adapter
+| Property | Type | Description |
+|----------|------|-------------|
+| RebootIndicator | string? | Detected reboot/revival (e.g., "Rebirth") |
+| SeriesVersion | string? | Series version (e.g., "Second Series") |
+| DisambiguationYear | int? | Year for series disambiguation |
+| PublisherHint | string? | Publisher from release group name |
 
 ## Next Steps
 
 The following EPIC 19 items remain:
-- **19.3 Release Parser Improvements** ← READY
 - **19.4 Match Verification & Confirmation** ← READY
 - **19.5 Matching Audit & Logging** ← READY

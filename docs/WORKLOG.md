@@ -1,5 +1,53 @@
 # Worklog
 
+## Iteration 175 (2026-02-24)
+**EPIC 19.3: Release Parser Improvements**
+
+### Summary
+Enhanced the DDL release parser with improved extraction for year, volume, reboot indicators, series versions, and publisher hints from release group naming. These improvements provide better metadata extraction for more accurate auto-matching.
+
+### Implementation
+
+**Backend (Core):**
+- Added year extraction from bracket format: `[2023]`
+- Enhanced volume parsing:
+  - Ordinal words: Vol. One, Vol. Two, Volume Three
+  - Parenthetical format: (v1), (v2)
+- Added reboot/revival indicator detection:
+  - New 52, Rebirth, Dawn of X, Infinite Frontier
+  - Marvel NOW, Fresh Start, Black Label
+  - All-New, Legacy, etc.
+- Added series version detection:
+  - Second Series, 2nd Series, Third Volume, etc.
+- Added publisher hint extraction from release group naming:
+  - DC-Empire → DC Comics
+  - Marvel-Minutemen → Marvel
+  - Image-Empire → Image Comics
+- Added disambiguation year detection for modern series
+
+**New DdlParsedInfo Properties:**
+- `RebootIndicator` - detected reboot/revival indicator
+- `SeriesVersion` - detected series version indicator  
+- `DisambiguationYear` - year used to disambiguate series runs
+- `PublisherHint` - publisher extracted from release group name
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Ddl/DdlCandidate.cs` | Added new properties to DdlParsedInfo |
+| `src/Shortboxerr.Core/Ddl/DdlReleaseParser.cs` | Enhanced extraction methods |
+| `tests/Shortboxerr.Tests/DdlReleaseParserTests.cs` | Added 18 new parser tests |
+
+### Commits
+- `feat(parser): enhance release parser with improved extraction (EPIC 19.3)`
+
+### Testing Results
+- Backend Build: SUCCESS
+- Tests: 43 parser tests pass (18 new tests added)
+
+---
+
 ## Iteration 174 (2026-02-24)
 **EPIC 19.2: Series Name Disambiguation**
 
