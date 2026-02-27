@@ -23,7 +23,7 @@
 | ✅ | EPIC 16 | E2E Testing Infrastructure | [Archive](./COMPLETED.md#epic-16-end-to-end-testing-infrastructure--completed) |
 | ✅ | EPIC 17 | DDL Download Robustness | [Archive](./COMPLETED.md#epic-17-ddl-download-link-robustness--completed) |
 | 🔄 | [EPIC 18](#epic-18-library-organization--rename-sonarradarr-parity--in-progress) | Library Organization | In Progress |
-| 🔴 | [EPIC 19](#epic-19-auto-matching-robustness-p1---critical--high-priority) | Auto-Matching Robustness | **P1 Critical** |
+| ✅ | EPIC 19 | Auto-Matching Robustness | [Archive](./COMPLETED.md#epic-19-auto-matching-robustness) |
 
 **Legend:** ✅ Completed | 🔄 In Progress | 📋 Planned | 🔴 High Priority
 
