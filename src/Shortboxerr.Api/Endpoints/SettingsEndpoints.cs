@@ -586,6 +586,26 @@ public static class SettingsEndpoints
             settings.MaxCandidatesForReview = request.MaxCandidatesForReview.Value;
         }
 
+        // Validate and apply publisher match bonus (0-50)
+        if (request.PublisherMatchBonus.HasValue)
+        {
+            if (request.PublisherMatchBonus < 0 || request.PublisherMatchBonus > 50)
+            {
+                return Results.BadRequest(new { error = "PublisherMatchBonus must be between 0 and 50." });
+            }
+            settings.PublisherMatchBonus = request.PublisherMatchBonus.Value;
+        }
+
+        // Validate and apply publisher mismatch penalty (0-50)
+        if (request.PublisherMismatchPenalty.HasValue)
+        {
+            if (request.PublisherMismatchPenalty < 0 || request.PublisherMismatchPenalty > 50)
+            {
+                return Results.BadRequest(new { error = "PublisherMismatchPenalty must be between 0 and 50." });
+            }
+            settings.PublisherMismatchPenalty = request.PublisherMismatchPenalty.Value;
+        }
+
         // Apply boolean settings
         if (request.RejectMismatchedYears.HasValue)
             settings.RejectMismatchedYears = request.RejectMismatchedYears.Value;
@@ -593,6 +613,10 @@ public static class SettingsEndpoints
             settings.RequireYearForAmbiguousSeries = request.RequireYearForAmbiguousSeries.Value;
         if (request.EnableAmbiguousSeriesDetection.HasValue)
             settings.EnableAmbiguousSeriesDetection = request.EnableAmbiguousSeriesDetection.Value;
+        if (request.PreferPublisherMatchForAmbiguous.HasValue)
+            settings.PreferPublisherMatchForAmbiguous = request.PreferPublisherMatchForAmbiguous.Value;
+        if (request.RejectMismatchedPublishers.HasValue)
+            settings.RejectMismatchedPublishers = request.RejectMismatchedPublishers.Value;
         if (request.AutoMatchOnImport.HasValue)
             settings.AutoMatchOnImport = request.AutoMatchOnImport.Value;
         if (request.CreateMissingItems.HasValue)
@@ -1097,6 +1121,8 @@ public class MetronTestResponse
 /// </summary>
 public class AutoMatchSettingsRequest
 {
+    // === Year Matching ===
+    
     /// <summary>
     /// Maximum year difference allowed between release and series (0-10).
     /// </summary>
@@ -1108,14 +1134,18 @@ public class AutoMatchSettingsRequest
     public bool? RejectMismatchedYears { get; set; }
 
     /// <summary>
+    /// Penalty applied to confidence when year doesn't match (0-50).
+    /// </summary>
+    public int? YearMismatchPenalty { get; set; }
+
+    // === Confidence ===
+
+    /// <summary>
     /// Confidence threshold for auto-accepting matches (50-100).
     /// </summary>
     public int? ConfidenceThreshold { get; set; }
 
-    /// <summary>
-    /// Penalty applied to confidence when year doesn't match (0-50).
-    /// </summary>
-    public int? YearMismatchPenalty { get; set; }
+    // === Ambiguity Detection ===
 
     /// <summary>
     /// Require year when multiple series share the same name.
@@ -1126,6 +1156,30 @@ public class AutoMatchSettingsRequest
     /// Enable detection of ambiguous series (multiple with same name).
     /// </summary>
     public bool? EnableAmbiguousSeriesDetection { get; set; }
+
+    // === Publisher Matching (EPIC 19.2) ===
+
+    /// <summary>
+    /// Bonus applied when publisher matches (0-50).
+    /// </summary>
+    public int? PublisherMatchBonus { get; set; }
+
+    /// <summary>
+    /// Penalty applied when publisher doesn't match (0-50).
+    /// </summary>
+    public int? PublisherMismatchPenalty { get; set; }
+
+    /// <summary>
+    /// When ambiguous, prefer series with matching publisher.
+    /// </summary>
+    public bool? PreferPublisherMatchForAmbiguous { get; set; }
+
+    /// <summary>
+    /// If true, reject matches when publishers don't match.
+    /// </summary>
+    public bool? RejectMismatchedPublishers { get; set; }
+
+    // === Import Behavior ===
 
     /// <summary>
     /// Whether to auto-match during import.

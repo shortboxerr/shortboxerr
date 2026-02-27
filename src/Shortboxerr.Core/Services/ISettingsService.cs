@@ -256,6 +256,33 @@ public class AutoMatchSettings
     /// </summary>
     public bool EnableAmbiguousSeriesDetection { get; set; } = true;
 
+    // === Publisher Matching Settings ===
+
+    /// <summary>
+    /// Bonus applied when parsed publisher exactly matches series publisher.
+    /// Default +15 confidence boost.
+    /// </summary>
+    public int PublisherMatchBonus { get; set; } = 15;
+
+    /// <summary>
+    /// Penalty applied when parsed release has a publisher that doesn't match series publisher.
+    /// Only applied when both release and series have publisher information.
+    /// Default -20 confidence reduction.
+    /// </summary>
+    public int PublisherMismatchPenalty { get; set; } = 20;
+
+    /// <summary>
+    /// If true, when multiple series share the same name and the release has publisher info,
+    /// only series with matching publishers will be considered (non-matching eliminated).
+    /// </summary>
+    public bool PreferPublisherMatchForAmbiguous { get; set; } = true;
+
+    /// <summary>
+    /// If true, reject matches when both have publishers and they don't match.
+    /// Similar to RejectMismatchedYears but for publisher.
+    /// </summary>
+    public bool RejectMismatchedPublishers { get; set; } = false;
+
     // === Import Behavior Settings ===
 
     /// <summary>

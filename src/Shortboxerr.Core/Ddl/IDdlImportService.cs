@@ -378,6 +378,57 @@ public class DdlStagingResult
 }
 
 /// <summary>
+/// Detailed breakdown of how match confidence was calculated.
+/// </summary>
+public class ConfidenceBreakdown
+{
+    /// <summary>
+    /// Base score from title matching.
+    /// </summary>
+    public int TitleScore { get; init; }
+    
+    /// <summary>
+    /// Bonus or penalty from year matching.
+    /// </summary>
+    public int YearAdjustment { get; init; }
+    
+    /// <summary>
+    /// Bonus or penalty from publisher matching.
+    /// </summary>
+    public int PublisherAdjustment { get; init; }
+    
+    /// <summary>
+    /// Penalty from ambiguous series (multiple same-name series).
+    /// </summary>
+    public int AmbiguityPenalty { get; init; }
+    
+    /// <summary>
+    /// Final calculated score (0-100).
+    /// </summary>
+    public int FinalScore { get; init; }
+    
+    /// <summary>
+    /// Detailed explanation of each scoring component.
+    /// </summary>
+    public IReadOnlyList<string> ScoreExplanations { get; init; } = Array.Empty<string>();
+    
+    /// <summary>
+    /// Whether the year matched, mismatched, or was unknown.
+    /// </summary>
+    public string YearMatchStatus { get; init; } = "Unknown";
+    
+    /// <summary>
+    /// Whether the publisher matched, mismatched, or was unknown.
+    /// </summary>
+    public string PublisherMatchStatus { get; init; } = "Unknown";
+    
+    /// <summary>
+    /// Whether this is an ambiguous series (multiple series with same name).
+    /// </summary>
+    public bool IsAmbiguousSeries { get; init; }
+}
+
+/// <summary>
 /// Result of auto-matching a candidate.
 /// </summary>
 public class DdlMatchResult
@@ -436,6 +487,11 @@ public class DdlMatchResult
     /// Minimum confidence threshold that was used (for diagnostics).
     /// </summary>
     public int MinConfidenceThreshold { get; init; }
+    
+    /// <summary>
+    /// Detailed confidence score breakdown showing how the final score was calculated.
+    /// </summary>
+    public ConfidenceBreakdown? ScoreBreakdown { get; init; }
     
     /// <summary>
     /// Create a no-match result.

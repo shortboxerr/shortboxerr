@@ -307,6 +307,7 @@ public class DdlImportService : IDdlImportService
         
         // Detect ambiguous series (multiple series with same name)
         var isAmbiguous = settings.EnableAmbiguousSeriesDetection && IsAmbiguousSeries(matchingSeries, normalizedTitle);
+        var ambiguityPenalty = 0;
         
         if (isAmbiguous)
         {
@@ -316,18 +317,41 @@ public class DdlImportService : IDdlImportService
             if (!parsed.Year.HasValue && settings.RequireYearForAmbiguousSeries)
             {
                 confidence -= 40;
+                ambiguityPenalty += 40;
                 confidenceReductions.Add($"Ambiguous series (multiple matches) without year in release (-40)");
             }
         }
         
-        // Find best series match with year-aware scoring
+        // Publisher-based filtering for ambiguous series
+        var seriesToConsider = matchingSeries;
+        if (isAmbiguous && !string.IsNullOrEmpty(parsed.Publisher) && settings.PreferPublisherMatchForAmbiguous)
+        {
+            var publisherMatches = matchingSeries
+                .Where(s => s.Publisher?.Equals(parsed.Publisher, StringComparison.OrdinalIgnoreCase) == true)
+                .ToList();
+            
+            if (publisherMatches.Count > 0)
+            {
+                _logger?.LogDebug("Publisher filtering: narrowed from {Total} to {Filtered} series with publisher '{Publisher}'",
+                    matchingSeries.Count, publisherMatches.Count, parsed.Publisher);
+                seriesToConsider = publisherMatches;
+            }
+            else
+            {
+                _logger?.LogDebug("Publisher filtering: no series match publisher '{Publisher}', considering all", parsed.Publisher);
+            }
+        }
+        
+        // Find best series match with year-aware and publisher-aware scoring
         Series? bestSeries = null;
+        SeriesScoreResult? bestScoreResult = null;
         var bestSeriesScore = 0;
         var yearMismatchRejected = new List<(Series series, int yearDiff)>();
+        var publisherMismatchRejected = new List<(Series series, string publisher)>();
         
-        foreach (var series in matchingSeries)
+        foreach (var series in seriesToConsider)
         {
-            var score = CalculateSeriesMatchScore(series, parsed, settings);
+            var scoreResult = CalculateSeriesMatchScoreDetailed(series, parsed, settings);
             
             // Check year tolerance for rejection
             if (settings.RejectMismatchedYears && parsed.Year.HasValue && series.StartYear.HasValue)
@@ -343,25 +367,51 @@ public class DdlImportService : IDdlImportService
                 }
             }
             
-            if (score > bestSeriesScore)
+            // Check publisher mismatch for rejection (when enabled)
+            if (settings.RejectMismatchedPublishers && scoreResult.PublisherMismatch)
             {
-                bestSeriesScore = score;
+                _logger?.LogDebug("Series '{SeriesTitle}' (publisher={SeriesPublisher}) rejected: publisher mismatch with release '{ReleasePublisher}'", 
+                    series.Title, series.Publisher, parsed.Publisher);
+                publisherMismatchRejected.Add((series, series.Publisher ?? "Unknown"));
+                continue; // Skip this series
+            }
+            
+            if (scoreResult.TotalScore > bestSeriesScore)
+            {
+                bestSeriesScore = scoreResult.TotalScore;
                 bestSeries = series;
+                bestScoreResult = scoreResult;
             }
         }
         
-        // If all series were rejected due to year mismatch, return detailed error
-        if (bestSeries == null && yearMismatchRejected.Count > 0)
-        {
-            var rejectedInfo = string.Join(", ", yearMismatchRejected.Select(r => $"'{r.series.Title}' ({r.series.StartYear})"));
-            return DdlMatchResult.NoMatch(
-                $"All matching series rejected due to year mismatch. Release year: {parsed.Year}, " +
-                $"tolerance: ±{settings.YearMatchTolerance} years. Rejected: {rejectedInfo}");
-        }
-        
+        // If all series were rejected, return detailed error
         if (bestSeries == null)
         {
-            return DdlMatchResult.NoMatch("No confident series match found");
+            if (yearMismatchRejected.Count > 0 && publisherMismatchRejected.Count > 0)
+            {
+                var yearInfo = string.Join(", ", yearMismatchRejected.Select(r => $"'{r.series.Title}' (year {r.series.StartYear})"));
+                var pubInfo = string.Join(", ", publisherMismatchRejected.Select(r => $"'{r.series.Title}' (publisher {r.publisher})"));
+                return DdlMatchResult.NoMatch(
+                    $"All matching series rejected. Year mismatches (release year: {parsed.Year}): {yearInfo}. " +
+                    $"Publisher mismatches (release publisher: {parsed.Publisher}): {pubInfo}.");
+            }
+            else if (yearMismatchRejected.Count > 0)
+            {
+                var rejectedInfo = string.Join(", ", yearMismatchRejected.Select(r => $"'{r.series.Title}' ({r.series.StartYear})"));
+                return DdlMatchResult.NoMatch(
+                    $"All matching series rejected due to year mismatch. Release year: {parsed.Year}, " +
+                    $"tolerance: ±{settings.YearMatchTolerance} years. Rejected: {rejectedInfo}");
+            }
+            else if (publisherMismatchRejected.Count > 0)
+            {
+                var rejectedInfo = string.Join(", ", publisherMismatchRejected.Select(r => $"'{r.series.Title}' ({r.publisher})"));
+                return DdlMatchResult.NoMatch(
+                    $"All matching series rejected due to publisher mismatch. Release publisher: {parsed.Publisher}. Rejected: {rejectedInfo}");
+            }
+            else
+            {
+                return DdlMatchResult.NoMatch("No confident series match found");
+            }
         }
         
         // Log successful match with year info
@@ -375,6 +425,20 @@ public class DdlImportService : IDdlImportService
             }
         }
         
+        // Build confidence breakdown for diagnostics
+        var scoreBreakdown = new ConfidenceBreakdown
+        {
+            TitleScore = bestScoreResult?.TitleScore ?? 0,
+            YearAdjustment = bestScoreResult?.YearAdjustment ?? 0,
+            PublisherAdjustment = bestScoreResult?.PublisherAdjustment ?? 0,
+            AmbiguityPenalty = ambiguityPenalty,
+            FinalScore = bestSeriesScore,
+            ScoreExplanations = bestScoreResult?.Explanations ?? new List<string>(),
+            YearMatchStatus = bestScoreResult?.YearMatchStatus ?? "Unknown",
+            PublisherMatchStatus = bestScoreResult?.PublisherMatchStatus ?? "Unknown",
+            IsAmbiguousSeries = isAmbiguous
+        };
+        
         // Adjust confidence based on series match
         if (bestSeriesScore < 90)
         {
@@ -384,10 +448,10 @@ public class DdlImportService : IDdlImportService
         }
         
         // Additional confidence reduction if there were rejected candidates
-        if (yearMismatchRejected.Count > 0 && isAmbiguous)
+        if ((yearMismatchRejected.Count > 0 || publisherMismatchRejected.Count > 0) && isAmbiguous)
         {
             confidence -= 10;
-            confidenceReductions.Add($"Other series with same name rejected due to year mismatch (-10)");
+            confidenceReductions.Add($"Other series with same name rejected due to year/publisher mismatch (-10)");
         }
         
         // Handle collections vs singles
@@ -411,7 +475,8 @@ public class DdlImportService : IDdlImportService
                     Explanation = $"Matched to collection: {bestSeries.Title} - {matchingEdition.Title}",
                     ConfidenceReductions = confidenceReductions,
                     RequiresManualReview = finalConfidence < settings.MinConfidenceForAutoImport,
-                    MinConfidenceThreshold = settings.MinConfidenceForAutoImport
+                    MinConfidenceThreshold = settings.MinConfidenceForAutoImport,
+                    ScoreBreakdown = scoreBreakdown
                 };
             }
             
@@ -429,7 +494,8 @@ public class DdlImportService : IDdlImportService
                 Explanation = $"Matched to series (collection): {bestSeries.Title}",
                 ConfidenceReductions = confidenceReductions,
                 RequiresManualReview = collectionConfidence < settings.MinConfidenceForAutoImport,
-                MinConfidenceThreshold = settings.MinConfidenceForAutoImport
+                MinConfidenceThreshold = settings.MinConfidenceForAutoImport,
+                ScoreBreakdown = scoreBreakdown
             };
         }
         else
@@ -450,7 +516,8 @@ public class DdlImportService : IDdlImportService
                     Explanation = $"Matched to series (no issue number): {bestSeries.Title}",
                     ConfidenceReductions = confidenceReductions,
                     RequiresManualReview = noIssueConfidence < settings.MinConfidenceForAutoImport,
-                    MinConfidenceThreshold = settings.MinConfidenceForAutoImport
+                    MinConfidenceThreshold = settings.MinConfidenceForAutoImport,
+                    ScoreBreakdown = scoreBreakdown
                 };
             }
             
@@ -471,7 +538,8 @@ public class DdlImportService : IDdlImportService
                     Explanation = $"Matched to issue: {bestSeries.Title} #{matchingIssue.IssueNumber}",
                     ConfidenceReductions = confidenceReductions,
                     RequiresManualReview = issueConfidence < settings.MinConfidenceForAutoImport,
-                    MinConfidenceThreshold = settings.MinConfidenceForAutoImport
+                    MinConfidenceThreshold = settings.MinConfidenceForAutoImport,
+                    ScoreBreakdown = scoreBreakdown
                 };
             }
             
@@ -489,7 +557,8 @@ public class DdlImportService : IDdlImportService
                 Explanation = $"Matched to series: {bestSeries.Title} (issue #{parsed.IssueNumber} not in database)",
                 ConfidenceReductions = confidenceReductions,
                 RequiresManualReview = notFoundConfidence < settings.MinConfidenceForAutoImport,
-                MinConfidenceThreshold = settings.MinConfidenceForAutoImport
+                MinConfidenceThreshold = settings.MinConfidenceForAutoImport,
+                ScoreBreakdown = scoreBreakdown
             };
         }
     }
@@ -760,60 +829,145 @@ public class DdlImportService : IDdlImportService
         return "Unknown reason";
     }
 
-    private int CalculateSeriesMatchScore(Series series, DdlParsedInfo parsed, AutoMatchSettings settings)
+    /// <summary>
+    /// Internal class for returning detailed score breakdown from scoring method.
+    /// </summary>
+    private class SeriesScoreResult
     {
-        var score = 0;
+        public int TotalScore { get; init; }
+        public int TitleScore { get; init; }
+        public int YearAdjustment { get; init; }
+        public int PublisherAdjustment { get; init; }
+        public string YearMatchStatus { get; init; } = "Unknown";
+        public string PublisherMatchStatus { get; init; } = "Unknown";
+        public List<string> Explanations { get; init; } = new();
+        public bool PublisherMismatch { get; init; }
+    }
+
+    private SeriesScoreResult CalculateSeriesMatchScoreDetailed(Series series, DdlParsedInfo parsed, AutoMatchSettings settings)
+    {
+        var explanations = new List<string>();
+        
         var seriesTitle = _releaseParser.NormalizeTitle(series.Title);
         var parsedTitle = _releaseParser.NormalizeTitle(parsed.SeriesTitle ?? "");
         
+        // Title scoring
+        int titleScore;
         if (seriesTitle == parsedTitle)
         {
-            score += 100;
+            titleScore = 100;
+            explanations.Add("Title: exact match (+100)");
         }
         else if (seriesTitle.Contains(parsedTitle) || parsedTitle.Contains(seriesTitle))
         {
-            score += 70;
+            titleScore = 70;
+            explanations.Add($"Title: partial match (+70) '{parsedTitle}' vs '{seriesTitle}'");
         }
         else
         {
-            score += 30;
+            titleScore = 30;
+            explanations.Add($"Title: fuzzy match (+30) '{parsedTitle}' vs '{seriesTitle}'");
         }
         
-        // Year matching with enhanced logic
+        // Year scoring
+        int yearAdjustment = 0;
+        string yearMatchStatus;
+        
         if (parsed.Year.HasValue && series.StartYear.HasValue)
         {
             var yearDiff = Math.Abs(parsed.Year.Value - series.StartYear.Value);
             
             if (yearDiff == 0)
             {
-                // Exact year match - bonus
-                score += 20;
+                yearAdjustment = 20;
+                yearMatchStatus = "Exact";
+                explanations.Add($"Year: exact match (+20) release={parsed.Year}, series={series.StartYear}");
             }
             else if (yearDiff <= settings.YearMatchTolerance)
             {
-                // Within tolerance - small bonus (re-releases, reprints)
-                score += 10;
+                yearAdjustment = 10;
+                yearMatchStatus = "WithinTolerance";
+                explanations.Add($"Year: within tolerance (+10) release={parsed.Year}, series={series.StartYear}, diff={yearDiff}");
             }
             else
             {
-                // Year mismatch beyond tolerance - apply penalty
-                score -= settings.YearMismatchPenalty;
+                yearAdjustment = -settings.YearMismatchPenalty;
+                yearMatchStatus = "Mismatch";
+                explanations.Add($"Year: mismatch (-{settings.YearMismatchPenalty}) release={parsed.Year}, series={series.StartYear}, diff={yearDiff}");
             }
         }
         else if (parsed.Year.HasValue && !series.StartYear.HasValue)
         {
-            // Parsed year but no series year - slight penalty (can't verify)
-            score -= 5;
+            yearAdjustment = -5;
+            yearMatchStatus = "SeriesUnknown";
+            explanations.Add($"Year: series has no year (-5) release={parsed.Year}");
         }
-        
-        // Publisher bonus
-        if (!string.IsNullOrEmpty(parsed.Publisher) && 
-            series.Publisher?.Equals(parsed.Publisher, StringComparison.OrdinalIgnoreCase) == true)
+        else if (!parsed.Year.HasValue && series.StartYear.HasValue)
         {
-            score += 15;
+            yearAdjustment = 0;
+            yearMatchStatus = "ReleaseUnknown";
+            explanations.Add($"Year: release has no year, series={series.StartYear}");
+        }
+        else
+        {
+            yearAdjustment = 0;
+            yearMatchStatus = "BothUnknown";
         }
         
-        return Math.Clamp(score, 0, 100);
+        // Publisher scoring with enhanced logic
+        int publisherAdjustment = 0;
+        string publisherMatchStatus;
+        bool publisherMismatch = false;
+        
+        if (!string.IsNullOrEmpty(parsed.Publisher) && !string.IsNullOrEmpty(series.Publisher))
+        {
+            if (series.Publisher.Equals(parsed.Publisher, StringComparison.OrdinalIgnoreCase))
+            {
+                publisherAdjustment = settings.PublisherMatchBonus;
+                publisherMatchStatus = "Exact";
+                explanations.Add($"Publisher: exact match (+{settings.PublisherMatchBonus}) '{parsed.Publisher}'");
+            }
+            else
+            {
+                publisherAdjustment = -settings.PublisherMismatchPenalty;
+                publisherMatchStatus = "Mismatch";
+                publisherMismatch = true;
+                explanations.Add($"Publisher: mismatch (-{settings.PublisherMismatchPenalty}) release='{parsed.Publisher}', series='{series.Publisher}'");
+            }
+        }
+        else if (!string.IsNullOrEmpty(parsed.Publisher))
+        {
+            publisherMatchStatus = "SeriesUnknown";
+            explanations.Add($"Publisher: series has no publisher, release='{parsed.Publisher}'");
+        }
+        else if (!string.IsNullOrEmpty(series.Publisher))
+        {
+            publisherMatchStatus = "ReleaseUnknown";
+            explanations.Add($"Publisher: release has no publisher, series='{series.Publisher}'");
+        }
+        else
+        {
+            publisherMatchStatus = "BothUnknown";
+        }
+        
+        var totalScore = Math.Clamp(titleScore + yearAdjustment + publisherAdjustment, 0, 100);
+        
+        return new SeriesScoreResult
+        {
+            TotalScore = totalScore,
+            TitleScore = titleScore,
+            YearAdjustment = yearAdjustment,
+            PublisherAdjustment = publisherAdjustment,
+            YearMatchStatus = yearMatchStatus,
+            PublisherMatchStatus = publisherMatchStatus,
+            Explanations = explanations,
+            PublisherMismatch = publisherMismatch
+        };
+    }
+    
+    private int CalculateSeriesMatchScore(Series series, DdlParsedInfo parsed, AutoMatchSettings settings)
+    {
+        return CalculateSeriesMatchScoreDetailed(series, parsed, settings).TotalScore;
     }
 
     /// <summary>

@@ -53,6 +53,12 @@ public class SettingsService : ISettingsService
     private const string AutoMatchRequireYearForAmbiguousKey = "automatch.requireYearForAmbiguousSeries";
     private const string AutoMatchEnableAmbiguousDetectionKey = "automatch.enableAmbiguousSeriesDetection";
     private const string AutoMatchYearMismatchPenaltyKey = "automatch.yearMismatchPenalty";
+    
+    // Publisher matching settings (EPIC 19.2)
+    private const string AutoMatchPublisherBonusKey = "automatch.publisherMatchBonus";
+    private const string AutoMatchPublisherPenaltyKey = "automatch.publisherMismatchPenalty";
+    private const string AutoMatchPreferPublisherKey = "automatch.preferPublisherMatchForAmbiguous";
+    private const string AutoMatchRejectMismatchedPublishersKey = "automatch.rejectMismatchedPublishers";
 
     public SettingsService(ShortboxerrDbContext context, ICredentialEncryptionService encryptionService)
     {
@@ -300,23 +306,45 @@ public class SettingsService : ISettingsService
 
         return new AutoMatchSettings
         {
+            // Year matching
             YearMatchTolerance = await GetAsync<int>(AutoMatchYearToleranceKey, defaults.YearMatchTolerance, cancellationToken),
             RejectMismatchedYears = await GetAsync<bool>(AutoMatchRejectMismatchedYearsKey, defaults.RejectMismatchedYears, cancellationToken),
+            YearMismatchPenalty = await GetAsync<int>(AutoMatchYearMismatchPenaltyKey, defaults.YearMismatchPenalty, cancellationToken),
+            
+            // Confidence
             MinConfidenceForAutoImport = await GetAsync<int>(AutoMatchMinConfidenceKey, defaults.MinConfidenceForAutoImport, cancellationToken),
+            
+            // Ambiguity detection
             RequireYearForAmbiguousSeries = await GetAsync<bool>(AutoMatchRequireYearForAmbiguousKey, defaults.RequireYearForAmbiguousSeries, cancellationToken),
             EnableAmbiguousSeriesDetection = await GetAsync<bool>(AutoMatchEnableAmbiguousDetectionKey, defaults.EnableAmbiguousSeriesDetection, cancellationToken),
-            YearMismatchPenalty = await GetAsync<int>(AutoMatchYearMismatchPenaltyKey, defaults.YearMismatchPenalty, cancellationToken)
+            
+            // Publisher matching (EPIC 19.2)
+            PublisherMatchBonus = await GetAsync<int>(AutoMatchPublisherBonusKey, defaults.PublisherMatchBonus, cancellationToken),
+            PublisherMismatchPenalty = await GetAsync<int>(AutoMatchPublisherPenaltyKey, defaults.PublisherMismatchPenalty, cancellationToken),
+            PreferPublisherMatchForAmbiguous = await GetAsync<bool>(AutoMatchPreferPublisherKey, defaults.PreferPublisherMatchForAmbiguous, cancellationToken),
+            RejectMismatchedPublishers = await GetAsync<bool>(AutoMatchRejectMismatchedPublishersKey, defaults.RejectMismatchedPublishers, cancellationToken)
         };
     }
 
     public async Task SetAutoMatchSettingsAsync(AutoMatchSettings settings, CancellationToken cancellationToken = default)
     {
+        // Year matching
         await SetAsync<int>(AutoMatchYearToleranceKey, settings.YearMatchTolerance, cancellationToken);
         await SetAsync<bool>(AutoMatchRejectMismatchedYearsKey, settings.RejectMismatchedYears, cancellationToken);
+        await SetAsync<int>(AutoMatchYearMismatchPenaltyKey, settings.YearMismatchPenalty, cancellationToken);
+        
+        // Confidence
         await SetAsync<int>(AutoMatchMinConfidenceKey, settings.MinConfidenceForAutoImport, cancellationToken);
+        
+        // Ambiguity detection
         await SetAsync<bool>(AutoMatchRequireYearForAmbiguousKey, settings.RequireYearForAmbiguousSeries, cancellationToken);
         await SetAsync<bool>(AutoMatchEnableAmbiguousDetectionKey, settings.EnableAmbiguousSeriesDetection, cancellationToken);
-        await SetAsync<int>(AutoMatchYearMismatchPenaltyKey, settings.YearMismatchPenalty, cancellationToken);
+        
+        // Publisher matching (EPIC 19.2)
+        await SetAsync<int>(AutoMatchPublisherBonusKey, settings.PublisherMatchBonus, cancellationToken);
+        await SetAsync<int>(AutoMatchPublisherPenaltyKey, settings.PublisherMismatchPenalty, cancellationToken);
+        await SetAsync<bool>(AutoMatchPreferPublisherKey, settings.PreferPublisherMatchForAmbiguous, cancellationToken);
+        await SetAsync<bool>(AutoMatchRejectMismatchedPublishersKey, settings.RejectMismatchedPublishers, cancellationToken);
     }
 
     /// <summary>
