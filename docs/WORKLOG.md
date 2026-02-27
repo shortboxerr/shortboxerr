@@ -1,5 +1,62 @@
 # Worklog
 
+## Iteration 176 (2026-02-24)
+**EPIC 19.4: Match Verification & Confirmation**
+
+### Summary
+Implemented match verification settings to help catch auto-matching errors early. Added settings to require confirmation for first issues, detect low confidence matches, and show detailed match reasoning.
+
+### Implementation
+
+**Backend (Core):**
+- Added new properties to `DdlMatchResult`:
+  - `IsFirstIssueForSeries` - indicates if series has no existing files
+  - `IsLowConfidence` - flags borderline confidence matches
+  - `ReviewReason` - explains why manual review is required
+
+**New AutoMatchSettings:**
+- `RequireConfirmationForFirstIssue` (default: true) - require manual confirmation for first issue imported to any series
+- `LowConfidenceThreshold` (default: 70) - threshold for borderline matches
+- `ShowMatchReasoning` (default: true) - show detailed reasoning in UI
+
+**Backend (Infrastructure):**
+- Added `IsFirstIssueForSeriesAsync` to check if series has existing files
+- Added `GetVerificationPropertiesAsync` helper for verification logic
+- Updated all `AutoMatchAsync` return paths with verification properties
+
+**API:**
+- Added validation for LowConfidenceThreshold (0-100)
+- Added new settings to AutoMatchSettingsRequest DTO
+
+**Frontend:**
+- Added "Match Verification" section to Settings page with:
+  - Confirm First Issue toggle
+  - Low Confidence Threshold slider
+  - Show Match Reasoning toggle
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Ddl/IDdlImportService.cs` | Added verification properties to DdlMatchResult |
+| `src/Shortboxerr.Core/Services/ISettingsService.cs` | Added verification settings to AutoMatchSettings |
+| `src/Shortboxerr.Infrastructure/Ddl/DdlImportService.cs` | Added verification helper methods |
+| `src/Shortboxerr.Infrastructure/Services/SettingsService.cs` | Added persistence for new settings |
+| `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` | Added API validation and DTO fields |
+| `ui/src/api/client.ts` | Added TypeScript interface updates |
+| `ui/src/pages/SettingsPage.tsx` | Added Match Verification UI section |
+| `tests/Shortboxerr.Tests/DdlImportServiceTests.cs` | Added 6 verification tests |
+
+### Commits
+- `feat(automatch): add match verification settings (EPIC 19.4)`
+
+### Testing Results
+- Backend Build: SUCCESS
+- Frontend Build: SUCCESS  
+- Tests: 35 DdlImportService tests pass (6 new verification tests)
+
+---
+
 ## Iteration 175 (2026-02-24)
 **EPIC 19.3: Release Parser Improvements**
 

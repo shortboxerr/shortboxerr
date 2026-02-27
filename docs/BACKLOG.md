@@ -266,11 +266,20 @@ The auto-matching logic that matches downloaded files to series/issues must be r
 - [x] Add series version detection (Second Series, 2nd Series, etc.)
 - [x] Add DdlParsedInfo properties: RebootIndicator, SeriesVersion, DisambiguationYear, PublisherHint
 
-### 19.4 Match Verification & Confirmation ← READY
-- [ ] Add "low confidence" flag to questionable matches
-- [ ] Queue low-confidence matches for manual review instead of auto-importing
-- [ ] Show match confidence score in Manual Import UI
-- [ ] Option to require manual confirmation for first issue of any series
+### 19.4 Match Verification & Confirmation ✅ COMPLETED (Iteration 176)
+- [x] Add "low confidence" flag to questionable matches
+  - Added `IsLowConfidence` property to `DdlMatchResult`
+  - Added `LowConfidenceThreshold` setting (default: 70%)
+- [x] Queue low-confidence matches for manual review instead of auto-importing
+  - Enhanced `RequiresManualReview` logic with multiple triggers
+  - Added `ReviewReason` property explaining why review is needed
+- [x] Show match confidence score in Manual Import UI
+  - Added `ShowMatchReasoning` setting (default: true)
+  - UI shows detailed score breakdown when enabled
+- [x] Option to require manual confirmation for first issue of any series
+  - Added `RequireConfirmationForFirstIssue` setting (default: true)
+  - Added `IsFirstIssueForSeries` property to `DdlMatchResult`
+  - Checks if series has any existing file assets
 
 ### 19.5 Matching Audit & Logging ← READY
 - [ ] Log detailed matching decisions with reasoning

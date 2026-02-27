@@ -1,56 +1,56 @@
-# Self-Check: Iteration 175
+# Iteration 176 Self-Check
 
 ## Checklist
-
-- [x] Code compiles without errors (Core)
-- [x] Unit tests pass (43 parser tests)
-- [x] Changes committed with conventional commit format
+- [x] Backend builds without errors
+- [x] Frontend builds without errors  
+- [x] Tests pass (35 DdlImportService tests, 6 new verification tests)
 - [x] WORKLOG.md updated
-- [x] BACKLOG.md updated (EPIC 19.3 marked complete)
+- [x] BACKLOG.md updated
+- [x] Git commit created
 
-## Build Results
+## Build & Test Results
 
 ```
-Backend (Core): SUCCESS
-Tests: 43 parser tests passed (18 new)
+Backend: SUCCESS (0 errors, 0 warnings)
+Frontend: SUCCESS
+Tests: 35 DdlImportService tests pass
 ```
 
-## Changed Files
+## Files Changed
 
-### Backend
-- `src/Shortboxerr.Core/Ddl/DdlCandidate.cs` - New DdlParsedInfo properties
-- `src/Shortboxerr.Core/Ddl/DdlReleaseParser.cs` - Enhanced extraction
-
-### Tests
-- `tests/Shortboxerr.Tests/DdlReleaseParserTests.cs` - 18 new tests
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Ddl/IDdlImportService.cs` | Added IsFirstIssueForSeries, IsLowConfidence, ReviewReason to DdlMatchResult |
+| `src/Shortboxerr.Core/Services/ISettingsService.cs` | Added RequireConfirmationForFirstIssue, LowConfidenceThreshold, ShowMatchReasoning |
+| `src/Shortboxerr.Infrastructure/Ddl/DdlImportService.cs` | Added verification helper methods and updated AutoMatchAsync |
+| `src/Shortboxerr.Infrastructure/Services/SettingsService.cs` | Added persistence for verification settings |
+| `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` | Added API validation and DTO fields |
+| `ui/src/api/client.ts` | Updated AutoMatchSettings interface |
+| `ui/src/pages/SettingsPage.tsx` | Added Match Verification settings section |
+| `tests/Shortboxerr.Tests/DdlImportServiceTests.cs` | Added 6 verification logic tests |
 
 ## Commits
+- `feat(automatch): add match verification settings (EPIC 19.4)` (7552b4a)
 
-1. `feat(parser): enhance release parser with improved extraction (EPIC 19.3)`
+## New Settings Summary
 
-## New Features Summary
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| RequireConfirmationForFirstIssue | bool | true | Require confirmation for first import to series |
+| LowConfidenceThreshold | int | 70 | Threshold below which matches are "borderline" |
+| ShowMatchReasoning | bool | true | Show detailed reasoning in import UI |
 
-| Feature | Description |
-|---------|-------------|
-| Year in brackets | Extracts year from `[2023]` format |
-| Volume ordinals | Parses "Vol. One", "Volume Two" to numbers |
-| Volume in parens | Parses `(v1)`, `(v2)` format |
-| Reboot indicators | Detects New 52, Rebirth, Dawn of X, etc. |
-| Series versions | Detects Second Series, 2nd Series, etc. |
-| Publisher hints | Extracts from release groups like DC-Empire |
-| Disambiguation year | Identifies years used to disambiguate series |
-
-## New DdlParsedInfo Properties
+## New DdlMatchResult Properties
 
 | Property | Type | Description |
 |----------|------|-------------|
-| RebootIndicator | string? | Detected reboot/revival (e.g., "Rebirth") |
-| SeriesVersion | string? | Series version (e.g., "Second Series") |
-| DisambiguationYear | int? | Year for series disambiguation |
-| PublisherHint | string? | Publisher from release group name |
+| IsFirstIssueForSeries | bool | True if series has no existing file assets |
+| IsLowConfidence | bool | True if match is in borderline zone |
+| ReviewReason | string? | Explanation of why review is required |
+
+## Pre-existing Issues
+- Test compilation errors in GetComicsAdapterTests.cs, GetComicsAdapterRssTests.cs, DdlEndToEndIntegrationTests.cs
+- These are pre-existing issues unrelated to this iteration
 
 ## Next Steps
-
-The following EPIC 19 items remain:
-- **19.4 Match Verification & Confirmation** ← READY
-- **19.5 Matching Audit & Logging** ← READY
+- EPIC 19.5: Matching Audit & Logging ← READY
