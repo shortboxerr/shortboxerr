@@ -1272,6 +1272,7 @@ export interface GeneralSettings {
   downloadFolder: string;
   stagingFolder: string;
   autoMoveToStaging: boolean;
+  autoOrganizeOnFormatChange: boolean;
 }
 
 export interface FolderSettings {
@@ -2584,6 +2585,7 @@ export const api = {
         downloadFolder: '/downloads',
         stagingFolder: '/staging',
         autoMoveToStaging: true,
+        autoOrganizeOnFormatChange: false,
       };
     }
   },

@@ -194,6 +194,14 @@ public class GeneralSettings
     /// Whether to auto-move completed downloads to staging.
     /// </summary>
     public bool AutoMoveToStaging { get; set; } = true;
+
+    /// <summary>
+    /// Whether to automatically reorganize the library when format settings change.
+    /// When enabled, changing SeriesFolderFormat, IssueFileFormat, or CollectionFileFormat
+    /// will trigger an automatic organization of all series to match the new format.
+    /// Default: false (manual organization required).
+    /// </summary>
+    public bool AutoOrganizeOnFormatChange { get; set; } = false;
 }
 
 /// <summary>

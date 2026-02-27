@@ -697,6 +697,27 @@ function GeneralSettings() {
           tokens={namingTokens.collectionFileTokens}
           inputRef={collectionInputRef}
         />
+        
+        <SettingsField
+          label="Auto-organize on Format Change"
+          description="Automatically reorganize library when format settings are changed"
+        >
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={generalSettings?.autoOrganizeOnFormatChange ?? false}
+              onChange={(e) => {
+                api.updateGeneralSettings({ autoOrganizeOnFormatChange: e.target.checked });
+              }}
+              style={{ width: '18px', height: '18px' }}
+            />
+            <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+              {generalSettings?.autoOrganizeOnFormatChange 
+                ? 'Enabled - Library will be reorganized automatically when formats change'
+                : 'Disabled - Use "Organize All" in System Tasks to manually reorganize'}
+            </span>
+          </label>
+        </SettingsField>
       </SettingsSection>
       
       <SettingsSection title="Root Folders">

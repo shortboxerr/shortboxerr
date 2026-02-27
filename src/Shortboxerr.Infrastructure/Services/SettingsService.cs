@@ -39,6 +39,7 @@ public class SettingsService : ISettingsService
     private const string GeneralDownloadFolderKey = "general.downloadFolder";
     private const string GeneralStagingFolderKey = "general.stagingFolder";
     private const string GeneralAutoMoveToStagingKey = "general.autoMoveToStaging";
+    private const string GeneralAutoOrganizeOnFormatChangeKey = "general.autoOrganizeOnFormatChange";
     
     // API key settings
     private const string ApiKeyValueKey = "security.apiKey";
@@ -218,7 +219,8 @@ public class SettingsService : ISettingsService
             ComicLibraryPath = await GetAsync(GeneralComicLibraryPathKey, cancellationToken) ?? defaults.ComicLibraryPath,
             DownloadFolder = await GetAsync(GeneralDownloadFolderKey, cancellationToken) ?? defaults.DownloadFolder,
             StagingFolder = await GetAsync(GeneralStagingFolderKey, cancellationToken) ?? defaults.StagingFolder,
-            AutoMoveToStaging = await GetAsync<bool>(GeneralAutoMoveToStagingKey, defaults.AutoMoveToStaging, cancellationToken)
+            AutoMoveToStaging = await GetAsync<bool>(GeneralAutoMoveToStagingKey, defaults.AutoMoveToStaging, cancellationToken),
+            AutoOrganizeOnFormatChange = await GetAsync<bool>(GeneralAutoOrganizeOnFormatChangeKey, defaults.AutoOrganizeOnFormatChange, cancellationToken)
         };
     }
 
@@ -231,6 +233,7 @@ public class SettingsService : ISettingsService
         await SetAsync(GeneralDownloadFolderKey, settings.DownloadFolder, cancellationToken);
         await SetAsync(GeneralStagingFolderKey, settings.StagingFolder, cancellationToken);
         await SetAsync<bool>(GeneralAutoMoveToStagingKey, settings.AutoMoveToStaging, cancellationToken);
+        await SetAsync<bool>(GeneralAutoOrganizeOnFormatChangeKey, settings.AutoOrganizeOnFormatChange, cancellationToken);
     }
 
     public async Task<ApiKeyInfo> GetApiKeyAsync(bool includeFull = false, CancellationToken cancellationToken = default)

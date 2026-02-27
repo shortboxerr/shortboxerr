@@ -1,5 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using Shortboxerr.Core.Metron;
 using Shortboxerr.Core.Services;
+using Shortboxerr.Infrastructure.Persistence;
 
 namespace Shortboxerr.Api.Endpoints;
 
@@ -300,9 +302,57 @@ public static class SettingsEndpoints
     private static async Task<IResult> UpdateGeneralSettings(
         GeneralSettings request,
         ISettingsService settingsService,
+        ILibraryOrganizationService organizationService,
+        ILoggerFactory loggerFactory,
+        ShortboxerrDbContext dbContext,
         CancellationToken cancellationToken)
     {
+        // Get current settings to detect format changes
+        var currentSettings = await settingsService.GetGeneralSettingsAsync(cancellationToken);
+        
+        var formatChanged = currentSettings.SeriesFolderFormat != request.SeriesFolderFormat ||
+                           currentSettings.IssueFileFormat != request.IssueFileFormat ||
+                           currentSettings.CollectionFileFormat != request.CollectionFileFormat;
+        
+        // Save the new settings
         await settingsService.SetGeneralSettingsAsync(request, cancellationToken);
+        
+        // Auto-organize if format changed and feature is enabled
+        if (formatChanged && request.AutoOrganizeOnFormatChange)
+        {
+            var logger = loggerFactory.CreateLogger("Shortboxerr.Api.Endpoints.SettingsEndpoints");
+            logger.LogInformation(
+                "Library format settings changed and auto-organize is enabled. Triggering organization...");
+            
+            // Get all series IDs (excluding linked annuals)
+            var seriesIds = await dbContext.Series
+                .Where(s => !s.ParentSeriesId.HasValue)
+                .Select(s => s.Id)
+                .ToArrayAsync(cancellationToken);
+            
+            if (seriesIds.Length > 0)
+            {
+                // Execute organization in background to not block the settings save
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var results = await organizationService.ExecuteSeriesRenameAsync(seriesIds, CancellationToken.None);
+                        var renamed = results.Count(r => r.Success && r.FilesRenamed > 0);
+                        var skipped = results.Count(r => r.Success && r.FilesRenamed == 0);
+                        var failed = results.Count(r => !r.Success);
+                        logger.LogInformation(
+                            "Auto-organization complete: {Renamed} renamed, {Skipped} skipped, {Failed} failed",
+                            renamed, skipped, failed);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "Auto-organization failed");
+                    }
+                });
+            }
+        }
+        
         return Results.Ok(request);
     }
 
