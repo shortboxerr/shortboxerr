@@ -1,5 +1,45 @@
 # Worklog
 
+## Iteration 179 (2026-02-27)
+**EPIC 18.5 + 18.6: Library Organization Enhancements**
+
+### Summary
+Added auto-organize on format change and dry-run mode for library organization operations.
+
+### 18.5: Auto-organize on Format Change
+- Added `AutoOrganizeOnFormatChange` setting to `GeneralSettings`
+- Backend detects when `SeriesFolderFormat`, `IssueFileFormat`, or `CollectionFileFormat` changes
+- When enabled, triggers background organization of all series
+- Frontend toggle in Settings > General > Library Naming Format
+- Default: disabled (requires manual "Organize All" from System Tasks)
+
+### 18.6: Dry-run Mode
+- Added `dryRun` parameter to `ExecuteSeriesRenameAsync` methods
+- When `dryRun=true`, simulates the operation without making changes
+- Returns detailed results showing what WOULD happen
+- Added `IsDryRun` property to `SeriesRenameResult` and `FileRenameResult`
+- Logs with `[DRY RUN]` prefix for visibility
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `ISettingsService.cs` | Added `AutoOrganizeOnFormatChange` property |
+| `SettingsService.cs` | Persist new setting |
+| `SettingsEndpoints.cs` | Detect format change and trigger auto-organization |
+| `ILibraryOrganizationService.cs` | Added `dryRun` parameter and `IsDryRun` properties |
+| `LibraryOrganizationService.cs` | Implemented dry-run logic |
+| `SeriesEndpoints.cs` | Updated to use `dryRun` parameter |
+| `SystemEndpoints.cs` | Updated to use `dryRun` parameter |
+| `client.ts` | Added `autoOrganizeOnFormatChange` to interface |
+| `SettingsPage.tsx` | Added toggle UI |
+
+### Commits
+- `feat(organize): auto-organize library on format change (18.5)`
+- `feat(organize): add dry-run mode for library organization (18.6)`
+
+---
+
 ## Iteration 178 (2026-02-27)
 **EPIC 11.27: Pull List Data Flow Refactoring - Local Cover Caching Integration**
 

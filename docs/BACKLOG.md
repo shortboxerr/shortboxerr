@@ -218,14 +218,14 @@ Reorganize existing library files to match current naming format settings.
 - [x] Conflict detection (Iteration 164)
 - [x] Enhanced preview UI with filtering and type grouping (Iteration 172)
 
-### 18.5 Bulk Organization Tools 🔄 IN PROGRESS
+### 18.5 Bulk Organization Tools ✅ COMPLETED
 - [x] "Organize All" system task (Iteration 169)
-- [ ] Scheduled organization option (auto-organize on format change)
+- [x] Auto-organize on format change (Iteration 179)
 
-### 18.6 Safety & Rollback
-- [ ] Dry-run mode
-- [ ] Atomic operations (per-series)
-- [ ] Undo support (stretch goal)
+### 18.6 Safety & Rollback (Partial)
+- [x] Dry-run mode (Iteration 179)
+- [ ] Atomic operations (per-series) - Deferred
+- [ ] Undo support (stretch goal) - Deferred
 
 ### 18.7 UI Indicators ✅ COMPLETED
 - [x] Series list path mismatch indicator (Iteration 170)
