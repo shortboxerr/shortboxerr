@@ -1,5 +1,62 @@
 # Worklog
 
+## Iteration 181 (2026-02-27)
+**EPIC 20.5: Frontend Image Optimization**
+
+### Summary
+Implemented image lazy loading across all pages with cover images to improve initial page load performance. Created a reusable `CoverImage` component with skeleton loading states.
+
+### Changes
+
+#### Lazy Loading Implementation
+Added `loading="lazy"` and `decoding="async"` to all cover image `<img>` tags:
+
+| Page | Components Updated |
+|------|-------------------|
+| `SeriesDetailPage.tsx` | Issue cards (grid view), match candidate covers, IssueCoverCard component |
+| `SeriesPage.tsx` | SeriesSearchResult component |
+| `PullListPage.tsx` | Discovery card covers, table row thumbnails |
+| `Dashboard.tsx` | Widget list thumbnails |
+| `CalendarPage.tsx` | Agenda issue covers, calendar grid thumbnails |
+| `EditionDetailPage.tsx` | Edition content item covers |
+
+#### CoverImage Component
+Created new reusable component at `ui/src/components/CoverImage.tsx`:
+- Handles loading, error, and loaded states
+- Shows skeleton pulse animation while loading
+- Fades in smoothly when loaded
+- Provides consistent fallback placeholder
+
+### Bug Fix
+Fixed duplicate endpoint name conflict from Iteration 180:
+- Renamed `SystemEndpoints.ClearCache` to `SystemClearCache`
+- Resolved conflict with `CacheEndpoints.ClearCache`
+- Fixed 94 test failures caused by the naming conflict
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `SeriesDetailPage.tsx` | Added lazy loading (3 locations) |
+| `SeriesPage.tsx` | Added lazy loading (1 location) |
+| `PullListPage.tsx` | Added lazy loading (2 locations) |
+| `Dashboard.tsx` | Added lazy loading (1 location) |
+| `CalendarPage.tsx` | Added lazy loading (2 locations) |
+| `EditionDetailPage.tsx` | Added lazy loading (1 location) |
+| `CoverImage.tsx` | New - Reusable component |
+| `CoverImage.css` | New - Skeleton animation styles |
+| `SystemEndpoints.cs` | Fix - Renamed endpoint to resolve conflict |
+
+### Performance Impact
+- **Initial Load**: Deferred loading of off-screen images until user scrolls near them
+- **Bandwidth**: Reduced unnecessary image downloads for below-fold content
+- **Main Thread**: Async decoding prevents blocking during image decode
+
+### Commits
+1. `feat(ui): add lazy loading to cover images for performance (EPIC 20.5)`
+2. `fix(api): resolve duplicate endpoint name 'ClearCache' from iteration 180`
+
+---
+
 ## Iteration 180 (2026-02-27)
 **EPIC 12: Distributed Cache Pub/Sub Infrastructure**
 

@@ -24,6 +24,7 @@
 | ✅ | EPIC 17 | DDL Download Robustness | [Archive](./COMPLETED.md#epic-17-ddl-download-link-robustness--completed) |
 | 🔄 | [EPIC 18](#epic-18-library-organization--rename-sonarradarr-parity--in-progress) | Library Organization | In Progress |
 | ✅ | EPIC 19 | Auto-Matching Robustness | [Archive](./COMPLETED.md#epic-19-auto-matching-robustness) |
+| 📋 | [EPIC 20](#epic-20-performance-optimization--planned) | Performance Optimization | Planned |
 
 **Legend:** ✅ Completed | 🔄 In Progress | 📋 Planned | 🔴 High Priority
 
@@ -307,6 +308,182 @@ The auto-matching logic that matches downloaded files to series/issues must be r
 
 ---
 
+## EPIC 20: Performance Optimization 📋 PLANNED
+
+Systematic performance improvements across backend database queries, API endpoints, background services, and frontend rendering.
+
+### 20.1 Database Query Optimization 📋 READY
+Optimize EF Core queries to eliminate N+1 issues and reduce memory usage.
+
+**Items:**
+- [ ] **Fix N+1 query in Series sorting by issue count**
+  - File: `SeriesEndpoints.cs` lines 101-102
+  - Issue: `s.Issues.Count` sorting triggers N+1 queries
+  - Fix: Use subquery projection or preload counts
+- [ ] **Add AsSplitQuery to multi-collection includes**
+  - Files: `LibraryOrganizationService.cs`, `SeriesEndpoints.cs`, `PullListService.cs`
+  - Issue: Multiple `Include()` calls cause cartesian explosion
+  - Fix: Add `.AsSplitQuery()` to queries with multiple collection navigations
+- [ ] **Paginate large result sets in organization service**
+  - File: `LibraryOrganizationService.cs` lines 41-51
+  - Issue: `GetSeriesRenamePreviewsAsync` loads all series into memory
+  - Fix: Process in batches or add pagination
+- [ ] **Optimize History endpoint pagination**
+  - File: `HistoryEndpoints.cs` lines 153-156, 198-201
+  - Issue: Loads `pageSize * 2` items, combines in memory, then paginates
+  - Fix: Use UNION query or paginate each source separately
+
+**Effort:** M | **Priority:** P1
+
+### 20.2 Database Index Optimization 📋 READY
+Add missing indexes for common query patterns.
+
+**Items:**
+- [ ] **Add composite indexes for common queries**
+  - `(SeriesId, Status, StoreDate)` for pull list queries
+  - `(Monitored, Status)` for wanted issues queries
+  - Verify existing `(MatchedSeriesId, Timestamp)` index effectiveness
+- [ ] **Add full-text indexes for search queries**
+  - Files: `WantedEndpoints.cs`, `HistoryEndpoints.cs`, `MatchHistoryService.cs`
+  - Issue: `Contains()` on string fields without FTS indexes is slow
+  - Consider: SQLite FTS5 or separate search implementation
+
+**Effort:** S | **Priority:** P2
+
+### 20.3 Background Service Optimization 📋 READY
+Improve efficiency of background processing.
+
+**Items:**
+- [ ] **Parallelize DDL import processing**
+  - File: `DdlImportBackgroundService.cs` lines 139-254
+  - Issue: Sequential processing in foreach loop
+  - Fix: Use `Parallel.ForEachAsync` with concurrency limits
+- [ ] **Make auto-search batch size configurable**
+  - File: `AutoSearchBackgroundService.cs` line 134
+  - Issue: Hardcoded `maxIssuesPerRun = 50`
+  - Fix: Add to settings with dynamic batching based on system load
+- [ ] **Optimize MatchHistoryService stats calculation**
+  - File: `MatchHistoryService.cs` lines 214-215
+  - Issue: Loads all records into memory for stats
+  - Fix: Use database aggregation queries
+
+**Effort:** M | **Priority:** P2
+
+### 20.4 Frontend Virtualization 📋 READY
+Add virtual scrolling for large lists to reduce DOM nodes and improve performance.
+
+**Items:**
+- [ ] **Add virtualization library**
+  - Install `@tanstack/react-virtual`
+- [ ] **Virtualize Series issue grid (cover view)**
+  - File: `SeriesDetailPage.tsx`
+  - Issue: Renders up to 192 items without virtualization
+- [ ] **Virtualize Series table**
+  - File: `SeriesPage.tsx` line 321
+  - Issue: Renders all series rows without virtualization
+- [ ] **Virtualize Pull List discovery items**
+  - File: `PullListPage.tsx` line 717
+  - Issue: Can render hundreds of discovery items
+- [ ] **Virtualize Log viewer**
+  - File: `LogsPage.tsx` line 293
+  - Issue: Renders all log lines without virtualization
+
+**Effort:** M | **Priority:** P1
+
+### 20.5 Frontend Image Optimization ✅ COMPLETED (Iteration 181)
+Optimize image loading for faster perceived performance.
+
+**Items:**
+- [x] **Add lazy loading to cover images**
+  - Added `loading="lazy"` and `decoding="async"` to all `<img>` tags
+  - Affected: `SeriesDetailPage`, `PullListPage`, `SeriesPage`, `Dashboard`, `CalendarPage`, `EditionDetailPage`
+- [x] **Add placeholder/skeleton states for images**
+  - Created reusable `CoverImage` component with CSS pulse animation skeleton
+- [ ] **Implement intersection observer for manual lazy loading** - Deferred
+  - Native lazy loading is sufficient for current use cases
+
+**Effort:** S | **Priority:** P1
+
+### 20.6 Frontend Component Memoization 📋 READY
+Prevent unnecessary re-renders with React.memo and proper hook usage.
+
+**Items:**
+- [ ] **Memoize list item components**
+  - `SeriesSearchResult` (SeriesPage.tsx:702)
+  - `IssueCoverCard` (SeriesDetailPage.tsx)
+  - `IssueListRow` (SeriesDetailPage.tsx)
+  - `QueueItemCard` (ActivityPage.tsx:83)
+  - `StatusCard` (Dashboard.tsx:128)
+- [ ] **Review useCallback/useMemo usage**
+  - Ensure event handlers passed to memoized components use useCallback
+  - Verify dependencies are correct
+
+**Effort:** S | **Priority:** P2
+
+### 20.7 API Call Optimization 📋 READY
+Reduce unnecessary network requests and optimize data fetching patterns.
+
+**Items:**
+- [ ] **Server-side pagination for SeriesDetailPage issues**
+  - File: `SeriesDetailPage.tsx` line 249
+  - Issue: Fetches 500 issues, paginates client-side
+  - Fix: Implement server-side pagination endpoint
+- [ ] **Parallelize PullListPage API calls**
+  - File: `PullListPage.tsx` lines 169-196
+  - Issue: Sequential API calls (4 weeks × 1 call)
+  - Fix: Use `Promise.all` for parallel fetching
+- [ ] **Optimize refetch behavior**
+  - Reduce `refetchInterval` when tab not visible
+  - Disable `refetchOnWindowFocus` for less critical data
+- [ ] **Consider batched API endpoints**
+  - Add endpoints that return multiple weeks of data in one call
+
+**Effort:** M | **Priority:** P2
+
+### 20.8 Bundle Optimization 📋 PLANNED
+Reduce frontend bundle size and improve initial load time.
+
+**Items:**
+- [ ] **Add bundle analysis tooling**
+  - Install `rollup-plugin-visualizer`
+  - Identify large dependencies
+- [ ] **Code split SettingsPage**
+  - File is 7,500+ lines
+  - Split into lazy-loaded sub-pages
+- [ ] **Verify tree-shaking for lucide-react**
+  - Ensure only used icons are included
+- [ ] **Lazy load heavy components**
+  - Modal dialogs, settings tabs, etc.
+
+**Effort:** M | **Priority:** P3
+
+### Implementation Priority
+
+**P1 - High Impact (Do First):**
+- 20.1 Database Query Optimization
+- 20.4 Frontend Virtualization
+- 20.5 Frontend Image Optimization
+
+**P2 - Medium Impact:**
+- 20.2 Database Index Optimization
+- 20.3 Background Service Optimization
+- 20.6 Frontend Component Memoization
+- 20.7 API Call Optimization
+
+**P3 - Lower Priority:**
+- 20.8 Bundle Optimization
+
+### Metrics to Track
+| Metric | Current | Target |
+|--------|---------|--------|
+| Series list load time | TBD | < 200ms |
+| Series detail page load | TBD | < 500ms |
+| Pull list page load | TBD | < 1s |
+| Initial bundle size | TBD | < 500KB |
+| Lighthouse performance score | TBD | > 80 |
+
+---
+
 ## Story Ordering Notes
 
 **Dependencies:**
@@ -316,3 +493,4 @@ The auto-matching logic that matches downloaded files to series/issues must be r
 - EPIC 14 contains standalone enhancements with varied dependencies
 - EPIC 18 depends on EPIC 2 (Import Pipeline) for file organization patterns
 - EPIC 19 depends on EPIC 2 (Import Pipeline) and EPIC 8 (DDL Site Adapters) for matching context
+- EPIC 20 has no hard dependencies; items can be implemented incrementally in any order
