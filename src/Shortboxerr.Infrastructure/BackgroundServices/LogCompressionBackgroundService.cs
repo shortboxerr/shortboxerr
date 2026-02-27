@@ -31,7 +31,15 @@ public class LogCompressionBackgroundService : BackgroundService
         _logger.LogInformation("Log compression background service started");
 
         // Initial delay to let the application start up
-        await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+        try
+        {
+            await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("Log compression service cancelled during startup delay");
+            return;
+        }
 
         while (!stoppingToken.IsCancellationRequested)
         {

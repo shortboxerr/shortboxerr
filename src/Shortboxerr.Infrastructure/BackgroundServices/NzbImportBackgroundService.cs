@@ -43,7 +43,15 @@ public class NzbImportBackgroundService : BackgroundService
         _logger.LogInformation("NZB Import Background Service starting");
         
         // Initial delay to let the application start up
-        await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("NZB Import Background Service cancelled during startup delay");
+            return;
+        }
         
         while (!stoppingToken.IsCancellationRequested)
         {

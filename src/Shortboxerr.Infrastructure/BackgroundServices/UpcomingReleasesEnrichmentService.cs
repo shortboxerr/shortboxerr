@@ -41,7 +41,15 @@ public class UpcomingReleasesEnrichmentService : BackgroundService
             "Upcoming releases enrichment service starting. Check interval: {Interval}",
             _checkInterval);
 
-        await Task.Delay(_initialDelay, stoppingToken);
+        try
+        {
+            await Task.Delay(_initialDelay, stoppingToken);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("Upcoming releases enrichment service cancelled during startup delay");
+            return;
+        }
 
         while (!stoppingToken.IsCancellationRequested)
         {

@@ -52,7 +52,15 @@ public class DiscoveryRefreshBackgroundService : BackgroundService
 
         // Initial delay to allow application to fully start and migrations to run
         _logger.LogDebug("Waiting 30 seconds before initial cache population");
-        await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("Discovery refresh service cancelled during startup delay");
+            return;
+        }
 
         var consecutiveErrors = 0;
 

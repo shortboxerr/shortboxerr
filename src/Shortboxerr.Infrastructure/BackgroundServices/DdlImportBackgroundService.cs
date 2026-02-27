@@ -39,7 +39,15 @@ public class DdlImportBackgroundService : BackgroundService
         _logger.LogInformation("DDL Import Background Service starting");
         
         // Initial delay to let the application start up
-        await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("DDL Import Background Service cancelled during startup delay");
+            return;
+        }
         
         while (!stoppingToken.IsCancellationRequested)
         {

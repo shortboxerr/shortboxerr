@@ -48,7 +48,15 @@ public class DiscoveryUpgradeBackgroundService : BackgroundService
     {
         _logger.LogInformation("Discovery upgrade service starting");
 
-        await Task.Delay(_initialDelay, stoppingToken);
+        try
+        {
+            await Task.Delay(_initialDelay, stoppingToken);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("Discovery upgrade service cancelled during startup delay");
+            return;
+        }
 
         while (!stoppingToken.IsCancellationRequested)
         {

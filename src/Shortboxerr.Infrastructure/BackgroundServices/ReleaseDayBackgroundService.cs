@@ -35,7 +35,15 @@ public class ReleaseDayBackgroundService : BackgroundService
 
         // Initial delay to allow application to fully start
         _logger.LogDebug("Waiting 3 minutes before first release day check");
-        await Task.Delay(TimeSpan.FromMinutes(3), stoppingToken);
+        try
+        {
+            await Task.Delay(TimeSpan.FromMinutes(3), stoppingToken);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("Release day service cancelled during startup delay");
+            return;
+        }
 
         var consecutiveErrors = 0;
 

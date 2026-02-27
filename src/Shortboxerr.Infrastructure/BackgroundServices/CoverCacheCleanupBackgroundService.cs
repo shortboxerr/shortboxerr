@@ -29,7 +29,15 @@ public class CoverCacheCleanupBackgroundService : BackgroundService
         _logger.LogInformation("Cover cache cleanup background service started");
 
         // Initial delay to let the application start up
-        await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+        try
+        {
+            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("Cover cache cleanup service cancelled during startup delay");
+            return;
+        }
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -46,8 +54,15 @@ public class CoverCacheCleanupBackgroundService : BackgroundService
                 _logger.LogError(ex, "Error in cover cache cleanup background service");
             }
 
-            // Check every hour if cleanup is needed
-            await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+            try
+            {
+                // Check every hour if cleanup is needed
+                await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
         }
 
         _logger.LogInformation("Cover cache cleanup background service stopped");

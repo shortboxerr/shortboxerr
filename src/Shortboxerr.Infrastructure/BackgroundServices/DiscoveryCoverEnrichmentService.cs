@@ -64,7 +64,15 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
             "Cover enrichment service starting. Check interval: {Interval}",
             _checkInterval);
 
-        await Task.Delay(_initialDelay, stoppingToken);
+        try
+        {
+            await Task.Delay(_initialDelay, stoppingToken);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("Cover enrichment service cancelled during startup delay");
+            return;
+        }
 
         while (!stoppingToken.IsCancellationRequested)
         {

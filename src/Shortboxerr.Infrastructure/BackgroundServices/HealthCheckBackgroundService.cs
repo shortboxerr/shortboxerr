@@ -42,7 +42,15 @@ public class HealthCheckBackgroundService : BackgroundService
 
         // Initial delay to allow application to fully start
         _logger.LogDebug("Waiting 30 seconds before first health check");
-        await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("Health check service cancelled during startup delay");
+            return;
+        }
 
         var consecutiveErrors = 0;
 
@@ -70,7 +78,14 @@ public class HealthCheckBackgroundService : BackgroundService
                 }
             }
 
-            await Task.Delay(_checkInterval, stoppingToken);
+            try
+            {
+                await Task.Delay(_checkInterval, stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
         }
 
         _logger.LogInformation("Health check background service stopping");

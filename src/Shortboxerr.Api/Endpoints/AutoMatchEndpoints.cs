@@ -19,7 +19,7 @@ public static class AutoMatchEndpoints
             var settings = await autoMatchService.GetSettingsAsync(cancellationToken);
             return Results.Ok(settings);
         })
-        .WithName("GetAutoMatchSettings");
+        .WithName("GetAutoMatchSettingsV1");
 
         // Bulk auto-match all unmatched series
         group.MapPost("/series/bulk", async (

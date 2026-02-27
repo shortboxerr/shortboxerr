@@ -32,7 +32,15 @@ public class AutoSearchBackgroundService : BackgroundService
 
         // Initial delay to allow application to fully start
         _logger.LogDebug("Waiting 5 minutes before first auto-search check");
-        await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+        try
+        {
+            await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("Auto-search service cancelled during startup delay");
+            return;
+        }
 
         DateTime? lastSearchRun = null;
         var consecutiveErrors = 0;
