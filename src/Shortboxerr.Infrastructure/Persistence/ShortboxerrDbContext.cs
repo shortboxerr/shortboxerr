@@ -28,6 +28,7 @@ public class ShortboxerrDbContext : DbContext
     public DbSet<FallbackCoverEntry> FallbackCoverEntries => Set<FallbackCoverEntry>();
     public DbSet<VariantCoverEntity> VariantCovers => Set<VariantCoverEntity>();
     public DbSet<DownloadHistory> DownloadHistories => Set<DownloadHistory>();
+    public DbSet<MatchHistory> MatchHistories => Set<MatchHistory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -289,6 +290,53 @@ public class ShortboxerrDbContext : DbContext
             entity.HasOne(e => e.Issue)
                 .WithMany()
                 .HasForeignKey(e => e.IssueId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // MatchHistory (EPIC 19.5)
+        modelBuilder.Entity<MatchHistory>(entity =>
+        {
+            entity.ToTable("MatchHistories");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.MatchId).IsRequired().HasMaxLength(128);
+            entity.Property(e => e.ReleaseTitle).IsRequired().HasMaxLength(512);
+            entity.Property(e => e.SourceSite).HasMaxLength(128);
+            entity.Property(e => e.ParsedSeriesTitle).HasMaxLength(256);
+            entity.Property(e => e.ParsedIssueNumber).HasMaxLength(32);
+            entity.Property(e => e.ParsedPublisher).HasMaxLength(128);
+            entity.Property(e => e.MatchedSeriesTitle).HasMaxLength(256);
+            entity.Property(e => e.MatchedIssueNumber).HasMaxLength(32);
+            entity.Property(e => e.ReviewReason).HasMaxLength(256);
+            entity.Property(e => e.Explanation).HasMaxLength(512);
+            entity.Property(e => e.ScoreBreakdownJson).HasMaxLength(4096);
+            entity.Property(e => e.ConfidenceReductionsJson).HasMaxLength(2048);
+            
+            // Indexes for efficient queries
+            entity.HasIndex(e => e.MatchId);
+            entity.HasIndex(e => e.Timestamp);
+            entity.HasIndex(e => e.MatchedSeriesId);
+            entity.HasIndex(e => e.Outcome);
+            entity.HasIndex(e => e.UserVerified);
+            entity.HasIndex(e => new { e.MatchedSeriesId, e.Timestamp });
+            
+            // Navigation to matched series/issue (optional)
+            entity.HasOne(e => e.MatchedSeries)
+                .WithMany()
+                .HasForeignKey(e => e.MatchedSeriesId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(e => e.MatchedIssue)
+                .WithMany()
+                .HasForeignKey(e => e.MatchedIssueId)
+                .OnDelete(DeleteBehavior.SetNull);
+            
+            // Navigation to corrected series/issue (when user fixed a mismatch)
+            entity.HasOne(e => e.CorrectedSeries)
+                .WithMany()
+                .HasForeignKey(e => e.CorrectedSeriesId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(e => e.CorrectedIssue)
+                .WithMany()
+                .HasForeignKey(e => e.CorrectedIssueId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
     }

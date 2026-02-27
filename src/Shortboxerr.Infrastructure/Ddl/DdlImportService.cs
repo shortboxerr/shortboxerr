@@ -21,6 +21,7 @@ public class DdlImportService : IDdlImportService
     private readonly IDdlReleaseParser _releaseParser;
     private readonly IConfiguration _configuration;
     private readonly ISettingsService _settingsService;
+    private readonly IMatchHistoryService? _matchHistoryService;
     private readonly ILogger<DdlImportService>? _logger;
     
     private readonly ConcurrentDictionary<string, DdlPendingImport> _pendingImports = new();
@@ -36,12 +37,14 @@ public class DdlImportService : IDdlImportService
         IDdlReleaseParser releaseParser,
         IConfiguration configuration,
         ISettingsService settingsService,
+        IMatchHistoryService? matchHistoryService = null,
         ILogger<DdlImportService>? logger = null)
     {
         _dbContext = dbContext;
         _releaseParser = releaseParser;
         _configuration = configuration;
         _settingsService = settingsService;
+        _matchHistoryService = matchHistoryService;
         _logger = logger;
     }
 
@@ -111,6 +114,23 @@ public class DdlImportService : IDdlImportService
                 };
                 
                 _pendingImports[pendingId] = pending;
+                
+                // Log match to history as pending review (EPIC 19.5)
+                if (_matchHistoryService != null)
+                {
+                    try
+                    {
+                        await _matchHistoryService.LogMatchAsync(
+                            candidate,
+                            matchResult,
+                            MatchOutcome.PendingReview,
+                            cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogWarning(ex, "Failed to log match history for {ReleaseTitle}", candidate.ReleaseTitle);
+                    }
+                }
                 
                 _logger?.LogInformation("File queued for manual review: {Filename} (reason: {Reason})", 
                     pending.Filename, pending.ReviewReason);
@@ -691,6 +711,23 @@ public class DdlImportService : IDdlImportService
             _dbContext.HistoryEvents.Add(historyEvent);
             
             await _dbContext.SaveChangesAsync(cancellationToken);
+            
+            // Log match to history (EPIC 19.5)
+            if (_matchHistoryService != null)
+            {
+                try
+                {
+                    await _matchHistoryService.LogMatchAsync(
+                        candidate,
+                        match,
+                        MatchOutcome.AutoImported,
+                        cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogWarning(ex, "Failed to log match history for {ReleaseTitle}", candidate.ReleaseTitle);
+                }
+            }
             
             _logger?.LogInformation("Successfully imported: {Candidate} → {Library}", candidate.ReleaseTitle, libraryPath);
             

@@ -83,6 +83,7 @@ public static class DependencyInjection
         services.AddScoped<ISetupStatusService, SetupStatusService>();
         services.AddScoped<ISearchSettingsService, SearchSettingsService>();
         services.AddScoped<ISearchResultScorer, SearchResultScorer>();
+        services.AddScoped<IMatchHistoryService, MatchHistoryService>();
         services.AddScoped<IActivityService, ActivityService>();
         services.AddScoped<IDownloadHistoryService, DownloadHistoryService>();
         services.AddScoped<IHistoryService, HistoryService>();

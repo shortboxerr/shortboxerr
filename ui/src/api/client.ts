@@ -1330,6 +1330,71 @@ export interface AutoMatchSettings {
   maxCandidatesForReview: number;
 }
 
+// Match History types (EPIC 19.5)
+export interface MatchHistoryRecord {
+  id: number;
+  matchId: string;
+  releaseTitle: string;
+  sourceSite?: string;
+  parsedSeriesTitle?: string;
+  parsedIssueNumber?: string;
+  parsedYear?: number;
+  parsedPublisher?: string;
+  outcome: string;
+  matchFound: boolean;
+  confidenceScore: number;
+  matchedSeriesId?: number;
+  matchedSeriesTitle?: string;
+  matchedIssueId?: number;
+  matchedIssueNumber?: string;
+  wasFirstIssue: boolean;
+  requiredManualReview: boolean;
+  reviewReason?: string;
+  explanation?: string;
+  scoreBreakdown?: string;
+  confidenceReductions?: string;
+  userVerified?: boolean;
+  correctedSeriesId?: number;
+  correctedIssueId?: number;
+  timestamp: string;
+  verifiedAt?: string;
+}
+
+export interface MatchHistoryResponse {
+  records: MatchHistoryRecord[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
+
+export interface MatchAccuracyStats {
+  totalMatches: number;
+  autoImported: number;
+  pendingReview: number;
+  manuallyApproved: number;
+  manuallyRejected: number;
+  manuallyCorrected: number;
+  noMatchFound: number;
+  verifiedCorrect: number;
+  verifiedIncorrect: number;
+  unverified: number;
+  accuracyRate: number;
+  autoImportAccuracy: number;
+  averageConfidence: number;
+  oldestRecord?: string;
+  newestRecord?: string;
+}
+
+export interface SeriesMismatchSummary {
+  seriesId: number;
+  seriesTitle: string;
+  totalMatches: number;
+  mismatches: number;
+  mismatchRate: number;
+  lastMismatch: string;
+}
+
 export interface CoverCacheSettings {
   cacheDirectory: string;
   retentionDays: number;
@@ -2190,6 +2255,67 @@ export const api = {
       console.error('Failed to clear history:', error);
       return { success: false, deletedCount: 0 };
     }
+  },
+
+  // Match History (EPIC 19.5)
+  getMatchHistory: async (params?: {
+    seriesId?: number;
+    outcome?: string;
+    requiredReview?: boolean;
+    verified?: boolean;
+    search?: string;
+    days?: number;
+    page?: number;
+    pageSize?: number;
+    sortBy?: string;
+    descending?: boolean;
+  }): Promise<MatchHistoryResponse> => {
+    const searchParams = new URLSearchParams();
+    if (params?.seriesId) searchParams.set('seriesId', String(params.seriesId));
+    if (params?.outcome) searchParams.set('outcome', params.outcome);
+    if (params?.requiredReview !== undefined) searchParams.set('requiredReview', String(params.requiredReview));
+    if (params?.verified !== undefined) searchParams.set('verified', String(params.verified));
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.days) searchParams.set('days', String(params.days));
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.pageSize) searchParams.set('pageSize', String(params.pageSize));
+    if (params?.sortBy) searchParams.set('sortBy', params.sortBy);
+    if (params?.descending !== undefined) searchParams.set('descending', String(params.descending));
+    const query = searchParams.toString();
+    return fetchApi<MatchHistoryResponse>(`/api/v1/match-history${query ? `?${query}` : ''}`);
+  },
+
+  getMatchHistoryStats: async (params?: {
+    seriesId?: number;
+    days?: number;
+  }): Promise<MatchAccuracyStats> => {
+    const searchParams = new URLSearchParams();
+    if (params?.seriesId) searchParams.set('seriesId', String(params.seriesId));
+    if (params?.days) searchParams.set('days', String(params.days));
+    const query = searchParams.toString();
+    return fetchApi<MatchAccuracyStats>(`/api/v1/match-history/stats${query ? `?${query}` : ''}`);
+  },
+
+  getProblematicSeries: async (params?: {
+    minMismatches?: number;
+    days?: number;
+  }): Promise<SeriesMismatchSummary[]> => {
+    const searchParams = new URLSearchParams();
+    if (params?.minMismatches) searchParams.set('minMismatches', String(params.minMismatches));
+    if (params?.days) searchParams.set('days', String(params.days));
+    const query = searchParams.toString();
+    return fetchApi<SeriesMismatchSummary[]>(`/api/v1/match-history/problematic-series${query ? `?${query}` : ''}`);
+  },
+
+  verifyMatch: async (matchId: number, request: {
+    isCorrect: boolean;
+    correctedSeriesId?: number;
+    correctedIssueId?: number;
+  }): Promise<MatchHistoryRecord> => {
+    return fetchApi<MatchHistoryRecord>(`/api/v1/match-history/${matchId}/verify`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
   },
 
   // Staged Files
