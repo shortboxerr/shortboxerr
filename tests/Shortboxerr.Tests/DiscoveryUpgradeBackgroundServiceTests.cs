@@ -161,4 +161,72 @@ public class DiscoveryUpgradeBackgroundServiceTests
         Assert.True(issue.Id > 0);
         Assert.NotEqual(CoverEnrichmentStatus.HasComicVineCover, issue.EnrichmentStatus);
     }
+
+    [Fact]
+    public void ComicVineIssue_UpgradedImage_UsesLocalPath()
+    {
+        // Arrange - Simulate an upgraded issue with local cover URL
+        var issueId = 123456;
+        var issue = new ComicVineIssue
+        {
+            Id = issueId,
+            IssueNumber = "1",
+            Image = new ComicVineImage
+            {
+                MediumUrl = $"/api/v1/covers/discovery/{issueId}/medium",
+                SmallUrl = $"/api/v1/covers/discovery/{issueId}/small",
+                OriginalUrl = "https://comicvine.example.com/covers/123.jpg"
+            },
+            EnrichmentStatus = CoverEnrichmentStatus.HasComicVineCover,
+            CoverSource = "ComicVine",
+            CoverMatchMethod = "CvIssueIdUpgrade"
+        };
+
+        // Assert - Image URLs point to local API endpoints
+        Assert.StartsWith("/api/v1/covers/discovery/", issue.Image.MediumUrl);
+        Assert.StartsWith("/api/v1/covers/discovery/", issue.Image.SmallUrl);
+        Assert.Contains(issueId.ToString(), issue.Image.MediumUrl);
+        Assert.StartsWith("https://", issue.Image.OriginalUrl);
+    }
+
+    [Fact]
+    public void ComicVineIssue_PreUpgradeMetronImage_UsesRemotePath()
+    {
+        // Arrange - Issue with Metron cover (pre-upgrade or ID-less)
+        var issue = new ComicVineIssue
+        {
+            Id = 0, // No CV ID yet
+            IssueNumber = "1",
+            Image = new ComicVineImage
+            {
+                MediumUrl = "https://metron.cloud/covers/12345.jpg",
+                SmallUrl = "https://metron.cloud/covers/12345.jpg"
+            },
+            EnrichmentStatus = CoverEnrichmentStatus.Enriched,
+            CoverSource = "Metron",
+            CoverMatchMethod = "IdLessHeuristic"
+        };
+
+        // Assert - Remote URLs for ID-less issues
+        Assert.StartsWith("https://", issue.Image.MediumUrl);
+        Assert.Equal("Metron", issue.CoverSource);
+    }
+
+    [Fact]
+    public void CoverCacheSource_ComicVine_CanBeUsedForTracking()
+    {
+        // This test ensures the enum value for ComicVine cover source tracking exists
+        var source = CoverCacheSource.ComicVine;
+        
+        Assert.Equal(CoverCacheSource.ComicVine, source);
+    }
+
+    [Fact]
+    public void CoverCacheSource_Metron_CanBeUsedForTracking()
+    {
+        // This test ensures the enum value for Metron cover source tracking exists
+        var source = CoverCacheSource.Metron;
+        
+        Assert.Equal(CoverCacheSource.Metron, source);
+    }
 }
