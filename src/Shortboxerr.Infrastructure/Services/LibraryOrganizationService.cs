@@ -80,6 +80,7 @@ public class LibraryOrganizationService : ILibraryOrganizationService
 
     public async Task<IReadOnlyList<SeriesRenameResult>> ExecuteSeriesRenameAsync(
         int[] seriesIds,
+        bool dryRun = false,
         CancellationToken cancellationToken = default)
     {
         if (seriesIds.Length == 0)
@@ -87,11 +88,16 @@ public class LibraryOrganizationService : ILibraryOrganizationService
             throw new ArgumentException("Must provide at least one series ID", nameof(seriesIds));
         }
 
+        if (dryRun)
+        {
+            _logger.LogInformation("Executing organization in DRY RUN mode for {Count} series", seriesIds.Length);
+        }
+
         var results = new List<SeriesRenameResult>();
         
         foreach (var seriesId in seriesIds)
         {
-            var result = await ExecuteSeriesRenameAsync(seriesId, cancellationToken);
+            var result = await ExecuteSeriesRenameAsync(seriesId, dryRun, cancellationToken);
             results.Add(result);
         }
 
@@ -100,6 +106,7 @@ public class LibraryOrganizationService : ILibraryOrganizationService
 
     public async Task<SeriesRenameResult> ExecuteSeriesRenameAsync(
         int seriesId,
+        bool dryRun = false,
         CancellationToken cancellationToken = default)
     {
         var series = await _db.Series
@@ -144,6 +151,33 @@ public class LibraryOrganizationService : ILibraryOrganizationService
 
         try
         {
+            // DRY RUN MODE: Simulate the operation without making changes
+            if (dryRun)
+            {
+                foreach (var filePreview in preview.Files)
+                {
+                    var fileResult = new FileRenameResult
+                    {
+                        PreviousPath = filePreview.CurrentPath,
+                        NewPath = filePreview.NewPath,
+                        Success = true,
+                        IsDryRun = true
+                    };
+                    result.FileResults.Add(fileResult);
+                    result.FilesRenamed++;
+                }
+                
+                result.Success = true;
+                result.IsDryRun = true;
+                
+                _logger.LogInformation(
+                    "[DRY RUN] Would organize series {SeriesTitle}: {FilesRenamed} files would be renamed",
+                    series.Title, result.FilesRenamed);
+                
+                return result;
+            }
+            
+            // ACTUAL EXECUTION: Make real changes
             // Create the new directory structure
             var newDir = preview.NewPath;
             if (!Directory.Exists(newDir))

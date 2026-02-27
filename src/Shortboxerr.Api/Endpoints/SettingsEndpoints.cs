@@ -337,7 +337,7 @@ public static class SettingsEndpoints
                 {
                     try
                     {
-                        var results = await organizationService.ExecuteSeriesRenameAsync(seriesIds, CancellationToken.None);
+                        var results = await organizationService.ExecuteSeriesRenameAsync(seriesIds, dryRun: false, CancellationToken.None);
                         var renamed = results.Count(r => r.Success && r.FilesRenamed > 0);
                         var skipped = results.Count(r => r.Success && r.FilesRenamed == 0);
                         var failed = results.Count(r => !r.Success);

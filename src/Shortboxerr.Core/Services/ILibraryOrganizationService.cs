@@ -30,20 +30,24 @@ public interface ILibraryOrganizationService
     /// Executes the rename operation for the given series IDs.
     /// </summary>
     /// <param name="seriesIds">Series IDs to rename. Must not be empty.</param>
+    /// <param name="dryRun">If true, simulates the operation without actually modifying files.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of execution results.</returns>
     Task<IReadOnlyList<SeriesRenameResult>> ExecuteSeriesRenameAsync(
         int[] seriesIds,
+        bool dryRun = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Executes the rename operation for a single series.
     /// </summary>
     /// <param name="seriesId">Series ID to rename.</param>
+    /// <param name="dryRun">If true, simulates the operation without actually modifying files.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Execution result for the series.</returns>
     Task<SeriesRenameResult> ExecuteSeriesRenameAsync(
         int seriesId,
+        bool dryRun = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -259,6 +263,11 @@ public class SeriesRenameResult
     /// Individual file results.
     /// </summary>
     public List<FileRenameResult> FileResults { get; set; } = new();
+
+    /// <summary>
+    /// Whether this result is from a dry-run (simulation, no actual changes made).
+    /// </summary>
+    public bool IsDryRun { get; set; }
 }
 
 /// <summary>
@@ -290,4 +299,9 @@ public class FileRenameResult
     /// New path after rename.
     /// </summary>
     public string? NewPath { get; set; }
+
+    /// <summary>
+    /// Whether this result is from a dry-run (simulation, no actual changes made).
+    /// </summary>
+    public bool IsDryRun { get; set; }
 }

@@ -162,7 +162,7 @@ public static class SystemEndpoints
 
         logger.LogInformation("Starting 'Organize All' system task for {Count} series", seriesIds.Length);
 
-        var results = await organizationService.ExecuteSeriesRenameAsync(seriesIds, ct);
+        var results = await organizationService.ExecuteSeriesRenameAsync(seriesIds, dryRun: false, ct);
         
         // Invalidate caches for modified series
         foreach (var result in results.Where(r => r.Success))

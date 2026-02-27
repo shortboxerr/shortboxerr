@@ -651,7 +651,7 @@ public static class SeriesEndpoints
                 return Results.BadRequest(new { message = "Must provide at least one series ID" });
             }
 
-            var results = await organizationService.ExecuteSeriesRenameAsync(request.SeriesIds, ct);
+            var results = await organizationService.ExecuteSeriesRenameAsync(request.SeriesIds, dryRun: false, ct);
             
             // Invalidate caches for modified series
             foreach (var result in results.Where(r => r.Success))
@@ -696,7 +696,7 @@ public static class SeriesEndpoints
             int id,
             CancellationToken ct) =>
         {
-            var result = await organizationService.ExecuteSeriesRenameAsync(id, ct);
+            var result = await organizationService.ExecuteSeriesRenameAsync(id, dryRun: false, ct);
             
             if (!result.Success && result.Error == "Series not found")
                 return Results.NotFound(new { message = $"Series {id} not found" });
