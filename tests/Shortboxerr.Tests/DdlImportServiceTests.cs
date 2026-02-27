@@ -38,7 +38,7 @@ public class DdlImportServiceTests : IDisposable
             .AddInMemoryCollection(inMemorySettings)
             .Build();
         
-        // Setup settings service mock with default folder format
+        // Setup settings service mock with default folder format and auto-match settings
         _settingsServiceMock = new Mock<ISettingsService>();
         _settingsServiceMock.Setup(s => s.GetGeneralSettingsAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GeneralSettings
@@ -46,6 +46,19 @@ public class DdlImportServiceTests : IDisposable
                 SeriesFolderFormat = "{Publisher}/{Series Title} ({Year})",
                 IssueFileFormat = "{Series Title} #{Issue} ({Year})",
                 CollectionFileFormat = "{Series Title} - {Edition Type} Vol. {Volume}"
+            });
+        _settingsServiceMock.Setup(s => s.GetAutoMatchSettingsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AutoMatchSettings
+            {
+                YearMatchTolerance = 2,
+                RejectMismatchedYears = true,
+                YearMismatchPenalty = 25,
+                ConfidenceThreshold = 85,
+                RequireYearForAmbiguousSeries = true,
+                EnableAmbiguousSeriesDetection = true,
+                AutoMatchOnImport = true,
+                CreateMissingItems = true,
+                MaxCandidatesForReview = 5
             });
         
         _service = new DdlImportService(_context, _parser, _configuration, _settingsServiceMock.Object);
@@ -671,6 +684,268 @@ public class DdlImportServiceTests : IDisposable
         Assert.NotNull(fileAsset);
         Assert.Equal(issue.Id, fileAsset.IssueId);
         Assert.Equal("cbz", fileAsset.Format);
+    }
+
+    // ========== Year-Aware Matching Tests (EPIC 19.1) ==========
+
+    [Fact]
+    public async Task AutoMatch_WithExactYearMatch_ReturnsHighConfidence()
+    {
+        // Setup: Series with year 2017
+        var series = new Series
+        {
+            Title = "Deadman",
+            SortTitle = "deadman",
+            StartYear = 2017,
+            Publisher = "DC Comics",
+            Status = SeriesStatus.Continuing
+        };
+        _context.Series.Add(series);
+        await _context.SaveChangesAsync();
+
+        // Candidate with matching year
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            ReleaseTitle = "Deadman 001 (2017).cbz",
+            SourceSite = "TestSite",
+            SourceUrl = "https://example.com/download/123",
+            ParsedInfo = new DdlParsedInfo
+            {
+                SeriesTitle = "Deadman",
+                IssueNumber = 1,
+                Year = 2017,
+                Format = "cbz"
+            }
+        };
+
+        var result = await _service.AutoMatchAsync(candidate);
+
+        Assert.True(result.MatchFound);
+        Assert.Equal("Deadman", result.Series?.Title);
+        Assert.True(result.Confidence >= 80, $"Expected confidence >= 80, got {result.Confidence}");
+    }
+
+    [Fact]
+    public async Task AutoMatch_WithYearMismatchBeyondTolerance_RejectsMatch()
+    {
+        // Setup: Series with year 2006 (Deadman original run)
+        var series = new Series
+        {
+            Title = "Deadman",
+            SortTitle = "deadman",
+            StartYear = 2006,
+            Publisher = "DC Comics",
+            Status = SeriesStatus.Ended
+        };
+        _context.Series.Add(series);
+        await _context.SaveChangesAsync();
+
+        // Candidate from 2017 - 11 year difference, well beyond tolerance of 2
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            ReleaseTitle = "Deadman 001 (2017).cbz",
+            SourceSite = "TestSite",
+            SourceUrl = "https://example.com/download/123",
+            ParsedInfo = new DdlParsedInfo
+            {
+                SeriesTitle = "Deadman",
+                IssueNumber = 1,
+                Year = 2017,
+                Format = "cbz"
+            }
+        };
+
+        var result = await _service.AutoMatchAsync(candidate);
+
+        Assert.False(result.MatchFound, "Should reject match when year mismatch exceeds tolerance");
+        Assert.Contains("year mismatch", result.Explanation?.ToLower() ?? "");
+    }
+
+    [Fact]
+    public async Task AutoMatch_WithYearWithinTolerance_MatchesWithReducedConfidence()
+    {
+        // Setup: Series with year 2016
+        var series = new Series
+        {
+            Title = "Batman",
+            SortTitle = "batman",
+            StartYear = 2016,
+            Publisher = "DC Comics",
+            Status = SeriesStatus.Continuing
+        };
+        _context.Series.Add(series);
+        await _context.SaveChangesAsync();
+
+        // Candidate from 2017 - 1 year difference, within tolerance of 2
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            ReleaseTitle = "Batman 001 (2017).cbz",
+            SourceSite = "TestSite",
+            SourceUrl = "https://example.com/download/123",
+            ParsedInfo = new DdlParsedInfo
+            {
+                SeriesTitle = "Batman",
+                IssueNumber = 1,
+                Year = 2017,
+                Format = "cbz"
+            }
+        };
+
+        var result = await _service.AutoMatchAsync(candidate);
+
+        Assert.True(result.MatchFound);
+        Assert.Equal("Batman", result.Series?.Title);
+    }
+
+    [Fact]
+    public async Task AutoMatch_WithMultipleSameNameSeries_SelectsCorrectByYear()
+    {
+        // Setup: Two series with same name but different years
+        var series2006 = new Series
+        {
+            Title = "Deadman",
+            SortTitle = "deadman",
+            StartYear = 2006,
+            Publisher = "DC Comics",
+            Status = SeriesStatus.Ended
+        };
+        var series2017 = new Series
+        {
+            Title = "Deadman",
+            SortTitle = "deadman",
+            StartYear = 2017,
+            Publisher = "DC Comics",
+            Status = SeriesStatus.Ended
+        };
+        _context.Series.AddRange(series2006, series2017);
+        await _context.SaveChangesAsync();
+
+        // Candidate from 2017
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            ReleaseTitle = "Deadman 002 (2017).cbz",
+            SourceSite = "TestSite",
+            SourceUrl = "https://example.com/download/123",
+            ParsedInfo = new DdlParsedInfo
+            {
+                SeriesTitle = "Deadman",
+                IssueNumber = 2,
+                Year = 2017,
+                Format = "cbz"
+            }
+        };
+
+        var result = await _service.AutoMatchAsync(candidate);
+
+        Assert.True(result.MatchFound);
+        Assert.NotNull(result.Series);
+        // Should match the 2017 series, not the 2006 series
+        Assert.Equal(2017, result.Series.StartYear);
+    }
+
+    [Fact]
+    public async Task AutoMatch_AmbiguousSeriesWithoutYear_FlagsLowConfidence()
+    {
+        // Setup: Two series with same name
+        var series2006 = new Series
+        {
+            Title = "Deadman",
+            SortTitle = "deadman",
+            StartYear = 2006,
+            Publisher = "DC Comics",
+            Status = SeriesStatus.Ended
+        };
+        var series2017 = new Series
+        {
+            Title = "Deadman",
+            SortTitle = "deadman",
+            StartYear = 2017,
+            Publisher = "DC Comics",
+            Status = SeriesStatus.Ended
+        };
+        _context.Series.AddRange(series2006, series2017);
+        await _context.SaveChangesAsync();
+
+        // Candidate WITHOUT year - ambiguous!
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            ReleaseTitle = "Deadman 002.cbz",
+            SourceSite = "TestSite",
+            SourceUrl = "https://example.com/download/123",
+            ParsedInfo = new DdlParsedInfo
+            {
+                SeriesTitle = "Deadman",
+                IssueNumber = 2,
+                Year = null, // No year in release name
+                Format = "cbz"
+            }
+        };
+
+        var result = await _service.AutoMatchAsync(candidate);
+
+        Assert.True(result.MatchFound);
+        // Should have reduced confidence due to ambiguous series without year
+        Assert.True(result.Confidence < 70, 
+            $"Expected reduced confidence for ambiguous series without year, got {result.Confidence}");
+        Assert.Contains(result.ConfidenceReductions, r => r.ToLower().Contains("ambiguous"));
+    }
+
+    [Fact]
+    public async Task AutoMatch_WithRejectMismatchedYearsDisabled_MatchesWithPenalty()
+    {
+        // Setup with RejectMismatchedYears = false
+        _settingsServiceMock.Setup(s => s.GetAutoMatchSettingsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AutoMatchSettings
+            {
+                YearMatchTolerance = 2,
+                RejectMismatchedYears = false, // Don't reject, just penalize
+                YearMismatchPenalty = 25,
+                ConfidenceThreshold = 85,
+                RequireYearForAmbiguousSeries = true,
+                EnableAmbiguousSeriesDetection = true,
+                AutoMatchOnImport = true,
+                CreateMissingItems = true,
+                MaxCandidatesForReview = 5
+            });
+
+        // Setup: Series with year 2006
+        var series = new Series
+        {
+            Title = "Deadman",
+            SortTitle = "deadman",
+            StartYear = 2006,
+            Publisher = "DC Comics",
+            Status = SeriesStatus.Ended
+        };
+        _context.Series.Add(series);
+        await _context.SaveChangesAsync();
+
+        // Candidate from 2017 - big year difference but should still match (with penalty)
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            ReleaseTitle = "Deadman 001 (2017).cbz",
+            SourceSite = "TestSite",
+            SourceUrl = "https://example.com/download/123",
+            ParsedInfo = new DdlParsedInfo
+            {
+                SeriesTitle = "Deadman",
+                IssueNumber = 1,
+                Year = 2017,
+                Format = "cbz"
+            }
+        };
+
+        var result = await _service.AutoMatchAsync(candidate);
+
+        // When RejectMismatchedYears is false, it should still match but with reduced confidence
+        Assert.True(result.MatchFound);
+        Assert.Equal("Deadman", result.Series?.Title);
     }
 }
 
