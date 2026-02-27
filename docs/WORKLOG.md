@@ -1,5 +1,75 @@
 # Worklog
 
+## Iteration 177 (2026-02-27)
+**EPIC 19.5: Matching Audit & Logging**
+
+### Summary
+Implemented comprehensive match history logging to track auto-matching decisions over time. This enables accuracy analysis, identification of problematic series, and continuous improvement of matching quality.
+
+### Implementation
+
+**Backend (Core):**
+- Added `MatchHistory` entity with fields for:
+  - Parsed release info (title, series, issue, year, publisher)
+  - Match outcome and confidence score
+  - Verification status and corrections
+  - JSON-serialized score breakdown and reductions
+- Added `MatchOutcome` enum: NoMatch, AutoImported, PendingReview, ManuallyApproved, ManuallyRejected, ManuallyCorrected
+
+**Backend (Infrastructure):**
+- Created `IMatchHistoryService` interface with methods:
+  - `LogMatchAsync` - record match decisions
+  - `VerifyMatchAsync` - mark matches correct/incorrect
+  - `GetHistoryAsync` - paginated filtering queries
+  - `GetAccuracyStatsAsync` - calculate accuracy metrics
+  - `GetProblematicSeriesAsync` - find series with frequent mismatches
+- Created `MatchHistoryService` implementation
+- Updated `DdlImportService` to log AutoImported and PendingReview outcomes
+- Added EF Core migration for MatchHistories table
+
+**API:**
+- Added `MatchHistoryEndpoints`:
+  - `GET /api/match-history` - paginated history with filtering
+  - `GET /api/match-history/{id}` - single record
+  - `PUT /api/match-history/{id}/verify` - mark correct/incorrect
+  - `GET /api/match-history/stats` - accuracy statistics
+  - `GET /api/match-history/problematic-series` - high-mismatch series
+
+**Frontend:**
+- Added TypeScript interfaces for match history types
+- Added API client methods for all endpoints
+- Added `MatchStatisticsSection` component to Import Settings showing:
+  - Total matches, auto-imported, pending review counts
+  - Accuracy rate with color coding
+  - Verified correct/incorrect/unverified counts
+  - Average confidence score
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Entities/MatchHistory.cs` | New entity with outcome enum |
+| `src/Shortboxerr.Core/Services/IMatchHistoryService.cs` | New interface with DTOs |
+| `src/Shortboxerr.Infrastructure/Services/MatchHistoryService.cs` | Implementation |
+| `src/Shortboxerr.Infrastructure/Persistence/ShortboxerrDbContext.cs` | DbSet and entity config |
+| `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Service registration |
+| `src/Shortboxerr.Infrastructure/Ddl/DdlImportService.cs` | Logging integration |
+| `src/Shortboxerr.Api/Endpoints/MatchHistoryEndpoints.cs` | New API endpoints |
+| `src/Shortboxerr.Api/Program.cs` | Endpoint registration |
+| `ui/src/api/client.ts` | TypeScript interfaces and API methods |
+| `ui/src/pages/SettingsPage.tsx` | Match statistics UI section |
+| `tests/Shortboxerr.Tests/MatchHistoryServiceTests.cs` | 5 unit tests |
+
+### Commits
+- `feat(audit): add match history logging and API (EPIC 19.5)`
+- `feat(audit): add match statistics UI and unit tests (EPIC 19.5)`
+
+### Tests
+- All 5 MatchHistoryService tests pass
+- Covers: logging, filtering, statistics, verification, problematic series
+
+---
+
 ## Iteration 176 (2026-02-24)
 **EPIC 19.4: Match Verification & Confirmation**
 

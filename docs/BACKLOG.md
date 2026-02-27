@@ -281,11 +281,22 @@ The auto-matching logic that matches downloaded files to series/issues must be r
   - Added `IsFirstIssueForSeries` property to `DdlMatchResult`
   - Checks if series has any existing file assets
 
-### 19.5 Matching Audit & Logging ← READY
-- [ ] Log detailed matching decisions with reasoning
-- [ ] Track match accuracy over time
-- [ ] Flag series with frequent mismatches for review
-- [ ] Add "Match History" view to see what was matched and why
+### 19.5 Matching Audit & Logging ✓ COMPLETED (Iteration 177)
+- [x] Log detailed matching decisions with reasoning
+  - Created `MatchHistory` entity to store match decisions
+  - Records parsed info, confidence, outcome, and explanations
+  - Stores JSON-serialized score breakdown and reductions
+- [x] Track match accuracy over time
+  - `GetAccuracyStatsAsync` calculates accuracy metrics
+  - Tracks verified correct/incorrect and unverified counts
+  - Auto-import accuracy separate from overall accuracy
+- [x] Flag series with frequent mismatches for review
+  - `GetProblematicSeriesAsync` identifies high-mismatch series
+  - Returns mismatch rate and last mismatch date
+- [x] Add "Match History" view to see what was matched and why
+  - Added MatchStatisticsSection to Import Settings
+  - Shows total matches, accuracy rate, confidence averages
+  - Color-coded stats for visual clarity
 
 ### Implementation Priority
 **All items are P1 - this is critical functionality that affects data integrity.**

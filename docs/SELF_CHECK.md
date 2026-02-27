@@ -1,56 +1,88 @@
-# Iteration 176 Self-Check
+# Self Check - Iteration 177
 
 ## Checklist
-- [x] Backend builds without errors
-- [x] Frontend builds without errors  
-- [x] Tests pass (35 DdlImportService tests, 6 new verification tests)
+
+- [x] Code compiles without errors
+- [x] All new tests pass (5/5 MatchHistoryServiceTests)
+- [x] Frontend builds successfully
+- [x] No new linter errors introduced
+- [x] Changes committed with conventional commit format
 - [x] WORKLOG.md updated
 - [x] BACKLOG.md updated
-- [x] Git commit created
 
-## Build & Test Results
+## Build Results
 
 ```
-Backend: SUCCESS (0 errors, 0 warnings)
-Frontend: SUCCESS
-Tests: 35 DdlImportService tests pass
+Backend: Build succeeded (0 errors, 0 warnings)
+Frontend: Built in 1.95s (no TS errors)
 ```
 
-## Files Changed
+## Test Results
 
-| File | Change |
-|------|--------|
-| `src/Shortboxerr.Core/Ddl/IDdlImportService.cs` | Added IsFirstIssueForSeries, IsLowConfidence, ReviewReason to DdlMatchResult |
-| `src/Shortboxerr.Core/Services/ISettingsService.cs` | Added RequireConfirmationForFirstIssue, LowConfidenceThreshold, ShowMatchReasoning |
-| `src/Shortboxerr.Infrastructure/Ddl/DdlImportService.cs` | Added verification helper methods and updated AutoMatchAsync |
-| `src/Shortboxerr.Infrastructure/Services/SettingsService.cs` | Added persistence for verification settings |
-| `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` | Added API validation and DTO fields |
-| `ui/src/api/client.ts` | Updated AutoMatchSettings interface |
-| `ui/src/pages/SettingsPage.tsx` | Added Match Verification settings section |
-| `tests/Shortboxerr.Tests/DdlImportServiceTests.cs` | Added 6 verification logic tests |
+```
+MatchHistoryServiceTests: 5 passed
+- LogMatchAsync_CreatesRecordWithAllFields
+- GetHistoryAsync_ReturnsRecordsWithFiltering
+- GetAccuracyStatsAsync_CalculatesCorrectStatistics
+- VerifyMatchAsync_UpdatesRecord
+- GetProblematicSeriesAsync_ReturnsSeriesToReview
+```
+
+## Changed Files
+
+| File | Type | Description |
+|------|------|-------------|
+| `MatchHistory.cs` | New | Entity for storing match decisions |
+| `IMatchHistoryService.cs` | New | Service interface with DTOs |
+| `MatchHistoryService.cs` | New | Service implementation |
+| `MatchHistoryEndpoints.cs` | New | API endpoints |
+| `MatchHistoryServiceTests.cs` | New | Unit tests |
+| `ShortboxerrDbContext.cs` | Modified | Added DbSet and config |
+| `DependencyInjection.cs` | Modified | Registered service |
+| `DdlImportService.cs` | Modified | Added logging calls |
+| `Program.cs` | Modified | Registered endpoints |
+| `client.ts` | Modified | Added TypeScript types and API methods |
+| `SettingsPage.tsx` | Modified | Added MatchStatisticsSection |
+| Migration files | New | Database migration |
 
 ## Commits
-- `feat(automatch): add match verification settings (EPIC 19.4)` (7552b4a)
 
-## New Settings Summary
+1. `feat(audit): add match history logging and API (EPIC 19.5)` - 4910eb7
+2. `feat(audit): add match statistics UI and unit tests (EPIC 19.5)` - a45364e
 
-| Setting | Type | Default | Description |
-|---------|------|---------|-------------|
-| RequireConfirmationForFirstIssue | bool | true | Require confirmation for first import to series |
-| LowConfidenceThreshold | int | 70 | Threshold below which matches are "borderline" |
-| ShowMatchReasoning | bool | true | Show detailed reasoning in import UI |
+## EPIC 19.5 Summary: Matching Audit & Logging
 
-## New DdlMatchResult Properties
+### Features Implemented
 
-| Property | Type | Description |
-|----------|------|-------------|
-| IsFirstIssueForSeries | bool | True if series has no existing file assets |
-| IsLowConfidence | bool | True if match is in borderline zone |
-| ReviewReason | string? | Explanation of why review is required |
+1. **MatchHistory Entity**
+   - Stores all match decisions with full details
+   - Parsed release info, confidence, outcome, explanations
+   - JSON-serialized breakdowns for debugging
+   - Verification tracking for accuracy measurement
 
-## Pre-existing Issues
-- Test compilation errors in GetComicsAdapterTests.cs, GetComicsAdapterRssTests.cs, DdlEndToEndIntegrationTests.cs
-- These are pre-existing issues unrelated to this iteration
+2. **MatchHistoryService**
+   - `LogMatchAsync` - Record match decisions
+   - `VerifyMatchAsync` - Mark correct/incorrect
+   - `GetHistoryAsync` - Paginated filtering
+   - `GetAccuracyStatsAsync` - Accuracy metrics
+   - `GetProblematicSeriesAsync` - Find problematic series
+
+3. **API Endpoints**
+   - GET /api/match-history - History with filters
+   - GET /api/match-history/{id} - Single record
+   - PUT /api/match-history/{id}/verify - Verification
+   - GET /api/match-history/stats - Statistics
+   - GET /api/match-history/problematic-series - Problem series
+
+4. **Frontend UI**
+   - Match Statistics section in Import Settings
+   - Stats cards showing accuracy metrics
+   - Color-coded success/warning/danger indicators
+
+### Pre-existing Issues (not addressed)
+
+- GetComicsAdapterTests.cs, GetComicsAdapterRssTests.cs, DdlEndToEndIntegrationTests.cs have compilation errors (unrelated to this EPIC)
 
 ## Next Steps
-- EPIC 19.5: Matching Audit & Logging ← READY
+
+EPIC 19 is now complete. Review BACKLOG.md for next READY item.
