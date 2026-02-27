@@ -947,5 +947,230 @@ public class DdlImportServiceTests : IDisposable
         Assert.True(result.MatchFound);
         Assert.Equal("Deadman", result.Series?.Title);
     }
+
+    // === EPIC 19.2: Publisher Disambiguation Tests ===
+
+    [Fact]
+    public async Task AutoMatch_WithMatchingPublisher_ReturnsHigherConfidence()
+    {
+        var series = new Series
+        {
+            Title = "Batman",
+            SortTitle = "batman",
+            StartYear = 2016,
+            Publisher = "DC Comics",
+            Status = SeriesStatus.Continuing
+        };
+        _context.Series.Add(series);
+        await _context.SaveChangesAsync();
+
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            ReleaseTitle = "Batman 001 (2016) (DC).cbz",
+            SourceSite = "TestSite",
+            SourceUrl = "https://example.com/download/123",
+            ParsedInfo = new DdlParsedInfo
+            {
+                SeriesTitle = "Batman",
+                IssueNumber = 1,
+                Year = 2016,
+                Publisher = "DC Comics", // Matches series publisher
+                Format = "cbz"
+            }
+        };
+
+        var result = await _service.AutoMatchAsync(candidate);
+
+        Assert.True(result.MatchFound);
+        Assert.NotNull(result.Series);
+        // Score breakdown should show publisher match bonus
+        Assert.NotNull(result.ScoreBreakdown);
+        Assert.Equal("Exact", result.ScoreBreakdown.PublisherMatchStatus);
+        Assert.True(result.ScoreBreakdown.PublisherAdjustment > 0);
+    }
+
+    [Fact]
+    public async Task AutoMatch_WithMismatchedPublisher_ReducesConfidence()
+    {
+        var series = new Series
+        {
+            Title = "Batman",
+            SortTitle = "batman",
+            StartYear = 2016,
+            Publisher = "DC Comics",
+            Status = SeriesStatus.Continuing
+        };
+        _context.Series.Add(series);
+        await _context.SaveChangesAsync();
+
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            ReleaseTitle = "Batman 001 (2016) (Marvel).cbz",
+            SourceSite = "TestSite",
+            SourceUrl = "https://example.com/download/123",
+            ParsedInfo = new DdlParsedInfo
+            {
+                SeriesTitle = "Batman",
+                IssueNumber = 1,
+                Year = 2016,
+                Publisher = "Marvel", // Different publisher!
+                Format = "cbz"
+            }
+        };
+
+        var result = await _service.AutoMatchAsync(candidate);
+
+        Assert.True(result.MatchFound);
+        Assert.NotNull(result.ScoreBreakdown);
+        Assert.Equal("Mismatch", result.ScoreBreakdown.PublisherMatchStatus);
+        Assert.True(result.ScoreBreakdown.PublisherAdjustment < 0);
+    }
+
+    [Fact]
+    public async Task AutoMatch_AmbiguousSeriesWithPublisher_PrefersMatchingPublisher()
+    {
+        // Two series with same name but different publishers
+        var dcSeries = new Series
+        {
+            Title = "Spawn",
+            SortTitle = "spawn",
+            StartYear = 2019,
+            Publisher = "DC Comics", // Wrong publisher
+            Status = SeriesStatus.Continuing
+        };
+        var imageSeries = new Series
+        {
+            Title = "Spawn",
+            SortTitle = "spawn",
+            StartYear = 2019,
+            Publisher = "Image Comics", // Correct publisher
+            Status = SeriesStatus.Continuing
+        };
+        _context.Series.AddRange(dcSeries, imageSeries);
+        await _context.SaveChangesAsync();
+
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            ReleaseTitle = "Spawn 001 (2019) (Image).cbz",
+            SourceSite = "TestSite",
+            SourceUrl = "https://example.com/download/123",
+            ParsedInfo = new DdlParsedInfo
+            {
+                SeriesTitle = "Spawn",
+                IssueNumber = 1,
+                Year = 2019,
+                Publisher = "Image Comics",
+                Format = "cbz"
+            }
+        };
+
+        var result = await _service.AutoMatchAsync(candidate);
+
+        Assert.True(result.MatchFound);
+        Assert.NotNull(result.Series);
+        Assert.Equal("Image Comics", result.Series.Publisher);
+    }
+
+    [Fact]
+    public async Task AutoMatch_WithRejectMismatchedPublishers_RejectsOnMismatch()
+    {
+        // Setup with RejectMismatchedPublishers = true
+        _settingsServiceMock.Setup(s => s.GetAutoMatchSettingsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AutoMatchSettings
+            {
+                YearMatchTolerance = 2,
+                RejectMismatchedYears = true,
+                YearMismatchPenalty = 25,
+                ConfidenceThreshold = 85,
+                RequireYearForAmbiguousSeries = true,
+                EnableAmbiguousSeriesDetection = true,
+                PublisherMatchBonus = 15,
+                PublisherMismatchPenalty = 20,
+                PreferPublisherMatchForAmbiguous = true,
+                RejectMismatchedPublishers = true, // Strict mode
+                AutoMatchOnImport = true,
+                CreateMissingItems = true,
+                MaxCandidatesForReview = 5
+            });
+
+        var series = new Series
+        {
+            Title = "Batman",
+            SortTitle = "batman",
+            StartYear = 2016,
+            Publisher = "DC Comics",
+            Status = SeriesStatus.Continuing
+        };
+        _context.Series.Add(series);
+        await _context.SaveChangesAsync();
+
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            ReleaseTitle = "Batman 001 (2016) (Marvel).cbz",
+            SourceSite = "TestSite",
+            SourceUrl = "https://example.com/download/123",
+            ParsedInfo = new DdlParsedInfo
+            {
+                SeriesTitle = "Batman",
+                IssueNumber = 1,
+                Year = 2016,
+                Publisher = "Marvel", // Mismatched publisher
+                Format = "cbz"
+            }
+        };
+
+        var result = await _service.AutoMatchAsync(candidate);
+
+        // With RejectMismatchedPublishers=true, should not match
+        Assert.False(result.MatchFound);
+        Assert.Contains("publisher mismatch", result.Explanation, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task AutoMatch_HasDetailedConfidenceBreakdown()
+    {
+        var series = new Series
+        {
+            Title = "Wonder Woman",
+            SortTitle = "wonder woman",
+            StartYear = 2016,
+            Publisher = "DC Comics",
+            Status = SeriesStatus.Continuing
+        };
+        _context.Series.Add(series);
+        await _context.SaveChangesAsync();
+
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            ReleaseTitle = "Wonder Woman 001 (2016) (DC).cbz",
+            SourceSite = "TestSite",
+            SourceUrl = "https://example.com/download/123",
+            ParsedInfo = new DdlParsedInfo
+            {
+                SeriesTitle = "Wonder Woman",
+                IssueNumber = 1,
+                Year = 2016,
+                Publisher = "DC Comics",
+                Format = "cbz"
+            }
+        };
+
+        var result = await _service.AutoMatchAsync(candidate);
+
+        Assert.True(result.MatchFound);
+        Assert.NotNull(result.ScoreBreakdown);
+        
+        // Verify breakdown has all expected components
+        Assert.True(result.ScoreBreakdown.TitleScore > 0);
+        Assert.NotEmpty(result.ScoreBreakdown.YearMatchStatus);
+        Assert.NotEmpty(result.ScoreBreakdown.PublisherMatchStatus);
+        Assert.True(result.ScoreBreakdown.FinalScore > 0);
+        Assert.NotEmpty(result.ScoreBreakdown.ScoreExplanations);
+    }
 }
 
