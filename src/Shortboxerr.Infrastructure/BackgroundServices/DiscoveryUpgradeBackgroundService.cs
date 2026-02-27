@@ -110,6 +110,7 @@ public class DiscoveryUpgradeBackgroundService : BackgroundService
         var dbContext = scope.ServiceProvider.GetRequiredService<ShortboxerrDbContext>();
         var walkSoftlyClient = scope.ServiceProvider.GetRequiredService<IWalkSoftlyClient>();
         var comicVineClient = scope.ServiceProvider.GetRequiredService<IComicVineClient>();
+        var coverService = scope.ServiceProvider.GetRequiredService<ICoverService>();
 
         // Get all cached discovery weeks (current week and configured weeks ahead)
         var today = DateTime.UtcNow.Date;
@@ -151,6 +152,7 @@ public class DiscoveryUpgradeBackgroundService : BackgroundService
                     cachedWeek,
                     walkSoftlyClient,
                     comicVineClient,
+                    coverService,
                     dbContext,
                     cancellationToken);
 
@@ -178,6 +180,7 @@ public class DiscoveryUpgradeBackgroundService : BackgroundService
         CachedDiscoveryWeek cachedWeek,
         IWalkSoftlyClient walkSoftlyClient,
         IComicVineClient comicVineClient,
+        ICoverService coverService,
         ShortboxerrDbContext dbContext,
         CancellationToken cancellationToken)
     {
@@ -284,7 +287,38 @@ public class DiscoveryUpgradeBackgroundService : BackgroundService
                                 issue.CoverDate = cvIssue.CoverDate;
                             if (cvIssue.Image != null)
                             {
-                                issue.Image = cvIssue.Image;
+                                // Download ComicVine cover locally for caching
+                                var coverUrl = cvIssue.Image.MediumUrl ?? cvIssue.Image.SmallUrl;
+                                if (!string.IsNullOrEmpty(coverUrl))
+                                {
+                                    var downloadResult = await coverService.DownloadExternalCoverAsync(
+                                        coverUrl,
+                                        CoverType.Discovery,
+                                        issue.Id,
+                                        CoverCacheSource.ComicVine,
+                                        CoverSize.Medium,
+                                        cancellationToken);
+                                    
+                                    if (downloadResult.Success)
+                                    {
+                                        // Use local path for the cover URL
+                                        issue.Image = new ComicVineImage
+                                        {
+                                            MediumUrl = $"/api/v1/covers/discovery/{issue.Id}/medium",
+                                            SmallUrl = $"/api/v1/covers/discovery/{issue.Id}/small",
+                                            OriginalUrl = coverUrl
+                                        };
+                                    }
+                                    else
+                                    {
+                                        // Fallback to remote URL if download fails
+                                        issue.Image = cvIssue.Image;
+                                    }
+                                }
+                                else
+                                {
+                                    issue.Image = cvIssue.Image;
+                                }
                                 issue.CoverSource = "ComicVine";
                                 issue.CoverMatchMethod = "CvIssueIdUpgrade";
                             }
