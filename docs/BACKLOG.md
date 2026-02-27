@@ -23,8 +23,9 @@
 | ✅ | EPIC 16 | E2E Testing Infrastructure | [Archive](./COMPLETED.md#epic-16-end-to-end-testing-infrastructure--completed) |
 | ✅ | EPIC 17 | DDL Download Robustness | [Archive](./COMPLETED.md#epic-17-ddl-download-link-robustness--completed) |
 | 🔄 | [EPIC 18](#epic-18-library-organization--rename-sonarradarr-parity--in-progress) | Library Organization | In Progress |
+| 🔴 | [EPIC 19](#epic-19-auto-matching-robustness-p1---critical--high-priority) | Auto-Matching Robustness | **P1 Critical** |
 
-**Legend:** ✅ Completed | 🔄 In Progress | 📋 Planned
+**Legend:** ✅ Completed | 🔄 In Progress | 📋 Planned | 🔴 High Priority
 
 > **Note:** Completed EPICs are archived in [COMPLETED.md](./COMPLETED.md) to keep this document focused on active work.
 
@@ -233,6 +234,45 @@ Reorganize existing library files to match current naming format settings.
 
 ---
 
+## EPIC 19: Auto-Matching Robustness (P1 - Critical) 🔴 HIGH PRIORITY
+
+The auto-matching logic that matches downloaded files to series/issues must be rock-solid and practically fool-proof. Current issues include files from different series with similar names being incorrectly matched (e.g., "Deadman (2017)" files matched to "Deadman (2006)" series).
+
+### 19.1 Year-Aware Matching ← READY
+- [ ] Extract year from release filename (e.g., "Deadman 002 (2017).cbz")
+- [ ] Compare extracted year against series StartYear
+- [ ] Reject matches where year differs by more than 1-2 years (configurable tolerance)
+- [ ] Handle cases where year is missing from filename (require confirmation?)
+
+### 19.2 Series Name Disambiguation ← READY  
+- [ ] Detect when multiple series share the same base name (e.g., multiple "Deadman" series)
+- [ ] Require stricter matching criteria when ambiguous series exist
+- [ ] Consider publisher in matching when available in release name
+- [ ] Add confidence scoring to matches
+
+### 19.3 Release Parser Improvements ← READY
+- [ ] Improve year extraction from various filename formats
+- [ ] Handle volume indicators (Vol. 1, Vol. 2, v1, v2)
+- [ ] Detect reboot/revival indicators in release names
+- [ ] Extract publisher hints from release group naming conventions
+
+### 19.4 Match Verification & Confirmation ← READY
+- [ ] Add "low confidence" flag to questionable matches
+- [ ] Queue low-confidence matches for manual review instead of auto-importing
+- [ ] Show match confidence score in Manual Import UI
+- [ ] Option to require manual confirmation for first issue of any series
+
+### 19.5 Matching Audit & Logging ← READY
+- [ ] Log detailed matching decisions with reasoning
+- [ ] Track match accuracy over time
+- [ ] Flag series with frequent mismatches for review
+- [ ] Add "Match History" view to see what was matched and why
+
+### Implementation Priority
+**All items are P1 - this is critical functionality that affects data integrity.**
+
+---
+
 ## Story Ordering Notes
 
 **Dependencies:**
@@ -241,3 +281,4 @@ Reorganize existing library files to match current naming format settings.
 - EPIC 12 has no hard dependencies; can be implemented incrementally
 - EPIC 14 contains standalone enhancements with varied dependencies
 - EPIC 18 depends on EPIC 2 (Import Pipeline) for file organization patterns
+- EPIC 19 depends on EPIC 2 (Import Pipeline) and EPIC 8 (DDL Site Adapters) for matching context
