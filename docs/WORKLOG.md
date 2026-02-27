@@ -1,5 +1,42 @@
 # Worklog
 
+## Iteration 178 (2026-02-27)
+**EPIC 11.27: Pull List Data Flow Refactoring - Local Cover Caching Integration**
+
+### Summary
+Completed the local cover caching integration for discovery covers. When the upgrade service transitions issues from interim Metron data to authoritative ComicVine data, it now also downloads the ComicVine cover locally for caching.
+
+### Implementation
+
+**DiscoveryUpgradeBackgroundService:**
+- Added `ICoverService` parameter to `UpgradeWeekAsync`
+- When upgrading an issue with new ComicVine data:
+  - Downloads the cover using `DownloadExternalCoverAsync` with `CoverCacheSource.ComicVine`
+  - Updates image URLs to use local path (`/api/v1/covers/discovery/{issueId}/medium`)
+  - Falls back to remote URL if download fails
+  - Preserves original URL in `OriginalUrl` property
+
+**Cover Caching Architecture (Complete):**
+1. `DiscoveryCoverEnrichmentService` - Downloads Metron covers locally when enriching
+2. `DiscoveryUpgradeBackgroundService` - Downloads ComicVine covers locally when upgrading
+3. `CoverService.GetDiscoveryCoverAsync` - Serves cached covers from disk
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/BackgroundServices/DiscoveryUpgradeBackgroundService.cs` | Added local cover download during upgrade |
+| `tests/Shortboxerr.Tests/DiscoveryUpgradeBackgroundServiceTests.cs` | Added 5 new tests for cover caching |
+
+### Commits
+- `feat(covers): download ComicVine covers locally during upgrade (11.27)`
+- `test(covers): add local cover caching tests for discovery upgrade`
+
+### Tests
+- All 15 DiscoveryUpgradeBackgroundServiceTests pass
+
+---
+
 ## Iteration 177 (2026-02-27)
 **EPIC 19.5: Matching Audit & Logging**
 

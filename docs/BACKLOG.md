@@ -15,7 +15,7 @@
 | ✅ | EPIC 8 | DDL Site Adapters | [Archive](./COMPLETED.md#epic-8-ddl-site-adapters--download-hosts-mylar3-parity--completed) |
 | 🔄 | [EPIC 9](#epic-9-comicvine-integration-mylar3-parity--in-progress) | ComicVine Integration | In Progress |
 | ✅ | EPIC 10 | NZB/Usenet Support | [Archive](./COMPLETED.md#epic-10-nzbusenet-support-mylar3sonarradarr-parity--completed) |
-| 🔄 | [EPIC 11](#epic-11-weekly-pull-list-mylar3-parity--in-progress) | Weekly Pull List | In Progress |
+| ✅ | EPIC 11 | Weekly Pull List | [Full Details Below](#epic-11-weekly-pull-list-mylar3-parity--completed) |
 | 🔄 | [EPIC 12](#epic-12-performance--caching-strategy--in-progress) | Performance & Caching | In Progress |
 | ✅ | EPIC 13 | Logging & Diagnostics | [Full Details Below](#epic-13-logging--diagnostics-mylar3sonarradarr-parity--completed) |
 | 📋 | [EPIC 14](#epic-14-future-enhancements--planned) | Future Enhancements | Planned |
@@ -55,7 +55,7 @@ All major items complete. Minor enhancements may be added as discovered.
 
 ---
 
-## EPIC 11: Weekly Pull List (Mylar3 Parity) 🔄 IN PROGRESS
+## EPIC 11: Weekly Pull List (Mylar3 Parity) ✅ COMPLETED
 
 Track upcoming comic releases and automate wanted list management.
 
@@ -88,10 +88,10 @@ Track upcoming comic releases and automate wanted list management.
 
 ### Remaining Work
 
-#### 11.26 Pull List: Local Caching of Metron Cover Images ← ON HOLD
-On hold pending completion of 11.27 (Pull List Data Flow Refactoring).
+#### 11.26 Pull List: Local Caching of Metron Cover Images ✅ COMPLETED (Iteration 178)
+Integrated with 11.27 - Discovery covers are now cached locally.
 
-#### 11.27 Pull List Data Flow Refactoring: Unified Enrichment Strategy 🔄 IN PROGRESS
+#### 11.27 Pull List Data Flow Refactoring: Unified Enrichment Strategy ✅ COMPLETED (Iteration 178)
 Refactor Pull List data retrieval and enrichment to establish a clear hierarchy of data sources with well-defined finalization states.
 
 **Data Source Hierarchy:**
@@ -106,10 +106,14 @@ Refactor Pull List data retrieval and enrichment to establish a clear hierarchy 
 - [x] Refine Metron fallback path
 - [x] Implement background upgrade service (Iteration 158)
 - [x] Tests for enrichment state transitions
-
-**Remaining:**
-- [ ] Update local cover caching (integrates 11.26)
+- [x] Update local cover caching (integrates 11.26) - Iteration 178
 - [x] Fix `/api/v1/covers/discovery/{id}` endpoint naming (Iteration 167)
+
+**Local Cover Caching Architecture (Iteration 178):**
+- `DiscoveryCoverEnrichmentService` downloads Metron covers locally
+- `DiscoveryUpgradeBackgroundService` downloads ComicVine covers locally during upgrade
+- `CoverService.GetDiscoveryCoverAsync` serves cached covers from disk
+- Covers stored at `covers/discovery/{CvIssueId}/{size}.jpg`
 
 ---
 
