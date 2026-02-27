@@ -247,11 +247,15 @@ The auto-matching logic that matches downloaded files to series/issues must be r
 - [x] Add API endpoints for settings
 - [x] Add UI in Import settings tab
 
-### 19.2 Series Name Disambiguation ← READY  
-- [ ] Detect when multiple series share the same base name (e.g., multiple "Deadman" series)
-- [ ] Require stricter matching criteria when ambiguous series exist
-- [ ] Consider publisher in matching when available in release name
-- [ ] Add confidence scoring to matches
+### 19.2 Series Name Disambiguation ✅ COMPLETED (Iteration 174)
+- [x] Detect when multiple series share the same base name (already in 19.1)
+- [x] Require stricter matching criteria when ambiguous series exist
+- [x] Consider publisher in matching when available in release name
+- [x] Add detailed confidence scoring breakdown (ConfidenceBreakdown class)
+- [x] Add publisher match bonus/mismatch penalty settings
+- [x] Add PreferPublisherMatchForAmbiguous setting to filter by publisher
+- [x] Add RejectMismatchedPublishers setting for strict mode
+- [x] Add Publisher Matching section in UI
 
 ### 19.3 Release Parser Improvements ← READY
 - [ ] Improve year extraction from various filename formats

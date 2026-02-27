@@ -1,5 +1,73 @@
 # Worklog
 
+## Iteration 174 (2026-02-24)
+**EPIC 19.2: Series Name Disambiguation**
+
+### Summary
+Enhanced auto-matching with publisher-based disambiguation to improve match accuracy when multiple series share the same name. Added detailed confidence scoring breakdown for diagnostics.
+
+### Implementation
+
+**Backend (Core + Infrastructure):**
+- Added `ConfidenceBreakdown` class with detailed score components (title, year, publisher adjustments)
+- Added publisher matching settings to `AutoMatchSettings`:
+  - `PublisherMatchBonus` (default +15)
+  - `PublisherMismatchPenalty` (default -20)
+  - `PreferPublisherMatchForAmbiguous` (filter by publisher when ambiguous)
+  - `RejectMismatchedPublishers` (strict mode - reject on mismatch)
+- Refactored `CalculateSeriesMatchScore()` to return detailed `SeriesScoreResult`
+- Updated `AutoMatchAsync()` to:
+  - Filter candidate series by publisher when ambiguous
+  - Apply publisher mismatch rejection when enabled
+  - Build and attach `ConfidenceBreakdown` to results
+- Added `ScoreBreakdown` property to `DdlMatchResult`
+
+**API:**
+- Updated `AutoMatchSettingsRequest` with publisher settings
+- Updated `UpdateAutoMatchSettings` endpoint to validate and persist publisher settings
+
+**Frontend:**
+- Added "Publisher Matching" settings section with:
+  - Publisher Match Bonus input
+  - Publisher Mismatch Penalty input
+  - Prefer Publisher for Ambiguous toggle
+  - Reject Mismatched Publishers toggle
+- Updated `AutoMatchSettings` interface with publisher fields
+
+### Settings Added
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| PublisherMatchBonus | 15 | Confidence boost for matching publisher |
+| PublisherMismatchPenalty | 20 | Confidence reduction for mismatched publisher |
+| PreferPublisherMatchForAmbiguous | true | Filter by publisher when ambiguous |
+| RejectMismatchedPublishers | false | Hard reject on publisher mismatch |
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Ddl/IDdlImportService.cs` | Added ConfidenceBreakdown class, ScoreBreakdown to DdlMatchResult |
+| `src/Shortboxerr.Core/Services/ISettingsService.cs` | Added publisher matching settings to AutoMatchSettings |
+| `src/Shortboxerr.Infrastructure/Ddl/DdlImportService.cs` | Enhanced scoring with publisher logic, detailed breakdown |
+| `src/Shortboxerr.Infrastructure/Services/SettingsService.cs` | Added publisher settings persistence |
+| `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` | Added publisher settings to API endpoint |
+| `ui/src/api/client.ts` | Added publisher settings to AutoMatchSettings interface |
+| `ui/src/pages/SettingsPage.tsx` | Added Publisher Matching settings section |
+| `tests/Shortboxerr.Tests/DdlImportServiceTests.cs` | Added 5 publisher disambiguation tests |
+
+### Commits
+- `feat(automatch): add publisher disambiguation for series matching (EPIC 19.2)`
+- `feat(ui): add publisher matching settings in Import settings tab`
+- `test(automatch): add publisher disambiguation tests (EPIC 19.2)`
+
+### Testing Results
+- Backend Build: SUCCESS
+- Frontend Build: SUCCESS
+- Tests: 18 DdlImportService tests pass (5 new publisher tests added)
+
+---
+
 ## Iteration 173 (2026-02-24)
 **EPIC 19.1: Year-Aware Matching**
 
