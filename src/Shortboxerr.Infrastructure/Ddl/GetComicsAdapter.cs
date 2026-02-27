@@ -791,7 +791,10 @@ public partial class GetComicsAdapter : IDdlSiteAdapter
     
     #region Page Parsing
     
-    private List<DdlCandidate> ParseSearchPage(string html)
+    /// <summary>
+    /// Parses search results from HTML content.
+    /// </summary>
+    internal List<DdlCandidate> ParseSearchPage(string html)
     {
         var (candidates, _, _) = ParseSearchResultPage(html);
         return candidates;

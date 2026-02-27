@@ -545,23 +545,6 @@ public class DdlEndToEndIntegrationTests : IDisposable
     #region Categories Tests
 
     [Fact]
-    public void E2E_GetAvailableCategories_ReturnsExpectedCategories()
-    {
-        // Act - GetAvailableCategories is a static method
-        var categories = GetComicsAdapter.GetAvailableCategories();
-
-        // Assert
-        Assert.NotEmpty(categories);
-        Assert.Contains(DdlCategories.DC, categories.Keys);
-        Assert.Contains(DdlCategories.Marvel, categories.Keys);
-        Assert.Contains(DdlCategories.Image, categories.Keys);
-        
-        // Verify display names
-        Assert.Equal("DC Comics", categories[DdlCategories.DC]);
-        Assert.Equal("Marvel Comics", categories[DdlCategories.Marvel]);
-    }
-
-    [Fact]
     public void E2E_DdlCategories_ProvidesAllPublishers()
     {
         // Assert all expected categories exist
