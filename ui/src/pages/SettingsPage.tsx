@@ -4832,6 +4832,10 @@ function ImportSettings() {
     publisherMismatchPenalty: 20,
     preferPublisherMatchForAmbiguous: true,
     rejectMismatchedPublishers: false,
+    // Verification settings (EPIC 19.4)
+    requireConfirmationForFirstIssue: true,
+    lowConfidenceThreshold: 70,
+    showMatchReasoning: true,
     // Import behavior
     autoMatchOnImport: true,
     createMissingItems: true,
@@ -5018,6 +5022,57 @@ function ImportSettings() {
               onChange={(e) => setLocalSettings(s => ({ ...s, rejectMismatchedPublishers: e.target.checked }))}
             />
             <span style={{ fontSize: '13px' }}>Reject matches when publishers don't match (strict mode)</span>
+          </label>
+        </SettingsField>
+      </SettingsSection>
+
+      <SettingsSection title="Match Verification">
+        <div style={{ 
+          padding: '10px 14px', 
+          background: 'var(--bg-secondary)', 
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '12px',
+          fontSize: '13px',
+          color: 'var(--text-secondary)'
+        }}>
+          Control when matches require manual confirmation to prevent mismatches. These settings help catch errors early before many issues are imported to the wrong series.
+        </div>
+
+        <SettingsField label="Confirm First Issue">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input 
+              type="checkbox" 
+              checked={localSettings.requireConfirmationForFirstIssue}
+              onChange={(e) => setLocalSettings(s => ({ ...s, requireConfirmationForFirstIssue: e.target.checked }))}
+            />
+            <span style={{ fontSize: '13px' }}>Require manual confirmation for first issue imported to any series</span>
+          </label>
+        </SettingsField>
+
+        <SettingsField 
+          label="Low Confidence Threshold" 
+          description="Matches above this but below auto-import threshold are flagged as borderline"
+        >
+          <input 
+            className="input" 
+            type="number"
+            style={{ width: '80px' }}
+            value={localSettings.lowConfidenceThreshold}
+            onChange={(e) => setLocalSettings(s => ({ ...s, lowConfidenceThreshold: parseInt(e.target.value) || 70 }))}
+            min={0}
+            max={100}
+          />
+          <span style={{ marginLeft: '8px', color: 'var(--text-muted)' }}>%</span>
+        </SettingsField>
+
+        <SettingsField label="Show Match Reasoning">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input 
+              type="checkbox" 
+              checked={localSettings.showMatchReasoning}
+              onChange={(e) => setLocalSettings(s => ({ ...s, showMatchReasoning: e.target.checked }))}
+            />
+            <span style={{ fontSize: '13px' }}>Show detailed match reasoning in import queue</span>
           </label>
         </SettingsField>
       </SettingsSection>

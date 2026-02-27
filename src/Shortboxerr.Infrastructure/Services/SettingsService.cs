@@ -59,6 +59,11 @@ public class SettingsService : ISettingsService
     private const string AutoMatchPublisherPenaltyKey = "automatch.publisherMismatchPenalty";
     private const string AutoMatchPreferPublisherKey = "automatch.preferPublisherMatchForAmbiguous";
     private const string AutoMatchRejectMismatchedPublishersKey = "automatch.rejectMismatchedPublishers";
+    
+    // Verification settings (EPIC 19.4)
+    private const string AutoMatchRequireFirstIssueKey = "automatch.requireConfirmationForFirstIssue";
+    private const string AutoMatchLowConfidenceThresholdKey = "automatch.lowConfidenceThreshold";
+    private const string AutoMatchShowReasoningKey = "automatch.showMatchReasoning";
 
     public SettingsService(ShortboxerrDbContext context, ICredentialEncryptionService encryptionService)
     {
@@ -322,7 +327,12 @@ public class SettingsService : ISettingsService
             PublisherMatchBonus = await GetAsync<int>(AutoMatchPublisherBonusKey, defaults.PublisherMatchBonus, cancellationToken),
             PublisherMismatchPenalty = await GetAsync<int>(AutoMatchPublisherPenaltyKey, defaults.PublisherMismatchPenalty, cancellationToken),
             PreferPublisherMatchForAmbiguous = await GetAsync<bool>(AutoMatchPreferPublisherKey, defaults.PreferPublisherMatchForAmbiguous, cancellationToken),
-            RejectMismatchedPublishers = await GetAsync<bool>(AutoMatchRejectMismatchedPublishersKey, defaults.RejectMismatchedPublishers, cancellationToken)
+            RejectMismatchedPublishers = await GetAsync<bool>(AutoMatchRejectMismatchedPublishersKey, defaults.RejectMismatchedPublishers, cancellationToken),
+            
+            // Verification settings (EPIC 19.4)
+            RequireConfirmationForFirstIssue = await GetAsync<bool>(AutoMatchRequireFirstIssueKey, defaults.RequireConfirmationForFirstIssue, cancellationToken),
+            LowConfidenceThreshold = await GetAsync<int>(AutoMatchLowConfidenceThresholdKey, defaults.LowConfidenceThreshold, cancellationToken),
+            ShowMatchReasoning = await GetAsync<bool>(AutoMatchShowReasoningKey, defaults.ShowMatchReasoning, cancellationToken)
         };
     }
 
@@ -345,6 +355,11 @@ public class SettingsService : ISettingsService
         await SetAsync<int>(AutoMatchPublisherPenaltyKey, settings.PublisherMismatchPenalty, cancellationToken);
         await SetAsync<bool>(AutoMatchPreferPublisherKey, settings.PreferPublisherMatchForAmbiguous, cancellationToken);
         await SetAsync<bool>(AutoMatchRejectMismatchedPublishersKey, settings.RejectMismatchedPublishers, cancellationToken);
+        
+        // Verification settings (EPIC 19.4)
+        await SetAsync<bool>(AutoMatchRequireFirstIssueKey, settings.RequireConfirmationForFirstIssue, cancellationToken);
+        await SetAsync<int>(AutoMatchLowConfidenceThresholdKey, settings.LowConfidenceThreshold, cancellationToken);
+        await SetAsync<bool>(AutoMatchShowReasoningKey, settings.ShowMatchReasoning, cancellationToken);
     }
 
     /// <summary>

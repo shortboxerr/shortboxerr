@@ -1319,6 +1319,11 @@ export interface AutoMatchSettings {
   preferPublisherMatchForAmbiguous: boolean;
   rejectMismatchedPublishers: boolean;
   
+  // Verification settings (EPIC 19.4)
+  requireConfirmationForFirstIssue: boolean;
+  lowConfidenceThreshold: number;
+  showMatchReasoning: boolean;
+  
   // Import behavior
   autoMatchOnImport: boolean;
   createMissingItems: boolean;
@@ -2536,6 +2541,9 @@ export const api = {
         publisherMismatchPenalty: 20,
         preferPublisherMatchForAmbiguous: true,
         rejectMismatchedPublishers: false,
+        requireConfirmationForFirstIssue: true,
+        lowConfidenceThreshold: 70,
+        showMatchReasoning: true,
         autoMatchOnImport: true,
         createMissingItems: true,
         maxCandidatesForReview: 5,

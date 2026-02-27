@@ -283,6 +283,28 @@ public class AutoMatchSettings
     /// </summary>
     public bool RejectMismatchedPublishers { get; set; } = false;
 
+    // === Verification & Confirmation Settings (EPIC 19.4) ===
+
+    /// <summary>
+    /// If true, require manual confirmation for the first issue imported to any series.
+    /// This helps catch mismatches early before importing many issues to wrong series.
+    /// </summary>
+    public bool RequireConfirmationForFirstIssue { get; set; } = true;
+
+    /// <summary>
+    /// Threshold below which matches are considered "low confidence" and flagged for review.
+    /// This is separate from MinConfidenceForAutoImport - matches between LowConfidenceThreshold
+    /// and MinConfidenceForAutoImport are auto-imported but flagged for review.
+    /// Default: 70 (meaning 70-84% confidence is "borderline" auto-import with warning)
+    /// </summary>
+    public int LowConfidenceThreshold { get; set; } = 70;
+
+    /// <summary>
+    /// If true, show detailed match reasoning in the import queue UI.
+    /// Includes score breakdown, confidence reductions, and alternatives.
+    /// </summary>
+    public bool ShowMatchReasoning { get; set; } = true;
+
     // === Import Behavior Settings ===
 
     /// <summary>

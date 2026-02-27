@@ -622,6 +622,20 @@ public static class SettingsEndpoints
         if (request.CreateMissingItems.HasValue)
             settings.CreateMissingItems = request.CreateMissingItems.Value;
 
+        // Verification settings (EPIC 19.4)
+        if (request.RequireConfirmationForFirstIssue.HasValue)
+            settings.RequireConfirmationForFirstIssue = request.RequireConfirmationForFirstIssue.Value;
+        if (request.LowConfidenceThreshold.HasValue)
+        {
+            if (request.LowConfidenceThreshold < 0 || request.LowConfidenceThreshold > 100)
+            {
+                return Results.BadRequest(new { error = "LowConfidenceThreshold must be between 0 and 100." });
+            }
+            settings.LowConfidenceThreshold = request.LowConfidenceThreshold.Value;
+        }
+        if (request.ShowMatchReasoning.HasValue)
+            settings.ShowMatchReasoning = request.ShowMatchReasoning.Value;
+
         await settingsService.SetAutoMatchSettingsAsync(settings, cancellationToken);
         return Results.Ok(settings);
     }
@@ -1178,6 +1192,23 @@ public class AutoMatchSettingsRequest
     /// If true, reject matches when publishers don't match.
     /// </summary>
     public bool? RejectMismatchedPublishers { get; set; }
+
+    // === Verification Settings (EPIC 19.4) ===
+
+    /// <summary>
+    /// Require manual confirmation for first issue of any series.
+    /// </summary>
+    public bool? RequireConfirmationForFirstIssue { get; set; }
+
+    /// <summary>
+    /// Threshold below which matches are considered low confidence (0-100).
+    /// </summary>
+    public int? LowConfidenceThreshold { get; set; }
+
+    /// <summary>
+    /// Show detailed match reasoning in import queue UI.
+    /// </summary>
+    public bool? ShowMatchReasoning { get; set; }
 
     // === Import Behavior ===
 

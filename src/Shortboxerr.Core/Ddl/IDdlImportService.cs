@@ -493,6 +493,25 @@ public class DdlMatchResult
     /// </summary>
     public ConfidenceBreakdown? ScoreBreakdown { get; init; }
     
+    // === Verification Properties (EPIC 19.4) ===
+    
+    /// <summary>
+    /// Whether this is the first issue being imported to this series.
+    /// Used for RequireConfirmationForFirstIssue setting.
+    /// </summary>
+    public bool IsFirstIssueForSeries { get; init; }
+    
+    /// <summary>
+    /// Whether this match is considered "low confidence" but still above auto-import threshold.
+    /// These are auto-imported but flagged for potential review.
+    /// </summary>
+    public bool IsLowConfidence { get; init; }
+    
+    /// <summary>
+    /// Reason why manual review is required (if RequiresManualReview is true).
+    /// </summary>
+    public string? ReviewReason { get; init; }
+    
     /// <summary>
     /// Create a no-match result.
     /// </summary>

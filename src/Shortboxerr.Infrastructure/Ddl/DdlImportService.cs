@@ -465,6 +465,9 @@ public class DdlImportService : IDdlImportService
             if (matchingEdition != null)
             {
                 var finalConfidence = Math.Max(0, confidence);
+                var (reqReview, isLowConf, isFirst, reason) = await GetVerificationPropertiesAsync(
+                    finalConfidence, bestSeries, settings, isAmbiguous, cancellationToken);
+                    
                 return new DdlMatchResult
                 {
                     MatchFound = true,
@@ -474,9 +477,12 @@ public class DdlImportService : IDdlImportService
                     IsCollection = true,
                     Explanation = $"Matched to collection: {bestSeries.Title} - {matchingEdition.Title}",
                     ConfidenceReductions = confidenceReductions,
-                    RequiresManualReview = finalConfidence < settings.MinConfidenceForAutoImport,
+                    RequiresManualReview = reqReview,
                     MinConfidenceThreshold = settings.MinConfidenceForAutoImport,
-                    ScoreBreakdown = scoreBreakdown
+                    ScoreBreakdown = scoreBreakdown,
+                    IsFirstIssueForSeries = isFirst,
+                    IsLowConfidence = isLowConf,
+                    ReviewReason = reason
                 };
             }
             
@@ -485,6 +491,9 @@ public class DdlImportService : IDdlImportService
             confidenceReductions.Add("No matching edition found (-20)");
             
             var collectionConfidence = Math.Max(0, confidence);
+            var (colReqReview, colIsLowConf, colIsFirst, colReason) = await GetVerificationPropertiesAsync(
+                collectionConfidence, bestSeries, settings, isAmbiguous, cancellationToken);
+                
             return new DdlMatchResult
             {
                 MatchFound = true,
@@ -493,9 +502,12 @@ public class DdlImportService : IDdlImportService
                 IsCollection = true,
                 Explanation = $"Matched to series (collection): {bestSeries.Title}",
                 ConfidenceReductions = confidenceReductions,
-                RequiresManualReview = collectionConfidence < settings.MinConfidenceForAutoImport,
+                RequiresManualReview = colReqReview,
                 MinConfidenceThreshold = settings.MinConfidenceForAutoImport,
-                ScoreBreakdown = scoreBreakdown
+                ScoreBreakdown = scoreBreakdown,
+                IsFirstIssueForSeries = colIsFirst,
+                IsLowConfidence = colIsLowConf,
+                ReviewReason = colReason
             };
         }
         else
@@ -507,6 +519,9 @@ public class DdlImportService : IDdlImportService
                 confidenceReductions.Add("No issue number in release name (-30)");
                 
                 var noIssueConfidence = Math.Max(0, confidence);
+                var (noIssueReqReview, noIssueLowConf, noIssueFirst, noIssueReason) = await GetVerificationPropertiesAsync(
+                    noIssueConfidence, bestSeries, settings, isAmbiguous, cancellationToken);
+                    
                 return new DdlMatchResult
                 {
                     MatchFound = true,
@@ -515,9 +530,12 @@ public class DdlImportService : IDdlImportService
                     IsCollection = false,
                     Explanation = $"Matched to series (no issue number): {bestSeries.Title}",
                     ConfidenceReductions = confidenceReductions,
-                    RequiresManualReview = noIssueConfidence < settings.MinConfidenceForAutoImport,
+                    RequiresManualReview = noIssueReqReview,
                     MinConfidenceThreshold = settings.MinConfidenceForAutoImport,
-                    ScoreBreakdown = scoreBreakdown
+                    ScoreBreakdown = scoreBreakdown,
+                    IsFirstIssueForSeries = noIssueFirst,
+                    IsLowConfidence = noIssueLowConf,
+                    ReviewReason = noIssueReason
                 };
             }
             
@@ -528,6 +546,9 @@ public class DdlImportService : IDdlImportService
             if (matchingIssue != null)
             {
                 var issueConfidence = Math.Max(0, confidence);
+                var (issueReqReview, issueLowConf, issueFirst, issueReason) = await GetVerificationPropertiesAsync(
+                    issueConfidence, bestSeries, settings, isAmbiguous, cancellationToken);
+                    
                 return new DdlMatchResult
                 {
                     MatchFound = true,
@@ -537,9 +558,12 @@ public class DdlImportService : IDdlImportService
                     IsCollection = false,
                     Explanation = $"Matched to issue: {bestSeries.Title} #{matchingIssue.IssueNumber}",
                     ConfidenceReductions = confidenceReductions,
-                    RequiresManualReview = issueConfidence < settings.MinConfidenceForAutoImport,
+                    RequiresManualReview = issueReqReview,
                     MinConfidenceThreshold = settings.MinConfidenceForAutoImport,
-                    ScoreBreakdown = scoreBreakdown
+                    ScoreBreakdown = scoreBreakdown,
+                    IsFirstIssueForSeries = issueFirst,
+                    IsLowConfidence = issueLowConf,
+                    ReviewReason = issueReason
                 };
             }
             
@@ -548,6 +572,9 @@ public class DdlImportService : IDdlImportService
             confidenceReductions.Add("Issue not in database (-15)");
             
             var notFoundConfidence = Math.Max(0, confidence);
+            var (nfReqReview, nfLowConf, nfFirst, nfReason) = await GetVerificationPropertiesAsync(
+                notFoundConfidence, bestSeries, settings, isAmbiguous, cancellationToken);
+                
             return new DdlMatchResult
             {
                 MatchFound = true,
@@ -556,9 +583,12 @@ public class DdlImportService : IDdlImportService
                 IsCollection = false,
                 Explanation = $"Matched to series: {bestSeries.Title} (issue #{parsed.IssueNumber} not in database)",
                 ConfidenceReductions = confidenceReductions,
-                RequiresManualReview = notFoundConfidence < settings.MinConfidenceForAutoImport,
+                RequiresManualReview = nfReqReview,
                 MinConfidenceThreshold = settings.MinConfidenceForAutoImport,
-                ScoreBreakdown = scoreBreakdown
+                ScoreBreakdown = scoreBreakdown,
+                IsFirstIssueForSeries = nfFirst,
+                IsLowConfidence = nfLowConf,
+                ReviewReason = nfReason
             };
         }
     }
@@ -999,6 +1029,59 @@ public class DdlImportService : IDdlImportService
             _releaseParser.NormalizeTitle(s.Title).Equals(normalizedTitle, StringComparison.OrdinalIgnoreCase));
         
         return exactMatches > 1;
+    }
+
+    /// <summary>
+    /// Check if the series has any existing file assets (imported issues).
+    /// Used for RequireConfirmationForFirstIssue setting.
+    /// </summary>
+    private async Task<bool> IsFirstIssueForSeriesAsync(int seriesId, CancellationToken cancellationToken)
+    {
+        // Check if any issues in this series have files
+        var hasExistingFiles = await _dbContext.Issues
+            .Where(i => i.SeriesId == seriesId && i.HasFile)
+            .AnyAsync(cancellationToken);
+        
+        return !hasExistingFiles;
+    }
+
+    /// <summary>
+    /// Build verification properties for match result.
+    /// </summary>
+    private async Task<(bool requiresReview, bool isLowConfidence, bool isFirstIssue, string? reviewReason)> 
+        GetVerificationPropertiesAsync(
+            int confidence, 
+            Series series, 
+            AutoMatchSettings settings,
+            bool isAmbiguous,
+            CancellationToken cancellationToken)
+    {
+        var isLowConfidence = confidence >= settings.MinConfidenceForAutoImport && 
+                              confidence < settings.LowConfidenceThreshold + 15; // Low confidence zone
+        
+        var isFirstIssue = await IsFirstIssueForSeriesAsync(series.Id, cancellationToken);
+        
+        // Determine if manual review is required and why
+        var requiresReview = false;
+        string? reviewReason = null;
+        
+        if (confidence < settings.MinConfidenceForAutoImport)
+        {
+            requiresReview = true;
+            reviewReason = $"Confidence ({confidence}%) below auto-import threshold ({settings.MinConfidenceForAutoImport}%)";
+        }
+        else if (isFirstIssue && settings.RequireConfirmationForFirstIssue)
+        {
+            requiresReview = true;
+            reviewReason = "First issue for series - confirmation required";
+        }
+        else if (isAmbiguous && isLowConfidence)
+        {
+            requiresReview = true;
+            reviewReason = "Low confidence match for ambiguous series";
+        }
+        
+        return (requiresReview, isLowConfidence, isFirstIssue, reviewReason);
     }
 
     private static (string? format, bool supported) DetectFormat(byte[] magic)

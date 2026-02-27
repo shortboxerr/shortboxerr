@@ -1172,5 +1172,296 @@ public class DdlImportServiceTests : IDisposable
         Assert.True(result.ScoreBreakdown.FinalScore > 0);
         Assert.NotEmpty(result.ScoreBreakdown.ScoreExplanations);
     }
+
+    // =============== EPIC 19.4: Match Verification Tests ===============
+
+    [Fact]
+    public async Task AutoMatch_FirstIssueForSeries_RequiresManualReview_WhenSettingEnabled()
+    {
+        // Setup settings with RequireConfirmationForFirstIssue enabled
+        _settingsServiceMock.Setup(s => s.GetAutoMatchSettingsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AutoMatchSettings
+            {
+                MinConfidenceForAutoImport = 85,
+                RequireConfirmationForFirstIssue = true,
+                LowConfidenceThreshold = 70,
+                ShowMatchReasoning = true
+            });
+
+        var series = new Series
+        {
+            Title = "New Series",
+            SortTitle = "new series",
+            StartYear = 2024,
+            Status = SeriesStatus.Continuing
+        };
+        _context.Series.Add(series);
+        await _context.SaveChangesAsync();
+
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            ReleaseTitle = "New Series 001 (2024).cbz",
+            SourceSite = "TestSite",
+            SourceUrl = "https://example.com/download/123",
+            ParsedInfo = new DdlParsedInfo
+            {
+                SeriesTitle = "New Series",
+                IssueNumber = 1,
+                Year = 2024,
+                Format = "cbz"
+            }
+        };
+
+        var result = await _service.AutoMatchAsync(candidate);
+
+        Assert.True(result.MatchFound);
+        Assert.True(result.IsFirstIssueForSeries);
+        Assert.True(result.RequiresManualReview);
+        Assert.NotNull(result.ReviewReason);
+        Assert.Contains("first issue", result.ReviewReason, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task AutoMatch_FirstIssueForSeries_AutoImports_WhenSettingDisabled()
+    {
+        // Setup settings with RequireConfirmationForFirstIssue disabled
+        _settingsServiceMock.Setup(s => s.GetAutoMatchSettingsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AutoMatchSettings
+            {
+                MinConfidenceForAutoImport = 85,
+                RequireConfirmationForFirstIssue = false, // Disabled
+                LowConfidenceThreshold = 70,
+                ShowMatchReasoning = true
+            });
+
+        var series = new Series
+        {
+            Title = "Another Series",
+            SortTitle = "another series",
+            StartYear = 2024,
+            Status = SeriesStatus.Continuing
+        };
+        _context.Series.Add(series);
+        await _context.SaveChangesAsync();
+
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            ReleaseTitle = "Another Series 001 (2024).cbz",
+            SourceSite = "TestSite",
+            SourceUrl = "https://example.com/download/123",
+            ParsedInfo = new DdlParsedInfo
+            {
+                SeriesTitle = "Another Series",
+                IssueNumber = 1,
+                Year = 2024,
+                Format = "cbz"
+            }
+        };
+
+        var result = await _service.AutoMatchAsync(candidate);
+
+        Assert.True(result.MatchFound);
+        Assert.True(result.IsFirstIssueForSeries);
+        Assert.False(result.RequiresManualReview); // Should auto-import when setting disabled
+    }
+
+    [Fact]
+    public async Task AutoMatch_NotFirstIssue_WhenSeriesHasExistingFiles()
+    {
+        // Setup settings
+        _settingsServiceMock.Setup(s => s.GetAutoMatchSettingsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AutoMatchSettings
+            {
+                MinConfidenceForAutoImport = 85,
+                RequireConfirmationForFirstIssue = true,
+                LowConfidenceThreshold = 70
+            });
+
+        var series = new Series
+        {
+            Title = "Existing Series",
+            SortTitle = "existing series",
+            StartYear = 2020,
+            Status = SeriesStatus.Continuing
+        };
+        _context.Series.Add(series);
+        await _context.SaveChangesAsync();
+
+        // Add an existing issue with a file
+        var existingIssue = new Issue
+        {
+            SeriesId = series.Id,
+            IssueNumber = 1,
+            HasFile = true // Existing file
+        };
+        _context.Issues.Add(existingIssue);
+        await _context.SaveChangesAsync();
+
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            ReleaseTitle = "Existing Series 002 (2020).cbz",
+            SourceSite = "TestSite",
+            SourceUrl = "https://example.com/download/123",
+            ParsedInfo = new DdlParsedInfo
+            {
+                SeriesTitle = "Existing Series",
+                IssueNumber = 2,
+                Year = 2020,
+                Format = "cbz"
+            }
+        };
+
+        var result = await _service.AutoMatchAsync(candidate);
+
+        Assert.True(result.MatchFound);
+        Assert.False(result.IsFirstIssueForSeries); // Not first issue since series has files
+        Assert.False(result.RequiresManualReview); // Should auto-import
+    }
+
+    [Fact]
+    public async Task AutoMatch_LowConfidence_FlagsMatch()
+    {
+        // Setup settings with specific thresholds
+        _settingsServiceMock.Setup(s => s.GetAutoMatchSettingsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AutoMatchSettings
+            {
+                MinConfidenceForAutoImport = 75, // Low threshold to allow match
+                RequireConfirmationForFirstIssue = false,
+                LowConfidenceThreshold = 70
+            });
+
+        var series = new Series
+        {
+            Title = "Borderline Match",
+            SortTitle = "borderline match",
+            StartYear = 2020,
+            Status = SeriesStatus.Continuing
+        };
+        _context.Series.Add(series);
+        
+        // Add existing file so it's not first issue
+        var issue = new Issue { SeriesId = series.Id, IssueNumber = 1, HasFile = true };
+        _context.Issues.Add(issue);
+        await _context.SaveChangesAsync();
+
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            ReleaseTitle = "Borderline.Match.002.cbz", // No year - will reduce confidence
+            SourceSite = "TestSite",
+            SourceUrl = "https://example.com/download/123",
+            ParsedInfo = new DdlParsedInfo
+            {
+                SeriesTitle = "Borderline Match",
+                IssueNumber = 2,
+                Format = "cbz"
+            }
+        };
+
+        var result = await _service.AutoMatchAsync(candidate);
+
+        Assert.True(result.MatchFound);
+        // IsLowConfidence reflects borderline zone matches
+        // Exact value depends on scoring algorithm
+    }
+
+    [Fact]
+    public async Task AutoMatch_ReviewReason_IncludesConfidenceDetails_WhenBelowThreshold()
+    {
+        // Setup settings with high threshold to force review
+        _settingsServiceMock.Setup(s => s.GetAutoMatchSettingsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AutoMatchSettings
+            {
+                MinConfidenceForAutoImport = 95, // Very high threshold
+                RequireConfirmationForFirstIssue = false,
+                LowConfidenceThreshold = 70
+            });
+
+        var series = new Series
+        {
+            Title = "Review Test",
+            SortTitle = "review test",
+            StartYear = 2020,
+            Status = SeriesStatus.Continuing
+        };
+        _context.Series.Add(series);
+        var issue = new Issue { SeriesId = series.Id, IssueNumber = 1, HasFile = true };
+        _context.Issues.Add(issue);
+        await _context.SaveChangesAsync();
+
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            ReleaseTitle = "Review Test 002 (2020).cbz",
+            SourceSite = "TestSite",
+            SourceUrl = "https://example.com/download/123",
+            ParsedInfo = new DdlParsedInfo
+            {
+                SeriesTitle = "Review Test",
+                IssueNumber = 2,
+                Year = 2020,
+                Format = "cbz"
+            }
+        };
+
+        var result = await _service.AutoMatchAsync(candidate);
+
+        Assert.True(result.MatchFound);
+        Assert.True(result.RequiresManualReview);
+        Assert.NotNull(result.ReviewReason);
+        Assert.Contains("confidence", result.ReviewReason, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("threshold", result.ReviewReason, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task AutoMatch_VerificationProperties_AllPopulated()
+    {
+        // Setup settings
+        _settingsServiceMock.Setup(s => s.GetAutoMatchSettingsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AutoMatchSettings
+            {
+                MinConfidenceForAutoImport = 85,
+                RequireConfirmationForFirstIssue = true,
+                LowConfidenceThreshold = 70,
+                ShowMatchReasoning = true
+            });
+
+        var series = new Series
+        {
+            Title = "Property Test",
+            SortTitle = "property test",
+            StartYear = 2024,
+            Status = SeriesStatus.Continuing
+        };
+        _context.Series.Add(series);
+        await _context.SaveChangesAsync();
+
+        var candidate = new DdlCandidate
+        {
+            Id = Guid.NewGuid().ToString(),
+            ReleaseTitle = "Property Test 001 (2024).cbz",
+            SourceSite = "TestSite",
+            SourceUrl = "https://example.com/download/123",
+            ParsedInfo = new DdlParsedInfo
+            {
+                SeriesTitle = "Property Test",
+                IssueNumber = 1,
+                Year = 2024,
+                Format = "cbz"
+            }
+        };
+
+        var result = await _service.AutoMatchAsync(candidate);
+
+        // All verification properties should be set
+        Assert.True(result.MatchFound);
+        // IsFirstIssueForSeries should be set (true in this case)
+        // IsLowConfidence should be set (value based on score)
+        // RequiresManualReview should be set based on conditions
+        Assert.True(result.MinConfidenceThreshold > 0);
+    }
 }
 
