@@ -503,7 +503,7 @@ export function PullListPage() {
         onKeyDown={(e) => e.key === 'Enter' && handleCoverClick()}
       >
         {issue.coverImageUrl ? (
-          <img src={issue.coverImageUrl} alt={`${issue.seriesTitle} #${issue.issueNumber}`} />
+          <img src={issue.coverImageUrl} alt={`${issue.seriesTitle} #${issue.issueNumber}`} loading="lazy" decoding="async" />
         ) : (
           <div className="pull-list-card-placeholder">
             <Calendar size={32} />
@@ -606,6 +606,8 @@ export function PullListPage() {
             src={issue.coverImageUrl} 
             alt="" 
             className="pull-list-thumb"
+            loading="lazy"
+            decoding="async"
           />
         ) : (
           <div className="pull-list-thumb-placeholder">

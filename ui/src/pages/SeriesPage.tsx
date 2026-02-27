@@ -711,6 +711,8 @@ function SeriesSearchResult({ candidate, isSelected, onSelect, compact = false }
         src={candidate.coverImageUrl || placeholderCover}
         alt={candidate.title}
         className="series-search-result-cover"
+        loading="lazy"
+        decoding="async"
         onError={(e) => {
           (e.target as HTMLImageElement).src = placeholderCover;
         }}

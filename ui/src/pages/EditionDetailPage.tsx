@@ -246,6 +246,8 @@ function EditionContentItem({ content }: EditionContentItemProps) {
         src={content.issueCoverImageUrl || placeholderCover}
         alt={displayNumber}
         className="edition-content-cover"
+        loading="lazy"
+        decoding="async"
         onError={(e) => {
           (e.target as HTMLImageElement).src = placeholderCover;
         }}

@@ -273,7 +273,7 @@ function ThisWeekWidget({ issues, stats }: { issues: PullListIssue[]; stats?: Pu
               className="widget-list-item"
             >
               {issue.coverImageUrl ? (
-                <img src={issue.coverImageUrl} alt="" className="widget-list-thumb" />
+                <img src={issue.coverImageUrl} alt="" className="widget-list-thumb" loading="lazy" decoding="async" />
               ) : (
                 <div className="widget-list-thumb-placeholder">
                   <Calendar size={14} />

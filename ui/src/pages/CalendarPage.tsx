@@ -249,7 +249,7 @@ export function CalendarPage() {
                 {filtered.map(issue => (
                   <div key={issue.issueId} className="agenda-issue">
                     {issue.coverImageUrl ? (
-                      <img src={issue.coverImageUrl} alt="" className="agenda-issue-cover" />
+                      <img src={issue.coverImageUrl} alt="" className="agenda-issue-cover" loading="lazy" decoding="async" />
                     ) : (
                       <div className="agenda-issue-cover-placeholder">
                         <CalendarIcon size={16} />
@@ -300,7 +300,7 @@ export function CalendarPage() {
               {filtered.map(issue => (
                 <div key={issue.issueId} className="calendar-issue-item">
                   {issue.coverImageUrl ? (
-                    <img src={issue.coverImageUrl} alt="" className="calendar-issue-thumb" />
+                    <img src={issue.coverImageUrl} alt="" className="calendar-issue-thumb" loading="lazy" decoding="async" />
                   ) : (
                     <div className="calendar-issue-thumb-placeholder">
                       <CalendarIcon size={16} />

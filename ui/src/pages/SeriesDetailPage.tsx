@@ -770,6 +770,8 @@ export function SeriesDetailPage() {
                                 src={displayItem.coverImageUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="150" viewBox="0 0 100 150"%3E%3Crect fill="%232a2d35" width="100" height="150"/%3E%3Ctext fill="%236b7280" font-family="sans-serif" font-size="10" x="50" y="75" text-anchor="middle"%3ENo Cover%3C/text%3E%3C/svg%3E'}
                                 alt={`Issue ${displayItem.issueNumberText || displayItem.issueNumber}`}
                                 className="issue-card-cover"
+                                loading="lazy"
+                                decoding="async"
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="150" viewBox="0 0 100 150"%3E%3Crect fill="%232a2d35" width="100" height="150"/%3E%3Ctext fill="%236b7280" font-family="sans-serif" font-size="10" x="50" y="75" text-anchor="middle"%3ENo Cover%3C/text%3E%3C/svg%3E';
                                 }}
@@ -1442,6 +1444,8 @@ function MatchToComicVineModal({ seriesId, seriesTitle, onClose, onMatched }: Ma
                       src={candidate.coverImageUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="60" height="90" viewBox="0 0 60 90"%3E%3Crect fill="%232a2d35" width="60" height="90"/%3E%3C/svg%3E'}
                       alt={candidate.title}
                       style={{ width: '60px', height: '90px', objectFit: 'cover', borderRadius: '4px' }}
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="60" height="90" viewBox="0 0 60 90"%3E%3Crect fill="%232a2d35" width="60" height="90"/%3E%3C/svg%3E';
                       }}
@@ -2060,6 +2064,8 @@ function IssueCoverCard({ issue, selected, onSelect, onMarkWanted, onMarkSkipped
           src={issue.coverImageUrl || placeholderCover}
           alt={`Issue ${issue.displayNumber}`}
           className="issue-card-cover"
+          loading="lazy"
+          decoding="async"
           onError={(e) => {
             (e.target as HTMLImageElement).src = placeholderCover;
           }}
