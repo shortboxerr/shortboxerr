@@ -4810,58 +4810,228 @@ function ProviderModal({
 // ============== OTHER SETTINGS ==============
 
 function ImportSettings() {
+  const queryClient = useQueryClient();
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Fetch auto-match settings
+  const { data: autoMatchSettings, isLoading: loadingAutoMatch } = useQuery({
+    queryKey: ['autoMatchSettings'],
+    queryFn: api.getAutoMatchSettings,
+  });
+
+  const [localSettings, setLocalSettings] = useState({
+    yearMatchTolerance: 2,
+    rejectMismatchedYears: true,
+    yearMismatchPenalty: 25,
+    confidenceThreshold: 85,
+    requireYearForAmbiguousSeries: true,
+    enableAmbiguousSeriesDetection: true,
+    autoMatchOnImport: true,
+    createMissingItems: true,
+    maxCandidatesForReview: 5,
+  });
+
+  // Sync local state when settings load
+  useEffect(() => {
+    if (autoMatchSettings) {
+      setLocalSettings(autoMatchSettings);
+    }
+  }, [autoMatchSettings]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveMessage(null);
+    try {
+      await api.updateAutoMatchSettings(localSettings);
+      queryClient.invalidateQueries({ queryKey: ['autoMatchSettings'] });
+      setSaveMessage({ type: 'success', text: 'Settings saved successfully' });
+      setTimeout(() => setSaveMessage(null), 3000);
+    } catch {
+      setSaveMessage({ type: 'error', text: 'Failed to save settings' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loadingAutoMatch) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px' }}>
+        <Loader2 size={24} className="spin" />
+        <span style={{ marginLeft: '12px' }}>Loading settings...</span>
+      </div>
+    );
+  }
+
   return (
     <>
-      <SettingsSection title="Import Behavior">
-        <SettingsField label="Auto-Import Matched Files">
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input type="checkbox" defaultChecked />
-            <span style={{ fontSize: '13px' }}>Automatically import files that match with high confidence</span>
-          </label>
-        </SettingsField>
-        
+      <SettingsSection title="Auto-Matching Settings">
+        <div style={{ 
+          padding: '12px 16px', 
+          background: 'var(--bg-warning)', 
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '16px',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '12px'
+        }}>
+          <AlertTriangle size={20} style={{ color: 'var(--warning)', flexShrink: 0, marginTop: '2px' }} />
+          <div style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
+            <strong>Critical Setting:</strong> These settings prevent files from being matched to the wrong series 
+            (e.g., "Deadman (2017)" files going to "Deadman (2006)"). Stricter settings improve accuracy but may 
+            require more manual matching.
+          </div>
+        </div>
+
         <SettingsField 
-          label="Auto-Import Confidence Threshold" 
-          description="Minimum match confidence for automatic import"
+          label="Year Match Tolerance" 
+          description="Maximum year difference allowed between release and series. Files with years outside this tolerance will be rejected."
         >
           <input 
             className="input" 
             type="number"
-            style={{ width: '100px' }}
-            defaultValue={85}
+            style={{ width: '80px' }}
+            value={localSettings.yearMatchTolerance}
+            onChange={(e) => setLocalSettings(s => ({ ...s, yearMatchTolerance: parseInt(e.target.value) || 0 }))}
             min={0}
+            max={10}
+          />
+          <span style={{ marginLeft: '8px', color: 'var(--text-muted)' }}>years</span>
+        </SettingsField>
+
+        <SettingsField label="Reject Mismatched Years">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input 
+              type="checkbox" 
+              checked={localSettings.rejectMismatchedYears}
+              onChange={(e) => setLocalSettings(s => ({ ...s, rejectMismatchedYears: e.target.checked }))}
+            />
+            <span style={{ fontSize: '13px' }}>Hard reject matches when year mismatch exceeds tolerance</span>
+          </label>
+        </SettingsField>
+
+        <SettingsField 
+          label="Year Mismatch Penalty" 
+          description="Confidence penalty when year doesn't match exactly but is within tolerance"
+        >
+          <input 
+            className="input" 
+            type="number"
+            style={{ width: '80px' }}
+            value={localSettings.yearMismatchPenalty}
+            onChange={(e) => setLocalSettings(s => ({ ...s, yearMismatchPenalty: parseInt(e.target.value) || 0 }))}
+            min={0}
+            max={50}
+          />
+          <span style={{ marginLeft: '8px', color: 'var(--text-muted)' }}>points</span>
+        </SettingsField>
+
+        <SettingsField label="Detect Ambiguous Series">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input 
+              type="checkbox" 
+              checked={localSettings.enableAmbiguousSeriesDetection}
+              onChange={(e) => setLocalSettings(s => ({ ...s, enableAmbiguousSeriesDetection: e.target.checked }))}
+            />
+            <span style={{ fontSize: '13px' }}>Apply stricter matching when multiple series share the same name</span>
+          </label>
+        </SettingsField>
+
+        <SettingsField label="Require Year for Ambiguous Series">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input 
+              type="checkbox" 
+              checked={localSettings.requireYearForAmbiguousSeries}
+              onChange={(e) => setLocalSettings(s => ({ ...s, requireYearForAmbiguousSeries: e.target.checked }))}
+            />
+            <span style={{ fontSize: '13px' }}>When series name is ambiguous, require year in release for auto-match</span>
+          </label>
+        </SettingsField>
+      </SettingsSection>
+
+      <SettingsSection title="Import Behavior">
+        <SettingsField label="Auto-Match on Import">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input 
+              type="checkbox" 
+              checked={localSettings.autoMatchOnImport}
+              onChange={(e) => setLocalSettings(s => ({ ...s, autoMatchOnImport: e.target.checked }))}
+            />
+            <span style={{ fontSize: '13px' }}>Automatically attempt to match files during import</span>
+          </label>
+        </SettingsField>
+        
+        <SettingsField 
+          label="Confidence Threshold" 
+          description="Minimum confidence required for automatic import. Lower values import more automatically but may have more mismatches."
+        >
+          <input 
+            className="input" 
+            type="number"
+            style={{ width: '80px' }}
+            value={localSettings.confidenceThreshold}
+            onChange={(e) => setLocalSettings(s => ({ ...s, confidenceThreshold: parseInt(e.target.value) || 50 }))}
+            min={50}
             max={100}
           />
           <span style={{ marginLeft: '8px', color: 'var(--text-muted)' }}>%</span>
         </SettingsField>
         
-        <SettingsField label="Copy vs Move">
-          <select className="input" style={{ minWidth: '200px' }}>
-            <option value="move">Move files (delete original)</option>
-            <option value="copy">Copy files (keep original)</option>
-          </select>
-        </SettingsField>
-      </SettingsSection>
-      
-      <SettingsSection title="Format Preferences">
-        <SettingsField 
-          label="Preferred Format" 
-          description="When multiple formats are available"
-        >
-          <select className="input" style={{ minWidth: '150px' }}>
-            <option value="cbz">CBZ</option>
-            <option value="cbr">CBR</option>
-            <option value="pdf">PDF</option>
-          </select>
-        </SettingsField>
-        
-        <SettingsField label="Convert to Preferred Format">
+        <SettingsField label="Create Missing Items">
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input type="checkbox" />
-            <span style={{ fontSize: '13px' }}>Automatically convert files to preferred format on import</span>
+            <input 
+              type="checkbox" 
+              checked={localSettings.createMissingItems}
+              onChange={(e) => setLocalSettings(s => ({ ...s, createMissingItems: e.target.checked }))}
+            />
+            <span style={{ fontSize: '13px' }}>Create series/issues if not found in library</span>
           </label>
         </SettingsField>
+
+        <SettingsField 
+          label="Max Candidates for Review" 
+          description="Maximum number of alternative matches to show for manual review"
+        >
+          <input 
+            className="input" 
+            type="number"
+            style={{ width: '80px' }}
+            value={localSettings.maxCandidatesForReview}
+            onChange={(e) => setLocalSettings(s => ({ ...s, maxCandidatesForReview: parseInt(e.target.value) || 1 }))}
+            min={1}
+            max={20}
+          />
+        </SettingsField>
       </SettingsSection>
+
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '16px',
+        marginTop: '24px',
+        paddingTop: '16px',
+        borderTop: '1px solid var(--border-color)'
+      }}>
+        <button 
+          className="btn btn-primary"
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {saving ? <Loader2 size={16} className="spin" /> : <Save size={16} />}
+          Save Auto-Match Settings
+        </button>
+        {saveMessage && (
+          <span style={{ 
+            color: saveMessage.type === 'success' ? 'var(--success)' : 'var(--error)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}>
+            {saveMessage.type === 'success' ? <Check size={16} /> : <XCircle size={16} />}
+            {saveMessage.text}
+          </span>
+        )}
+      </div>
     </>
   );
 }

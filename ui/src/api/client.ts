@@ -1300,6 +1300,18 @@ export interface LogCompressionResult {
   bytesSaved: number;
 }
 
+export interface AutoMatchSettings {
+  yearMatchTolerance: number;
+  rejectMismatchedYears: boolean;
+  yearMismatchPenalty: number;
+  confidenceThreshold: number;
+  requireYearForAmbiguousSeries: boolean;
+  enableAmbiguousSeriesDetection: boolean;
+  autoMatchOnImport: boolean;
+  createMissingItems: boolean;
+  maxCandidatesForReview: number;
+}
+
 export interface CoverCacheSettings {
   cacheDirectory: string;
   retentionDays: number;
@@ -2492,6 +2504,32 @@ export const api = {
   triggerLogCompression: async (): Promise<LogCompressionResult> => {
     return await fetchApi<LogCompressionResult>('/api/v1/settings/logging/compress', {
       method: 'POST',
+    });
+  },
+
+  // Auto-Match Settings
+  getAutoMatchSettings: async (): Promise<AutoMatchSettings> => {
+    try {
+      return await fetchApi<AutoMatchSettings>('/api/v1/settings/automatch');
+    } catch {
+      return {
+        yearMatchTolerance: 2,
+        rejectMismatchedYears: true,
+        yearMismatchPenalty: 25,
+        confidenceThreshold: 85,
+        requireYearForAmbiguousSeries: true,
+        enableAmbiguousSeriesDetection: true,
+        autoMatchOnImport: true,
+        createMissingItems: true,
+        maxCandidatesForReview: 5,
+      };
+    }
+  },
+
+  updateAutoMatchSettings: async (settings: Partial<AutoMatchSettings>): Promise<AutoMatchSettings> => {
+    return await fetchApi<AutoMatchSettings>('/api/v1/settings/automatch', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
     });
   },
 
