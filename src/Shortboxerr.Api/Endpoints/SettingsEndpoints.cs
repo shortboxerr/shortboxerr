@@ -79,6 +79,19 @@ public static class SettingsEndpoints
             .WithOpenApi()
             .Produces<MetronTestResponse>(200);
 
+        // Auto-Match Settings
+        group.MapGet("/automatch", GetAutoMatchSettings)
+            .WithName("GetAutoMatchSettings")
+            .WithDescription("Get auto-matching settings for import and series disambiguation")
+            .WithOpenApi()
+            .Produces<AutoMatchSettings>(200);
+
+        group.MapPut("/automatch", UpdateAutoMatchSettings)
+            .WithName("UpdateAutoMatchSettings")
+            .WithDescription("Update auto-matching settings")
+            .WithOpenApi()
+            .Produces<AutoMatchSettings>(200);
+
         // Folder Settings (convenience endpoints)
         group.MapGet("/folders", GetFolderSettings)
             .WithName("GetFolderSettings")
@@ -518,6 +531,75 @@ public static class SettingsEndpoints
                 Message = $"Connection failed: {ex.Message}"
             });
         }
+    }
+
+    private static async Task<IResult> GetAutoMatchSettings(ISettingsService settingsService, CancellationToken cancellationToken)
+    {
+        var settings = await settingsService.GetAutoMatchSettingsAsync(cancellationToken);
+        return Results.Ok(settings);
+    }
+
+    private static async Task<IResult> UpdateAutoMatchSettings(
+        AutoMatchSettingsRequest request,
+        ISettingsService settingsService,
+        CancellationToken cancellationToken)
+    {
+        var settings = await settingsService.GetAutoMatchSettingsAsync(cancellationToken);
+
+        // Validate and apply year tolerance (0-10)
+        if (request.YearMatchTolerance.HasValue)
+        {
+            if (request.YearMatchTolerance < 0 || request.YearMatchTolerance > 10)
+            {
+                return Results.BadRequest(new { error = "YearMatchTolerance must be between 0 and 10." });
+            }
+            settings.YearMatchTolerance = request.YearMatchTolerance.Value;
+        }
+
+        // Validate and apply confidence threshold (50-100)
+        if (request.ConfidenceThreshold.HasValue)
+        {
+            if (request.ConfidenceThreshold < 50 || request.ConfidenceThreshold > 100)
+            {
+                return Results.BadRequest(new { error = "ConfidenceThreshold must be between 50 and 100." });
+            }
+            settings.ConfidenceThreshold = request.ConfidenceThreshold.Value;
+        }
+
+        // Validate and apply year mismatch penalty (0-50)
+        if (request.YearMismatchPenalty.HasValue)
+        {
+            if (request.YearMismatchPenalty < 0 || request.YearMismatchPenalty > 50)
+            {
+                return Results.BadRequest(new { error = "YearMismatchPenalty must be between 0 and 50." });
+            }
+            settings.YearMismatchPenalty = request.YearMismatchPenalty.Value;
+        }
+
+        // Validate and apply max candidates (1-20)
+        if (request.MaxCandidatesForReview.HasValue)
+        {
+            if (request.MaxCandidatesForReview < 1 || request.MaxCandidatesForReview > 20)
+            {
+                return Results.BadRequest(new { error = "MaxCandidatesForReview must be between 1 and 20." });
+            }
+            settings.MaxCandidatesForReview = request.MaxCandidatesForReview.Value;
+        }
+
+        // Apply boolean settings
+        if (request.RejectMismatchedYears.HasValue)
+            settings.RejectMismatchedYears = request.RejectMismatchedYears.Value;
+        if (request.RequireYearForAmbiguousSeries.HasValue)
+            settings.RequireYearForAmbiguousSeries = request.RequireYearForAmbiguousSeries.Value;
+        if (request.EnableAmbiguousSeriesDetection.HasValue)
+            settings.EnableAmbiguousSeriesDetection = request.EnableAmbiguousSeriesDetection.Value;
+        if (request.AutoMatchOnImport.HasValue)
+            settings.AutoMatchOnImport = request.AutoMatchOnImport.Value;
+        if (request.CreateMissingItems.HasValue)
+            settings.CreateMissingItems = request.CreateMissingItems.Value;
+
+        await settingsService.SetAutoMatchSettingsAsync(settings, cancellationToken);
+        return Results.Ok(settings);
     }
 
     private static async Task<IResult> GetFolderSettings(ISettingsService settingsService, CancellationToken cancellationToken)
@@ -1007,4 +1089,56 @@ public class MetronTestResponse
     /// Message describing the test result.
     /// </summary>
     public string Message { get; set; } = "";
+}
+
+/// <summary>
+/// Request to update auto-match settings.
+/// All fields are optional - only provided values are updated.
+/// </summary>
+public class AutoMatchSettingsRequest
+{
+    /// <summary>
+    /// Maximum year difference allowed between release and series (0-10).
+    /// </summary>
+    public int? YearMatchTolerance { get; set; }
+
+    /// <summary>
+    /// If true, reject matches where year mismatch exceeds tolerance.
+    /// </summary>
+    public bool? RejectMismatchedYears { get; set; }
+
+    /// <summary>
+    /// Confidence threshold for auto-accepting matches (50-100).
+    /// </summary>
+    public int? ConfidenceThreshold { get; set; }
+
+    /// <summary>
+    /// Penalty applied to confidence when year doesn't match (0-50).
+    /// </summary>
+    public int? YearMismatchPenalty { get; set; }
+
+    /// <summary>
+    /// Require year when multiple series share the same name.
+    /// </summary>
+    public bool? RequireYearForAmbiguousSeries { get; set; }
+
+    /// <summary>
+    /// Enable detection of ambiguous series (multiple with same name).
+    /// </summary>
+    public bool? EnableAmbiguousSeriesDetection { get; set; }
+
+    /// <summary>
+    /// Whether to auto-match during import.
+    /// </summary>
+    public bool? AutoMatchOnImport { get; set; }
+
+    /// <summary>
+    /// Whether to create series/issues if not found locally.
+    /// </summary>
+    public bool? CreateMissingItems { get; set; }
+
+    /// <summary>
+    /// Maximum candidates to keep for manual review (1-20).
+    /// </summary>
+    public int? MaxCandidatesForReview { get; set; }
 }

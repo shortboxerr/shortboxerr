@@ -1,4 +1,5 @@
 using Shortboxerr.Core.Models;
+using Shortboxerr.Core.Services;
 
 namespace Shortboxerr.Core.ComicVine;
 
@@ -232,31 +233,8 @@ public class PendingMatch
     public List<AutoMatchCandidate> Candidates { get; set; } = new();
 }
 
-/// <summary>
-/// Auto-match settings.
-/// </summary>
-public class AutoMatchSettings
-{
-    /// <summary>
-    /// Confidence threshold for auto-accepting matches (0-100).
-    /// </summary>
-    public int ConfidenceThreshold { get; set; } = 85;
-    
-    /// <summary>
-    /// Whether to auto-match during import.
-    /// </summary>
-    public bool AutoMatchOnImport { get; set; } = true;
-    
-    /// <summary>
-    /// Whether to create series/issues if not found locally.
-    /// </summary>
-    public bool CreateMissingItems { get; set; } = true;
-    
-    /// <summary>
-    /// Maximum candidates to keep for manual review.
-    /// </summary>
-    public int MaxCandidatesForReview { get; set; } = 5;
-}
+// Note: AutoMatchSettings is now defined in Shortboxerr.Core.Services.ISettingsService
+// This consolidates settings for both ComicVine matching and DDL import matching.
 
 #endregion
 

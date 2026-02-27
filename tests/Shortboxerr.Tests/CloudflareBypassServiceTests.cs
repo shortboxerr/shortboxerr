@@ -442,6 +442,12 @@ public class CloudflareBypassServiceTests
 
         public Task<ApiKeyInfo> SetApiEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
             => Task.FromResult(new ApiKeyInfo { IsEnabled = enabled, MaskedKey = "xxxx" });
+
+        public Task<AutoMatchSettings> GetAutoMatchSettingsAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult(new AutoMatchSettings());
+
+        public Task SetAutoMatchSettingsAsync(AutoMatchSettings settings, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
     }
 
     #endregion

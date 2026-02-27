@@ -279,8 +279,11 @@ public class DdlImportService : IDdlImportService
         var confidenceReductions = new List<string>();
         var confidence = 100;
         
-        _logger?.LogDebug("Auto-matching candidate: {Title}, Parsed: Series={Series}, Issue={Issue}, Collection={IsCollection}", 
-            candidate.ReleaseTitle, parsed.SeriesTitle, parsed.IssueNumber, parsed.IsCollection);
+        // Load auto-match settings
+        var settings = await _settingsService.GetAutoMatchSettingsAsync(cancellationToken);
+        
+        _logger?.LogDebug("Auto-matching candidate: {Title}, Parsed: Series={Series}, Issue={Issue}, Year={Year}, Collection={IsCollection}", 
+            candidate.ReleaseTitle, parsed.SeriesTitle, parsed.IssueNumber, parsed.Year, parsed.IsCollection);
         
         if (string.IsNullOrWhiteSpace(parsed.SeriesTitle))
         {
@@ -302,13 +305,44 @@ public class DdlImportService : IDdlImportService
             return DdlMatchResult.NoMatch($"No series found matching '{parsed.SeriesTitle}'");
         }
         
-        // Find best series match
+        // Detect ambiguous series (multiple series with same name)
+        var isAmbiguous = settings.EnableAmbiguousSeriesDetection && IsAmbiguousSeries(matchingSeries, normalizedTitle);
+        
+        if (isAmbiguous)
+        {
+            _logger?.LogDebug("Ambiguous series detected: {Count} series match '{Title}'", matchingSeries.Count, normalizedTitle);
+            
+            // If ambiguous and no year in release, flag for manual review
+            if (!parsed.Year.HasValue && settings.RequireYearForAmbiguousSeries)
+            {
+                confidence -= 40;
+                confidenceReductions.Add($"Ambiguous series (multiple matches) without year in release (-40)");
+            }
+        }
+        
+        // Find best series match with year-aware scoring
         Series? bestSeries = null;
         var bestSeriesScore = 0;
+        var yearMismatchRejected = new List<(Series series, int yearDiff)>();
         
         foreach (var series in matchingSeries)
         {
-            var score = CalculateSeriesMatchScore(series, parsed);
+            var score = CalculateSeriesMatchScore(series, parsed, settings);
+            
+            // Check year tolerance for rejection
+            if (settings.RejectMismatchedYears && parsed.Year.HasValue && series.StartYear.HasValue)
+            {
+                var (isWithinTolerance, yearDiff) = CheckYearTolerance(parsed.Year, series.StartYear, settings.YearMatchTolerance);
+                
+                if (!isWithinTolerance)
+                {
+                    _logger?.LogDebug("Series '{SeriesTitle}' ({SeriesYear}) rejected: year mismatch {YearDiff} exceeds tolerance {Tolerance}", 
+                        series.Title, series.StartYear, yearDiff, settings.YearMatchTolerance);
+                    yearMismatchRejected.Add((series, yearDiff));
+                    continue; // Skip this series
+                }
+            }
+            
             if (score > bestSeriesScore)
             {
                 bestSeriesScore = score;
@@ -316,9 +350,29 @@ public class DdlImportService : IDdlImportService
             }
         }
         
+        // If all series were rejected due to year mismatch, return detailed error
+        if (bestSeries == null && yearMismatchRejected.Count > 0)
+        {
+            var rejectedInfo = string.Join(", ", yearMismatchRejected.Select(r => $"'{r.series.Title}' ({r.series.StartYear})"));
+            return DdlMatchResult.NoMatch(
+                $"All matching series rejected due to year mismatch. Release year: {parsed.Year}, " +
+                $"tolerance: ±{settings.YearMatchTolerance} years. Rejected: {rejectedInfo}");
+        }
+        
         if (bestSeries == null)
         {
             return DdlMatchResult.NoMatch("No confident series match found");
+        }
+        
+        // Log successful match with year info
+        if (parsed.Year.HasValue && bestSeries.StartYear.HasValue)
+        {
+            var yearDiff = Math.Abs(parsed.Year.Value - bestSeries.StartYear.Value);
+            if (yearDiff > 0)
+            {
+                _logger?.LogDebug("Series matched with year difference of {YearDiff}: release={ReleaseYear}, series={SeriesYear}", 
+                    yearDiff, parsed.Year, bestSeries.StartYear);
+            }
         }
         
         // Adjust confidence based on series match
@@ -327,6 +381,13 @@ public class DdlImportService : IDdlImportService
             var reduction = 90 - bestSeriesScore;
             confidence -= reduction;
             confidenceReductions.Add($"Series match not exact (-{reduction})");
+        }
+        
+        // Additional confidence reduction if there were rejected candidates
+        if (yearMismatchRejected.Count > 0 && isAmbiguous)
+        {
+            confidence -= 10;
+            confidenceReductions.Add($"Other series with same name rejected due to year mismatch (-10)");
         }
         
         // Handle collections vs singles
@@ -339,15 +400,18 @@ public class DdlImportService : IDdlImportService
             
             if (matchingEdition != null)
             {
+                var finalConfidence = Math.Max(0, confidence);
                 return new DdlMatchResult
                 {
                     MatchFound = true,
-                    Confidence = Math.Max(0, confidence),
+                    Confidence = finalConfidence,
                     Series = bestSeries,
                     Edition = matchingEdition,
                     IsCollection = true,
                     Explanation = $"Matched to collection: {bestSeries.Title} - {matchingEdition.Title}",
-                    ConfidenceReductions = confidenceReductions
+                    ConfidenceReductions = confidenceReductions,
+                    RequiresManualReview = finalConfidence < settings.MinConfidenceForAutoImport,
+                    MinConfidenceThreshold = settings.MinConfidenceForAutoImport
                 };
             }
             
@@ -355,14 +419,17 @@ public class DdlImportService : IDdlImportService
             confidence -= 20;
             confidenceReductions.Add("No matching edition found (-20)");
             
+            var collectionConfidence = Math.Max(0, confidence);
             return new DdlMatchResult
             {
                 MatchFound = true,
-                Confidence = Math.Max(0, confidence),
+                Confidence = collectionConfidence,
                 Series = bestSeries,
                 IsCollection = true,
                 Explanation = $"Matched to series (collection): {bestSeries.Title}",
-                ConfidenceReductions = confidenceReductions
+                ConfidenceReductions = confidenceReductions,
+                RequiresManualReview = collectionConfidence < settings.MinConfidenceForAutoImport,
+                MinConfidenceThreshold = settings.MinConfidenceForAutoImport
             };
         }
         else
@@ -373,14 +440,17 @@ public class DdlImportService : IDdlImportService
                 confidence -= 30;
                 confidenceReductions.Add("No issue number in release name (-30)");
                 
+                var noIssueConfidence = Math.Max(0, confidence);
                 return new DdlMatchResult
                 {
                     MatchFound = true,
-                    Confidence = Math.Max(0, confidence),
+                    Confidence = noIssueConfidence,
                     Series = bestSeries,
                     IsCollection = false,
                     Explanation = $"Matched to series (no issue number): {bestSeries.Title}",
-                    ConfidenceReductions = confidenceReductions
+                    ConfidenceReductions = confidenceReductions,
+                    RequiresManualReview = noIssueConfidence < settings.MinConfidenceForAutoImport,
+                    MinConfidenceThreshold = settings.MinConfidenceForAutoImport
                 };
             }
             
@@ -390,15 +460,18 @@ public class DdlImportService : IDdlImportService
             
             if (matchingIssue != null)
             {
+                var issueConfidence = Math.Max(0, confidence);
                 return new DdlMatchResult
                 {
                     MatchFound = true,
-                    Confidence = Math.Max(0, confidence),
+                    Confidence = issueConfidence,
                     Series = bestSeries,
                     Issue = matchingIssue,
                     IsCollection = false,
                     Explanation = $"Matched to issue: {bestSeries.Title} #{matchingIssue.IssueNumber}",
-                    ConfidenceReductions = confidenceReductions
+                    ConfidenceReductions = confidenceReductions,
+                    RequiresManualReview = issueConfidence < settings.MinConfidenceForAutoImport,
+                    MinConfidenceThreshold = settings.MinConfidenceForAutoImport
                 };
             }
             
@@ -406,14 +479,17 @@ public class DdlImportService : IDdlImportService
             confidence -= 15;
             confidenceReductions.Add("Issue not in database (-15)");
             
+            var notFoundConfidence = Math.Max(0, confidence);
             return new DdlMatchResult
             {
                 MatchFound = true,
-                Confidence = Math.Max(0, confidence),
+                Confidence = notFoundConfidence,
                 Series = bestSeries,
                 IsCollection = false,
                 Explanation = $"Matched to series: {bestSeries.Title} (issue #{parsed.IssueNumber} not in database)",
-                ConfidenceReductions = confidenceReductions
+                ConfidenceReductions = confidenceReductions,
+                RequiresManualReview = notFoundConfidence < settings.MinConfidenceForAutoImport,
+                MinConfidenceThreshold = settings.MinConfidenceForAutoImport
             };
         }
     }
@@ -684,7 +760,7 @@ public class DdlImportService : IDdlImportService
         return "Unknown reason";
     }
 
-    private int CalculateSeriesMatchScore(Series series, DdlParsedInfo parsed)
+    private int CalculateSeriesMatchScore(Series series, DdlParsedInfo parsed, AutoMatchSettings settings)
     {
         var score = 0;
         var seriesTitle = _releaseParser.NormalizeTitle(series.Title);
@@ -703,10 +779,31 @@ public class DdlImportService : IDdlImportService
             score += 30;
         }
         
-        // Year bonus
-        if (parsed.Year.HasValue && series.StartYear == parsed.Year.Value)
+        // Year matching with enhanced logic
+        if (parsed.Year.HasValue && series.StartYear.HasValue)
         {
-            score += 20;
+            var yearDiff = Math.Abs(parsed.Year.Value - series.StartYear.Value);
+            
+            if (yearDiff == 0)
+            {
+                // Exact year match - bonus
+                score += 20;
+            }
+            else if (yearDiff <= settings.YearMatchTolerance)
+            {
+                // Within tolerance - small bonus (re-releases, reprints)
+                score += 10;
+            }
+            else
+            {
+                // Year mismatch beyond tolerance - apply penalty
+                score -= settings.YearMismatchPenalty;
+            }
+        }
+        else if (parsed.Year.HasValue && !series.StartYear.HasValue)
+        {
+            // Parsed year but no series year - slight penalty (can't verify)
+            score -= 5;
         }
         
         // Publisher bonus
@@ -716,7 +813,38 @@ public class DdlImportService : IDdlImportService
             score += 15;
         }
         
-        return Math.Min(score, 100);
+        return Math.Clamp(score, 0, 100);
+    }
+
+    /// <summary>
+    /// Checks if the year from the release is within the acceptable tolerance of the series year.
+    /// Returns (isWithinTolerance, yearDifference)
+    /// </summary>
+    private static (bool isWithinTolerance, int yearDiff) CheckYearTolerance(int? parsedYear, int? seriesYear, int tolerance)
+    {
+        if (!parsedYear.HasValue || !seriesYear.HasValue)
+        {
+            // Can't determine - treat as within tolerance but unknown
+            return (true, 0);
+        }
+        
+        var diff = Math.Abs(parsedYear.Value - seriesYear.Value);
+        return (diff <= tolerance, diff);
+    }
+
+    /// <summary>
+    /// Detects if multiple series share the same normalized base name.
+    /// </summary>
+    private bool IsAmbiguousSeries(IReadOnlyList<Series> matchingSeries, string normalizedTitle)
+    {
+        if (matchingSeries.Count <= 1)
+            return false;
+        
+        // Count how many have exact or very close title matches
+        var exactMatches = matchingSeries.Count(s => 
+            _releaseParser.NormalizeTitle(s.Title).Equals(normalizedTitle, StringComparison.OrdinalIgnoreCase));
+        
+        return exactMatches > 1;
     }
 
     private static (string? format, bool supported) DetectFormat(byte[] magic)

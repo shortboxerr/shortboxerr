@@ -426,6 +426,16 @@ public class DdlMatchResult
     /// Reasons why confidence was reduced.
     /// </summary>
     public IReadOnlyList<string> ConfidenceReductions { get; init; } = Array.Empty<string>();
+
+    /// <summary>
+    /// Whether this match requires manual review due to low confidence or ambiguity.
+    /// </summary>
+    public bool RequiresManualReview { get; init; }
+
+    /// <summary>
+    /// Minimum confidence threshold that was used (for diagnostics).
+    /// </summary>
+    public int MinConfidenceThreshold { get; init; }
     
     /// <summary>
     /// Create a no-match result.

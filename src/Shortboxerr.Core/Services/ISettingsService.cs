@@ -74,6 +74,16 @@ public interface ISettingsService
     /// Sets whether API access is enabled.
     /// </summary>
     Task<ApiKeyInfo> SetApiEnabledAsync(bool enabled, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets auto-match settings.
+    /// </summary>
+    Task<AutoMatchSettings> GetAutoMatchSettingsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sets auto-match settings.
+    /// </summary>
+    Task SetAutoMatchSettingsAsync(AutoMatchSettings settings, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -184,5 +194,83 @@ public class GeneralSettings
     /// Whether to auto-move completed downloads to staging.
     /// </summary>
     public bool AutoMoveToStaging { get; set; } = true;
+}
+
+/// <summary>
+/// Settings for auto-matching downloaded files to series/issues.
+/// Used by both DDL import matching and ComicVine auto-matching.
+/// </summary>
+public class AutoMatchSettings
+{
+    // === Year Matching Settings ===
+    
+    /// <summary>
+    /// Maximum year difference allowed between release and series.
+    /// If parsed year differs from series StartYear by more than this, the match is rejected.
+    /// Default is 2 years to handle re-releases and reprints.
+    /// </summary>
+    public int YearMatchTolerance { get; set; } = 2;
+
+    /// <summary>
+    /// If true, reject matches where parsed year differs from series year by more than YearMatchTolerance.
+    /// If false, year mismatch only reduces confidence score.
+    /// </summary>
+    public bool RejectMismatchedYears { get; set; } = true;
+
+    /// <summary>
+    /// Year penalty applied when parsed year doesn't match but is within tolerance.
+    /// This reduces confidence score for near-misses.
+    /// </summary>
+    public int YearMismatchPenalty { get; set; } = 25;
+
+    // === Confidence Settings ===
+
+    /// <summary>
+    /// Confidence threshold for auto-accepting matches (0-100).
+    /// Matches at or above this threshold are auto-imported.
+    /// </summary>
+    public int ConfidenceThreshold { get; set; } = 85;
+
+    /// <summary>
+    /// Minimum confidence score (0-100) required for automatic import.
+    /// Matches below this threshold are queued for manual review.
+    /// Alias for ConfidenceThreshold for DDL import compatibility.
+    /// </summary>
+    public int MinConfidenceForAutoImport 
+    { 
+        get => ConfidenceThreshold; 
+        set => ConfidenceThreshold = value; 
+    }
+
+    // === Ambiguity Detection Settings ===
+
+    /// <summary>
+    /// If true, matches without a parsed year when multiple series with the same name exist
+    /// will be flagged as low-confidence and require manual review.
+    /// </summary>
+    public bool RequireYearForAmbiguousSeries { get; set; } = true;
+
+    /// <summary>
+    /// If true, apply stricter matching when multiple series share the same base name.
+    /// This enables year-based disambiguation and higher confidence thresholds.
+    /// </summary>
+    public bool EnableAmbiguousSeriesDetection { get; set; } = true;
+
+    // === Import Behavior Settings ===
+
+    /// <summary>
+    /// Whether to auto-match during import.
+    /// </summary>
+    public bool AutoMatchOnImport { get; set; } = true;
+    
+    /// <summary>
+    /// Whether to create series/issues if not found locally.
+    /// </summary>
+    public bool CreateMissingItems { get; set; } = true;
+    
+    /// <summary>
+    /// Maximum candidates to keep for manual review.
+    /// </summary>
+    public int MaxCandidatesForReview { get; set; } = 5;
 }
 

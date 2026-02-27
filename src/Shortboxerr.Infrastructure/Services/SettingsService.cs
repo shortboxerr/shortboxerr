@@ -46,6 +46,14 @@ public class SettingsService : ISettingsService
     private const string ApiKeyLastUsedAtKey = "security.apiKeyLastUsedAt";
     private const string ApiKeyEnabledKey = "security.apiKeyEnabled";
 
+    // Auto-match settings
+    private const string AutoMatchYearToleranceKey = "automatch.yearTolerance";
+    private const string AutoMatchRejectMismatchedYearsKey = "automatch.rejectMismatchedYears";
+    private const string AutoMatchMinConfidenceKey = "automatch.minConfidenceForAutoImport";
+    private const string AutoMatchRequireYearForAmbiguousKey = "automatch.requireYearForAmbiguousSeries";
+    private const string AutoMatchEnableAmbiguousDetectionKey = "automatch.enableAmbiguousSeriesDetection";
+    private const string AutoMatchYearMismatchPenaltyKey = "automatch.yearMismatchPenalty";
+
     public SettingsService(ShortboxerrDbContext context, ICredentialEncryptionService encryptionService)
     {
         _context = context;
@@ -284,6 +292,31 @@ public class SettingsService : ISettingsService
         }
 
         return isValid;
+    }
+
+    public async Task<AutoMatchSettings> GetAutoMatchSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        var defaults = new AutoMatchSettings();
+
+        return new AutoMatchSettings
+        {
+            YearMatchTolerance = await GetAsync<int>(AutoMatchYearToleranceKey, defaults.YearMatchTolerance, cancellationToken),
+            RejectMismatchedYears = await GetAsync<bool>(AutoMatchRejectMismatchedYearsKey, defaults.RejectMismatchedYears, cancellationToken),
+            MinConfidenceForAutoImport = await GetAsync<int>(AutoMatchMinConfidenceKey, defaults.MinConfidenceForAutoImport, cancellationToken),
+            RequireYearForAmbiguousSeries = await GetAsync<bool>(AutoMatchRequireYearForAmbiguousKey, defaults.RequireYearForAmbiguousSeries, cancellationToken),
+            EnableAmbiguousSeriesDetection = await GetAsync<bool>(AutoMatchEnableAmbiguousDetectionKey, defaults.EnableAmbiguousSeriesDetection, cancellationToken),
+            YearMismatchPenalty = await GetAsync<int>(AutoMatchYearMismatchPenaltyKey, defaults.YearMismatchPenalty, cancellationToken)
+        };
+    }
+
+    public async Task SetAutoMatchSettingsAsync(AutoMatchSettings settings, CancellationToken cancellationToken = default)
+    {
+        await SetAsync<int>(AutoMatchYearToleranceKey, settings.YearMatchTolerance, cancellationToken);
+        await SetAsync<bool>(AutoMatchRejectMismatchedYearsKey, settings.RejectMismatchedYears, cancellationToken);
+        await SetAsync<int>(AutoMatchMinConfidenceKey, settings.MinConfidenceForAutoImport, cancellationToken);
+        await SetAsync<bool>(AutoMatchRequireYearForAmbiguousKey, settings.RequireYearForAmbiguousSeries, cancellationToken);
+        await SetAsync<bool>(AutoMatchEnableAmbiguousDetectionKey, settings.EnableAmbiguousSeriesDetection, cancellationToken);
+        await SetAsync<int>(AutoMatchYearMismatchPenaltyKey, settings.YearMismatchPenalty, cancellationToken);
     }
 
     /// <summary>
