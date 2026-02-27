@@ -181,6 +181,29 @@ public class DdlParsedInfo
     /// Raw tokens extracted from the title.
     /// </summary>
     public List<string> Tokens { get; init; } = new();
+    
+    /// <summary>
+    /// Reboot/revival indicator (e.g., "New 52", "Rebirth", "Dawn of X").
+    /// Used to disambiguate between series runs.
+    /// </summary>
+    public string? RebootIndicator { get; set; }
+    
+    /// <summary>
+    /// Series version/run indicator (e.g., "Second Series", "Third Volume").
+    /// </summary>
+    public string? SeriesVersion { get; set; }
+    
+    /// <summary>
+    /// Year used for disambiguation (may differ from publication year).
+    /// E.g., "(2016)" in "Batman (2016) #50" indicates the 2016 series run.
+    /// </summary>
+    public int? DisambiguationYear { get; set; }
+    
+    /// <summary>
+    /// Publisher hint extracted from release group naming.
+    /// E.g., "DC-Empire" release group suggests DC publisher.
+    /// </summary>
+    public string? PublisherHint { get; set; }
 }
 
 /// <summary>

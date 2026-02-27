@@ -65,6 +65,55 @@ public partial class DdlReleaseParser : IDdlReleaseParser
         "Zenescope",
         "Cartoon Books"
     };
+    
+    // Reboot/Revival indicators - used to disambiguate series runs
+    private static readonly string[] RebootIndicators = new[]
+    {
+        "New 52", "New52",
+        "Rebirth",
+        "Dawn of X", "DawnOfX",
+        "Infinite Frontier",
+        "All-New", "AllNew",
+        "All New",
+        "Marvel NOW", "Marvel Now",
+        "Fresh Start",
+        "Heroes Reborn",
+        "Ultimate Universe",
+        "Black Label",
+        "MAX", "Max Comics",
+        "Knights",
+        "Legacy"
+    };
+    
+    // Series version indicators
+    private static readonly string[] SeriesVersionIndicators = new[]
+    {
+        "Second Series", "2nd Series",
+        "Third Series", "3rd Series",
+        "Fourth Series", "4th Series",
+        "Fifth Series", "5th Series",
+        "Second Volume", "2nd Volume",
+        "Third Volume", "3rd Volume",
+        "Volume Two", "Volume 2",
+        "Volume Three", "Volume 3"
+    };
+    
+    // Release groups and their associated publishers (for publisher hints)
+    private static readonly Dictionary<string, string> ReleaseGroupPublishers = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { "DC-Empire", "DC Comics" },
+        { "Empire-DC", "DC Comics" },
+        { "DC-Minutemen", "DC Comics" },
+        { "Minutemen-DC", "DC Comics" },
+        { "Marvel-Empire", "Marvel" },
+        { "Empire-Marvel", "Marvel" },
+        { "Marvel-Minutemen", "Marvel" },
+        { "Minutemen-Marvel", "Marvel" },
+        { "Image-Empire", "Image Comics" },
+        { "Empire-Image", "Image Comics" },
+        { "DarkHorse", "Dark Horse Comics" },
+        { "Dark-Horse", "Dark Horse Comics" }
+    };
 
     public DdlParsedInfo Parse(string releaseTitle)
     {
@@ -212,7 +261,42 @@ public partial class DdlReleaseParser : IDdlReleaseParser
             info.ReleaseGroup = releaseGroup;
             workingTitle = titleAfterGroup;
             confidence += 5;
+            
+            // Extract publisher hint from release group naming
+            var publisherHint = ExtractPublisherHintFromGroup(releaseGroup);
+            if (!string.IsNullOrEmpty(publisherHint))
+            {
+                info.PublisherHint = publisherHint;
+                // If we don't have a publisher yet, use the hint
+                if (string.IsNullOrEmpty(info.Publisher))
+                {
+                    info.Publisher = publisherHint;
+                }
+                confidence += 3;
+            }
         }
+        
+        // Extract reboot/revival indicators (New 52, Rebirth, etc.)
+        var (rebootIndicator, titleAfterReboot) = ExtractRebootIndicator(workingTitle);
+        if (!string.IsNullOrEmpty(rebootIndicator))
+        {
+            info.RebootIndicator = rebootIndicator;
+            workingTitle = titleAfterReboot;
+            confidence += 5;
+        }
+        
+        // Extract series version indicators (Second Series, Third Volume, etc.)
+        var (seriesVersion, titleAfterVersion) = ExtractSeriesVersion(workingTitle);
+        if (!string.IsNullOrEmpty(seriesVersion))
+        {
+            info.SeriesVersion = seriesVersion;
+            workingTitle = titleAfterVersion;
+            confidence += 5;
+        }
+        
+        // Detect disambiguation year from title (year in parens that's part of series name)
+        // E.g., "Batman (2016)" - the year is for disambiguation, not publication
+        info.DisambiguationYear = DetectDisambiguationYear(info.Year, info.SeriesTitle ?? workingTitle);
         
         // Handle hyphen-separated subtitles: "Star Wars - Darth Vader" -> preserve full title
         workingTitle = HandleHyphenSubtitle(workingTitle);
@@ -410,7 +494,7 @@ public partial class DdlReleaseParser : IDdlReleaseParser
 
     private static (int? year, string remainingTitle) ExtractYear(string title)
     {
-        // Match year in parentheses: (2023) or (1999)
+        // Match year in parentheses: (2023) or (1999) - most common format
         var parenMatch = YearInParensRegex().Match(title);
         if (parenMatch.Success && int.TryParse(parenMatch.Groups[1].Value, out var parenYear))
         {
@@ -418,6 +502,17 @@ public partial class DdlReleaseParser : IDdlReleaseParser
             {
                 var remaining = title.Replace(parenMatch.Value, "").Trim();
                 return (parenYear, remaining);
+            }
+        }
+        
+        // Match year in brackets: [2023] - alternative format
+        var bracketMatch = YearInBracketsRegex().Match(title);
+        if (bracketMatch.Success && int.TryParse(bracketMatch.Groups[1].Value, out var bracketYear))
+        {
+            if (bracketYear >= 1900 && bracketYear <= DateTime.Now.Year + 1)
+            {
+                var remaining = title.Replace(bracketMatch.Value, "").Trim();
+                return (bracketYear, remaining);
             }
         }
         
@@ -498,7 +593,7 @@ public partial class DdlReleaseParser : IDdlReleaseParser
             return (volNum, remaining);
         }
         
-        // Match "v1" or "v01" format
+        // Match "v1" or "v01" format (standalone)
         var vMatch = VShortRegex().Match(title);
         if (vMatch.Success && int.TryParse(vMatch.Groups[1].Value, out var vNum))
         {
@@ -507,7 +602,50 @@ public partial class DdlReleaseParser : IDdlReleaseParser
             return (vNum, remaining);
         }
         
+        // Match "(v1)" or "(v2)" in parentheses
+        var vParenMatch = VolumeInParensRegex().Match(title);
+        if (vParenMatch.Success && int.TryParse(vParenMatch.Groups[1].Value, out var vParenNum))
+        {
+            var remaining = title.Replace(vParenMatch.Value, "").Trim();
+            remaining = MultipleSpacesRegex().Replace(remaining, " ");
+            return (vParenNum, remaining);
+        }
+        
+        // Match "Vol. One", "Vol. Two", etc.
+        var volWordMatch = VolumeWordRegex().Match(title);
+        if (volWordMatch.Success)
+        {
+            var wordNum = ParseOrdinalWord(volWordMatch.Groups[1].Value);
+            if (wordNum.HasValue)
+            {
+                var remaining = title.Replace(volWordMatch.Value, "").Trim();
+                remaining = MultipleSpacesRegex().Replace(remaining, " ");
+                return (wordNum, remaining);
+            }
+        }
+        
         return (null, title);
+    }
+    
+    /// <summary>
+    /// Parse ordinal words like "One", "Two", "First", "Second" to numbers.
+    /// </summary>
+    private static int? ParseOrdinalWord(string word)
+    {
+        return word.ToLowerInvariant() switch
+        {
+            "one" or "first" or "1st" => 1,
+            "two" or "second" or "2nd" => 2,
+            "three" or "third" or "3rd" => 3,
+            "four" or "fourth" or "4th" => 4,
+            "five" or "fifth" or "5th" => 5,
+            "six" or "sixth" or "6th" => 6,
+            "seven" or "seventh" or "7th" => 7,
+            "eight" or "eighth" or "8th" => 8,
+            "nine" or "ninth" or "9th" => 9,
+            "ten" or "tenth" or "10th" => 10,
+            _ => null
+        };
     }
 
     private static (decimal? issueNumber, string remainingTitle) ExtractIssueNumber(string title)
@@ -707,6 +845,138 @@ public partial class DdlReleaseParser : IDdlReleaseParser
         return (null, title);
     }
 
+    /// <summary>
+    /// Extract publisher hint from release group naming conventions.
+    /// E.g., "DC-Empire" suggests DC Comics publisher.
+    /// </summary>
+    private static string? ExtractPublisherHintFromGroup(string releaseGroup)
+    {
+        // Check exact matches first
+        if (ReleaseGroupPublishers.TryGetValue(releaseGroup, out var exactMatch))
+        {
+            return exactMatch;
+        }
+        
+        // Check if release group contains publisher prefix/suffix
+        foreach (var (pattern, publisher) in ReleaseGroupPublishers)
+        {
+            if (releaseGroup.Contains(pattern, StringComparison.OrdinalIgnoreCase))
+            {
+                return publisher;
+            }
+        }
+        
+        // Check for publisher name embedded in group
+        foreach (var publisher in KnownPublishers)
+        {
+            if (releaseGroup.StartsWith(publisher + "-", StringComparison.OrdinalIgnoreCase) ||
+                releaseGroup.EndsWith("-" + publisher, StringComparison.OrdinalIgnoreCase) ||
+                releaseGroup.Contains("-" + publisher + "-", StringComparison.OrdinalIgnoreCase))
+            {
+                return publisher;
+            }
+        }
+        
+        return null;
+    }
+
+    /// <summary>
+    /// Extract reboot/revival indicators from title.
+    /// E.g., "New 52", "Rebirth", "Dawn of X", etc.
+    /// </summary>
+    private static (string? indicator, string remainingTitle) ExtractRebootIndicator(string title)
+    {
+        // Check parenthetical groups first (most reliable)
+        foreach (var indicator in RebootIndicators)
+        {
+            var parenPattern = $@"\({Regex.Escape(indicator)}\)";
+            var parenMatch = Regex.Match(title, parenPattern, RegexOptions.IgnoreCase);
+            if (parenMatch.Success)
+            {
+                var remaining = title.Remove(parenMatch.Index, parenMatch.Length).Trim();
+                remaining = MultipleSpacesRegex().Replace(remaining, " ");
+                return (indicator, remaining);
+            }
+        }
+        
+        // Check as standalone word boundary matches
+        foreach (var indicator in RebootIndicators.OrderByDescending(i => i.Length))
+        {
+            var pattern = $@"\b{Regex.Escape(indicator)}\b";
+            var match = Regex.Match(title, pattern, RegexOptions.IgnoreCase);
+            if (match.Success)
+            {
+                var remaining = title.Remove(match.Index, match.Length).Trim();
+                remaining = MultipleSpacesRegex().Replace(remaining, " ");
+                return (indicator, remaining);
+            }
+        }
+        
+        return (null, title);
+    }
+
+    /// <summary>
+    /// Extract series version indicators from title.
+    /// E.g., "Second Series", "Third Volume", "2nd Series", etc.
+    /// </summary>
+    private static (string? version, string remainingTitle) ExtractSeriesVersion(string title)
+    {
+        // Check parenthetical groups first
+        foreach (var version in SeriesVersionIndicators)
+        {
+            var parenPattern = $@"\({Regex.Escape(version)}\)";
+            var parenMatch = Regex.Match(title, parenPattern, RegexOptions.IgnoreCase);
+            if (parenMatch.Success)
+            {
+                var remaining = title.Remove(parenMatch.Index, parenMatch.Length).Trim();
+                remaining = MultipleSpacesRegex().Replace(remaining, " ");
+                return (version, remaining);
+            }
+        }
+        
+        // Check as standalone matches
+        foreach (var version in SeriesVersionIndicators.OrderByDescending(v => v.Length))
+        {
+            var pattern = $@"\b{Regex.Escape(version)}\b";
+            var match = Regex.Match(title, pattern, RegexOptions.IgnoreCase);
+            if (match.Success)
+            {
+                var remaining = title.Remove(match.Index, match.Length).Trim();
+                remaining = MultipleSpacesRegex().Replace(remaining, " ");
+                return (version, remaining);
+            }
+        }
+        
+        return (null, title);
+    }
+
+    /// <summary>
+    /// Detect if the extracted year is used for series disambiguation rather than publication date.
+    /// Returns the year if it appears to be a disambiguation year (attached to series name).
+    /// </summary>
+    private static int? DetectDisambiguationYear(int? extractedYear, string seriesTitle)
+    {
+        if (!extractedYear.HasValue)
+            return null;
+        
+        // If the series title ends with the year in parens, it's likely a disambiguation year
+        // E.g., "Batman (2016)" - the year disambiguates which Batman series
+        var yearPattern = $@"\({extractedYear}\)\s*$";
+        if (Regex.IsMatch(seriesTitle, yearPattern))
+        {
+            return extractedYear;
+        }
+        
+        // Also detect years that commonly indicate series runs (2011+)
+        // Most modern series disambiguation uses 2011+ years
+        if (extractedYear >= 2011)
+        {
+            return extractedYear;
+        }
+        
+        return null;
+    }
+
     private static bool IsYear(string text)
     {
         return int.TryParse(text, out var year) && year >= 1900 && year <= DateTime.Now.Year + 1;
@@ -811,4 +1081,15 @@ public partial class DdlReleaseParser : IDdlReleaseParser
     
     [GeneratedRegex(@"\(([^)]+)\)")]
     private static partial Regex AllParenGroupsRegex();
+    
+    // New regex patterns for enhanced volume parsing
+    [GeneratedRegex(@"\(v(\d+)\)", RegexOptions.IgnoreCase)]
+    private static partial Regex VolumeInParensRegex();
+    
+    [GeneratedRegex(@"\bVol(?:ume)?\.?\s*(One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|First|Second|Third|Fourth|Fifth|Sixth|Seventh|Eighth|Ninth|Tenth|\d+(?:st|nd|rd|th))", RegexOptions.IgnoreCase)]
+    private static partial Regex VolumeWordRegex();
+    
+    // Year in brackets: [2023]
+    [GeneratedRegex(@"\[(\d{4})\]")]
+    private static partial Regex YearInBracketsRegex();
 }

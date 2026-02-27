@@ -261,7 +261,125 @@ public class DdlReleaseParserTests
     }
 
     #endregion
+
+    #region EPIC 19.3 - Enhanced Year Extraction
+
+    [Theory]
+    [InlineData("Batman 001 [2023].cbz", 2023)]
+    [InlineData("Superman [2020] 050.cbz", 2020)]
+    [InlineData("Wonder Woman #1 [2016].cbr", 2016)]
+    public void Parse_YearInBrackets_ExtractsCorrectly(string title, int expectedYear)
+    {
+        var result = _parser.Parse(title);
+        Assert.Equal(expectedYear, result.Year);
+    }
+
+    [Theory]
+    [InlineData("Batman 001 2023.cbz", 2023)]
+    [InlineData("Aquaman 001 2023 Digital.cbz", 2023)]
+    public void Parse_YearStandalone_ExtractsCorrectly(string title, int expectedYear)
+    {
+        var result = _parser.Parse(title);
+        Assert.Equal(expectedYear, result.Year);
+    }
+
+    #endregion
+
+    #region EPIC 19.3 - Enhanced Volume Extraction
+
+    [Theory]
+    [InlineData("Batman (v2) #001.cbz", 2)]
+    [InlineData("Superman (v3) 050.cbz", 3)]
+    public void Parse_VolumeInParens_ExtractsCorrectly(string title, int expectedVolume)
+    {
+        var result = _parser.Parse(title);
+        Assert.Equal(expectedVolume, result.VolumeNumber);
+    }
+
+    [Theory]
+    [InlineData("Batman Vol. One TPB.cbz", 1)]
+    [InlineData("Superman Volume Two TPB.cbz", 2)]
+    [InlineData("X-Men Vol. Three HC.cbz", 3)]
+    public void Parse_VolumeOrdinalWords_ExtractsCorrectly(string title, int expectedVolume)
+    {
+        var result = _parser.Parse(title);
+        Assert.Equal(expectedVolume, result.VolumeNumber);
+    }
+
+    [Theory]
+    [InlineData("Batman Vol 1 TPB.cbz", 1)]
+    [InlineData("Batman Volume 2 TPB.cbz", 2)]
+    [InlineData("Batman v3 #001.cbz", 3)]
+    public void Parse_VolumeNumeric_ExtractsCorrectly(string title, int expectedVolume)
+    {
+        var result = _parser.Parse(title);
+        Assert.Equal(expectedVolume, result.VolumeNumber);
+    }
+
+    #endregion
+
+    #region EPIC 19.3 - Reboot/Revival Indicators
+
+    [Theory]
+    [InlineData("Batman (New 52) #001.cbz", "New 52")]
+    [InlineData("Superman (Rebirth) 001.cbz", "Rebirth")]
+    [InlineData("X-Men Dawn of X 001.cbz", "Dawn of X")]
+    [InlineData("Avengers Marvel NOW 001.cbz", "Marvel NOW")]
+    public void Parse_RebootIndicator_ExtractsCorrectly(string title, string expectedIndicator)
+    {
+        var result = _parser.Parse(title);
+        Assert.Equal(expectedIndicator, result.RebootIndicator);
+    }
+
+    [Theory]
+    [InlineData("Batman (Second Series) #001.cbz", "Second Series")]
+    [InlineData("Superman (2nd Series) 001.cbz", "2nd Series")]
+    [InlineData("Wonder Woman Third Series 001.cbz", "Third Series")]
+    public void Parse_SeriesVersion_ExtractsCorrectly(string title, string expectedVersion)
+    {
+        var result = _parser.Parse(title);
+        Assert.Equal(expectedVersion, result.SeriesVersion);
+    }
+
+    #endregion
+
+    #region EPIC 19.3 - Publisher Hints from Release Groups
+
+    [Theory]
+    [InlineData("Batman 001 (2023) - DC-Empire.cbz", "DC Comics")]
+    [InlineData("Spider-Man 001 (2023) - Marvel-Minutemen.cbz", "Marvel")]
+    [InlineData("Walking Dead 001 (2023) - Image-Empire.cbz", "Image Comics")]
+    public void Parse_ReleaseGroupPublisherHint_ExtractsCorrectly(string title, string expectedPublisher)
+    {
+        var result = _parser.Parse(title);
+        // Should extract publisher from release group if not found elsewhere
+        Assert.Equal(expectedPublisher, result.Publisher);
+        Assert.NotNull(result.PublisherHint);
+    }
+
+    [Fact]
+    public void Parse_ExplicitPublisherOverridesHint()
+    {
+        // Explicit publisher in parens should take precedence over release group hint
+        var result = _parser.Parse("Batman 001 (DC) (2023) - Marvel-Empire.cbz");
+        
+        // DC should win because it's explicit in parens, even though group says Marvel
+        Assert.Equal("DC", result.Publisher);
+    }
+
+    #endregion
+
+    #region EPIC 19.3 - Disambiguation Year Detection
+
+    [Fact]
+    public void Parse_DisambiguationYear_DetectedForModernSeries()
+    {
+        var result = _parser.Parse("Batman #050 (2016).cbz");
+        
+        Assert.Equal(2016, result.Year);
+        // Should also be marked as disambiguation year (2016 Batman vs other Batman series)
+        Assert.Equal(2016, result.DisambiguationYear);
+    }
+
+    #endregion
 }
-
-
-

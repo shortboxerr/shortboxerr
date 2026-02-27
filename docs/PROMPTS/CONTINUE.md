@@ -6,7 +6,7 @@ Run the next iteration strictly per docs/ITERATION_PROTOCOL.md. Do not ask quest
 - **8585** - Frontend (user-facing, Vite dev server, bound to 0.0.0.0)
 - **5000** - Backend API (internal, proxied by Vite)
 
-**Restart servers after each commit (STOP-WAIT-VERIFY-START):**
+**Restart servers after each commit (STOP-WAIT-VERIFY-START):** 
 
 IMPORTANT: Vite auto-increments port if its configured port is busy (8585 → 8586 → 8587...).
 Always verify ports are FREE before starting servers.
