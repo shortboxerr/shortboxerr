@@ -84,7 +84,7 @@ public static class SystemEndpoints
             .Produces<CacheEventsResponse>(200);
 
         group.MapPost("/cache/clear", ClearCache)
-            .WithName("ClearCache")
+            .WithName("SystemClearCache")
             .WithSummary("Clear all cached data")
             .WithOpenApi()
             .Produces<CacheClearResponse>(200);
