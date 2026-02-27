@@ -5132,6 +5132,8 @@ function ImportSettings() {
         </SettingsField>
       </SettingsSection>
 
+      <MatchStatisticsSection />
+
       <div style={{ 
         display: 'flex', 
         alignItems: 'center', 
@@ -5161,6 +5163,104 @@ function ImportSettings() {
         )}
       </div>
     </>
+  );
+}
+
+// === Match Statistics Section (EPIC 19.5) ===
+function MatchStatisticsSection() {
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ['matchHistoryStats'],
+    queryFn: () => api.getMatchHistoryStats({ days: 30 }),
+  });
+
+  if (isLoading) {
+    return (
+      <SettingsSection title="Match Statistics">
+        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+          <Loader2 size={20} className="spin" style={{ marginRight: '8px' }} />
+          Loading statistics...
+        </div>
+      </SettingsSection>
+    );
+  }
+
+  if (!stats || stats.totalMatches === 0) {
+    return (
+      <SettingsSection title="Match Statistics">
+        <div style={{ 
+          padding: '20px', 
+          textAlign: 'center', 
+          color: 'var(--text-muted)',
+          background: 'var(--bg-secondary)',
+          borderRadius: 'var(--radius-md)'
+        }}>
+          No match history recorded yet. Statistics will appear after files are imported.
+        </div>
+      </SettingsSection>
+    );
+  }
+
+  return (
+    <SettingsSection title="Match Statistics (Last 30 Days)">
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', 
+        gap: '16px',
+        marginBottom: '16px'
+      }}>
+        <StatCard label="Total Matches" value={stats.totalMatches} />
+        <StatCard label="Auto-Imported" value={stats.autoImported} />
+        <StatCard label="Pending Review" value={stats.pendingReview} />
+        <StatCard 
+          label="Accuracy Rate" 
+          value={`${stats.accuracyRate.toFixed(1)}%`}
+          highlight={stats.accuracyRate >= 90 ? 'success' : stats.accuracyRate >= 70 ? 'warning' : 'danger'}
+        />
+        <StatCard label="Avg Confidence" value={`${stats.averageConfidence.toFixed(0)}%`} />
+        <StatCard 
+          label="Verified Correct" 
+          value={stats.verifiedCorrect}
+          highlight="success"
+        />
+        <StatCard 
+          label="Verified Incorrect" 
+          value={stats.verifiedIncorrect}
+          highlight={stats.verifiedIncorrect > 0 ? 'danger' : undefined}
+        />
+        <StatCard label="Unverified" value={stats.unverified} />
+      </div>
+    </SettingsSection>
+  );
+}
+
+function StatCard({ label, value, highlight }: { 
+  label: string; 
+  value: string | number; 
+  highlight?: 'success' | 'warning' | 'danger';
+}) {
+  const bgColor = highlight === 'success' ? 'var(--success-bg)' :
+                  highlight === 'warning' ? 'var(--warning-bg)' :
+                  highlight === 'danger' ? 'var(--error-bg)' :
+                  'var(--bg-secondary)';
+  const textColor = highlight === 'success' ? 'var(--success)' :
+                    highlight === 'warning' ? 'var(--warning)' :
+                    highlight === 'danger' ? 'var(--error)' :
+                    'var(--text-primary)';
+
+  return (
+    <div style={{
+      padding: '12px 16px',
+      background: bgColor,
+      borderRadius: 'var(--radius-md)',
+      textAlign: 'center'
+    }}>
+      <div style={{ fontSize: '24px', fontWeight: 600, color: textColor }}>
+        {value}
+      </div>
+      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+        {label}
+      </div>
+    </div>
   );
 }
 
