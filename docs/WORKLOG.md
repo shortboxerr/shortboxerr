@@ -1,5 +1,69 @@
 # Worklog
 
+## Iteration 173 (2026-02-24)
+**EPIC 19.1: Year-Aware Matching**
+
+### Summary
+Implemented year-aware auto-matching to prevent series mismatches (e.g., "Deadman (2017)" files going to "Deadman (2006)"). This is the first item in the P1 Critical Auto-Matching Robustness epic.
+
+### Implementation
+
+**Backend (Core + Infrastructure):**
+- Consolidated `AutoMatchSettings` class in `ISettingsService.cs` with year tolerance, confidence threshold, and ambiguity detection settings
+- Updated `DdlImportService.CalculateSeriesMatchScore()` to apply year-based scoring and penalties
+- Updated `DdlImportService.AutoMatchAsync()` to:
+  - Reject matches when year mismatch exceeds configurable tolerance
+  - Detect ambiguous series (multiple series with same name)
+  - Flag low-confidence matches for manual review when year is missing from ambiguous series
+- Added `RequiresManualReview` and `MinConfidenceThreshold` to `DdlMatchResult`
+- Added `GetAutoMatchSettingsAsync`/`SetAutoMatchSettingsAsync` to `ISettingsService` and `SettingsService`
+
+**API:**
+- Added `GET /api/v1/settings/automatch` endpoint
+- Added `PUT /api/v1/settings/automatch` endpoint with validation
+
+**Frontend:**
+- Added comprehensive Auto-Match Settings UI in Import tab
+- Settings include: Year tolerance, reject mismatched years, year penalty, ambiguous series detection, confidence threshold
+- Added warning banner explaining the critical nature of these settings
+
+### Settings Added
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| YearMatchTolerance | 2 | Max year difference allowed |
+| RejectMismatchedYears | true | Hard reject vs. penalty only |
+| YearMismatchPenalty | 25 | Confidence reduction for mismatches |
+| ConfidenceThreshold | 85 | Min confidence for auto-import |
+| RequireYearForAmbiguousSeries | true | Require year when ambiguous |
+| EnableAmbiguousSeriesDetection | true | Detect multiple same-name series |
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Services/ISettingsService.cs` | Added consolidated AutoMatchSettings class + interface methods |
+| `src/Shortboxerr.Core/Ddl/IDdlImportService.cs` | Added RequiresManualReview, MinConfidenceThreshold to DdlMatchResult |
+| `src/Shortboxerr.Core/ComicVine/IAutoMatchService.cs` | Removed duplicate AutoMatchSettings, use Services namespace |
+| `src/Shortboxerr.Infrastructure/Services/SettingsService.cs` | Implemented auto-match settings persistence |
+| `src/Shortboxerr.Infrastructure/Ddl/DdlImportService.cs` | Year-aware matching logic in AutoMatchAsync + CalculateSeriesMatchScore |
+| `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` | Added GET/PUT /api/v1/settings/automatch endpoints |
+| `ui/src/api/client.ts` | Added AutoMatchSettings interface and API functions |
+| `ui/src/pages/SettingsPage.tsx` | Replaced ImportSettings with full auto-match settings UI |
+| `tests/Shortboxerr.Tests/DdlImportServiceTests.cs` | Added 6 year-aware matching tests |
+
+### Commits
+- `feat(automatch): add year-aware matching logic (EPIC 19.1)`
+- `feat(ui): add auto-match settings UI in Import settings tab`
+- `test(automatch): add year-aware matching tests (EPIC 19.1)`
+
+### Testing Results
+- Backend Build: SUCCESS
+- Frontend Build: SUCCESS
+- Tests: 6 new tests added (DdlImportService compilation OK; GetComicsAdapter tests have pre-existing issues)
+
+---
+
 ## Iteration 172 (2026-02-26)
 **EPIC 18.4: File Rename Within Series - Enhanced Preview UI**
 

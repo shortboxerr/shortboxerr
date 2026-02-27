@@ -238,11 +238,14 @@ Reorganize existing library files to match current naming format settings.
 
 The auto-matching logic that matches downloaded files to series/issues must be rock-solid and practically fool-proof. Current issues include files from different series with similar names being incorrectly matched (e.g., "Deadman (2017)" files matched to "Deadman (2006)" series).
 
-### 19.1 Year-Aware Matching ← READY
-- [ ] Extract year from release filename (e.g., "Deadman 002 (2017).cbz")
-- [ ] Compare extracted year against series StartYear
-- [ ] Reject matches where year differs by more than 1-2 years (configurable tolerance)
-- [ ] Handle cases where year is missing from filename (require confirmation?)
+### 19.1 Year-Aware Matching ✅ COMPLETED (Iteration 173)
+- [x] Extract year from release filename (already implemented in DdlReleaseParser)
+- [x] Compare extracted year against series StartYear
+- [x] Reject matches where year differs by more than tolerance (configurable, default 2)
+- [x] Handle cases where year is missing from filename (flag as low confidence for ambiguous series)
+- [x] Add AutoMatchSettings for configurable tolerance/behavior
+- [x] Add API endpoints for settings
+- [x] Add UI in Import settings tab
 
 ### 19.2 Series Name Disambiguation ← READY  
 - [ ] Detect when multiple series share the same base name (e.g., multiple "Deadman" series)

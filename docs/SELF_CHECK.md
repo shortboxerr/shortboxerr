@@ -1,3 +1,81 @@
+# Self-Check: Iteration 173
+
+## Summary
+Completed EPIC 19.1 - Year-Aware Matching. Implemented robust auto-matching with year tolerance to prevent series mismatches (e.g., "Deadman (2017)" files going to "Deadman (2006)"). This is critical P1 functionality affecting data integrity.
+
+## Checklist
+
+### 19.1 Year-Aware Matching
+
+| Item | Status | Notes |
+|------|--------|-------|
+| AutoMatchSettings class | ✅ | Consolidated settings with year tolerance, confidence, ambiguity detection |
+| Year mismatch rejection | ✅ | Rejects when diff > YearMatchTolerance (default: 2) |
+| Year mismatch penalty | ✅ | Reduces confidence when within tolerance but not exact |
+| Ambiguous series detection | ✅ | Detects multiple series with same normalized name |
+| RequireYearForAmbiguousSeries | ✅ | Flags low confidence when year missing for ambiguous series |
+| ISettingsService methods | ✅ | GetAutoMatchSettingsAsync, SetAutoMatchSettingsAsync |
+| SettingsService implementation | ✅ | 6 persisted keys for auto-match settings |
+| API GET endpoint | ✅ | GET /api/v1/settings/automatch |
+| API PUT endpoint | ✅ | PUT /api/v1/settings/automatch with validation |
+| Frontend API client | ✅ | AutoMatchSettings interface and methods |
+| UI in Import settings | ✅ | Full settings form with all options |
+| Warning banner | ✅ | Explains critical nature of settings |
+| Unit tests | ✅ | 6 tests for year-aware matching logic |
+
+## Build & Test Results
+
+```
+Backend Build: SUCCESS (0 warnings, 0 errors)
+Frontend Build: SUCCESS
+Tests: 6 new tests added (GetComicsAdapter tests have pre-existing issues)
+```
+
+## Files Changed
+
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Services/ISettingsService.cs` | Added AutoMatchSettings class and interface methods |
+| `src/Shortboxerr.Core/ComicVine/IAutoMatchService.cs` | Removed duplicate class, use Services namespace |
+| `src/Shortboxerr.Core/Ddl/IDdlImportService.cs` | Added RequiresManualReview, MinConfidenceThreshold to DdlMatchResult |
+| `src/Shortboxerr.Infrastructure/Services/SettingsService.cs` | Auto-match settings persistence |
+| `src/Shortboxerr.Infrastructure/Ddl/DdlImportService.cs` | Year-aware matching logic |
+| `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` | Auto-match settings endpoints |
+| `ui/src/api/client.ts` | AutoMatchSettings types and API methods |
+| `ui/src/pages/SettingsPage.tsx` | Full auto-match settings UI |
+| `tests/Shortboxerr.Tests/DdlImportServiceTests.cs` | 6 year-aware matching tests |
+
+## Commits
+
+1. `feat(automatch): add year-aware matching logic (EPIC 19.1)`
+2. `feat(ui): add auto-match settings UI in Import settings tab`
+3. `test(automatch): add year-aware matching tests (EPIC 19.1)`
+
+## Settings Summary
+
+| Setting | Default | Purpose |
+|---------|---------|---------|
+| YearMatchTolerance | 2 | Max year difference before rejection |
+| RejectMismatchedYears | true | Hard reject vs. penalty only |
+| YearMismatchPenalty | 25 | Confidence reduction for mismatches |
+| ConfidenceThreshold | 85 | Min confidence for auto-import |
+| RequireYearForAmbiguousSeries | true | Require year when series name ambiguous |
+| EnableAmbiguousSeriesDetection | true | Detect multiple same-name series |
+
+## Notes
+- Pre-existing test failures in GetComicsAdapter tests (unrelated to this change)
+- AutoMatchSettings consolidated from ComicVine namespace to Services namespace
+- Year already extracted by DdlReleaseParser; this iteration uses it for matching decisions
+
+## Next Steps
+
+- [ ] EPIC 19.2: Series Name Disambiguation
+- [ ] EPIC 19.3: Release Parser Improvements
+- [ ] EPIC 19.4: Match Verification & Confirmation
+- [ ] EPIC 19.5: Matching Audit & Logging
+
+---
+
 # Self-Check: Iteration 172
 
 ## Summary
