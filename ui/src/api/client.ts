@@ -1301,12 +1301,25 @@ export interface LogCompressionResult {
 }
 
 export interface AutoMatchSettings {
+  // Year matching
   yearMatchTolerance: number;
   rejectMismatchedYears: boolean;
   yearMismatchPenalty: number;
+  
+  // Confidence
   confidenceThreshold: number;
+  
+  // Ambiguity detection
   requireYearForAmbiguousSeries: boolean;
   enableAmbiguousSeriesDetection: boolean;
+  
+  // Publisher matching (EPIC 19.2)
+  publisherMatchBonus: number;
+  publisherMismatchPenalty: number;
+  preferPublisherMatchForAmbiguous: boolean;
+  rejectMismatchedPublishers: boolean;
+  
+  // Import behavior
   autoMatchOnImport: boolean;
   createMissingItems: boolean;
   maxCandidatesForReview: number;
@@ -2519,6 +2532,10 @@ export const api = {
         confidenceThreshold: 85,
         requireYearForAmbiguousSeries: true,
         enableAmbiguousSeriesDetection: true,
+        publisherMatchBonus: 15,
+        publisherMismatchPenalty: 20,
+        preferPublisherMatchForAmbiguous: true,
+        rejectMismatchedPublishers: false,
         autoMatchOnImport: true,
         createMissingItems: true,
         maxCandidatesForReview: 5,

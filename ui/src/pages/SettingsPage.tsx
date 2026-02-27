@@ -4827,6 +4827,12 @@ function ImportSettings() {
     confidenceThreshold: 85,
     requireYearForAmbiguousSeries: true,
     enableAmbiguousSeriesDetection: true,
+    // Publisher matching (EPIC 19.2)
+    publisherMatchBonus: 15,
+    publisherMismatchPenalty: 20,
+    preferPublisherMatchForAmbiguous: true,
+    rejectMismatchedPublishers: false,
+    // Import behavior
     autoMatchOnImport: true,
     createMissingItems: true,
     maxCandidatesForReview: 5,
@@ -4945,6 +4951,73 @@ function ImportSettings() {
               onChange={(e) => setLocalSettings(s => ({ ...s, requireYearForAmbiguousSeries: e.target.checked }))}
             />
             <span style={{ fontSize: '13px' }}>When series name is ambiguous, require year in release for auto-match</span>
+          </label>
+        </SettingsField>
+      </SettingsSection>
+
+      <SettingsSection title="Publisher Matching">
+        <div style={{ 
+          padding: '10px 14px', 
+          background: 'var(--bg-secondary)', 
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '12px',
+          fontSize: '13px',
+          color: 'var(--text-secondary)'
+        }}>
+          When releases contain publisher information, these settings control how publisher matching affects confidence scores.
+        </div>
+
+        <SettingsField 
+          label="Publisher Match Bonus" 
+          description="Confidence bonus when release publisher matches series publisher"
+        >
+          <input 
+            className="input" 
+            type="number"
+            style={{ width: '80px' }}
+            value={localSettings.publisherMatchBonus}
+            onChange={(e) => setLocalSettings(s => ({ ...s, publisherMatchBonus: parseInt(e.target.value) || 0 }))}
+            min={0}
+            max={50}
+          />
+          <span style={{ marginLeft: '8px', color: 'var(--text-muted)' }}>points</span>
+        </SettingsField>
+
+        <SettingsField 
+          label="Publisher Mismatch Penalty" 
+          description="Confidence penalty when release publisher doesn't match series publisher"
+        >
+          <input 
+            className="input" 
+            type="number"
+            style={{ width: '80px' }}
+            value={localSettings.publisherMismatchPenalty}
+            onChange={(e) => setLocalSettings(s => ({ ...s, publisherMismatchPenalty: parseInt(e.target.value) || 0 }))}
+            min={0}
+            max={50}
+          />
+          <span style={{ marginLeft: '8px', color: 'var(--text-muted)' }}>points</span>
+        </SettingsField>
+
+        <SettingsField label="Prefer Publisher for Ambiguous">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input 
+              type="checkbox" 
+              checked={localSettings.preferPublisherMatchForAmbiguous}
+              onChange={(e) => setLocalSettings(s => ({ ...s, preferPublisherMatchForAmbiguous: e.target.checked }))}
+            />
+            <span style={{ fontSize: '13px' }}>When multiple series share a name, only consider those with matching publisher</span>
+          </label>
+        </SettingsField>
+
+        <SettingsField label="Reject Mismatched Publishers">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input 
+              type="checkbox" 
+              checked={localSettings.rejectMismatchedPublishers}
+              onChange={(e) => setLocalSettings(s => ({ ...s, rejectMismatchedPublishers: e.target.checked }))}
+            />
+            <span style={{ fontSize: '13px' }}>Reject matches when publishers don't match (strict mode)</span>
           </label>
         </SettingsField>
       </SettingsSection>
