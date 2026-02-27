@@ -52,3 +52,5 @@ Thumbs.db
 *.pubxml
 !**/[Pp]ublish[Pp]rofiles/*.pubxml
 
+# Runtime data
+**/covers/

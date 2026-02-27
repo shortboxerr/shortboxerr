@@ -8,13 +8,14 @@ namespace Shortboxerr.Infrastructure.Caching;
 
 /// <summary>
 /// Memory cache service with statistics tracking, prefix-based invalidation,
-/// and configurable TTLs.
+/// configurable TTLs, and event publishing for distributed cache coordination.
 /// </summary>
 public class CacheService : ICacheService
 {
     private readonly IMemoryCache _cache;
     private readonly ILogger<CacheService> _logger;
     private readonly CacheSettings _settings;
+    private readonly ICacheEventPublisher? _eventPublisher;
     
     // Track cache keys for prefix-based invalidation
     private readonly ConcurrentDictionary<string, byte> _keys = new();
@@ -31,11 +32,13 @@ public class CacheService : ICacheService
     public CacheService(
         IMemoryCache cache,
         ILogger<CacheService> logger,
-        IOptions<CacheSettings>? settings = null)
+        IOptions<CacheSettings>? settings = null,
+        ICacheEventPublisher? eventPublisher = null)
     {
         _cache = cache;
         _logger = logger;
         _settings = settings?.Value ?? new CacheSettings();
+        _eventPublisher = eventPublisher;
     }
 
     #region Core Operations
@@ -97,6 +100,7 @@ public class CacheService : ICacheService
         }
 
         var effectiveTtl = ttl ?? _settings.DefaultTtl;
+        var isUpdate = _keys.ContainsKey(key);
         
         var options = new MemoryCacheEntryOptions
         {
@@ -116,6 +120,13 @@ public class CacheService : ICacheService
         }
         
         _logger.LogDebug("Cache set: {Key} (TTL: {Ttl})", key, effectiveTtl);
+        
+        PublishEventAsync(new CacheEvent
+        {
+            Type = isUpdate ? CacheEventType.Updated : CacheEventType.Added,
+            Key = key,
+            AffectedCount = 1
+        });
     }
 
     public Task SetAsync<T>(string key, T value, TimeSpan? ttl = null, CancellationToken cancellationToken = default)
@@ -127,7 +138,7 @@ public class CacheService : ICacheService
     public void Remove(string key)
     {
         _cache.Remove(key);
-        _keys.TryRemove(key, out _);
+        var existed = _keys.TryRemove(key, out _);
         
         if (_settings.TrackStatistics)
         {
@@ -135,6 +146,16 @@ public class CacheService : ICacheService
         }
         
         _logger.LogDebug("Cache remove: {Key}", key);
+        
+        if (existed)
+        {
+            PublishEventAsync(new CacheEvent
+            {
+                Type = CacheEventType.KeyRemoved,
+                Key = key,
+                AffectedCount = 1
+            });
+        }
     }
 
     public bool Exists(string key)
@@ -180,6 +201,17 @@ public class CacheService : ICacheService
         _logger.LogInformation("Cache invalidated {Count} entries with prefix: {Prefix}", 
             keysToRemove.Count, prefix);
         
+        if (keysToRemove.Count > 0)
+        {
+            PublishEventAsync(new CacheEvent
+            {
+                Type = CacheEventType.PrefixInvalidated,
+                Key = prefix,
+                Reason = $"Prefix invalidation: {prefix}",
+                AffectedCount = keysToRemove.Count
+            });
+        }
+        
         return keysToRemove.Count;
     }
 
@@ -199,6 +231,17 @@ public class CacheService : ICacheService
         }
 
         _logger.LogInformation("Cache cleared: {Count} entries removed", count);
+        
+        if (count > 0)
+        {
+            PublishEventAsync(new CacheEvent
+            {
+                Type = CacheEventType.CacheCleared,
+                Key = "*",
+                Reason = "Manual cache clear",
+                AffectedCount = count
+            });
+        }
     }
 
     #endregion
@@ -250,7 +293,35 @@ public class CacheService : ICacheService
                 Interlocked.Increment(ref _itemsEvicted);
             }
             _logger.LogDebug("Cache evicted: {Key} (Reason: {Reason})", keyStr, reason);
+            
+            PublishEventAsync(new CacheEvent
+            {
+                Type = CacheEventType.Evicted,
+                Key = keyStr,
+                Reason = reason.ToString(),
+                AffectedCount = 1
+            });
         }
+    }
+
+    private void PublishEventAsync(CacheEvent @event)
+    {
+        if (_eventPublisher == null)
+        {
+            return;
+        }
+        
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _eventPublisher.PublishAsync(@event);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to publish cache event: {Type}", @event.Type);
+            }
+        });
     }
 
     #endregion

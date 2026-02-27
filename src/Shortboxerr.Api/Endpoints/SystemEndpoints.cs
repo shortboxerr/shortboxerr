@@ -69,6 +69,25 @@ public static class SystemEndpoints
             .WithSummary("Organize all series in library according to current naming format")
             .WithOpenApi()
             .Produces<OrganizeAllResultResponse>(200);
+
+        // Cache management endpoints
+        group.MapGet("/cache/stats", GetCacheStats)
+            .WithName("GetCacheStats")
+            .WithSummary("Get cache statistics")
+            .WithOpenApi()
+            .Produces<CacheStatistics>(200);
+
+        group.MapGet("/cache/events", GetCacheEvents)
+            .WithName("GetCacheEvents")
+            .WithSummary("Get recent cache events for monitoring")
+            .WithOpenApi()
+            .Produces<CacheEventsResponse>(200);
+
+        group.MapPost("/cache/clear", ClearCache)
+            .WithName("ClearCache")
+            .WithSummary("Clear all cached data")
+            .WithOpenApi()
+            .Produces<CacheClearResponse>(200);
     }
 
     private static IResult GetMetronRateLimits(IMetronClient metronClient)
@@ -552,6 +571,61 @@ public static class SystemEndpoints
             Files = files.OrderByDescending(f => f.LastModified).ToList()
         });
     }
+
+    #region Cache Endpoints
+
+    private static IResult GetCacheStats(ICacheService cacheService)
+    {
+        var stats = cacheService.GetStatistics();
+        return Results.Ok(stats);
+    }
+
+    private static IResult GetCacheEvents(
+        ICacheEventPublisher? eventPublisher,
+        [FromQuery] int limit = 100)
+    {
+        if (eventPublisher == null)
+        {
+            return Results.Ok(new CacheEventsResponse
+            {
+                Events = new List<CacheEventDto>(),
+                Message = "Cache event publisher not configured"
+            });
+        }
+
+        var events = eventPublisher.GetRecentEvents(limit)
+            .Select(e => new CacheEventDto
+            {
+                Id = e.Id,
+                Type = e.Type.ToString(),
+                Key = e.Key,
+                Reason = e.Reason,
+                SourceInstance = e.SourceInstance,
+                Timestamp = e.Timestamp,
+                AffectedCount = e.AffectedCount
+            })
+            .ToList();
+
+        return Results.Ok(new CacheEventsResponse { Events = events });
+    }
+
+    private static IResult ClearCache(ICacheService cacheService)
+    {
+        var stats = cacheService.GetStatistics();
+        var itemsCleared = stats.ItemCount;
+        
+        cacheService.Clear();
+        cacheService.ResetStatistics();
+
+        return Results.Ok(new CacheClearResponse
+        {
+            Success = true,
+            ItemsCleared = itemsCleared,
+            Message = $"Cache cleared: {itemsCleared} items removed"
+        });
+    }
+
+    #endregion
 }
 
 #region Response DTOs
@@ -751,6 +825,30 @@ public class SeriesOrganizeResultSummary
     public int FilesFailed { get; set; }
     public bool FolderMoved { get; set; }
     public string? NewPath { get; set; }
+}
+
+public class CacheEventsResponse
+{
+    public List<CacheEventDto> Events { get; set; } = new();
+    public string? Message { get; set; }
+}
+
+public class CacheEventDto
+{
+    public required string Id { get; set; }
+    public required string Type { get; set; }
+    public required string Key { get; set; }
+    public string? Reason { get; set; }
+    public string? SourceInstance { get; set; }
+    public DateTime Timestamp { get; set; }
+    public int AffectedCount { get; set; }
+}
+
+public class CacheClearResponse
+{
+    public bool Success { get; set; }
+    public int ItemsCleared { get; set; }
+    public required string Message { get; set; }
 }
 
 #endregion

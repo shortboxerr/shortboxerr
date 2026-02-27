@@ -133,9 +133,10 @@ public static class DependencyInjection
         services.AddScoped<IProviderManager, ProviderManager>();
         services.AddScoped<IDownloadClientHealthService, DownloadClientHealthService>();
 
-        // Memory cache and cache service
+        // Memory cache and cache service with event publishing
         services.AddMemoryCache();
         services.Configure<CacheSettings>(options => { }); // Use defaults, can be overridden
+        services.AddSingleton<ICacheEventPublisher, LocalCacheEventPublisher>();
         services.AddSingleton<ICacheService, CacheService>();
 
         // ComicVine client and services
