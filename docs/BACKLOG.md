@@ -189,7 +189,7 @@ Comprehensive examination of the issue data and cover acquisition pipeline.
 | Character/team appearances | 9 | M | Foundation complete |
 | Usenet/NZB from DDL sites | 8 | M | Ready |
 | Folder download (Dropbox/Drive) | 8 | M | Ready |
-| Distributed cache pub/sub | 12 | L | Ready (optional) |
+| ~~Distributed cache pub/sub~~ | 12 | L | ✅ COMPLETED (Iteration 180) |
 
 ---
 
