@@ -41,6 +41,7 @@ public class LibraryOrganizationService : ILibraryOrganizationService
         var query = _db.Series
             .Include(s => s.Issues)
             .Include(s => s.Editions)
+            .AsSplitQuery()
             .Where(s => s.ParentSeriesId == null);
         
         if (seriesIds.Length > 0)
@@ -67,6 +68,7 @@ public class LibraryOrganizationService : ILibraryOrganizationService
         var series = await _db.Series
             .Include(s => s.Issues)
             .Include(s => s.Editions)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(s => s.Id == seriesId, cancellationToken);
 
         if (series == null)
@@ -112,6 +114,7 @@ public class LibraryOrganizationService : ILibraryOrganizationService
         var series = await _db.Series
             .Include(s => s.Issues)
             .Include(s => s.Editions)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(s => s.Id == seriesId, cancellationToken);
 
         if (series == null)

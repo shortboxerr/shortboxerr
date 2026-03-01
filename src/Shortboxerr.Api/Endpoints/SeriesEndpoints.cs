@@ -50,10 +50,13 @@ public static class SeriesEndpoints
                 monitored?.ToString() ?? "all",
                 hideLinkedAnnuals.ToString());
 
-            // Build the query
+            // Build the query with split queries to prevent cartesian explosion
+            // When using multiple Include() calls, EF Core would otherwise create a massive
+            // cross-product result set (Series × Issues × Editions)
             var query = db.Series
                 .Include(s => s.Issues)
                 .Include(s => s.Editions)
+                .AsSplitQuery()
                 .AsQueryable();
 
             // If series-annual integration is enabled, exclude linked annual series
@@ -86,6 +89,8 @@ public static class SeriesEndpoints
             }
 
             // Apply sorting
+            // Note: For issue count sorting, we use .Count() method which EF Core translates
+            // to a SQL COUNT subquery, avoiding N+1 issues
             query = (sortKey?.ToLowerInvariant(), sortDir?.ToLowerInvariant()) switch
             {
                 ("title", "desc") => query.OrderByDescending(s => s.SortTitle ?? s.Title),
@@ -98,8 +103,8 @@ public static class SeriesEndpoints
                 ("status", _) => query.OrderBy(s => s.Status),
                 ("publisher", "desc") => query.OrderByDescending(s => s.Publisher),
                 ("publisher", _) => query.OrderBy(s => s.Publisher),
-                ("issuecount", "desc") => query.OrderByDescending(s => s.Issues.Count),
-                ("issuecount", _) => query.OrderBy(s => s.Issues.Count),
+                ("issuecount", "desc") => query.OrderByDescending(s => s.Issues.Count()),
+                ("issuecount", _) => query.OrderBy(s => s.Issues.Count()),
                 _ => query.OrderBy(s => s.SortTitle ?? s.Title)
             };
 
@@ -438,8 +443,10 @@ public static class SeriesEndpoints
         {
             var series = await db.Series
                 .Include(s => s.LinkedAnnualSeries)
+                    .ThenInclude(a => a.Issues)
                 .Include(s => s.Issues)
                 .Include(s => s.Editions)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(s => s.Id == id, ct);
 
             if (series is null)
