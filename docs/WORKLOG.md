@@ -1,5 +1,60 @@
 # Worklog
 
+## Iteration 182 (2026-03-01)
+**EPIC 20.1: Database Query Optimization**
+
+### Summary
+Optimized EF Core queries to prevent N+1 issues and cartesian explosion from multi-collection includes. Also improved History endpoint pagination for accurate counts and efficient data fetching.
+
+### Changes
+
+#### AsSplitQuery for Multi-Collection Includes
+Added `.AsSplitQuery()` to queries with multiple collection navigations to prevent cartesian explosion:
+
+| File | Method/Location |
+|------|-----------------|
+| `SeriesEndpoints.cs` | GetAllSeries (series list query) |
+| `SeriesEndpoints.cs` | DeleteSeries preview endpoint |
+| `LibraryOrganizationService.cs` | GetSeriesRenamePreviewsAsync |
+| `LibraryOrganizationService.cs` | GetSeriesRenamePreviewAsync |
+| `LibraryOrganizationService.cs` | ExecuteSeriesRenameAsync |
+
+#### Issue Count Sorting Fix
+Changed `s.Issues.Count` (property) to `s.Issues.Count()` (method) in SeriesEndpoints sorting:
+- EF Core translates `.Count()` method to a proper SQL COUNT subquery
+- The `.Count` property could trigger lazy loading or client-side evaluation
+
+#### History Endpoint Pagination Optimization
+Refactored `GetHistory` method in `HistoryEndpoints.cs`:
+- **Before**: Loaded `pageSize * 2` from each source, merged in memory, wrong total count
+- **After**: 
+  - Separate count queries for accurate pagination
+  - Order by date at database level before materialization
+  - Reduced over-fetching from `pageSize * 2` to `page * pageSize`
+  - Map to DTOs client-side to avoid EF Core translation issues
+
+### Performance Impact
+| Change | Impact |
+|--------|--------|
+| AsSplitQuery | Prevents massive result sets from Series × Issues × Editions cartesian product |
+| Count() method | Proper SQL COUNT subquery instead of client-side counting |
+| History pagination | Accurate total counts, more efficient data fetching |
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `SeriesEndpoints.cs` | Added AsSplitQuery (2 locations), fixed Count sorting |
+| `LibraryOrganizationService.cs` | Added AsSplitQuery (3 methods) |
+| `HistoryEndpoints.cs` | Refactored pagination logic |
+
+### Commits
+1. `feat(perf): optimize database queries to prevent N+1 and cartesian explosion (EPIC 20.1)`
+
+### Deferred
+- **Organization service pagination**: Would require API contract changes; AsSplitQuery mitigates the issue for now
+
+---
+
 ## Iteration 181 (2026-02-27)
 **EPIC 20.5: Frontend Image Optimization**
 

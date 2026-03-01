@@ -312,26 +312,21 @@ The auto-matching logic that matches downloaded files to series/issues must be r
 
 Systematic performance improvements across backend database queries, API endpoints, background services, and frontend rendering.
 
-### 20.1 Database Query Optimization 📋 READY
+### 20.1 Database Query Optimization ✅ COMPLETED (Iteration 182)
 Optimize EF Core queries to eliminate N+1 issues and reduce memory usage.
 
 **Items:**
-- [ ] **Fix N+1 query in Series sorting by issue count**
-  - File: `SeriesEndpoints.cs` lines 101-102
-  - Issue: `s.Issues.Count` sorting triggers N+1 queries
-  - Fix: Use subquery projection or preload counts
-- [ ] **Add AsSplitQuery to multi-collection includes**
-  - Files: `LibraryOrganizationService.cs`, `SeriesEndpoints.cs`, `PullListService.cs`
-  - Issue: Multiple `Include()` calls cause cartesian explosion
-  - Fix: Add `.AsSplitQuery()` to queries with multiple collection navigations
-- [ ] **Paginate large result sets in organization service**
-  - File: `LibraryOrganizationService.cs` lines 41-51
-  - Issue: `GetSeriesRenamePreviewsAsync` loads all series into memory
-  - Fix: Process in batches or add pagination
-- [ ] **Optimize History endpoint pagination**
-  - File: `HistoryEndpoints.cs` lines 153-156, 198-201
-  - Issue: Loads `pageSize * 2` items, combines in memory, then paginates
-  - Fix: Use UNION query or paginate each source separately
+- [x] **Fix N+1 query in Series sorting by issue count**
+  - Changed `s.Issues.Count` to `s.Issues.Count()` method call for proper SQL translation
+- [x] **Add AsSplitQuery to multi-collection includes**
+  - Added to: `SeriesEndpoints.cs` (series list, deletion preview), `LibraryOrganizationService.cs` (3 methods)
+  - Prevents cartesian explosion from Series × Issues × Editions joins
+- [ ] **Paginate large result sets in organization service** - Deferred
+  - Would require API contract changes; AsSplitQuery mitigates the issue
+- [x] **Optimize History endpoint pagination**
+  - Refactored to get proper total counts from database
+  - Order at database level before materialization
+  - Reduced over-fetching from `pageSize * 2` to `page * pageSize`
 
 **Effort:** M | **Priority:** P1
 
