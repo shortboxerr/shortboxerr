@@ -1304,6 +1304,73 @@ body {
   margin-top: 4px;
 }
 
+/* Add Series Table (List View) */
+.add-series-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.add-series-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--bg-secondary);
+  z-index: 1;
+}
+
+.add-series-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.add-series-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.add-series-row {
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.add-series-row:hover {
+  background: var(--bg-hover);
+}
+
+.add-series-row.selected {
+  background: rgba(var(--accent-primary-rgb), 0.1);
+}
+
+.add-series-row .col-checkbox {
+  width: 40px;
+  text-align: center;
+}
+
+.add-series-row .col-title {
+  font-weight: 500;
+}
+
+.add-series-row .col-year,
+.add-series-row .col-issues {
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.add-series-row .col-publisher {
+  color: var(--text-secondary);
+}
+
+.add-series-row .col-link {
+  text-align: center;
+}
+
 /* Clickable table rows */
 .table-row-clickable {
   cursor: pointer;

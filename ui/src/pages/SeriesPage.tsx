@@ -428,15 +428,17 @@ interface AddSeriesModalProps {
 }
 
 type SortOption = 'relevance' | 'popularity' | 'year-desc' | 'year-asc' | 'name';
+type ViewMode = 'list' | 'grid';
 
 function AddSeriesModal({ onClose, onAdded }: AddSeriesModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [selectedSeries, setSelectedSeries] = useState<SeriesMatchCandidate | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [addError, setAddError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [sortBy, setSortBy] = useState<SortOption>('popularity');
-  const [compactView, setCompactView] = useState(true);
+  const [sortBy, setSortBy] = useState<SortOption>('year-desc'); // Default to newest first
+  const [viewMode, setViewMode] = useState<ViewMode>('list'); // Default to list view
+  const [addingProgress, setAddingProgress] = useState<{ current: number; total: number } | null>(null);
 
   // Debounce search query
   useEffect(() => {
@@ -478,39 +480,86 @@ function AddSeriesModal({ onClose, onAdded }: AddSeriesModalProps) {
     }
   }, [searchResults?.results, sortBy]);
 
-  const addSeriesMutation = useMutation({
-    mutationFn: (comicVineId: number) => api.addSeriesFromComicVine(comicVineId, {
-      monitored: true,
-      monitoringMode: 'AllIssues',
-    }),
-    onSuccess: async (result) => {
-      if (result.success) {
-        // Show refreshing state while waiting for list to update
-        setIsRefreshing(true);
-        try {
-          // Parent handles refetch - await it to keep modal open until data refreshes
-          await onAdded();
-        } finally {
-          setIsRefreshing(false);
-        }
-      } else if (result.alreadyExists) {
-        setAddError(`This series already exists in your library (ID: ${result.existingSeriesId})`);
+  // Toggle selection for a series
+  const toggleSelection = useCallback((comicVineId: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(comicVineId)) {
+        next.delete(comicVineId);
       } else {
-        setAddError(result.error || 'Failed to add series');
+        next.add(comicVineId);
       }
-    },
-    onError: (e) => {
-      setAddError(e instanceof Error ? e.message : 'Failed to add series');
-    },
-  });
+      return next;
+    });
+  }, []);
 
-  const handleAdd = useCallback(() => {
-    if (!selectedSeries) return;
+  // Select/deselect all
+  const toggleSelectAll = useCallback(() => {
+    if (selectedIds.size === sortedResults.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(sortedResults.map(s => s.comicVineId)));
+    }
+  }, [selectedIds.size, sortedResults]);
+
+  // Batch add selected series
+  const handleAddSelected = useCallback(async () => {
+    if (selectedIds.size === 0) return;
     setAddError(null);
-    addSeriesMutation.mutate(selectedSeries.comicVineId);
-  }, [selectedSeries, addSeriesMutation]);
+    
+    const idsToAdd = Array.from(selectedIds);
+    setAddingProgress({ current: 0, total: idsToAdd.length });
+    
+    const errors: string[] = [];
+    let successCount = 0;
+    
+    for (let i = 0; i < idsToAdd.length; i++) {
+      setAddingProgress({ current: i + 1, total: idsToAdd.length });
+      try {
+        const result = await api.addSeriesFromComicVine(idsToAdd[i], {
+          monitored: true,
+          monitoringMode: 'AllIssues',
+        });
+        if (result.success) {
+          successCount++;
+          // Remove from selection after successful add
+          setSelectedIds(prev => {
+            const next = new Set(prev);
+            next.delete(idsToAdd[i]);
+            return next;
+          });
+        } else if (result.alreadyExists) {
+          // Not an error, just already exists - remove from selection
+          setSelectedIds(prev => {
+            const next = new Set(prev);
+            next.delete(idsToAdd[i]);
+            return next;
+          });
+        } else {
+          errors.push(result.error || `Failed to add series ${idsToAdd[i]}`);
+        }
+      } catch (e) {
+        errors.push(e instanceof Error ? e.message : `Failed to add series ${idsToAdd[i]}`);
+      }
+    }
+    
+    setAddingProgress(null);
+    
+    if (errors.length > 0) {
+      setAddError(`Added ${successCount} series. Errors: ${errors.join('; ')}`);
+    }
+    
+    if (successCount > 0) {
+      setIsRefreshing(true);
+      try {
+        await onAdded();
+      } finally {
+        setIsRefreshing(false);
+      }
+    }
+  }, [selectedIds, onAdded]);
 
-  const isAdding = addSeriesMutation.isPending || isRefreshing;
+  const isAdding = addingProgress !== null || isRefreshing;
 
   // Close on escape key
   useEffect(() => {
@@ -583,28 +632,47 @@ function AddSeriesModal({ onClose, onAdded }: AddSeriesModalProps) {
               fontSize: '13px'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ color: 'var(--text-muted)' }}>{sortedResults.length} results</span>
+                <span style={{ color: 'var(--text-muted)' }}>
+                  {selectedIds.size > 0 ? `${selectedIds.size} selected of ` : ''}{sortedResults.length} results
+                </span>
                 <select 
                   value={sortBy} 
                   onChange={(e) => setSortBy(e.target.value as SortOption)}
                   className="input"
                   style={{ padding: '4px 8px', fontSize: '12px', width: 'auto' }}
                 >
-                  <option value="popularity">Most Issues</option>
-                  <option value="relevance">Best Match</option>
                   <option value="year-desc">Newest First</option>
                   <option value="year-asc">Oldest First</option>
+                  <option value="popularity">Most Issues</option>
+                  <option value="relevance">Best Match</option>
                   <option value="name">Name A-Z</option>
                 </select>
               </div>
-              <button 
-                className="btn btn-sm btn-icon"
-                onClick={() => setCompactView(!compactView)}
-                title={compactView ? 'Show larger covers' : 'Compact view'}
-                style={{ padding: '4px 8px' }}
-              >
-                {compactView ? <Grid size={14} /> : <List size={14} />}
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button 
+                  className="btn btn-sm"
+                  onClick={toggleSelectAll}
+                  style={{ padding: '4px 8px', fontSize: '12px' }}
+                >
+                  {selectedIds.size === sortedResults.length ? 'Deselect All' : 'Select All'}
+                </button>
+                <button 
+                  className={`btn btn-sm btn-icon ${viewMode === 'list' ? 'btn-active' : ''}`}
+                  onClick={() => setViewMode('list')}
+                  title="List view"
+                  style={{ padding: '4px 8px' }}
+                >
+                  <List size={14} />
+                </button>
+                <button 
+                  className={`btn btn-sm btn-icon ${viewMode === 'grid' ? 'btn-active' : ''}`}
+                  onClick={() => setViewMode('grid')}
+                  title="Grid view"
+                  style={{ padding: '4px 8px' }}
+                >
+                  <Grid size={14} />
+                </button>
+              </div>
             </div>
           )}
 
@@ -620,15 +688,40 @@ function AddSeriesModal({ onClose, onAdded }: AddSeriesModalProps) {
               </div>
             )}
 
-            {hasResults && (
-              <div className={`series-search-results ${compactView ? 'compact' : ''}`}>
+            {hasResults && viewMode === 'list' && (
+              <table className="add-series-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '40px' }}></th>
+                    <th>Title</th>
+                    <th style={{ width: '80px' }}>Year</th>
+                    <th style={{ width: '150px' }}>Publisher</th>
+                    <th style={{ width: '80px' }}>Issues</th>
+                    <th style={{ width: '40px' }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedResults.map((candidate) => (
+                    <SeriesSearchResultRow
+                      key={candidate.comicVineId}
+                      candidate={candidate}
+                      isSelected={selectedIds.has(candidate.comicVineId)}
+                      onToggle={() => toggleSelection(candidate.comicVineId)}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {hasResults && viewMode === 'grid' && (
+              <div className="series-search-results compact">
                 {sortedResults.map((candidate) => (
                   <SeriesSearchResult
                     key={candidate.comicVineId}
                     candidate={candidate}
-                    isSelected={selectedSeries?.comicVineId === candidate.comicVineId}
-                    onSelect={() => setSelectedSeries(candidate)}
-                    compact={compactView}
+                    isSelected={selectedIds.has(candidate.comicVineId)}
+                    onSelect={() => toggleSelection(candidate.comicVineId)}
+                    compact={true}
                   />
                 ))}
               </div>
@@ -655,33 +748,33 @@ function AddSeriesModal({ onClose, onAdded }: AddSeriesModalProps) {
         </div>
 
         <div className="modal-footer">
-          <button className="btn" onClick={onClose}>
-            Cancel
+          <button className="btn" onClick={onClose} disabled={isAdding}>
+            {isAdding ? 'Close' : 'Cancel'}
           </button>
           <button
             className="btn btn-primary"
-            onClick={handleAdd}
-            disabled={!selectedSeries || isAdding}
+            onClick={handleAddSelected}
+            disabled={selectedIds.size === 0 || isAdding}
           >
             {isRefreshing ? (
               <>
                 <Loader2 size={16} className="spin" />
                 Refreshing list...
               </>
-            ) : addSeriesMutation.isPending ? (
+            ) : addingProgress ? (
               <>
                 <Loader2 size={16} className="spin" />
-                Adding...
+                Adding {addingProgress.current} of {addingProgress.total}...
               </>
-            ) : selectedSeries ? (
+            ) : selectedIds.size > 0 ? (
               <>
                 <Plus size={16} />
-                Add "{selectedSeries.title}"
+                Add {selectedIds.size} Series
               </>
             ) : (
               <>
                 <Plus size={16} />
-                Add Series
+                Select Series to Add
               </>
             )}
           </button>
@@ -766,6 +859,64 @@ function stripHtml(html: string): string {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   return doc.body.textContent || '';
 }
+
+// Series Search Result Row - Compact list view for batch selection
+interface SeriesSearchResultRowProps {
+  candidate: SeriesMatchCandidate;
+  isSelected: boolean;
+  onToggle: () => void;
+}
+
+const SeriesSearchResultRow = memo(function SeriesSearchResultRow({
+  candidate,
+  isSelected,
+  onToggle
+}: SeriesSearchResultRowProps) {
+  const handleLinkClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+  }, []);
+
+  return (
+    <tr 
+      className={`add-series-row ${isSelected ? 'selected' : ''}`}
+      onClick={onToggle}
+    >
+      <td className="col-checkbox" onClick={(e) => e.stopPropagation()}>
+        <input 
+          type="checkbox" 
+          checked={isSelected} 
+          onChange={onToggle}
+        />
+      </td>
+      <td className="col-title">
+        <span className="series-title">{candidate.title}</span>
+      </td>
+      <td className="col-year">
+        {candidate.startYear || '—'}
+      </td>
+      <td className="col-publisher">
+        {candidate.publisher || '—'}
+      </td>
+      <td className="col-issues">
+        {candidate.issueCount || 0}
+      </td>
+      <td className="col-link">
+        {candidate.siteDetailUrl && (
+          <a
+            href={candidate.siteDetailUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={handleLinkClick}
+            className="btn btn-icon btn-sm"
+            title="View on ComicVine"
+          >
+            <ExternalLink size={14} />
+          </a>
+        )}
+      </td>
+    </tr>
+  );
+});
 
 // Bulk Organize Modal Component
 interface BulkOrganizeModalProps {
