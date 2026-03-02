@@ -221,43 +221,24 @@ For future weeks, ComicVine often hasn't indexed issues yet, causing the system 
 
 **Effort:** M | **Priority:** P2
 
-#### 14.13 Add Series Flow Improvements 📋 READY
+#### 14.13 Add Series Flow Improvements ✅ COMPLETED (Iteration 187)
 Improve the "Add Series" experience to handle large result sets better and allow batch adding.
 
-**Current Issues:**
-- Modal-based UI doesn't scale well with many search results
-- Card-based layout wastes space when scanning many results
-- Can only add one series at a time
-- No clear sort order for results
-
-**Proposed Changes (Mylar3 Parity):**
-- [ ] **Replace modal with dedicated page or expandable panel**
-  - More room for results list
-  - Better keyboard navigation
-  - URL-based state for bookmarking/sharing searches
-- [ ] **Switch to compact list view**
+**Implemented:**
+- [x] **Switch to compact list view**
   - Columns: Title, Year, Publisher, Issue Count
-  - Much faster to scan than cover cards
-  - Optional: small thumbnail on hover/expand
-- [ ] **Sort results by year (newest first)**
-  - Most users want recent series, not 1960s reprints
-  - Secondary sort by title for same-year results
-- [ ] **Multi-select for batch adding**
+  - Toggle between list and grid views
+- [x] **Sort results by year (newest first)**
+  - Default changed from "Most Issues" to "Newest First"
+- [x] **Multi-select for batch adding**
   - Checkboxes on each result row
-  - "Add Selected" button
-  - Progress indicator for batch operations
-- [ ] **Quick filters**
-  - Filter by publisher (dropdown populated from results)
-  - Filter by year range
-  - "Hide already added" toggle
+  - "Add X Series" button with count
+  - Progress indicator (Adding 1 of N...)
+  - Select All / Deselect All button
 
-**UI Mockup (List View):**
-```
-☐ | Batman (2016)           | DC Comics    | 150 issues
-☐ | Batman (2011)           | DC Comics    | 52 issues  
-☐ | Batman (1940)           | DC Comics    | 713 issues
-☑ | Batman: Urban Legends   | DC Comics    | 23 issues  ← selected
-```
+**Deferred:**
+- [ ] Replace modal with dedicated page (future - modal works fine now)
+- [ ] Quick filters by publisher/year (future enhancement)
 
 **Effort:** M | **Priority:** P2
 

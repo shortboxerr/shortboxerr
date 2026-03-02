@@ -1,4 +1,4 @@
-# Self-Check: Iteration 186
+# Self-Check: Iteration 187
 
 ## Build Status
 - [x] `dotnet build` succeeds with 0 errors, 0 warnings
@@ -8,18 +8,25 @@
 | File | Type |
 |------|------|
 | `ui/src/pages/SeriesPage.tsx` | Modified |
-| `ui/src/pages/SeriesDetailPage.tsx` | Modified |
-| `ui/src/pages/ActivityPage.tsx` | Modified |
-| `ui/src/pages/Dashboard.tsx` | Modified |
+| `ui/src/App.css` | Modified |
 
 ## Commits
-1. `feat(ui): memoize list item components for performance (EPIC 20.6)` - bc4f382
+1. `feat(ui): improve Add Series flow with list view and batch add (EPIC 14.13)` - 534194f
 
 ## Summary
-Implemented EPIC 20.6: Frontend Component Memoization
-- Memoized 5 list item components with React.memo
-- Added useCallback for event handlers passed to memoized components
-- Extracted constant objects outside components to prevent recreation
+Implemented EPIC 14.13: Add Series Flow Improvements
+- Default sort changed to "Newest First" by year
+- Added compact list view with Title/Year/Publisher/Issues columns
+- Multi-select with checkboxes and "Add X Series" button
+- Progress indicator for batch add operations
+- Select All / Deselect All toggle
+- View mode toggle (list/grid)
+
+## Deferred Items
+| Item | Reason |
+|------|--------|
+| Replace modal with page | Modal works well with new list view |
+| Quick filters | Future enhancement |
 
 ## Next Steps
 The following READY items remain for future iterations:

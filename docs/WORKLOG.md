@@ -1,5 +1,52 @@
 # Worklog
 
+## Iteration 187 (2026-03-02)
+**EPIC 14.13: Add Series Flow Improvements**
+
+### Summary
+Redesigned the Add Series modal for better usability when dealing with large search result sets. Added a compact list view, multi-select with batch adding, and changed the default sort to newest first.
+
+### Changes
+
+#### Default Sort Order
+Changed from "Most Issues" (popularity) to "Newest First" (year descending). Users typically want recent series, not vintage reprints.
+
+#### List View Mode
+Added a table-based list view as the default (toggleable to grid):
+
+| Column | Purpose |
+|--------|---------|
+| Checkbox | Multi-select for batch add |
+| Title | Series name |
+| Year | Start year |
+| Publisher | Publisher name |
+| Issues | Issue count |
+| Link | ComicVine external link |
+
+#### Multi-Select & Batch Add
+- Checkboxes on each row for selection
+- "Select All / Deselect All" button
+- "Add X Series" button shows count of selected
+- Progress indicator: "Adding 1 of N..."
+- Series removed from selection after successful add
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `ui/src/pages/SeriesPage.tsx` | New list view, multi-select, batch add logic |
+| `ui/src/App.css` | Styles for add-series-table |
+
+### Commits
+1. `feat(ui): improve Add Series flow with list view and batch add (EPIC 14.13)`
+
+### Deferred Items
+| Item | Reason |
+|------|--------|
+| Replace modal with page | Modal works well enough with new list view |
+| Quick filters (publisher/year) | Future enhancement |
+
+---
+
 ## Iteration 186 (2026-03-02)
 **EPIC 20.6: Frontend Component Memoization**
 
