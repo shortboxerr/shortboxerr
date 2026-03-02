@@ -871,6 +871,12 @@ public class DiscoverableIssue
     /// When this issue was last enriched.
     /// </summary>
     public DateTime? EnrichedAt { get; set; }
+    
+    /// <summary>
+    /// True if the cover image is a series/volume cover rather than an issue-specific cover.
+    /// Volume fallback covers are used when ComicVine/Metron don't have the actual issue cover yet.
+    /// </summary>
+    public bool IsVolumeFallbackCover { get; set; }
 }
 
 /// <summary>

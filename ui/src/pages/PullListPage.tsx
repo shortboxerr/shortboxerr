@@ -18,7 +18,9 @@ import {
   ArrowDown,
   ArrowUpDown,
   AlertTriangle,
-  Settings
+  Settings,
+  ImageOff,
+  Loader2
 } from 'lucide-react';
 import { api } from '../api/client';
 import type { 
@@ -246,6 +248,14 @@ export function PullListPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pulllist'] });
       setAddSeriesIssue(null);
+    },
+  });
+
+  // Cover enrichment mutation for refreshing missing covers
+  const triggerCoverEnrichment = useMutation({
+    mutationFn: (force: boolean) => api.triggerCoverEnrichment(force),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pulllist'] });
     },
   });
 
@@ -521,6 +531,11 @@ export function PullListPage() {
         {issue.isSeriesMonitored && (
           <div className="pull-list-card-monitored" title="Series is monitored">
             <Eye size={12} />
+          </div>
+        )}
+        {issue.isVolumeFallbackCover && (
+          <div className="pull-list-card-fallback" title="Series cover (issue cover unavailable)">
+            <ImageOff size={12} />
           </div>
         )}
       </div>
@@ -893,6 +908,19 @@ export function PullListPage() {
                 Updated {formatLastRefresh(lastRefresh)}
               </span>
             )}
+            <button 
+              className="btn btn-sm" 
+              onClick={() => triggerCoverEnrichment.mutate(true)} 
+              title="Refresh covers from Metron for issues showing series covers"
+              disabled={triggerCoverEnrichment.isPending}
+            >
+              {triggerCoverEnrichment.isPending ? (
+                <Loader2 size={14} className="spin" />
+              ) : (
+                <ImageOff size={14} />
+              )}
+              <span>Refresh Covers</span>
+            </button>
             <button 
               className="btn btn-icon" 
               onClick={handleManualRefresh} 

@@ -719,6 +719,9 @@ export interface WeeklyDiscoveryList {
   newCount: number;
 }
 
+export type CoverDataSource = 'WalkSoftly' | 'ComicVine' | 'Metron' | 'LocalLibrary';
+export type EnrichmentStatus = 'Pending' | 'MetronInterim' | 'ComicVineFinalized';
+
 export interface DiscoverableIssue {
   comicVineIssueId: number;
   comicVineVolumeId: number;
@@ -736,6 +739,10 @@ export interface DiscoverableIssue {
   localIssueId: number | null;
   status: IssueStatus | null;
   isSeriesMonitored: boolean;
+  coverSource?: CoverDataSource;
+  metadataSource?: CoverDataSource;
+  enrichmentStatus?: EnrichmentStatus;
+  isVolumeFallbackCover?: boolean;
 }
 
 export interface DiscoveryFilter {
@@ -3015,6 +3022,13 @@ export const api = {
         seriesTitle,
         expectedIssueNumber,
       }),
+    });
+  },
+
+  // Cover enrichment
+  triggerCoverEnrichment: async (force = false): Promise<{ success: boolean; message: string; force: boolean }> => {
+    return fetchApi(`/api/v1/pulllist/discovery/enrich-covers?force=${force}`, {
+      method: 'POST',
     });
   },
 

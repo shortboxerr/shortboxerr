@@ -1919,7 +1919,9 @@ public class PullListService : IPullListService
                 _ => EnrichmentStatus.Pending
             };
             
-            // Determine data source for cover
+            // Determine data source for cover and whether it's a volume fallback
+            var isVolumeFallback = cvIssue.CoverSource == "VolumeFallback" ||
+                cvIssue.EnrichmentStatus == CoverEnrichmentStatus.HasVolumeFallback;
             var coverSource = cvIssue.CoverSource switch
             {
                 "ComicVine" => DataSource.ComicVine,
@@ -1951,7 +1953,10 @@ public class PullListService : IPullListService
                 EnrichmentStatus = enrichmentStatus,
                 CoverSource = coverSource,
                 MetadataSource = issueId > 0 ? DataSource.ComicVine : DataSource.WalkSoftly,
-                EnrichedAt = cvIssue.LastEnrichmentAttempt
+                EnrichedAt = cvIssue.LastEnrichmentAttempt,
+                
+                // 14.12: Track volume fallback covers for UI indicator
+                IsVolumeFallbackCover = isVolumeFallback
             });
         }
 
