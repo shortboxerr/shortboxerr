@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Test regression prevention hook
+# Established: Iteration 193, Feb 27, 2026
+# Baseline: 2541 tests
+
+TEST_MINIMUM=2541
+
+echo "Running pre-commit test check..."
+
+# Check if tests directory has staged changes
+if git diff --cached --name-only | grep -q "tests/"; then
+    echo "Test files changed - running full test suite..."
+    
+    # Run tests and capture output
+    if ! output=$(dotnet test --no-build --verbosity quiet 2>&1); then
+        echo "ERROR: Tests failed. Fix before committing."
+        echo "$output" | tail -10
+        exit 1
+    fi
+    
+    # Extract test count
+    passed=$(echo "$output" | grep -oP 'Passed:\s+\K\d+' || echo "0")
+    failed=$(echo "$output" | grep -oP 'Failed:\s+\K\d+' || echo "0")
+    total=$((passed + failed))
+    
+    if [ "$total" -lt "$TEST_MINIMUM" ]; then
+        echo "ERROR: Test count regression detected!"
+        echo "  Expected minimum: $TEST_MINIMUM"
+        echo "  Actual total: $total"
+        echo ""
+        echo "If tests were intentionally removed:"
+        echo "  1. Update docs/TEST_BASELINE.md"
+        echo "  2. Update TEST_MINIMUM in scripts/hooks/pre-commit"
+        echo "  3. Document reason in commit message"
+        exit 1
+    fi
+    
+    if [ "$failed" -gt 0 ]; then
+        echo "ERROR: $failed test(s) failed. Fix before committing."
+        exit 1
+    fi
+    
+    echo "Tests passed: $passed (minimum: $TEST_MINIMUM)"
+else
+    echo "No test file changes - skipping test run"
+fi
+
+exit 0

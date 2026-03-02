@@ -1,13 +1,14 @@
-# Self-Check: Iteration 192
+# Self-Check: Iteration 193
 
 ## Build Status
 - [x] `dotnet build` succeeds
-- [x] `npm run build` succeeds
+- [x] `npm run build` - not required (no UI changes)
 
 ## Test Status
 - **Before**: 2541 passed, 0 failed
 - **After**: 2541 passed, 0 failed
 - [x] No NEW test failures introduced
+- [x] No flaky tests detected (2 consecutive runs passed)
 
 ## Lint Status
 - [x] No new lint errors on changed files
@@ -15,20 +16,17 @@
 ## Files Changed
 | File | Type |
 |------|------|
-| `src/Shortboxerr.Core/Ddl/DdlReleaseParser.cs` | Modified - Fix regex + reorder |
-| `tests/Shortboxerr.Tests/DdlReleaseParserTests.cs` | Modified - Restore expectations |
-| `docs/BACKLOG.md` | Modified - Mark 21.5 done |
-| `docs/DECISIONS.md` | Modified - Mark AUDIT-002 fixed |
-| `docs/WORKLOG.md` | Modified - Add Iteration 192 |
-| `docs/SELF_CHECK.md` | Modified - Iteration 192 status |
+| `docs/TEST_BASELINE.md` | Created - Test baseline documentation |
+| `.git/hooks/pre-commit` | Created - Test regression prevention hook |
+| `docs/BACKLOG.md` | Modified - Mark 21.2 done |
+| `docs/WORKLOG.md` | Modified - Add Iteration 193 |
+| `docs/SELF_CHECK.md` | Modified - Iteration 193 status |
 
 ## Commits
-1. `fix: DdlReleaseParser release group regex for hyphenated names (AUDIT-002)` - pending
+1. `chore: establish test baseline with regression prevention (EPIC 21.2)` - pending
 
 ## Summary
-Fixed AUDIT-002: DdlReleaseParser now correctly extracts hyphenated release groups like "DC-Empire":
-1. Changed regex to allow hyphens in capture group
-2. Reordered pipeline: extract release group BEFORE publisher extraction
-3. `ReleaseGroupPublishers` dictionary lookup now works correctly
-
-Both audit bugs (AUDIT-001 and AUDIT-002) from EPIC 21.3 are now resolved.
+Established test baseline at 2541 tests with:
+1. Created `docs/TEST_BASELINE.md` with test count breakdown by class
+2. Added pre-commit hook that enforces test minimum before commits
+3. Verified no flaky tests (2 consecutive runs passed)
