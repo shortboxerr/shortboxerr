@@ -576,7 +576,11 @@ Current state: 46 failing tests, 2484 passing. Tests have accumulated failures d
 
 ## Story Ordering Notes
 
+**⚠️ NEXT PRIORITY: EPIC 21 (Test Stabilization)**
+Before any other feature work, EPIC 21.1 must be completed to establish a reliable test baseline. Quality gates in CONTINUE.md are ineffective until tests are green.
+
 **Dependencies:**
+- **EPIC 21** - No dependencies, blocks all other work (quality gates require passing tests)
 - EPIC 9 depends on EPIC 1 (Series/Issue entities) and EPIC 5 (UI shell)
 - EPIC 11 depends on EPIC 9 (ComicVine Integration) for release date metadata
 - EPIC 12 has no hard dependencies; can be implemented incrementally
