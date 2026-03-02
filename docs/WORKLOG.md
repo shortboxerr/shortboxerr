@@ -1,5 +1,46 @@
 # Worklog
 
+## Iteration 188 (2026-03-02)
+**EPIC 14.12: Future Week Cover Enrichment Improvements**
+
+### Summary
+Added UI feedback for issues using volume fallback covers and a manual trigger to refresh missing covers from Metron.
+
+### Changes
+
+#### Backend Changes
+- Added `IsVolumeFallbackCover` boolean field to `DiscoverableIssue` model
+- Set field based on `CoverSource == "VolumeFallback"` or `EnrichmentStatus == HasVolumeFallback`
+- Field propagates through API response for frontend display
+
+#### Frontend Changes
+- Added types: `CoverDataSource`, `EnrichmentStatus`, `isVolumeFallbackCover`
+- Added `triggerCoverEnrichment` API function
+- Added visual indicator on pull list cards for volume fallback covers
+- Added "Refresh Covers" button to pull list toolbar
+- Button triggers force cover enrichment (bypasses 7-day cooldown)
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/PullList/IPullListService.cs` | Added `IsVolumeFallbackCover` field |
+| `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` | Set fallback flag in mapping |
+| `ui/src/api/client.ts` | Added types and API function |
+| `ui/src/pages/PullListPage.tsx` | Added indicator and button |
+| `ui/src/App.css` | Styles for fallback indicator |
+
+### Commits
+1. `feat(ui): add cover source indicator and refresh button for pull list (EPIC 14.12)`
+
+### Deferred Items
+| Item | Reason |
+|------|--------|
+| Debug Metron lookup failures | Requires production data analysis |
+| Lower confidence threshold | Needs careful tuning to avoid false positives |
+| Auto re-enrich on week transition | Background service enhancement for future iteration |
+
+---
+
 ## Iteration 187 (2026-03-02)
 **EPIC 14.13: Add Series Flow Improvements**
 

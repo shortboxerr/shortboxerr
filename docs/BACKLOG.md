@@ -178,46 +178,25 @@ Comprehensive examination of the issue data and cover acquisition pipeline.
 - 14.7.4 Refactoring Candidates
 - 14.7.5 Edge Case Handling
 
-#### 14.12 Future Week Cover Enrichment Improvements 📋 READY
+#### 14.12 Future Week Cover Enrichment Improvements ✅ COMPLETED (Iteration 188)
 Fix issue where future weeks show volume/series images instead of actual issue covers from Metron.
 
-**Current Behavior:**
-The cover enrichment pipeline tries sources in this order:
-1. ComicVine issue cover (often unavailable for future issues)
-2. Metron via CV issue ID (requires CV to have indexed the issue)
-3. Metron via CV volume ID + issue number
-4. Metron via series name + issue number (fuzzy search)
-5. ComicVine volume cover (fallback - shows generic series cover)
+**Implemented:**
+- [x] **UI indicator for cover source**
+  - Added `isVolumeFallbackCover` field to DiscoverableIssue model
+  - Small warning-colored icon appears on cards with volume fallback covers
+  - Tooltip explains "Series cover (issue cover unavailable)"
+- [x] **Manual re-enrich action**
+  - Added "Refresh Covers" button to Pull List toolbar
+  - Forces cover enrichment with `force=true` (bypasses cooldown)
+  - Shows loading spinner during operation
+- [x] **Frontend type updates**
+  - Added `coverSource`, `enrichmentStatus`, `isVolumeFallbackCover` to TS interface
 
-**Problem:**
-For future weeks, ComicVine often hasn't indexed issues yet, causing the system to fall back to volume covers prematurely. Metron typically has covers for upcoming issues but lookups may be failing.
-
-**Investigation Items:**
-- [ ] **Debug Metron lookup for future issues**
-  - Add logging to track why Metron lookups fail for issues without CV IDs
-  - Check if volume ID → issue number mapping is working
-  - Verify fuzzy series name search confidence thresholds
-- [ ] **Check rate limiting impact**
-  - Metron has rate limits - verify enrichment isn't being throttled
-  - Consider spreading enrichment requests more evenly
-
-**Fixes:**
-- [ ] **Improve CV-less issue matching in Metron**
-  - For issues without CV ID, use volume name + issue number directly
-  - Consider WalkSoftly series name as additional match input
-  - Lower confidence threshold for future issues (they're more likely correct)
-- [ ] **Prioritize future weeks for enrichment**
-  - Already partially done (future weeks processed first)
-  - Add more aggressive retry for future weeks still showing volume covers
-- [ ] **Add re-enrichment trigger**
-  - When a new week becomes "current", force re-check issues with volume fallback
-  - These issues are more likely to have Metron/CV covers now
-- [ ] **UI indicator for cover source**
-  - Show badge/tooltip indicating "Series Cover" vs "Issue Cover"
-  - Helps users understand why cover looks generic
-- [ ] **Manual re-enrich action**
-  - Add "Refresh Covers" button on Pull List page
-  - Forces re-enrichment for visible weeks
+**Deferred:**
+- [ ] Debug Metron lookup failures (requires production data analysis)
+- [ ] Lower confidence threshold for future issues (needs tuning)
+- [ ] Auto re-enrich on week transition (background service enhancement)
 
 **Effort:** M | **Priority:** P2
 

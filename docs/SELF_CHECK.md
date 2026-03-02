@@ -1,4 +1,4 @@
-# Self-Check: Iteration 187
+# Self-Check: Iteration 188
 
 ## Build Status
 - [x] `dotnet build` succeeds with 0 errors, 0 warnings
@@ -7,29 +7,30 @@
 ## Files Changed
 | File | Type |
 |------|------|
-| `ui/src/pages/SeriesPage.tsx` | Modified |
+| `src/Shortboxerr.Core/PullList/IPullListService.cs` | Modified |
+| `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` | Modified |
+| `ui/src/api/client.ts` | Modified |
+| `ui/src/pages/PullListPage.tsx` | Modified |
 | `ui/src/App.css` | Modified |
 
 ## Commits
-1. `feat(ui): improve Add Series flow with list view and batch add (EPIC 14.13)` - 534194f
+1. `feat(ui): add cover source indicator and refresh button for pull list (EPIC 14.12)` - 8d9e396
 
 ## Summary
-Implemented EPIC 14.13: Add Series Flow Improvements
-- Default sort changed to "Newest First" by year
-- Added compact list view with Title/Year/Publisher/Issues columns
-- Multi-select with checkboxes and "Add X Series" button
-- Progress indicator for batch add operations
-- Select All / Deselect All toggle
-- View mode toggle (list/grid)
+Implemented EPIC 14.12: Future Week Cover Enrichment Improvements
+- Added `isVolumeFallbackCover` field to track issues using series covers
+- Visual indicator (warning icon) on cards with volume fallback covers
+- "Refresh Covers" button in toolbar triggers force enrichment
+- Frontend types updated for cover source tracking
 
 ## Deferred Items
 | Item | Reason |
 |------|--------|
-| Replace modal with page | Modal works well with new list view |
-| Quick filters | Future enhancement |
+| Debug Metron lookup failures | Requires production data |
+| Lower confidence threshold | Needs tuning |
+| Auto re-enrich on week transition | Future enhancement |
 
 ## Next Steps
 The following READY items remain for future iterations:
-- 14.12 Future Week Cover Enrichment Improvements (P2, M)
 - 20.3 Background Service Optimization (P2, M)
 - 20.7 API Call Optimization (P2, M)
