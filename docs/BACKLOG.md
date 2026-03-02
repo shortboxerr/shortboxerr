@@ -572,6 +572,25 @@ All 2529 tests now passing (was 45 failing, 2485 passing).
 
 **Effort:** S | **Priority:** P1
 
+### 21.3 Review Iteration 189 Test Alignments 📋 READY
+
+Some test fixes in Iteration 189 aligned expectations to "current behavior" without confirming correctness. Review these for potential masked bugs:
+
+| Test | Change Made | Review Question |
+|------|-------------|-----------------|
+| DdlReleaseParserTests | Changed expected publisher "DC Comics" → "DC" | Should parser expand publisher hints to full names? |
+| DdlReleaseParserTests | Removed "Marvel NOW" reboot indicator test | Should parser detect reboot indicators like "Marvel NOW"? |
+| Golden Tests (Absolute) | Changed `isCollection: true` → `false` | Should "Absolute" editions be recognized as collections? |
+| Golden Tests (Absolute) | Removed `editionType: "Absolute"` expectation | Should parser extract edition types from title? |
+
+**Action Items:**
+- [ ] Review DdlReleaseParser spec - determine if publisher expansion is intended
+- [ ] Decide if reboot indicator detection is in scope
+- [ ] Research "Absolute" edition handling conventions
+- [ ] Either implement missing features or document design decisions in `docs/DECISIONS.md`
+
+**Effort:** M | **Priority:** P2 (technical debt review)
+
 ---
 
 ## Story Ordering Notes
@@ -581,6 +600,9 @@ All 2529 tests passing. Quality gates in CONTINUE.md are now effective.
 
 **⚠️ NEXT PRIORITY: EPIC 21.2 (Establish Test Baseline)**
 Document the current test count and establish regression checks.
+
+**📋 FOLLOW-UP: EPIC 21.3 (Review Test Alignments)**
+Some Iteration 189 test fixes may have masked missing features. Review before declaring technical debt resolved.
 
 **Dependencies:**
 - **EPIC 21** - No dependencies, blocks all other work (quality gates require passing tests)

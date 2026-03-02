@@ -34,6 +34,58 @@ dotnet test --no-build --verbosity quiet
 
 ---
 
+## Fixing Failing Tests (DO NOT MASK BUGS)
+
+When a test fails, determine the root cause before changing anything:
+
+### 1. Classify the Failure
+
+| Type | Description | Correct Action |
+|------|-------------|----------------|
+| **Code Bug** | Test is correct, code is wrong | Fix the code, not the test |
+| **Test Bug** | Test setup is broken (mocks, fixtures, isolation) | Fix the test infrastructure |
+| **Stale Test** | Test expects old behavior after intentional change | Update test + document the intentional change |
+| **Missing Feature** | Test expects unimplemented functionality | Mark test as `[Trait("Category", "NotImplemented")]` or remove |
+
+### 2. Red Flags (STOP and investigate)
+
+- Changing assertions to match "current behavior" without understanding why
+- Removing test cases instead of fixing them
+- Multiple tests failing for the same logical reason (indicates code bug)
+- Test was passing before your changes (you broke it)
+
+### 3. Required Documentation
+
+When fixing a failing test, document in your commit message:
+- **What** was failing
+- **Why** it was failing (root cause)
+- **Classification** (code bug, test bug, stale test, or missing feature)
+- **What you changed** and why that's the correct fix
+
+### 4. Example Commit Messages
+
+```
+# GOOD - Code bug fixed
+fix: RemoveFromHistoryAsync now returns true when item removed from session
+
+RemoveFromHistoryAsync was returning false even when successfully removing
+from session history. Root cause: only checked persisted history for return value.
+Classification: Code bug - test correctly caught the issue.
+
+# GOOD - Test infrastructure bug
+fix(tests): MetronClientTests mock setup for IServiceProvider
+
+Mocks were not properly chaining IServiceProvider.GetService calls.
+Classification: Test bug - mock setup was incorrect, not the code.
+
+# BAD - Masking potential bug
+fix(tests): update assertion to match current behavior
+
+Changed expected value from "DC Comics" to "DC" to make test pass.
+```
+
+---
+
 ## Server Management
 
 **Ports (DO NOT CHANGE):**
