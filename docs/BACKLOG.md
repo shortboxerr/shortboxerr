@@ -572,9 +572,28 @@ All 2529 tests now passing (was 45 failing, 2485 passing).
 
 **Effort:** S | **Priority:** P1
 
-### 21.3 Review Iteration 189 Test Alignments 📋 READY
+### 21.3 Audit Git History for Masked Bugs 📋 READY
 
-Some test fixes in Iteration 189 aligned expectations to "current behavior" without confirming correctness. Review these for potential masked bugs:
+Comprehensive review of all test changes in git history that may have masked bugs rather than fixed them.
+
+**Approach:**
+```bash
+# Find all commits that modified test files
+git log --oneline --all -- "*Tests*.cs" "*.Tests.cs" "**/Fixtures/**"
+
+# For each commit, check if assertions were weakened:
+git show <commit> -- "*Tests*.cs" | grep -E "(Assert\.|Expected|actual)"
+```
+
+**Red Flags to Look For:**
+- Assertions changed from specific values to looser matches
+- Expected exceptions removed
+- Test cases deleted without explanation
+- `Assert.Equal` changed to `Assert.Contains` or `Assert.NotNull`
+- Timeouts increased significantly
+- Error message checks removed
+
+**Known Items from Iteration 189:**
 
 | Test | Change Made | Review Question |
 |------|-------------|-----------------|
@@ -584,12 +603,13 @@ Some test fixes in Iteration 189 aligned expectations to "current behavior" with
 | Golden Tests (Absolute) | Removed `editionType: "Absolute"` expectation | Should parser extract edition types from title? |
 
 **Action Items:**
-- [ ] Review DdlReleaseParser spec - determine if publisher expansion is intended
-- [ ] Decide if reboot indicator detection is in scope
-- [ ] Research "Absolute" edition handling conventions
-- [ ] Either implement missing features or document design decisions in `docs/DECISIONS.md`
+- [ ] Run git log analysis to identify all test modification commits
+- [ ] Categorize each change: legitimate fix vs potential bug masking
+- [ ] For masked bugs: either restore original test + fix code, or document design decision
+- [ ] Create `docs/DECISIONS.md` for intentional behavior choices
+- [ ] Update tests with `// Design Decision: <reason>` comments where applicable
 
-**Effort:** M | **Priority:** P2 (technical debt review)
+**Effort:** L | **Priority:** P1 (prevents code rot)
 
 ---
 
@@ -598,11 +618,11 @@ Some test fixes in Iteration 189 aligned expectations to "current behavior" with
 **✅ EPIC 21.1 COMPLETE (Iteration 189)**
 All 2529 tests passing. Quality gates in CONTINUE.md are now effective.
 
-**⚠️ NEXT PRIORITY: EPIC 21.2 (Establish Test Baseline)**
-Document the current test count and establish regression checks.
+**⚠️ NEXT PRIORITY: EPIC 21.3 (Audit Git History for Masked Bugs)**
+Comprehensive review of test changes across git history to identify and address any masked bugs. Prevents code rot.
 
-**📋 FOLLOW-UP: EPIC 21.3 (Review Test Alignments)**
-Some Iteration 189 test fixes may have masked missing features. Review before declaring technical debt resolved.
+**📋 THEN: EPIC 21.2 (Establish Test Baseline)**
+After audit is complete, document the verified test count and establish regression checks.
 
 **Dependencies:**
 - **EPIC 21** - No dependencies, blocks all other work (quality gates require passing tests)
