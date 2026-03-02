@@ -118,6 +118,45 @@ public static class SeriesMetadataEndpoints
             return Results.BadRequest(new { error = "Search query is required" });
         }
 
+        // Check if query is a ComicVine ID (e.g., "4050-12345" or URL)
+        var parsedId = ComicVineIdParser.TryParseAs(q, ComicVineResourceType.Volume);
+        if (parsedId != null)
+        {
+            // Direct lookup by ID instead of search
+            var volumeResult = await metadataService.GetSeriesByComicVineIdAsync(
+                parsedId.NumericId, cancellationToken);
+
+            if (volumeResult != null)
+            {
+                // Return as a single-result search
+                return Results.Ok(new SeriesSearchResult
+                {
+                    Success = true,
+                    Results = new List<SeriesMatchCandidate> { volumeResult },
+                    TotalResults = 1,
+                    Page = 1,
+                    PageSize = 1,
+                    Query = q,
+                    IsDirectLookup = true
+                });
+            }
+            else
+            {
+                return Results.Ok(new SeriesSearchResult
+                {
+                    Success = true,
+                    Results = new List<SeriesMatchCandidate>(),
+                    TotalResults = 0,
+                    Page = 1,
+                    PageSize = limit,
+                    Query = q,
+                    IsDirectLookup = true,
+                    Error = $"ComicVine volume {parsedId.FullId} not found"
+                });
+            }
+        }
+
+        // Regular text search
         var result = await metadataService.SearchSeriesAsync(
             q, publisher, yearStart, yearEnd, page, limit, cancellationToken);
 

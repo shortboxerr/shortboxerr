@@ -132,6 +132,21 @@ public class SeriesSearchResult
     public int TotalResults { get; set; }
     public int Page { get; set; }
     public int Limit { get; set; }
+    
+    /// <summary>
+    /// Alias for Limit (for API consistency).
+    /// </summary>
+    public int PageSize { get => Limit; set => Limit = value; }
+    
+    /// <summary>
+    /// The original search query.
+    /// </summary>
+    public string? Query { get; set; }
+    
+    /// <summary>
+    /// True if this was a direct ComicVine ID lookup rather than a text search.
+    /// </summary>
+    public bool IsDirectLookup { get; set; }
 }
 
 /// <summary>
