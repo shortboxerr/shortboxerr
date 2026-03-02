@@ -184,6 +184,42 @@ Comprehensive examination of the issue data and cover acquisition pipeline.
 - [x] List refresh after deletion (via navigate to /series)
 - [x] Backend: Cascade delete linked annual series
 
+#### 14.11 ComicVine ID Search Support 📋 READY
+Accept ComicVine IDs as search parameters when adding comics, auto-detecting IDs vs search terms.
+
+**ComicVine ID Formats:**
+| Type | Format | Regex | Example |
+|------|--------|-------|---------|
+| Volume/Series | `4050-XXXXX` | `^4050-\d+$` | `4050-12345` |
+| Issue | `4000-XXXXXX` | `^4000-\d+$` | `4000-123456` |
+| Story Arc | `4045-XXXXX` | `^4045-\d+$` | `4045-98765` |
+
+**Items:**
+- [ ] **Add ComicVine ID detection utility**
+  - Create `ComicVineIdParser` with regex patterns for all types
+  - Return parsed type (Volume, Issue, StoryArc) and numeric ID
+  - Handle both full format (`4050-12345`) and plain numeric (`12345`)
+- [ ] **Update Series Search endpoint**
+  - Detect if search term matches ComicVine ID pattern
+  - If volume ID detected, fetch directly via `GetVolumeAsync`
+  - Return as single match with high confidence
+- [ ] **Update Issue Search/Lookup**
+  - Accept issue ComicVine IDs (4000-XXXXXX)
+  - Useful for adding specific issues to wanted list
+- [ ] **Update Edition/Collection Search**
+  - Accept volume IDs for TPB/HC lookup
+  - Story arc IDs for arc-based collections
+- [ ] **UI hint for ID input**
+  - Show placeholder text: "Search by name or ComicVine ID (4050-12345)"
+  - Auto-detect and show "Looking up ComicVine ID..." when ID detected
+
+**Use Cases:**
+1. User finds a series on ComicVine website, copies ID, pastes to add
+2. Automation scripts can add comics by ID for precision
+3. Avoids search ambiguity for series with common names
+
+**Effort:** S | **Priority:** P2
+
 ### Remaining Deferred Items
 | Item | EPIC | Effort | Status |
 |------|------|--------|--------|
