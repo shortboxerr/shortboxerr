@@ -1,5 +1,41 @@
 # Worklog
 
+## Iteration 186 (2026-03-02)
+**EPIC 20.6: Frontend Component Memoization**
+
+### Summary
+Applied React.memo to list item components that render frequently to prevent unnecessary re-renders when parent state changes. Also extracted constant values outside components to prevent recreation on each render.
+
+### Changes
+
+#### Memoized Components
+| Component | File | Purpose |
+|-----------|------|---------|
+| `SeriesSearchResult` | SeriesPage.tsx | Search results in add series modal |
+| `IssueCoverCard` | SeriesDetailPage.tsx | Cover grid items in series detail |
+| `IssueListRow` | SeriesDetailPage.tsx | Table rows in series detail list |
+| `QueueItemCard` | ActivityPage.tsx | Download queue items |
+| `StatusCard` | Dashboard.tsx | Status indicators |
+
+#### Optimizations Applied
+- Wrapped components with `React.memo()` for shallow prop comparison
+- Added `useCallback` for event handlers (image error, mouse events)
+- Extracted constant objects (placeholder images, status maps) outside components
+- Moved status icon/color lookups to module-level constants
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `ui/src/pages/SeriesPage.tsx` | Memoized SeriesSearchResult |
+| `ui/src/pages/SeriesDetailPage.tsx` | Memoized IssueCoverCard, IssueListRow |
+| `ui/src/pages/ActivityPage.tsx` | Memoized QueueItemCard |
+| `ui/src/pages/Dashboard.tsx` | Memoized StatusCard |
+
+### Commits
+1. `feat(ui): memoize list item components for performance (EPIC 20.6)`
+
+---
+
 ## Iteration 185 (2026-03-02)
 **EPIC 20.2: Database Index Optimization**
 
