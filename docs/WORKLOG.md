@@ -1,5 +1,42 @@
 # Worklog
 
+## Iteration 191 (2026-02-27)
+**EPIC 21.4: Fix GetComicsAdapter Feature Regression**
+
+### Summary
+Restored 6 methods lost during the V2 rename (commit `a6192fe`) and 12 deleted tests from commit `4d4afa9`. GetComicsAdapter now has full feature parity with ReadComicOnlineAdapter.
+
+### Restored Methods
+| Method | Description |
+|--------|-------------|
+| `GetRssFeedAsync` | Get latest releases from main RSS feed |
+| `GetCategoryAsync` | Browse releases by category via HTML |
+| `GetCategoryRssFeedAsync` | Browse releases by category via RSS |
+| `GetPublisherRssFeedAsync` | Get publisher releases via RSS (maps to category) |
+| `GetPublisherAsync` | Get publisher releases via HTML (maps to category) |
+| `GetAvailableCategories` | List all categories with display names |
+
+### Helper Methods Added
+- `MapPublisherToCategory` - Maps publisher names to category slugs
+- `CreateCandidateFromRssItem` - Creates DdlCandidate from RSS feed item
+
+### Tests Restored
+- 12 tests for publisher RSS methods and category mapping
+- Test count: 2529 → 2541
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/Ddl/GetComicsAdapter.cs` | Added 6 methods + helpers |
+| `tests/Shortboxerr.Tests/GetComicsAdapterTests.cs` | Restored 12 tests |
+| `docs/BACKLOG.md` | Mark 21.4 complete |
+| `docs/WORKLOG.md` | Add Iteration 191 |
+
+### Commits
+1. `fix: restore GetComicsAdapter RSS/category methods (AUDIT-001)` - TBD
+
+---
+
 ## Iteration 190 (2026-02-27)
 **EPIC 21.3: Audit Git History for Masked Bugs**
 

@@ -13,7 +13,7 @@ This document captures intentional design decisions and known technical debt dis
 
 | ID | Type | Severity | Status | Description |
 |----|------|----------|--------|-------------|
-| AUDIT-001 | Regression Bug | CRITICAL | 🔴 Open | GetComicsAdapter lost 5 RSS/category methods |
+| AUDIT-001 | Regression Bug | CRITICAL | ✅ Fixed (Iter 191) | GetComicsAdapter lost 5 RSS/category methods |
 | AUDIT-002 | Code Bug | MEDIUM | 🔴 Open | DdlReleaseParser regex truncates hyphenated groups |
 | AUDIT-003 | Missing Feature | LOW | 📋 Backlog | "Absolute" edition detection not implemented |
 | AUDIT-004 | Missing Feature | LOW | 📋 Backlog | "Marvel NOW" reboot indicator (no parens) not detected |

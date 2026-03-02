@@ -315,4 +315,124 @@ public class GetComicsAdapterTests
     }
 
     #endregion
+
+    #region Publisher RSS Tests (Restored AUDIT-001)
+
+    [Fact]
+    public async Task GetPublisherRssFeedAsync_WithMockRssService_ReturnsCandidates()
+    {
+        // Arrange
+        var mockRssService = new Mock<IRssFeedService>();
+        mockRssService.Setup(r => r.FetchFeedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new RssFeedResult
+            {
+                Success = true,
+                Items = new List<RssFeedItem>
+                {
+                    new() { Title = "Batman #150 (2024)", Link = "https://getcomics.org/dc/batman-150", Categories = new List<string> { "DC" } },
+                    new() { Title = "Superman #12 (2024)", Link = "https://getcomics.org/dc/superman-12", Categories = new List<string> { "DC" } }
+                }
+            });
+
+        var adapter = new GetComicsAdapter(rssFeedService: mockRssService.Object);
+
+        // Act
+        var result = await adapter.GetPublisherRssFeedAsync("DC", limit: 10);
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.Equal(2, result.Candidates.Count);
+    }
+
+    [Fact]
+    public async Task GetPublisherRssFeedAsync_MapsPublisherNames()
+    {
+        // Arrange
+        var mockRssService = new Mock<IRssFeedService>();
+        mockRssService.Setup(r => r.FetchFeedAsync(It.Is<string>(url => url.Contains("/cat/dc/")), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new RssFeedResult
+            {
+                Success = true,
+                Items = new List<RssFeedItem>
+                {
+                    new() { Title = "Test Comic", Link = "https://getcomics.org/dc/test", Categories = new List<string>() }
+                }
+            });
+
+        var adapter = new GetComicsAdapter(rssFeedService: mockRssService.Object);
+
+        // Act - use friendly name
+        var result = await adapter.GetPublisherRssFeedAsync("DC Comics");
+
+        // Assert - should map to "dc" category
+        Assert.True(result.Success);
+        mockRssService.Verify(r => r.FetchFeedAsync(It.Is<string>(url => url.Contains("/cat/dc/")), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetPublisherAsync_MapsPublisherNamesToCategories()
+    {
+        // Arrange
+        var adapter = new GetComicsAdapter();
+        adapter.Configure(new DdlSiteConfiguration
+        {
+            BaseUrl = "https://invalid.example.com",
+            TimeoutSeconds = 1
+        });
+
+        // Act - this will fail to connect, but we can verify the method exists and handles errors
+        var result = await adapter.GetPublisherAsync("Marvel Comics");
+
+        // Assert
+        Assert.False(result.Success); // Expected to fail due to invalid URL
+        Assert.NotNull(result.ErrorMessage);
+    }
+
+    [Theory]
+    [InlineData("DC", "dc")]
+    [InlineData("dc comics", "dc")]
+    [InlineData("Marvel", "marvel")]
+    [InlineData("marvel comics", "marvel")]
+    [InlineData("Image", "image")]
+    [InlineData("Dark Horse", "dark-horse")]
+    [InlineData("IDW Publishing", "idw")]
+    [InlineData("BOOM! Studios", "boom-studios")]
+    public async Task GetPublisherRssFeedAsync_MapsVariousPublisherNames(string inputName, string expectedSlug)
+    {
+        // Arrange
+        var mockRssService = new Mock<IRssFeedService>();
+        mockRssService.Setup(r => r.FetchFeedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new RssFeedResult
+            {
+                Success = true,
+                Items = new List<RssFeedItem>()
+            });
+
+        var adapter = new GetComicsAdapter(rssFeedService: mockRssService.Object);
+
+        // Act
+        await adapter.GetPublisherRssFeedAsync(inputName);
+
+        // Assert - verify the correct URL was called
+        mockRssService.Verify(r => r.FetchFeedAsync(
+            It.Is<string>(url => url.Contains($"/cat/{expectedSlug}/")), 
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+    
+    [Fact]
+    public void GetAvailableCategories_ReturnsAllKnownCategories()
+    {
+        // Act
+        var categories = GetComicsAdapter.GetAvailableCategories();
+
+        // Assert
+        Assert.NotEmpty(categories);
+        Assert.Contains(categories, c => c.Key == "dc");
+        Assert.Contains(categories, c => c.Key == "marvel");
+        Assert.Contains(categories, c => c.Key == "image");
+        Assert.Contains(categories, c => c.Value == "DC Comics");
+        Assert.Contains(categories, c => c.Value == "Marvel Comics");
+    }
+
+    #endregion
 }

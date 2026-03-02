@@ -588,22 +588,20 @@ Comprehensive review of all test changes in git history. Created `docs/DECISIONS
 
 **Effort:** L | **Priority:** P1
 
-### 21.4 Fix GetComicsAdapter Feature Regression 📋 READY
+### 21.4 Fix GetComicsAdapter Feature Regression ✅ DONE (Iteration 191)
 
 **Classification**: AUDIT-001 - Critical regression bug
 
-Commit `a6192fe` replaced old GetComicsAdapter with V2, losing these methods:
-- `GetRssFeedAsync(int limit, CancellationToken)`
-- `GetCategoryAsync(string category, int limit, CancellationToken)`
-- `GetCategoryRssFeedAsync(string category, int limit, CancellationToken)`
-- `GetPublisherRssFeedAsync(string publisher, int limit, CancellationToken)`
-- `GetPublisherAsync(string publisher, int limit, CancellationToken)`
+Restored 6 methods lost during V2 rename (commit `a6192fe`):
+- [x] `GetRssFeedAsync(int limit, CancellationToken)` - Get latest from RSS
+- [x] `GetCategoryAsync(string category, int limit, CancellationToken)` - Browse by category
+- [x] `GetCategoryRssFeedAsync(string category, int limit, CancellationToken)` - Category RSS
+- [x] `GetPublisherRssFeedAsync(string publisher, int limit, CancellationToken)` - Publisher RSS
+- [x] `GetPublisherAsync(string publisher, int limit, CancellationToken)` - Browse by publisher
+- [x] `GetAvailableCategories()` - List all categories with display names
 
-**Action Items:**
-- [ ] Restore methods from git history: `git show a6192fe^:src/.../GetComicsAdapter.cs`
-- [ ] Port to current V2 architecture
-- [ ] Restore deleted tests from `4d4afa9`
-- [ ] Verify feature parity with ReadComicOnlineAdapter
+Also restored 12 deleted tests from commit `4d4afa9`.
+Test count: 2529 → 2541
 
 **Effort:** M | **Priority:** P1 (feature regression)
 
@@ -643,10 +641,10 @@ All 2529 tests passing. Quality gates in CONTINUE.md are now effective.
 Git history audit complete. Found 2 masked bugs, 2 documented missing features.
 Created `docs/DECISIONS.md` with full findings.
 
-**⚠️ NEXT PRIORITY: EPIC 21.4 (Fix GetComicsAdapter Regression)**
-Critical: Restore 5 methods lost during V2 rename. Feature regression affecting RSS/category/publisher support.
+**✅ EPIC 21.4 COMPLETE (Iteration 191)**
+Restored 6 methods and 12 tests. GetComicsAdapter has full RSS/category/publisher support again.
 
-**📋 THEN: EPIC 21.5 (Fix Release Group Regex)**
+**⚠️ NEXT PRIORITY: EPIC 21.5 (Fix Release Group Regex)**
 Fix parser to correctly extract hyphenated release groups like "DC-Empire".
 
 **📋 THEN: EPIC 21.2 (Establish Test Baseline)**

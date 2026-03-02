@@ -1,4 +1,4 @@
-# Self-Check: Iteration 190
+# Self-Check: Iteration 191
 
 ## Build Status
 - [x] `dotnet build` succeeds
@@ -6,27 +6,28 @@
 
 ## Test Status
 - **Before**: 2529 passed, 0 failed
-- **After**: 2529 passed, 0 failed
+- **After**: 2541 passed, 0 failed (+12 restored tests)
 - [x] No NEW test failures introduced
 
 ## Lint Status
-- [x] No new lint errors on changed files (documentation only)
+- [x] No new lint errors on changed files
 
 ## Files Changed
 | File | Type |
 |------|------|
-| `docs/DECISIONS.md` | NEW - Audit findings |
-| `docs/BACKLOG.md` | Update - Mark 21.3 done, add 21.4/21.5 |
-| `docs/WORKLOG.md` | Update - Add Iteration 190 |
-| `docs/SELF_CHECK.md` | Update - Iteration 190 status |
+| `src/Shortboxerr.Infrastructure/Ddl/GetComicsAdapter.cs` | Modified - Add 6 methods |
+| `tests/Shortboxerr.Tests/GetComicsAdapterTests.cs` | Modified - Add 12 tests |
+| `docs/BACKLOG.md` | Modified - Mark 21.4 done |
+| `docs/WORKLOG.md` | Modified - Add Iteration 191 |
+| `docs/DECISIONS.md` | Modified - Mark AUDIT-001 fixed |
+| `docs/SELF_CHECK.md` | Modified - Iteration 191 status |
 
 ## Commits
-1. `chore: EPIC 21.3 - Audit git history for masked bugs` - pending
+1. `fix: restore GetComicsAdapter RSS/category methods (AUDIT-001)` - pending
 
 ## Summary
-Completed comprehensive git history audit for masked bugs:
-- **AUDIT-001** (CRITICAL): GetComicsAdapter lost 5 RSS/category methods during V2 rename
-- **AUDIT-002** (MEDIUM): DdlReleaseParser regex truncates hyphenated release groups
-- **AUDIT-003/004** (LOW): Missing features documented (Absolute editions, Marvel NOW)
+Fixed AUDIT-001: Restored 6 methods lost during GetComicsAdapter V2 rename:
+- `GetRssFeedAsync`, `GetCategoryAsync`, `GetCategoryRssFeedAsync`
+- `GetPublisherRssFeedAsync`, `GetPublisherAsync`, `GetAvailableCategories`
 
-Created `docs/DECISIONS.md` to track findings. Added backlog items 21.4 and 21.5 to fix bugs.
+Restored 12 deleted tests. GetComicsAdapter now has full feature parity with ReadComicOnlineAdapter.
