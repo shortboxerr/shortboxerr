@@ -398,18 +398,17 @@ Optimize EF Core queries to eliminate N+1 issues and reduce memory usage.
 
 **Effort:** M | **Priority:** P1
 
-### 20.2 Database Index Optimization 📋 READY
+### 20.2 Database Index Optimization ✅ COMPLETED (Iteration 185)
 Add missing indexes for common query patterns.
 
 **Items:**
-- [ ] **Add composite indexes for common queries**
-  - `(SeriesId, Status, StoreDate)` for pull list queries
-  - `(Monitored, Status)` for wanted issues queries
-  - Verify existing `(MatchedSeriesId, Timestamp)` index effectiveness
-- [ ] **Add full-text indexes for search queries**
-  - Files: `WantedEndpoints.cs`, `HistoryEndpoints.cs`, `MatchHistoryService.cs`
-  - Issue: `Contains()` on string fields without FTS indexes is slow
-  - Consider: SQLite FTS5 or separate search implementation
+- [x] **Add composite indexes for common queries**
+  - Added `IX_Issues_Status` for wanted issue queries
+  - Added `IX_Issues_Status_StoreDate` for pull list date queries
+  - Added `IX_Issues_Monitored_Status` for combined filters
+  - Added `IX_Series_Monitored` for monitored series queries
+  - Verified existing `(MatchedSeriesId, Timestamp)` index is effective
+- [ ] **Add full-text indexes for search queries** (deferred - requires SQLite FTS5 setup)
 
 **Effort:** S | **Priority:** P2
 

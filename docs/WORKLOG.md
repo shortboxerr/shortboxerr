@@ -1,5 +1,43 @@
 # Worklog
 
+## Iteration 185 (2026-03-02)
+**EPIC 20.2: Database Index Optimization**
+
+### Summary
+Added performance indexes to the database for commonly-used query patterns. These indexes significantly improve query performance for wanted issues, pull list views, and monitored series filtering.
+
+### Changes
+
+#### New Database Indexes
+| Index Name | Table | Columns | Purpose |
+|------------|-------|---------|---------|
+| `IX_Issues_Status` | Issues | Status | Wanted issues queries (`WHERE Status = 'Wanted'`) |
+| `IX_Issues_Status_StoreDate` | Issues | Status, StoreDate | Pull list date range queries |
+| `IX_Issues_Monitored_Status` | Issues | Monitored, Status | Combined filter queries |
+| `IX_Series_Monitored` | Series | Monitored | Monitored series list queries |
+
+**Query patterns optimized:**
+- Wanted issues list (`WHERE Status = IssueStatus.Wanted`)
+- Pull list week views (`WHERE StoreDate >= X AND StoreDate < Y`)
+- Monitored issues count (`WHERE Monitored = true AND Status = X`)
+- Series filtering (`WHERE Monitored = true`)
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/Persistence/ShortboxerrDbContext.cs` | Added index definitions |
+| `src/Shortboxerr.Infrastructure/Persistence/Migrations/20260302135928_AddPerformanceIndexes.cs` | New migration |
+
+### Commits
+1. `feat(db): add performance indexes for common query patterns (EPIC 20.2)`
+
+### Deferred Items
+| Item | Reason |
+|------|--------|
+| Full-text search indexes | Requires SQLite FTS5 setup - separate implementation needed |
+
+---
+
 ## Iteration 184 (2026-02-27)
 **EPIC 14.11: ComicVine ID Search Support**
 

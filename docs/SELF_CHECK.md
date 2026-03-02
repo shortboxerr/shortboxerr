@@ -1,39 +1,36 @@
-# Self-Check: Iteration 184
+# Self-Check: Iteration 185
 
 ## Build Status
 - [x] `dotnet build` succeeds with 0 errors, 0 warnings
 
-## Test Status
-- [x] All new tests pass (49 ComicVineIdParser tests)
-- [ ] Pre-existing test failures (unrelated to this iteration)
-  - 45 pre-existing failures in DownloadHostResolver, SeriesEndpoint tests
+## Migration Status
+- [x] EF migration created successfully
+- [x] Migration adds 4 performance indexes
 
 ## Files Changed
 | File | Type |
 |------|------|
-| `src/Shortboxerr.Core/ComicVine/ComicVineIdParser.cs` | New |
-| `src/Shortboxerr.Core/ComicVine/ISeriesMetadataService.cs` | Modified |
-| `src/Shortboxerr.Api/Endpoints/SeriesMetadataEndpoints.cs` | Modified |
-| `tests/Shortboxerr.Tests/ComicVineIdParserTests.cs` | New |
+| `src/Shortboxerr.Infrastructure/Persistence/ShortboxerrDbContext.cs` | Modified |
+| `src/Shortboxerr.Infrastructure/Persistence/Migrations/20260302135928_AddPerformanceIndexes.cs` | New |
+| `src/Shortboxerr.Infrastructure/Persistence/Migrations/20260302135928_AddPerformanceIndexes.Designer.cs` | New |
+| `src/Shortboxerr.Infrastructure/Persistence/Migrations/ShortboxerrDbContextModelSnapshot.cs` | Modified |
 
 ## Commits
-1. `feat(comicvine): add ComicVine ID parsing and direct lookup support (EPIC 14.11)` - e8ac1bf
+1. `feat(db): add performance indexes for common query patterns (EPIC 20.2)` - 53f81b7
 
 ## Summary
-Implemented EPIC 14.11: ComicVine ID Search Support
-- Created `ComicVineIdParser` utility with regex patterns for all CV resource types
-- Updated series search endpoint to auto-detect and direct-lookup CV volume IDs
-- Added 49 comprehensive test cases covering all parsing scenarios
+Implemented EPIC 20.2: Database Index Optimization
+- Added `IX_Issues_Status` for wanted issues queries
+- Added `IX_Issues_Status_StoreDate` for pull list date range queries
+- Added `IX_Issues_Monitored_Status` for combined filters
+- Added `IX_Series_Monitored` for monitored series queries
 
 ## Deferred Items
-- Issue search by CV ID (future enhancement)
-- Edition/Collection search by CV ID (future enhancement)
-- UI placeholder hints for ID input (polish item)
+- Full-text search indexes (requires SQLite FTS5 setup)
 
 ## Next Steps
 The following READY items remain for future iterations:
 - 14.12 Future Week Cover Enrichment Improvements (P2, M)
-- 20.2 Database Index Optimization (P2, S)
 - 20.3 Background Service Optimization (P2, M)
 - 20.6 Frontend Component Memoization (P2, S)
 - 20.7 API Call Optimization (P2, M)
