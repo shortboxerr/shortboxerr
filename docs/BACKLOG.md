@@ -499,20 +499,27 @@ Reduced unnecessary network requests and optimized data fetching patterns.
 
 **Effort:** M | **Priority:** P2
 
-### 20.8 Bundle Optimization 📋 PLANNED
-Reduce frontend bundle size and improve initial load time.
+### 20.8 Bundle Optimization ✅ DONE (Iteration 196)
+Reduced frontend bundle size and improved initial load time.
 
 **Items:**
-- [ ] **Add bundle analysis tooling**
-  - Install `rollup-plugin-visualizer`
-  - Identify large dependencies
-- [ ] **Code split SettingsPage**
-  - File is 7,500+ lines
-  - Split into lazy-loaded sub-pages
-- [ ] **Verify tree-shaking for lucide-react**
-  - Ensure only used icons are included
-- [ ] **Lazy load heavy components**
-  - Modal dialogs, settings tabs, etc.
+- [x] **Add bundle analysis tooling**
+  - Installed `rollup-plugin-visualizer`
+  - Generates `bundle-stats.html` on build
+- [x] **Code split heavy pages**
+  - 9 pages now lazy-loaded: SettingsPage, PullListPage, CollectionsPage,
+    EditionDetailPage, ManualImportPage, HistoryPage, WantedPage, CalendarPage, LogsPage
+- [x] **Manual chunks for vendor code**
+  - `react-vendor`: react, react-dom, react-router-dom (47 KB)
+  - `query`: @tanstack/react-query (36 KB)
+  - `icons`: lucide-react (18 KB)
+- [x] **Lazy load heavy components**
+  - Suspense wrapper with loading state
+
+**Results:**
+- Initial bundle: 665 KB → 410 KB (38% reduction)
+- SettingsPage (180 KB) loaded on-demand only when needed
+- Better browser caching (vendor chunks change less frequently)
 
 **Effort:** M | **Priority:** P3
 

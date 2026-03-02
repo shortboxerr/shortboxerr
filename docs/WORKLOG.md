@@ -1,5 +1,58 @@
 # Worklog
 
+## Iteration 196 (2026-02-27)
+**EPIC 20.8: Bundle Optimization**
+
+### Summary
+Reduced frontend bundle size by 38% through code splitting and lazy loading.
+
+### Changes
+
+#### 1. Bundle Analysis Tooling
+Added `rollup-plugin-visualizer` for bundle analysis. Generates `bundle-stats.html` on each build.
+
+#### 2. Manual Chunks (Vendor Splitting)
+```typescript
+manualChunks: {
+  'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+  'query': ['@tanstack/react-query'],
+  'icons': ['lucide-react'],
+}
+```
+
+#### 3. Lazy Loading Heavy Pages
+9 pages converted to lazy loading with `React.lazy()`:
+- SettingsPage (179 KB) - largest page
+- PullListPage (19 KB)
+- LogsPage (23 KB)
+- ManualImportPage (10 KB)
+- CalendarPage (9 KB)
+- EditionDetailPage (7 KB)
+- CollectionsPage (5 KB)
+- WantedPage (4 KB)
+- HistoryPage (4 KB)
+
+#### 4. Results
+| Metric | Before | After | Change |
+|--------|--------|-------|--------|
+| Initial bundle | 665 KB | 410 KB | -38% |
+| Gzip initial | 168 KB | ~120 KB | -29% |
+| SettingsPage | (included) | 180 KB (lazy) | On-demand |
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `ui/vite.config.ts` | Add visualizer + manual chunks |
+| `ui/src/App.tsx` | Lazy load 9 pages |
+| `ui/package.json` | Add rollup-plugin-visualizer |
+| `docs/BACKLOG.md` | Mark 20.8 done |
+| `docs/WORKLOG.md` | Add Iteration 196 |
+
+### Commits
+1. `feat(ui): bundle optimization with code splitting (EPIC 20.8)` - TBD
+
+---
+
 ## Iteration 195 (2026-02-27)
 **EPIC 20.7: API Call Optimization (Partial)**
 
