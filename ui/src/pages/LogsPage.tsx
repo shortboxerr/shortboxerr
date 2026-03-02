@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { api } from '../api/client';
 import type { LogFile, LogLine } from '../api/client';
 import { RefreshCw, Search, Trash2, Download, FileText, AlertCircle, Info, AlertTriangle, Bug, XCircle } from 'lucide-react';
@@ -165,12 +166,21 @@ export default function LogsPage() {
     },
   });
 
+  // Virtualizer for efficient rendering of large log files
+  const lines = logContent?.lines ?? [];
+  const rowVirtualizer = useVirtualizer({
+    count: lines.length,
+    getScrollElement: () => logContainerRef.current,
+    estimateSize: useCallback(() => 32, []), // Estimated row height
+    overscan: 10, // Render extra rows for smoother scrolling
+  });
+
   // Auto-scroll to bottom when new logs come in
   useEffect(() => {
-    if (autoScroll && logContainerRef.current) {
-      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    if (autoScroll && lines.length > 0) {
+      rowVirtualizer.scrollToIndex(lines.length - 1, { align: 'end' });
     }
-  }, [logContent?.lines, autoScroll]);
+  }, [lines.length, autoScroll, rowVirtualizer]);
 
   const handleDownload = (file: LogFile) => {
     // Create a download link
@@ -270,7 +280,7 @@ export default function LogsPage() {
             <RefreshCw size={24} className="animate-spin mr-2" />
             Loading logs...
           </div>
-        ) : logContent?.lines.length === 0 ? (
+        ) : lines.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 text-gray-400">
             <FileText size={32} className="mb-2" />
             <p>No log entries found</p>
@@ -288,10 +298,25 @@ export default function LogsPage() {
               <span>Source</span>
               <span>Message</span>
             </div>
-            {/* Log lines */}
-            <div className="log-lines">
-              {logContent?.lines.map((line, i) => (
-                <LogLineComponent key={i} line={line} searchTerm={searchTerm} />
+            {/* Virtualized log lines - only renders visible rows */}
+            <div 
+              className="log-lines"
+              style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}
+            >
+              {rowVirtualizer.getVirtualItems().map((virtualRow) => (
+                <div
+                  key={virtualRow.key}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  <LogLineComponent line={lines[virtualRow.index]} searchTerm={searchTerm} />
+                </div>
               ))}
             </div>
             {/* Bottom spacer for scroll padding */}
