@@ -25,6 +25,7 @@
 | 🔄 | [EPIC 18](#epic-18-library-organization--rename-sonarradarr-parity--in-progress) | Library Organization | In Progress |
 | ✅ | EPIC 19 | Auto-Matching Robustness | [Archive](./COMPLETED.md#epic-19-auto-matching-robustness) |
 | 📋 | [EPIC 20](#epic-20-performance-optimization--planned) | Performance Optimization | Planned |
+| 🔴 | [EPIC 21](#epic-21-test-stabilization--quality-gates--high-priority) | Test Stabilization | High Priority |
 
 **Legend:** ✅ Completed | 🔄 In Progress | 📋 Planned | 🔴 High Priority
 
@@ -542,6 +543,34 @@ Reduce frontend bundle size and improve initial load time.
 | Pull list page load | TBD | < 1s |
 | Initial bundle size | TBD | < 500KB |
 | Lighthouse performance score | TBD | > 80 |
+
+---
+
+## EPIC 21: Test Stabilization & Quality Gates 🔴 HIGH PRIORITY
+
+### 21.1 Fix Existing Test Failures 📋 READY
+Current state: 46 failing tests, 2484 passing. Tests have accumulated failures due to code changes without test maintenance.
+
+**Failing Test Categories:**
+- [ ] **DDL Site Management** (2 tests) - Default site enablement
+- [ ] **Activity Service** (4 tests) - History management
+- [ ] **Metron Client** (10 tests) - API integration mocks
+- [ ] **GetComics Adapter** (8 tests) - HTML parsing
+- [ ] **DDL Release Parser** (4 tests) - Filename parsing
+- [ ] **PullList Service** (8 tests) - Discovery publishers
+- [ ] **Cover Service** (1 test) - Priority handling
+- [ ] **Endpoint/Swagger** (4 tests) - OpenAPI spec generation
+- [ ] **Download Host Resolver** (1 test) - URL matching
+- [ ] **Golden Tests** (1 test) - Collection parsing
+
+**Effort:** L | **Priority:** P1 (blocking quality gates)
+
+### 21.2 Establish Test Baseline 📋 READY
+- [ ] Document current test count in SELF_CHECK.md
+- [ ] Add pre-commit hook or CI check for test regression
+- [ ] Quarantine flaky tests (mark with `[Trait("Category", "Flaky")]`)
+
+**Effort:** S | **Priority:** P1
 
 ---
 
