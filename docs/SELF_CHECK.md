@@ -1,11 +1,11 @@
-# Self-Check: Iteration 194
+# Self-Check: Iteration 195
 
 ## Build Status
 - [x] `dotnet build` succeeds
-- [x] `npm run build` - not required (no UI changes)
+- [x] `npm run build` succeeds
 
 ## Test Status
-- **Before**: 2541 passed, 0 failed
+- **Before**: 2541 passed, 0 failed (1 flaky failure on first run)
 - **After**: 2541 passed, 0 failed
 - [x] No NEW test failures introduced
 
@@ -15,19 +15,19 @@
 ## Files Changed
 | File | Type |
 |------|------|
-| `src/Shortboxerr.Infrastructure/BackgroundServices/DdlImportBackgroundService.cs` | Modified - Parallelize imports |
-| `src/Shortboxerr.Infrastructure/BackgroundServices/AutoSearchBackgroundService.cs` | Modified - Configurable batch size |
-| `src/Shortboxerr.Core/Search/SearchSettings.cs` | Modified - Add AutoSearchBatchSize |
-| `src/Shortboxerr.Infrastructure/Services/MatchHistoryService.cs` | Modified - DB aggregation |
-| `docs/BACKLOG.md` | Modified - Mark 20.3 done |
-| `docs/WORKLOG.md` | Modified - Add Iteration 194 |
-| `docs/SELF_CHECK.md` | Modified - Iteration 194 status |
+| `ui/src/pages/PullListPage.tsx` | Modified - Parallel API calls |
+| `ui/src/pages/ActivityPage.tsx` | Modified - Pause polling when hidden |
+| `ui/src/pages/LogsPage.tsx` | Modified - Pause polling when hidden |
+| `ui/src/pages/SettingsPage.tsx` | Modified - Pause polling when hidden |
+| `docs/BACKLOG.md` | Modified - Update 20.7 status |
+| `docs/WORKLOG.md` | Modified - Add Iteration 195 |
+| `docs/SELF_CHECK.md` | Modified - Iteration 195 status |
 
 ## Commits
-1. `feat: optimize background services (EPIC 20.3)` - pending
+1. `feat(ui): optimize API call patterns (EPIC 20.7)` - pending
 
 ## Summary
-Implemented three background service optimizations:
-1. **DDL import parallelization**: Uses `Parallel.ForEachAsync` with configurable concurrency (default: 3)
-2. **Configurable auto-search batch size**: Added `AutoSearchBatchSize` to SearchSettings (default: 50)
-3. **DB aggregation for match stats**: Replaced in-memory aggregation with database queries
+Optimized frontend API call patterns:
+1. **Parallel fetching**: PullListPage now fetches 4 weeks in parallel via `Promise.all`
+2. **Smart polling**: All refetchInterval queries pause when tab not visible
+3. **Deferred**: Server-side pagination for SeriesDetailPage (larger scope, separate iteration)

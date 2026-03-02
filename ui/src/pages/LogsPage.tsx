@@ -143,6 +143,7 @@ export default function LogsPage() {
     queryKey: ['logFiles'],
     queryFn: api.getLogFiles,
     refetchInterval: 30000, // Refresh every 30s
+    refetchIntervalInBackground: false, // Pause when tab not visible
   });
 
   // Fetch log content
@@ -153,6 +154,7 @@ export default function LogsPage() {
         ? api.getRecentLogs(lineCount, levelFilter || undefined, searchTerm || undefined)
         : api.getLogContent(selectedFile, lineCount, levelFilter || undefined, searchTerm || undefined),
     refetchInterval: selectedFile === 'recent' ? 5000 : false, // Auto-refresh recent logs
+    refetchIntervalInBackground: false, // Pause when tab not visible
   });
 
   // Delete mutation

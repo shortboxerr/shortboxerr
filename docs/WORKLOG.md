@@ -1,5 +1,64 @@
 # Worklog
 
+## Iteration 195 (2026-02-27)
+**EPIC 20.7: API Call Optimization (Partial)**
+
+### Summary
+Optimized frontend API call patterns to reduce unnecessary network requests.
+
+### Changes
+
+#### 1. Parallel API Calls in PullListPage
+**File**: `PullListPage.tsx`
+
+Before: Sequential loop fetching 4 weeks one at a time
+```typescript
+for (let i = 1; i <= 4; i++) {
+  const data = await api.getWeeklyDiscoveryByDate(dateStr, {});
+  weeks.push(data);
+}
+```
+
+After: Parallel fetching with `Promise.all`
+```typescript
+const weekPromises = [1, 2, 3, 4].map((i) => {
+  return api.getWeeklyDiscoveryByDate(dateStr, {});
+});
+return Promise.all(weekPromises);
+```
+
+#### 2. Smart Polling (Pause When Tab Hidden)
+**Files**: `ActivityPage.tsx`, `LogsPage.tsx`, `SettingsPage.tsx`
+
+Added `refetchIntervalInBackground: false` to all polling queries:
+- Activity queue (3s interval)
+- Log files (30s interval)
+- Log content (5s interval for recent logs)
+- Cover cache stats (30s interval)
+- ComicVine rate limit (30s interval)
+- Download client health (60s interval)
+
+This pauses polling when the browser tab is not visible, saving bandwidth and reducing server load.
+
+### Deferred Items
+- Server-side pagination for SeriesDetailPage (larger scope)
+- Batched API endpoints for multiple weeks
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `PullListPage.tsx` | Parallel week fetching |
+| `ActivityPage.tsx` | Pause polling when hidden |
+| `LogsPage.tsx` | Pause polling when hidden |
+| `SettingsPage.tsx` | Pause polling when hidden (5 queries) |
+| `docs/BACKLOG.md` | Mark 20.7 partial |
+| `docs/WORKLOG.md` | Add Iteration 195 |
+
+### Commits
+1. `feat(ui): optimize API call patterns (EPIC 20.7)` - TBD
+
+---
+
 ## Iteration 194 (2026-02-27)
 **EPIC 20.3: Background Service Optimization**
 

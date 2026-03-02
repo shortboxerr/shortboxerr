@@ -1162,12 +1162,14 @@ function CoverCacheSettingsSection() {
     queryKey: ['coverCacheStats'],
     queryFn: api.getCoverCacheStats,
     refetchInterval: 30000,
+    refetchIntervalInBackground: false,
   });
 
   const { data: detailedStats } = useQuery({
     queryKey: ['detailedCoverCacheStats'],
     queryFn: api.getDetailedCoverCacheStats,
     refetchInterval: 30000,
+    refetchIntervalInBackground: false,
   });
 
   const updateMutation = useMutation({
@@ -1618,6 +1620,7 @@ function ComicVineSettingsTab() {
     queryKey: ['comicvineRateLimit'],
     queryFn: api.getComicVineRateLimit,
     refetchInterval: 30000, // Refresh every 30 seconds
+    refetchIntervalInBackground: false,
     enabled: settings?.hasApiKey ?? false,
   });
 
@@ -3971,12 +3974,14 @@ function DownloadClientsSettings() {
     queryKey: ['downloadclient-health'],
     queryFn: api.getDownloadClientHealth,
     refetchInterval: 60000,
+    refetchIntervalInBackground: false,
   });
 
   const { data: healthSummary, refetch: refetchSummary } = useQuery({
     queryKey: ['downloadclient-health-summary'],
     queryFn: api.getDownloadClientHealthSummary,
     refetchInterval: 60000,
+    refetchIntervalInBackground: false,
   });
 
   const toggleMutation = useMutation({

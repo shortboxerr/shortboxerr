@@ -164,38 +164,34 @@ export function PullListPage() {
     refetchOnWindowFocus: true, // Refresh when user returns to tab
   });
 
-  // Upcoming weeks (for multi-week views)
+  // Upcoming weeks (for multi-week views) - fetch in parallel
   const { data: upcomingDiscovery, isLoading: upcomingLoading } = useQuery({
     queryKey: ['pulllist', 'discovery', 'upcoming'],
     queryFn: async () => {
-      const weeks = [];
-      for (let i = 1; i <= 4; i++) {
+      const weekPromises = [1, 2, 3, 4].map((i) => {
         const date = new Date();
         date.setDate(date.getDate() + (i * 7));
         const dateStr = date.toISOString().split('T')[0];
-        const data = await api.getWeeklyDiscoveryByDate(dateStr, {});
-        weeks.push(data);
-      }
-      return weeks;
+        return api.getWeeklyDiscoveryByDate(dateStr, {});
+      });
+      return Promise.all(weekPromises);
     },
     enabled: viewMode === 'upcoming',
     staleTime: 2 * 60 * 1000, // 2 minutes - allows cover enrichment updates to show quickly
     refetchOnWindowFocus: true,
   });
 
-  // Past weeks
+  // Past weeks - fetch in parallel
   const { data: pastDiscovery, isLoading: pastLoading } = useQuery({
     queryKey: ['pulllist', 'discovery', 'past'],
     queryFn: async () => {
-      const weeks = [];
-      for (let i = 1; i <= 4; i++) {
+      const weekPromises = [1, 2, 3, 4].map((i) => {
         const date = new Date();
         date.setDate(date.getDate() - (i * 7));
         const dateStr = date.toISOString().split('T')[0];
-        const data = await api.getWeeklyDiscoveryByDate(dateStr, {});
-        weeks.push(data);
-      }
-      return weeks;
+        return api.getWeeklyDiscoveryByDate(dateStr, {});
+      });
+      return Promise.all(weekPromises);
     },
     enabled: viewMode === 'past',
     staleTime: 2 * 60 * 1000, // 2 minutes - allows cover enrichment updates to show quickly

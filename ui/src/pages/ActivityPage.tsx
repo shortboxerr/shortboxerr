@@ -21,6 +21,7 @@ export function ActivityPage() {
     queryKey: ['activity-queue'],
     queryFn: api.getActivityQueue,
     refetchInterval: 3000,
+    refetchIntervalInBackground: false, // Pause polling when tab not visible
   });
 
   // Filter to only show active downloads (not completed)

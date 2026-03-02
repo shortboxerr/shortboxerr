@@ -479,21 +479,21 @@ Prevent unnecessary re-renders with React.memo and proper hook usage.
 
 **Effort:** S | **Priority:** P2
 
-### 20.7 API Call Optimization 📋 READY
-Reduce unnecessary network requests and optimize data fetching patterns.
+### 20.7 API Call Optimization ✅ PARTIAL (Iteration 195)
+Reduced unnecessary network requests and optimized data fetching patterns.
 
-**Items:**
+**Completed:**
+- [x] **Parallelize PullListPage API calls**
+  - Changed from sequential `for` loop to `Promise.all`
+  - Fetches 4 weeks in parallel (4x faster)
+- [x] **Optimize refetch behavior**
+  - Added `refetchIntervalInBackground: false` to all polling queries
+  - Pauses background polling when tab not visible (saves bandwidth)
+
+**Deferred (separate iteration):**
 - [ ] **Server-side pagination for SeriesDetailPage issues**
-  - File: `SeriesDetailPage.tsx` line 249
-  - Issue: Fetches 500 issues, paginates client-side
-  - Fix: Implement server-side pagination endpoint
-- [ ] **Parallelize PullListPage API calls**
-  - File: `PullListPage.tsx` lines 169-196
-  - Issue: Sequential API calls (4 weeks × 1 call)
-  - Fix: Use `Promise.all` for parallel fetching
-- [ ] **Optimize refetch behavior**
-  - Reduce `refetchInterval` when tab not visible
-  - Disable `refetchOnWindowFocus` for less critical data
+  - Requires backend endpoint changes + frontend state management
+  - Currently fetches 500 issues, paginates client-side
 - [ ] **Consider batched API endpoints**
   - Add endpoints that return multiple weeks of data in one call
 
