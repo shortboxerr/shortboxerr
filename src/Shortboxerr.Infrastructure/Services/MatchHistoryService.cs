@@ -202,36 +202,56 @@ public class MatchHistoryService : IMatchHistoryService
         if (since.HasValue)
             query = query.Where(m => m.Timestamp >= since);
 
-        var records = await query.ToListAsync(cancellationToken);
-
-        if (records.Count == 0)
+        // Use database aggregation instead of loading all records
+        var totalCount = await query.CountAsync(cancellationToken);
+        
+        if (totalCount == 0)
         {
             return new MatchAccuracyStats();
         }
 
-        var verifiedCorrect = records.Count(r => r.UserVerified == true);
-        var verifiedIncorrect = records.Count(r => r.UserVerified == false);
-        var autoImported = records.Where(r => r.Outcome == MatchOutcome.AutoImported).ToList();
-        var autoImportedVerified = autoImported.Where(r => r.UserVerified.HasValue).ToList();
+        // Aggregate outcome counts in a single query using GroupBy
+        var outcomeCounts = await query
+            .GroupBy(m => m.Outcome)
+            .Select(g => new { Outcome = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+
+        var outcomeDict = outcomeCounts.ToDictionary(x => x.Outcome, x => x.Count);
+
+        // Aggregate verification counts
+        var verifiedCorrect = await query.CountAsync(r => r.UserVerified == true, cancellationToken);
+        var verifiedIncorrect = await query.CountAsync(r => r.UserVerified == false, cancellationToken);
+        var unverified = await query.CountAsync(r => !r.UserVerified.HasValue, cancellationToken);
+
+        // Auto-import accuracy calculation
+        var autoImportedQuery = query.Where(r => r.Outcome == MatchOutcome.AutoImported);
+        var autoImportedVerifiedCount = await autoImportedQuery.CountAsync(r => r.UserVerified.HasValue, cancellationToken);
+        var autoImportedCorrectCount = await autoImportedQuery.CountAsync(r => r.UserVerified == true, cancellationToken);
+        var autoImportAccuracy = autoImportedVerifiedCount > 0
+            ? (double)autoImportedCorrectCount / autoImportedVerifiedCount * 100
+            : 0;
+
+        // Aggregate statistics
+        var avgConfidence = await query.AverageAsync(r => r.ConfidenceScore, cancellationToken);
+        var oldestRecord = await query.MinAsync(r => r.Timestamp, cancellationToken);
+        var newestRecord = await query.MaxAsync(r => r.Timestamp, cancellationToken);
 
         return new MatchAccuracyStats
         {
-            TotalMatches = records.Count,
-            AutoImported = autoImported.Count,
-            PendingReview = records.Count(r => r.Outcome == MatchOutcome.PendingReview),
-            ManuallyApproved = records.Count(r => r.Outcome == MatchOutcome.ManuallyApproved),
-            ManuallyRejected = records.Count(r => r.Outcome == MatchOutcome.ManuallyRejected),
-            ManuallyCorrected = records.Count(r => r.Outcome == MatchOutcome.ManuallyCorrected),
-            NoMatchFound = records.Count(r => r.Outcome == MatchOutcome.NoMatch),
+            TotalMatches = totalCount,
+            AutoImported = outcomeDict.GetValueOrDefault(MatchOutcome.AutoImported, 0),
+            PendingReview = outcomeDict.GetValueOrDefault(MatchOutcome.PendingReview, 0),
+            ManuallyApproved = outcomeDict.GetValueOrDefault(MatchOutcome.ManuallyApproved, 0),
+            ManuallyRejected = outcomeDict.GetValueOrDefault(MatchOutcome.ManuallyRejected, 0),
+            ManuallyCorrected = outcomeDict.GetValueOrDefault(MatchOutcome.ManuallyCorrected, 0),
+            NoMatchFound = outcomeDict.GetValueOrDefault(MatchOutcome.NoMatch, 0),
             VerifiedCorrect = verifiedCorrect,
             VerifiedIncorrect = verifiedIncorrect,
-            Unverified = records.Count(r => !r.UserVerified.HasValue),
-            AutoImportAccuracy = autoImportedVerified.Count > 0
-                ? (double)autoImportedVerified.Count(r => r.UserVerified == true) / autoImportedVerified.Count * 100
-                : 0,
-            AverageConfidence = records.Count > 0 ? records.Average(r => r.ConfidenceScore) : 0,
-            OldestRecord = records.Min(r => r.Timestamp),
-            NewestRecord = records.Max(r => r.Timestamp)
+            Unverified = unverified,
+            AutoImportAccuracy = autoImportAccuracy,
+            AverageConfidence = avgConfidence,
+            OldestRecord = oldestRecord,
+            NewestRecord = newestRecord
         };
     }
 

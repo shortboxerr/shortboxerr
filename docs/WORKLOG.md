@@ -1,5 +1,61 @@
 # Worklog
 
+## Iteration 194 (2026-02-27)
+**EPIC 20.3: Background Service Optimization**
+
+### Summary
+Optimized three background services for improved performance and configurability.
+
+### Changes
+
+#### 1. DDL Import Parallelization
+**File**: `DdlImportBackgroundService.cs`
+
+- Replaced sequential `foreach` loop with `Parallel.ForEachAsync`
+- Added `ddl_auto_import_max_concurrent` setting (default: 3)
+- Thread-safe counters using `Interlocked.Increment`
+
+```csharp
+var parallelOptions = new ParallelOptions
+{
+    MaxDegreeOfParallelism = Math.Max(1, maxConcurrent),
+    CancellationToken = cancellationToken
+};
+
+await Parallel.ForEachAsync(pendingDownloads, parallelOptions, async (download, ct) => { ... });
+```
+
+#### 2. Configurable Auto-Search Batch Size
+**Files**: `AutoSearchBackgroundService.cs`, `SearchSettings.cs`
+
+- Added `AutoSearchBatchSize` property to `SearchSettings` (default: 50)
+- Replaces hardcoded `maxIssuesPerRun = 50`
+- Users can now tune batch size via settings
+
+#### 3. MatchHistoryService Database Aggregation
+**File**: `MatchHistoryService.cs`
+
+Before: Loaded all records with `ToListAsync()` then aggregated in memory.
+After: Uses database aggregation queries:
+- `CountAsync` for counts
+- `GroupBy` + `Select` for outcome distribution
+- `AverageAsync`, `MinAsync`, `MaxAsync` for statistics
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `DdlImportBackgroundService.cs` | Parallel processing + setting |
+| `AutoSearchBackgroundService.cs` | Use configurable batch size |
+| `SearchSettings.cs` | Add `AutoSearchBatchSize` property |
+| `MatchHistoryService.cs` | Database aggregation |
+| `docs/BACKLOG.md` | Mark 20.3 done |
+| `docs/WORKLOG.md` | Add Iteration 194 |
+
+### Commits
+1. `feat: optimize background services (EPIC 20.3)` - TBD
+
+---
+
 ## Iteration 193 (2026-02-27)
 **EPIC 21.2: Establish Test Baseline**
 

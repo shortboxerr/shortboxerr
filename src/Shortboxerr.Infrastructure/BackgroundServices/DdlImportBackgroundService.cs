@@ -21,6 +21,7 @@ public class DdlImportBackgroundService : BackgroundService
     private const string IntervalSettingKey = "ddl_auto_import_interval_seconds";
     private const string AutoImportSettingKey = "ddl_auto_import";
     private const string MinConfidenceSettingKey = "ddl_auto_import_min_confidence";
+    private const string MaxConcurrentImportsKey = "ddl_auto_import_max_concurrent";
     
     private int _consecutiveErrors = 0;
     private const int MaxConsecutiveErrors = 5;
@@ -101,6 +102,7 @@ public class DdlImportBackgroundService : BackgroundService
         // Get auto-import settings
         var autoImport = await settingsService.GetAsync(AutoImportSettingKey, true, cancellationToken);
         var minConfidence = await settingsService.GetAsync(MinConfidenceSettingKey, 80, cancellationToken);
+        var maxConcurrent = await settingsService.GetAsync(MaxConcurrentImportsKey, 3, cancellationToken);
         
         // Get the DDL download service (singleton)
         var downloadService = scope.ServiceProvider.GetService<IDdlDownloadService>();
@@ -136,11 +138,15 @@ public class DdlImportBackgroundService : BackgroundService
         var succeeded = 0;
         var failed = 0;
         
-        foreach (var download in pendingDownloads)
+        // Process imports in parallel with configurable concurrency
+        var parallelOptions = new ParallelOptions
         {
-            if (cancellationToken.IsCancellationRequested)
-                break;
-            
+            MaxDegreeOfParallelism = Math.Max(1, maxConcurrent),
+            CancellationToken = cancellationToken
+        };
+        
+        await Parallel.ForEachAsync(pendingDownloads, parallelOptions, async (download, ct) =>
+        {
             try
             {
                 // Verify file still exists
@@ -148,7 +154,7 @@ public class DdlImportBackgroundService : BackgroundService
                 {
                     _logger.LogWarning("Downloaded file no longer exists: {Path}", download.DestinationPath);
                     downloadService.MarkAsImported(download.DownloadId);
-                    continue;
+                    return;
                 }
                 
                 // Create a download result for the import service
@@ -177,13 +183,13 @@ public class DdlImportBackgroundService : BackgroundService
                 var importResult = await importService.ProcessDownloadAsync(
                     downloadResult, 
                     candidate, 
-                    cancellationToken: cancellationToken);
+                    cancellationToken: ct);
                 
-                processed++;
+                Interlocked.Increment(ref processed);
                 
                 if (importResult.Success)
                 {
-                    succeeded++;
+                    Interlocked.Increment(ref succeeded);
                     _logger.LogInformation("Successfully imported: {Title} -> {LibraryPath}", 
                         download.ReleaseTitle, importResult.LibraryPath);
                     
@@ -217,11 +223,11 @@ public class DdlImportBackgroundService : BackgroundService
                             importResult.MatchConfidence, minConfidence);
                         // The actual auto-approval would happen here if implemented
                     }
-                    continue;
+                    return;
                 }
                 else
                 {
-                    failed++;
+                    Interlocked.Increment(ref failed);
                     _logger.LogWarning("Import failed for {Title}: {Error}", 
                         download.ReleaseTitle, importResult.ErrorMessage);
                     
@@ -245,13 +251,13 @@ public class DdlImportBackgroundService : BackgroundService
             }
             catch (Exception ex)
             {
-                failed++;
+                Interlocked.Increment(ref failed);
                 _logger.LogError(ex, "Error importing download {Title}", download.ReleaseTitle);
                 
                 // Mark as processed to avoid infinite retry
                 downloadService.MarkAsImported(download.DownloadId);
             }
-        }
+        });
         
         if (processed > 0)
         {

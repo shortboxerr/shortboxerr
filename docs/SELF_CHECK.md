@@ -1,4 +1,4 @@
-# Self-Check: Iteration 193
+# Self-Check: Iteration 194
 
 ## Build Status
 - [x] `dotnet build` succeeds
@@ -8,7 +8,6 @@
 - **Before**: 2541 passed, 0 failed
 - **After**: 2541 passed, 0 failed
 - [x] No NEW test failures introduced
-- [x] No flaky tests detected (2 consecutive runs passed)
 
 ## Lint Status
 - [x] No new lint errors on changed files
@@ -16,17 +15,19 @@
 ## Files Changed
 | File | Type |
 |------|------|
-| `docs/TEST_BASELINE.md` | Created - Test baseline documentation |
-| `.git/hooks/pre-commit` | Created - Test regression prevention hook |
-| `docs/BACKLOG.md` | Modified - Mark 21.2 done |
-| `docs/WORKLOG.md` | Modified - Add Iteration 193 |
-| `docs/SELF_CHECK.md` | Modified - Iteration 193 status |
+| `src/Shortboxerr.Infrastructure/BackgroundServices/DdlImportBackgroundService.cs` | Modified - Parallelize imports |
+| `src/Shortboxerr.Infrastructure/BackgroundServices/AutoSearchBackgroundService.cs` | Modified - Configurable batch size |
+| `src/Shortboxerr.Core/Search/SearchSettings.cs` | Modified - Add AutoSearchBatchSize |
+| `src/Shortboxerr.Infrastructure/Services/MatchHistoryService.cs` | Modified - DB aggregation |
+| `docs/BACKLOG.md` | Modified - Mark 20.3 done |
+| `docs/WORKLOG.md` | Modified - Add Iteration 194 |
+| `docs/SELF_CHECK.md` | Modified - Iteration 194 status |
 
 ## Commits
-1. `chore: establish test baseline with regression prevention (EPIC 21.2)` - pending
+1. `feat: optimize background services (EPIC 20.3)` - pending
 
 ## Summary
-Established test baseline at 2541 tests with:
-1. Created `docs/TEST_BASELINE.md` with test count breakdown by class
-2. Added pre-commit hook that enforces test minimum before commits
-3. Verified no flaky tests (2 consecutive runs passed)
+Implemented three background service optimizations:
+1. **DDL import parallelization**: Uses `Parallel.ForEachAsync` with configurable concurrency (default: 3)
+2. **Configurable auto-search batch size**: Added `AutoSearchBatchSize` to SearchSettings (default: 50)
+3. **DB aggregation for match stats**: Replaced in-memory aggregation with database queries

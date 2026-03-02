@@ -413,22 +413,19 @@ Add missing indexes for common query patterns.
 
 **Effort:** S | **Priority:** P2
 
-### 20.3 Background Service Optimization 📋 READY
-Improve efficiency of background processing.
+### 20.3 Background Service Optimization ✅ DONE (Iteration 194)
+Improved efficiency of background processing.
 
 **Items:**
-- [ ] **Parallelize DDL import processing**
-  - File: `DdlImportBackgroundService.cs` lines 139-254
-  - Issue: Sequential processing in foreach loop
-  - Fix: Use `Parallel.ForEachAsync` with concurrency limits
-- [ ] **Make auto-search batch size configurable**
-  - File: `AutoSearchBackgroundService.cs` line 134
-  - Issue: Hardcoded `maxIssuesPerRun = 50`
-  - Fix: Add to settings with dynamic batching based on system load
-- [ ] **Optimize MatchHistoryService stats calculation**
-  - File: `MatchHistoryService.cs` lines 214-215
-  - Issue: Loads all records into memory for stats
-  - Fix: Use database aggregation queries
+- [x] **Parallelize DDL import processing**
+  - Uses `Parallel.ForEachAsync` with configurable max concurrency (default: 3)
+  - Added `ddl_auto_import_max_concurrent` setting
+- [x] **Make auto-search batch size configurable**
+  - Added `AutoSearchBatchSize` to `SearchSettings` (default: 50)
+  - Replaces hardcoded value
+- [x] **Optimize MatchHistoryService stats calculation**
+  - Replaced `ToListAsync()` + in-memory aggregation
+  - Uses `CountAsync`, `AverageAsync`, `MinAsync`, `MaxAsync`, `GroupBy`
 
 **Effort:** M | **Priority:** P2
 

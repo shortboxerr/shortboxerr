@@ -140,6 +140,12 @@ public class SearchSettings
     public int AutoSearchIntervalHours { get; set; } = 24;
 
     /// <summary>
+    /// Maximum number of issues to process per auto-search run.
+    /// Higher values increase throughput but may cause rate limiting.
+    /// </summary>
+    public int AutoSearchBatchSize { get; set; } = 50;
+
+    /// <summary>
     /// Automatically search for issues when adding a new series.
     /// </summary>
     public bool SearchNewSeriesOnAdd { get; set; } = true;

@@ -130,9 +130,9 @@ public class AutoSearchBackgroundService : BackgroundService
 
         _logger.LogInformation("Found {Count} issues to search", searchableIssues.Count);
 
-        // Run auto-search with a reasonable batch limit
-        var maxIssuesPerRun = 50; // Configurable limit per run
-        var result = await autoSearchService.SearchAllWantedAsync(maxIssuesPerRun, cancellationToken);
+        // Run auto-search with configurable batch limit
+        var batchSize = Math.Max(1, settings.AutoSearchBatchSize);
+        var result = await autoSearchService.SearchAllWantedAsync(batchSize, cancellationToken);
 
         if (result.TotalSearched > 0)
         {
