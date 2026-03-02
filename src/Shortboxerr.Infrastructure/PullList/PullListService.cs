@@ -1663,11 +1663,13 @@ public class PullListService : IPullListService
         };
 
         // Get all local series with ComicVine IDs and their publishers
-        // Use GroupBy to handle potential duplicates gracefully
-        var localSeriesLookup = await _dbContext.Series
+        // Use ToListAsync then GroupBy to work with EF InMemory provider
+        var seriesWithPublisher = await _dbContext.Series
             .Where(s => s.ComicVineId != null && !string.IsNullOrEmpty(s.Publisher))
+            .ToListAsync(cancellationToken);
+        var localSeriesLookup = seriesWithPublisher
             .GroupBy(s => s.ComicVineId!.Value)
-            .ToDictionaryAsync(g => g.Key, g => g.First().Publisher!, cancellationToken);
+            .ToDictionary(g => g.Key, g => g.First().Publisher!);
 
         // Group issues by volume to count series/issues per publisher
         var volumeGroups = allIssues
@@ -1815,11 +1817,13 @@ public class PullListService : IPullListService
         CancellationToken cancellationToken)
     {
         // Get all local series with ComicVine IDs for matching
-        // Use GroupBy to handle potential duplicates (shouldn't happen, but defensive coding)
-        var localSeriesLookup = await _dbContext.Series
+        // Use ToListAsync then GroupBy to work with EF InMemory provider (doesn't support server-side GroupBy+ToDictionary)
+        var seriesWithCvId = await _dbContext.Series
             .Where(s => s.ComicVineId != null)
+            .ToListAsync(cancellationToken);
+        var localSeriesLookup = seriesWithCvId
             .GroupBy(s => s.ComicVineId!.Value)
-            .ToDictionaryAsync(g => g.Key, g => g.First(), cancellationToken);
+            .ToDictionary(g => g.Key, g => g.First());
 
         // Also create a lookup by title + publisher for when WalkSoftly provides incorrect volume IDs
         // This handles cases like "Absolute Wonder Woman" where WalkSoftly points to the French edition
@@ -1833,10 +1837,13 @@ public class PullListService : IPullListService
             .ToDictionary(g => g.Key, g => g.ToList());
 
         // Get all local issues with ComicVine IDs for matching
-        var localIssueLookup = await _dbContext.Issues
+        // Use ToListAsync then GroupBy to work with EF InMemory provider
+        var issuesWithCvId = await _dbContext.Issues
             .Where(i => i.ComicVineId != null)
+            .ToListAsync(cancellationToken);
+        var localIssueLookup = issuesWithCvId
             .GroupBy(i => i.ComicVineId!.Value)
-            .ToDictionaryAsync(g => g.Key, g => g.First(), cancellationToken);
+            .ToDictionary(g => g.Key, g => g.First());
 
         var discoveryIssues = new List<DiscoverableIssue>();
 
