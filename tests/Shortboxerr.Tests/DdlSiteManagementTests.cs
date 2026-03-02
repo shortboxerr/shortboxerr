@@ -22,15 +22,16 @@ public class DdlSiteManagementTests
     }
 
     [Fact]
-    public void Factory_EnablesGetComicsAndReadComicOnlineByDefault()
+    public void Factory_EnablesGetComicsByDefault()
     {
         // Arrange & Act
         var factory = new DdlSiteAdapterFactory();
         var enabledSites = factory.GetEnabledSites();
 
-        // Assert
+        // Assert - Only GetComics is enabled by default
+        // ReadComicOnline is registered but NOT enabled (it's a reading site, not a DDL site)
         Assert.Contains("GetComics", enabledSites);
-        Assert.Contains("ReadComicOnline", enabledSites);
+        Assert.DoesNotContain("ReadComicOnline", enabledSites);
     }
 
     [Fact]
@@ -85,10 +86,14 @@ public class DdlSiteManagementTests
 
         // Assert
         Assert.True(factory.IsSiteEnabled("GetComics"));
-        Assert.True(factory.IsSiteEnabled("ReadComicOnline"));
+        Assert.False(factory.IsSiteEnabled("ReadComicOnline")); // RCO is registered but not enabled by default
         
         factory.DisableSite("GetComics");
         Assert.False(factory.IsSiteEnabled("GetComics"));
+        
+        // Verify we can enable RCO if needed
+        factory.EnableSite("ReadComicOnline");
+        Assert.True(factory.IsSiteEnabled("ReadComicOnline"));
     }
 
     [Fact]
