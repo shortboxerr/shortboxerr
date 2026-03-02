@@ -346,15 +346,16 @@ public class DdlReleaseParserTests
     #region EPIC 19.3 - Publisher Hints from Release Groups
 
     [Theory]
-    [InlineData("Batman 001 (2023) - DC-Empire.cbz", "DC")]
+    [InlineData("Batman 001 (2023) - DC-Empire.cbz", "DC Comics")]
     [InlineData("Spider-Man 001 (2023) - Marvel-Minutemen.cbz", "Marvel")]
-    [InlineData("Walking Dead 001 (2023) - Image-Empire.cbz", "Image")]
+    [InlineData("Walking Dead 001 (2023) - Image-Empire.cbz", "Image Comics")]
     public void Parse_ReleaseGroupPublisherHint_ExtractsCorrectly(string title, string expectedPublisher)
     {
         var result = _parser.Parse(title);
-        // Extracts publisher prefix from release group (e.g., "DC" from "DC-Empire")
-        // Full name expansion (e.g., "DC" -> "DC Comics") is a future enhancement
+        // Publisher is extracted from release group via ReleaseGroupPublishers dictionary
+        // e.g., "DC-Empire" -> "DC Comics", "Image-Empire" -> "Image Comics"
         Assert.Equal(expectedPublisher, result.Publisher);
+        Assert.NotNull(result.PublisherHint);
     }
 
     [Fact]

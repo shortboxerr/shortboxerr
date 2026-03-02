@@ -228,7 +228,30 @@ public partial class DdlReleaseParser : IDdlReleaseParser
             }
         }
         
-        // Extract publisher (if not already found from parens)
+        // Extract release group FIRST (at end after hyphen) - must be before publisher
+        // extraction to prevent matching publishers embedded in release groups like "DC-Empire"
+        var (releaseGroup, titleAfterGroup) = ExtractReleaseGroup(workingTitle);
+        if (!string.IsNullOrEmpty(releaseGroup))
+        {
+            info.ReleaseGroup = releaseGroup;
+            workingTitle = titleAfterGroup;
+            confidence += 5;
+            
+            // Extract publisher hint from release group naming
+            var publisherHint = ExtractPublisherHintFromGroup(releaseGroup);
+            if (!string.IsNullOrEmpty(publisherHint))
+            {
+                info.PublisherHint = publisherHint;
+                // If we don't have a publisher yet, use the hint
+                if (string.IsNullOrEmpty(info.Publisher))
+                {
+                    info.Publisher = publisherHint;
+                }
+                confidence += 3;
+            }
+        }
+        
+        // Extract publisher (if not already found from parens or release group hint)
         if (string.IsNullOrEmpty(info.Publisher))
         {
             var (publisher, titleAfterPublisher) = ExtractPublisher(workingTitle);
@@ -252,28 +275,6 @@ public partial class DdlReleaseParser : IDdlReleaseParser
             info.IncludesAnnuals = includesAnnuals;
             workingTitle = titleAfterPack;
             confidence += 5;
-        }
-        
-        // Extract release group (typically at end after hyphen)
-        var (releaseGroup, titleAfterGroup) = ExtractReleaseGroup(workingTitle);
-        if (!string.IsNullOrEmpty(releaseGroup))
-        {
-            info.ReleaseGroup = releaseGroup;
-            workingTitle = titleAfterGroup;
-            confidence += 5;
-            
-            // Extract publisher hint from release group naming
-            var publisherHint = ExtractPublisherHintFromGroup(releaseGroup);
-            if (!string.IsNullOrEmpty(publisherHint))
-            {
-                info.PublisherHint = publisherHint;
-                // If we don't have a publisher yet, use the hint
-                if (string.IsNullOrEmpty(info.Publisher))
-                {
-                    info.Publisher = publisherHint;
-                }
-                confidence += 3;
-            }
         }
         
         // Extract reboot/revival indicators (New 52, Rebirth, etc.)
@@ -1064,7 +1065,7 @@ public partial class DdlReleaseParser : IDdlReleaseParser
     [GeneratedRegex(@"\(([^)]+)\)")]
     private static partial Regex PublisherInParensRegex();
     
-    [GeneratedRegex(@"\s-\s*([^-]+?)\s*$")]
+    [GeneratedRegex(@"\s-\s*([A-Za-z][\w-]+)\s*$")]
     private static partial Regex ReleaseGroupRegex();
     
     [GeneratedRegex(@"\(([A-Za-z][\w-]+)\)\s*$")]

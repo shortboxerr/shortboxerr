@@ -1,5 +1,45 @@
 # Worklog
 
+## Iteration 192 (2026-02-27)
+**EPIC 21.5: Fix DdlReleaseParser Release Group Regex**
+
+### Summary
+Fixed AUDIT-002: The release group regex was truncating hyphenated groups like "DC-Empire" to just "Empire", causing the `ReleaseGroupPublishers` dictionary lookup to fail.
+
+### Root Cause
+Two issues working together:
+1. The regex `[^-]+?` stopped at the first hyphen
+2. Publisher extraction ran BEFORE release group extraction, so "DC" was extracted separately
+
+### Fix Applied
+1. Changed regex from `[^-]+?` to `[A-Za-z][\w-]+` to allow hyphens in capture
+2. Reordered parsing: extract release group BEFORE inline publisher extraction
+
+### Before/After
+```
+Input:  "Batman 001 (2023) - DC-Empire.cbz"
+Before: ReleaseGroup = "Empire", Publisher = "DC"
+After:  ReleaseGroup = "DC-Empire", Publisher = "DC Comics", PublisherHint = "DC Comics"
+```
+
+### Test Expectations Restored
+- "DC-Empire" → "DC Comics" (was incorrectly "DC")
+- "Image-Empire" → "Image Comics" (was incorrectly "Image")
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/Ddl/DdlReleaseParser.cs` | Fix regex + reorder pipeline |
+| `tests/Shortboxerr.Tests/DdlReleaseParserTests.cs` | Restore correct expectations |
+| `docs/BACKLOG.md` | Mark 21.5 done |
+| `docs/DECISIONS.md` | Mark AUDIT-002 fixed |
+| `docs/WORKLOG.md` | Add Iteration 192 |
+
+### Commits
+1. `fix: DdlReleaseParser release group regex for hyphenated names (AUDIT-002)` - TBD
+
+---
+
 ## Iteration 191 (2026-02-27)
 **EPIC 21.4: Fix GetComicsAdapter Feature Regression**
 

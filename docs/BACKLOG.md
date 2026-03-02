@@ -605,28 +605,29 @@ Test count: 2529 → 2541
 
 **Effort:** M | **Priority:** P1 (feature regression)
 
-### 21.5 Fix DdlReleaseParser Release Group Regex 📋 READY
+### 21.5 Fix DdlReleaseParser Release Group Regex ✅ DONE (Iteration 192)
 
 **Classification**: AUDIT-002 - Medium code bug
 
-The regex `\s-\s*([^-]+?)\s*$` stops at first hyphen, extracting "Empire" instead of "DC-Empire".
+Fixed release group extraction and reordered parsing pipeline:
 
-**Current Behavior:**
+1. **Regex fix**: Changed `[^-]+?` to `[A-Za-z][\w-]+` to capture hyphens
+2. **Reordered pipeline**: Extract release group BEFORE inline publisher extraction
+
+**Before:**
 ```
 Input:  "Batman 001 (2023) - DC-Empire.cbz"
-Actual: ReleaseGroup = "Empire", Publisher = "DC"
+Result: ReleaseGroup = "Empire", Publisher = "DC"
 ```
 
-**Expected Behavior:**
+**After:**
 ```
-Expected: ReleaseGroup = "DC-Empire", Publisher = "DC Comics" (from lookup)
+Input:  "Batman 001 (2023) - DC-Empire.cbz"
+Result: ReleaseGroup = "DC-Empire", Publisher = "DC Comics", PublisherHint = "DC Comics"
 ```
 
-**Action Items:**
-- [ ] Fix regex to capture full hyphenated release group names
-- [ ] Suggested: `@"\s-\s*([A-Za-z][\w-]+)\s*$"` (allow hyphens in capture)
-- [ ] Restore original test expectations ("DC Comics", "Image Comics")
-- [ ] Verify `ReleaseGroupPublishers` dictionary is now being used
+- [x] `ReleaseGroupPublishers` dictionary now correctly used
+- [x] Test expectations restored ("DC Comics", "Image Comics")
 
 **Effort:** S | **Priority:** P2 (quality improvement)
 
@@ -644,11 +645,11 @@ Created `docs/DECISIONS.md` with full findings.
 **✅ EPIC 21.4 COMPLETE (Iteration 191)**
 Restored 6 methods and 12 tests. GetComicsAdapter has full RSS/category/publisher support again.
 
-**⚠️ NEXT PRIORITY: EPIC 21.5 (Fix Release Group Regex)**
-Fix parser to correctly extract hyphenated release groups like "DC-Empire".
+**✅ EPIC 21.5 COMPLETE (Iteration 192)**
+Parser now correctly extracts "DC-Empire" and looks up "DC Comics" from dictionary.
 
-**📋 THEN: EPIC 21.2 (Establish Test Baseline)**
-After bugs are fixed, document the verified test count and establish regression checks.
+**⚠️ NEXT PRIORITY: EPIC 21.2 (Establish Test Baseline)**
+All audit bugs fixed. Now document the verified test count and establish regression checks.
 
 **Dependencies:**
 - **EPIC 21** - No dependencies, blocks all other work (quality gates require passing tests)
