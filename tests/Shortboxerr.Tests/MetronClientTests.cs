@@ -44,9 +44,12 @@ public class MetronClientTests
         var mockFactory = new Mock<IHttpClientFactory>();
         mockFactory.Setup(f => f.CreateClient("MetronClient")).Returns(httpClient);
         
-        var mockScope = new Mock<IServiceScope>();
-        mockScope.Setup(s => s.ServiceProvider.GetService(typeof(ISettingsService)))
+        var mockServiceProvider = new Mock<IServiceProvider>();
+        mockServiceProvider.Setup(sp => sp.GetService(typeof(ISettingsService)))
             .Returns(mockSettingsService.Object);
+        
+        var mockScope = new Mock<IServiceScope>();
+        mockScope.Setup(s => s.ServiceProvider).Returns(mockServiceProvider.Object);
         
         var mockScopeFactory = new Mock<IServiceScopeFactory>();
         mockScopeFactory.Setup(f => f.CreateScope()).Returns(mockScope.Object);
@@ -69,7 +72,10 @@ public class MetronClientTests
                 Content = content != null ? new StringContent(content) : null
             });
 
-        return new HttpClient(handlerMock.Object);
+        return new HttpClient(handlerMock.Object)
+        {
+            BaseAddress = new Uri("https://metron.cloud/api/")
+        };
     }
 
     [Fact]
@@ -250,7 +256,10 @@ public class MetronClientTests
                 Content = new StringContent(JsonSerializer.Serialize(apiResponse))
             });
 
-        var httpClient = new HttpClient(handlerMock.Object);
+        var httpClient = new HttpClient(handlerMock.Object)
+        {
+            BaseAddress = new Uri("https://metron.cloud/api/")
+        };
         var freshCache = new MemoryCache(new MemoryCacheOptions());
         var mockSettingsService = new Mock<ISettingsService>();
         mockSettingsService.Setup(s => s.GetAsync<MetronSettings>(
@@ -262,9 +271,12 @@ public class MetronClientTests
         var mockFactory = new Mock<IHttpClientFactory>();
         mockFactory.Setup(f => f.CreateClient("MetronClient")).Returns(httpClient);
         
-        var mockScope = new Mock<IServiceScope>();
-        mockScope.Setup(s => s.ServiceProvider.GetService(typeof(ISettingsService)))
+        var mockServiceProvider = new Mock<IServiceProvider>();
+        mockServiceProvider.Setup(sp => sp.GetService(typeof(ISettingsService)))
             .Returns(mockSettingsService.Object);
+        
+        var mockScope = new Mock<IServiceScope>();
+        mockScope.Setup(s => s.ServiceProvider).Returns(mockServiceProvider.Object);
         
         var mockScopeFactory = new Mock<IServiceScopeFactory>();
         mockScopeFactory.Setup(f => f.CreateScope()).Returns(mockScope.Object);
@@ -360,7 +372,10 @@ public class MetronClientTests
                 Content = new StringContent("{\"count\": 0, \"results\": []}")
             });
 
-        var httpClient = new HttpClient(handlerMock.Object);
+        var httpClient = new HttpClient(handlerMock.Object)
+        {
+            BaseAddress = new Uri("https://metron.cloud/api/")
+        };
         var client = CreateClient(httpClient);
 
         await client.SearchIssueAsync("Batman", "#100");
@@ -381,7 +396,10 @@ public class MetronClientTests
                 ItExpr.IsAny<CancellationToken>())
             .ThrowsAsync(new HttpRequestException("Network error"));
 
-        var httpClient = new HttpClient(handlerMock.Object);
+        var httpClient = new HttpClient(handlerMock.Object)
+        {
+            BaseAddress = new Uri("https://metron.cloud/api/")
+        };
         var client = CreateClient(httpClient);
 
         var result = await client.GetIssueByCvIdAsync(12345);
