@@ -1,5 +1,64 @@
 # Worklog
 
+## Iteration 190 (2026-02-27)
+**EPIC 21.3: Audit Git History for Masked Bugs**
+
+### Summary
+Comprehensive audit of git history to identify test changes that may have masked bugs rather than fixed them. Found 2 critical bugs that were hidden by test modifications, plus 2 documented missing features.
+
+### Findings
+
+| ID | Type | Severity | Description |
+|----|------|----------|-------------|
+| AUDIT-001 | Regression | CRITICAL | GetComicsAdapter lost 5 RSS/category methods in V2 rename |
+| AUDIT-002 | Code Bug | MEDIUM | DdlReleaseParser regex truncates hyphenated release groups |
+| AUDIT-003 | Missing Feature | LOW | "Absolute" edition detection not implemented |
+| AUDIT-004 | Missing Feature | LOW | "Marvel NOW" reboot indicator (no parens) |
+
+### AUDIT-001: GetComicsAdapter Feature Regression
+
+**Timeline:**
+1. `dad408b` - Added `GetPublisherRssFeedAsync`, `GetPublisherAsync` methods
+2. `b78ab5f` - Added RSS feed and category browsing features
+3. `a6192fe` - **Renamed GetComicsAdapterV2 → GetComicsAdapter, REPLACING old adapter**
+4. `4d4afa9` - Deleted 669 lines of tests (masked the regression)
+
+**Impact:** GetComics lost feature parity with ReadComicOnlineAdapter
+
+### AUDIT-002: DdlReleaseParser Release Group Bug
+
+**Problem:** Regex `\s-\s*([^-]+?)\s*$` stops at first hyphen
+```
+Input:    "Batman 001 (2023) - DC-Empire.cbz"
+Actual:   ReleaseGroup = "Empire", Publisher = "DC"
+Expected: ReleaseGroup = "DC-Empire", Publisher = "DC Comics"
+```
+
+**Masked By:** Commit `16c1651` changed test expectations from "DC Comics" to "DC"
+
+### Legitimate Fixes Verified
+
+These test changes from Iteration 189 were categorized as legitimate:
+- ActivityService test isolation (test bug)
+- MetronClient mock setup (test bug)
+- GetComicsAdapter HTML fixtures (test bug)
+- Swagger duplicate DTOs (code bug - fixed correctly)
+- RCO default disabled (stale test - intentional behavior change)
+- CoverService HttpClient mocks (test bug)
+- Mega.nz support (stale test - feature added)
+
+### Files Created/Changed
+| File | Change |
+|------|--------|
+| `docs/DECISIONS.md` | NEW - Document design decisions and audit findings |
+| `docs/BACKLOG.md` | Mark 21.3 complete, add 21.4 and 21.5 for bug fixes |
+| `docs/WORKLOG.md` | Add Iteration 190 entry |
+
+### Commits
+1. `chore(docs): EPIC 21.3 - Audit git history for masked bugs` - TBD
+
+---
+
 ## Iteration 189 (2026-03-02)
 **EPIC 21.1: Fix Existing Test Failures**
 

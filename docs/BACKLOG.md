@@ -572,44 +572,65 @@ All 2529 tests now passing (was 45 failing, 2485 passing).
 
 **Effort:** S | **Priority:** P1
 
-### 21.3 Audit Git History for Masked Bugs 📋 READY
+### 21.3 Audit Git History for Masked Bugs ✅ DONE (Iteration 190)
 
-Comprehensive review of all test changes in git history that may have masked bugs rather than fixed them.
+Comprehensive review of all test changes in git history. Created `docs/DECISIONS.md` with findings.
 
-**Approach:**
-```bash
-# Find all commits that modified test files
-git log --oneline --all -- "*Tests*.cs" "*.Tests.cs" "**/Fixtures/**"
+**Findings:**
+- [x] AUDIT-001: GetComicsAdapter lost 5 methods in V2 rename → **Bug, needs fix (21.4)**
+- [x] AUDIT-002: DdlReleaseParser regex truncates hyphenated groups → **Bug, needs fix (21.5)**
+- [x] AUDIT-003: "Absolute" edition detection → Missing feature (documented)
+- [x] AUDIT-004: "Marvel NOW" reboot indicator → Missing feature (documented)
 
-# For each commit, check if assertions were weakened:
-git show <commit> -- "*Tests*.cs" | grep -E "(Assert\.|Expected|actual)"
-```
+**Legitimate Fixes Verified:**
+- ActivityService isolation, MetronClient mocks, GetComicsAdapter HTML fixtures
+- Swagger duplicate DTOs, RCO default status, CoverService mocks, Mega support
 
-**Red Flags to Look For:**
-- Assertions changed from specific values to looser matches
-- Expected exceptions removed
-- Test cases deleted without explanation
-- `Assert.Equal` changed to `Assert.Contains` or `Assert.NotNull`
-- Timeouts increased significantly
-- Error message checks removed
+**Effort:** L | **Priority:** P1
 
-**Known Items from Iteration 189:**
+### 21.4 Fix GetComicsAdapter Feature Regression 📋 READY
 
-| Test | Change Made | Review Question |
-|------|-------------|-----------------|
-| DdlReleaseParserTests | Changed expected publisher "DC Comics" → "DC" | Should parser expand publisher hints to full names? |
-| DdlReleaseParserTests | Removed "Marvel NOW" reboot indicator test | Should parser detect reboot indicators like "Marvel NOW"? |
-| Golden Tests (Absolute) | Changed `isCollection: true` → `false` | Should "Absolute" editions be recognized as collections? |
-| Golden Tests (Absolute) | Removed `editionType: "Absolute"` expectation | Should parser extract edition types from title? |
+**Classification**: AUDIT-001 - Critical regression bug
+
+Commit `a6192fe` replaced old GetComicsAdapter with V2, losing these methods:
+- `GetRssFeedAsync(int limit, CancellationToken)`
+- `GetCategoryAsync(string category, int limit, CancellationToken)`
+- `GetCategoryRssFeedAsync(string category, int limit, CancellationToken)`
+- `GetPublisherRssFeedAsync(string publisher, int limit, CancellationToken)`
+- `GetPublisherAsync(string publisher, int limit, CancellationToken)`
 
 **Action Items:**
-- [ ] Run git log analysis to identify all test modification commits
-- [ ] Categorize each change: legitimate fix vs potential bug masking
-- [ ] For masked bugs: either restore original test + fix code, or document design decision
-- [ ] Create `docs/DECISIONS.md` for intentional behavior choices
-- [ ] Update tests with `// Design Decision: <reason>` comments where applicable
+- [ ] Restore methods from git history: `git show a6192fe^:src/.../GetComicsAdapter.cs`
+- [ ] Port to current V2 architecture
+- [ ] Restore deleted tests from `4d4afa9`
+- [ ] Verify feature parity with ReadComicOnlineAdapter
 
-**Effort:** L | **Priority:** P1 (prevents code rot)
+**Effort:** M | **Priority:** P1 (feature regression)
+
+### 21.5 Fix DdlReleaseParser Release Group Regex 📋 READY
+
+**Classification**: AUDIT-002 - Medium code bug
+
+The regex `\s-\s*([^-]+?)\s*$` stops at first hyphen, extracting "Empire" instead of "DC-Empire".
+
+**Current Behavior:**
+```
+Input:  "Batman 001 (2023) - DC-Empire.cbz"
+Actual: ReleaseGroup = "Empire", Publisher = "DC"
+```
+
+**Expected Behavior:**
+```
+Expected: ReleaseGroup = "DC-Empire", Publisher = "DC Comics" (from lookup)
+```
+
+**Action Items:**
+- [ ] Fix regex to capture full hyphenated release group names
+- [ ] Suggested: `@"\s-\s*([A-Za-z][\w-]+)\s*$"` (allow hyphens in capture)
+- [ ] Restore original test expectations ("DC Comics", "Image Comics")
+- [ ] Verify `ReleaseGroupPublishers` dictionary is now being used
+
+**Effort:** S | **Priority:** P2 (quality improvement)
 
 ---
 
@@ -618,11 +639,18 @@ git show <commit> -- "*Tests*.cs" | grep -E "(Assert\.|Expected|actual)"
 **✅ EPIC 21.1 COMPLETE (Iteration 189)**
 All 2529 tests passing. Quality gates in CONTINUE.md are now effective.
 
-**⚠️ NEXT PRIORITY: EPIC 21.3 (Audit Git History for Masked Bugs)**
-Comprehensive review of test changes across git history to identify and address any masked bugs. Prevents code rot.
+**✅ EPIC 21.3 COMPLETE (Iteration 190)**
+Git history audit complete. Found 2 masked bugs, 2 documented missing features.
+Created `docs/DECISIONS.md` with full findings.
+
+**⚠️ NEXT PRIORITY: EPIC 21.4 (Fix GetComicsAdapter Regression)**
+Critical: Restore 5 methods lost during V2 rename. Feature regression affecting RSS/category/publisher support.
+
+**📋 THEN: EPIC 21.5 (Fix Release Group Regex)**
+Fix parser to correctly extract hyphenated release groups like "DC-Empire".
 
 **📋 THEN: EPIC 21.2 (Establish Test Baseline)**
-After audit is complete, document the verified test count and establish regression checks.
+After bugs are fixed, document the verified test count and establish regression checks.
 
 **Dependencies:**
 - **EPIC 21** - No dependencies, blocks all other work (quality gates require passing tests)
