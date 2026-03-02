@@ -1,5 +1,59 @@
 # Worklog
 
+## Iteration 184 (2026-02-27)
+**EPIC 14.11: ComicVine ID Search Support**
+
+### Summary
+Added support for detecting and parsing ComicVine IDs from user input, enabling direct lookup by ID instead of text search. When users paste a ComicVine ID (e.g., `4050-12345`) or URL into the series search, the system now performs a direct API lookup rather than a text search.
+
+### Changes
+
+#### ComicVineIdParser Utility
+Created new `ComicVineIdParser` static class with:
+- Regex patterns for all ComicVine resource types (Volume, Issue, StoryArc, Character, Publisher)
+- Support for prefixed format (`4050-12345`), plain numeric IDs, and ComicVine URLs
+- Type-specific parsing methods (`TryParseAs`, `IsVolumeId`, etc.)
+
+| Format | Example | Detection |
+|--------|---------|-----------|
+| Volume ID | `4050-12345` | Direct match |
+| Issue ID | `4000-123456` | Direct match |
+| Story Arc ID | `4045-98765` | Direct match |
+| ComicVine URL | `comicvine.gamespot.com/.../4050-796/` | URL extraction |
+| Plain numeric | `12345` | Requires context |
+
+#### Series Search Endpoint Enhancement
+Updated `SearchComicVine` endpoint in `SeriesMetadataEndpoints.cs`:
+- Auto-detects ComicVine volume IDs in search query
+- Performs direct lookup via `GetSeriesByComicVineIdAsync` instead of search
+- Returns result with `IsDirectLookup: true` flag for frontend differentiation
+
+#### SeriesSearchResult Model Updates
+Added new properties to `SeriesSearchResult`:
+- `IsDirectLookup`: Indicates ID lookup vs text search
+- `Query`: The original search query
+- `PageSize`: Alias for `Limit` (API consistency)
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/ComicVine/ComicVineIdParser.cs` | New - ID parsing utility |
+| `src/Shortboxerr.Core/ComicVine/ISeriesMetadataService.cs` | Extended SeriesSearchResult |
+| `src/Shortboxerr.Api/Endpoints/SeriesMetadataEndpoints.cs` | ID detection in search |
+| `tests/Shortboxerr.Tests/ComicVineIdParserTests.cs` | New - 49 test cases |
+
+### Commits
+1. `feat(comicvine): add ComicVine ID parsing and direct lookup support (EPIC 14.11)`
+
+### Deferred Items
+| Item | Reason |
+|------|--------|
+| Issue Search/Lookup | Future enhancement - separate use case |
+| Edition/Collection Search | Future enhancement - lower priority |
+| UI hint for ID input | Future enhancement - polish item |
+
+---
+
 ## Iteration 183 (2026-03-01)
 **EPIC 20.4: Frontend Virtualization**
 
