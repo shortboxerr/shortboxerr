@@ -64,6 +64,8 @@ public class ShortboxerrDbContext : DbContext
             entity.HasIndex(e => new { e.ExternalSource, e.ExternalId });
             entity.HasIndex(e => e.ComicVineId);
             entity.HasIndex(e => e.ParentSeriesId);
+            // Performance indexes for common query patterns (EPIC 20.2)
+            entity.HasIndex(e => e.Monitored); // Monitored series queries
             // Self-referencing relationship for annual/special series linking
             entity.HasOne(e => e.ParentSeries)
                 .WithMany(p => p.LinkedAnnualSeries)
@@ -89,6 +91,10 @@ public class ShortboxerrDbContext : DbContext
             entity.HasIndex(e => new { e.SeriesId, e.IssueNumber });
             entity.HasIndex(e => e.ComicVineId);
             entity.HasIndex(e => new { e.SeriesId, e.IsAnnual });
+            // Performance indexes for common query patterns (EPIC 20.2)
+            entity.HasIndex(e => e.Status); // Wanted issues queries
+            entity.HasIndex(e => new { e.Status, e.StoreDate }); // Pull list date-filtered queries
+            entity.HasIndex(e => new { e.Monitored, e.Status }); // Monitored + status filter
             entity.HasOne(e => e.Series)
                 .WithMany(s => s.Issues)
                 .HasForeignKey(e => e.SeriesId)
