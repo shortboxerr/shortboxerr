@@ -223,6 +223,8 @@ public class ActivityService : IActivityService
 
     public async Task<bool> RemoveFromHistoryAsync(string downloadId, CancellationToken cancellationToken = default)
     {
+        var removedFromSession = false;
+        
         // Remove from session history
         lock (_historyLock)
         {
@@ -230,6 +232,7 @@ public class ActivityService : IActivityService
             if (item != null)
             {
                 _sessionHistory.Remove(item);
+                removedFromSession = true;
             }
         }
         
@@ -243,7 +246,8 @@ public class ActivityService : IActivityService
                 return true;
             }
         }
-        return false;
+        
+        return removedFromSession;
     }
 
     public async Task<int> ClearCompletedAsync(CancellationToken cancellationToken = default)

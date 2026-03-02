@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Shortboxerr.Tests;
 
-public class ActivityServiceTests
+public class ActivityServiceTests : IAsyncLifetime
 {
     private readonly Mock<IProviderManager> _providerManagerMock;
     private readonly Mock<ILogger<ActivityService>> _loggerMock;
@@ -23,6 +23,14 @@ public class ActivityServiceTests
             downloadHistoryService: null,
             _loggerMock.Object);
     }
+
+    public async Task InitializeAsync()
+    {
+        // Clear static history before each test to ensure isolation
+        await _service.ClearAllHistoryAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     #region GetActiveDownloadsAsync Tests
 
