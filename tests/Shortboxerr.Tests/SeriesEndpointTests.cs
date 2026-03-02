@@ -104,7 +104,7 @@ public class SeriesEndpointTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
-    public async Task DeleteSeries_ReturnsNoContent()
+    public async Task DeleteSeries_ReturnsOkWithDeletionInfo()
     {
         // Arrange
         var client = _factory.CreateClient();
@@ -121,7 +121,11 @@ public class SeriesEndpointTests : IClassFixture<CustomWebApplicationFactory>
         var response = await client.DeleteAsync($"/api/v1/series/{seriesId}");
 
         // Assert
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(content);
+        Assert.True(doc.RootElement.GetProperty("success").GetBoolean());
+        Assert.True(doc.RootElement.GetProperty("totalDeleted").GetInt32() >= 1);
 
         // Verify deleted
         var getResponse = await client.GetAsync($"/api/v1/series/{seriesId}");

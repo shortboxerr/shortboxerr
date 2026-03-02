@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Shortboxerr.Api.Dtos;
 using Shortboxerr.Core.Activity;
 using Shortboxerr.Core.Ddl;
 using Shortboxerr.Core.Services;
@@ -484,38 +485,7 @@ public static class DdlEndpoints
             FailedSites = result.FailedSites.ToList(),
             Warnings = result.Warnings.ToList(),
             DurationMs = (int)result.TotalDuration.TotalMilliseconds,
-            Candidates = result.AllCandidates.Select(c => new DdlCandidateDto
-            {
-                Id = c.Id,
-                ReleaseTitle = c.ReleaseTitle,
-                SourceSite = c.SourceSite,
-                SourceUrl = c.SourceUrl,
-                Size = c.Size,
-                DateFound = c.DateFound,
-                QualityScore = c.QualityScore,
-                Tags = c.Tags,
-                ParsedInfo = new DdlParsedInfoDto
-                {
-                    SeriesTitle = c.ParsedInfo.SeriesTitle,
-                    IssueNumber = c.ParsedInfo.IssueNumber,
-                    VolumeNumber = c.ParsedInfo.VolumeNumber,
-                    Year = c.ParsedInfo.Year,
-                    Publisher = c.ParsedInfo.Publisher,
-                    Format = c.ParsedInfo.Format,
-                    IsCollection = c.ParsedInfo.IsCollection,
-                    EditionType = c.ParsedInfo.EditionType,
-                    Quality = c.ParsedInfo.Quality,
-                    Confidence = c.ParsedInfo.Confidence
-                },
-                DownloadLinks = c.DownloadLinks.Select(l => new DdlDownloadLinkDto
-                {
-                    Url = l.Url,
-                    LinkType = l.LinkType.ToString(),
-                    HostName = l.HostName,
-                    IsVerified = l.IsVerified,
-                    Priority = l.Priority
-                }).ToList()
-            }).ToList()
+            Candidates = result.AllCandidates.Select(DdlCandidateDto.FromDomain).ToList()
         };
     }
 
@@ -561,43 +531,6 @@ public record DdlSearchResponseDto
     public List<string> Warnings { get; init; } = new();
     public int DurationMs { get; init; }
     public List<DdlCandidateDto> Candidates { get; init; } = new();
-}
-
-public record DdlCandidateDto
-{
-    public required string Id { get; init; }
-    public required string ReleaseTitle { get; init; }
-    public required string SourceSite { get; init; }
-    public string? SourceUrl { get; init; }
-    public long? Size { get; init; }
-    public DateTime DateFound { get; init; }
-    public int QualityScore { get; init; }
-    public List<string> Tags { get; init; } = new();
-    public required DdlParsedInfoDto ParsedInfo { get; init; }
-    public List<DdlDownloadLinkDto> DownloadLinks { get; init; } = new();
-}
-
-public record DdlParsedInfoDto
-{
-    public string? SeriesTitle { get; init; }
-    public decimal? IssueNumber { get; init; }
-    public int? VolumeNumber { get; init; }
-    public int? Year { get; init; }
-    public string? Publisher { get; init; }
-    public string? Format { get; init; }
-    public bool IsCollection { get; init; }
-    public string? EditionType { get; init; }
-    public string? Quality { get; init; }
-    public int Confidence { get; init; }
-}
-
-public record DdlDownloadLinkDto
-{
-    public required string Url { get; init; }
-    public required string LinkType { get; init; }
-    public string? HostName { get; init; }
-    public bool IsVerified { get; init; }
-    public int Priority { get; init; }
 }
 
 public record DdlGrabRequestDto
