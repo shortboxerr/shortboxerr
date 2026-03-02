@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback, memo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -2028,7 +2028,7 @@ function getIssueStatus(issue: Issue): 'owned' | 'wanted' | 'missing' | 'skipped
   return 'skipped';
 }
 
-// === Cover Card Component ===
+// === Cover Card Component - Memoized for performance ===
 interface IssueCoverCardProps {
   issue: Issue;
   selected: boolean;
@@ -2040,35 +2040,43 @@ interface IssueCoverCardProps {
   isSearching: boolean;
 }
 
-function IssueCoverCard({ issue, selected, onSelect, onMarkWanted, onMarkSkipped, onSearch, isUpdating, isSearching }: IssueCoverCardProps) {
+const ISSUE_PLACEHOLDER_COVER = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="150" viewBox="0 0 100 150"%3E%3Crect fill="%232a2d35" width="100" height="150"/%3E%3Ctext fill="%236b7280" font-family="sans-serif" font-size="10" x="50" y="75" text-anchor="middle"%3ENo Cover%3C/text%3E%3C/svg%3E';
+
+const IssueCoverCard = memo(function IssueCoverCard({ 
+  issue, selected, onSelect, onMarkWanted, onMarkSkipped, onSearch, isUpdating, isSearching 
+}: IssueCoverCardProps) {
   const [showActions, setShowActions] = useState(false);
-  const placeholderCover = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="150" viewBox="0 0 100 150"%3E%3Crect fill="%232a2d35" width="100" height="150"/%3E%3Ctext fill="%236b7280" font-family="sans-serif" font-size="10" x="50" y="75" text-anchor="middle"%3ENo Cover%3C/text%3E%3C/svg%3E';
   
   const status = getIssueStatus(issue);
 
-  const handleOpenComicVine = (e: React.MouseEvent) => {
+  const handleOpenComicVine = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (issue.comicVineUrl) {
       window.open(issue.comicVineUrl, '_blank', 'noopener,noreferrer');
     }
-  };
+  }, [issue.comicVineUrl]);
+  
+  const handleImageError = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    e.currentTarget.src = ISSUE_PLACEHOLDER_COVER;
+  }, []);
+  
+  const handleMouseEnter = useCallback(() => setShowActions(true), []);
+  const handleMouseLeave = useCallback(() => setShowActions(false), []);
   
   return (
     <div 
       className={`issue-card issue-card-${status} ${selected ? 'selected' : ''}`}
-      onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <div className="issue-card-cover-wrapper" onClick={onSelect}>
         <img
-          src={issue.coverImageUrl || placeholderCover}
+          src={issue.coverImageUrl || ISSUE_PLACEHOLDER_COVER}
           alt={`Issue ${issue.displayNumber}`}
           className="issue-card-cover"
           loading="lazy"
           decoding="async"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = placeholderCover;
-          }}
+          onError={handleImageError}
         />
         <div className="issue-card-status">
           {status === 'owned' && <Check size={14} />}
@@ -2186,7 +2194,7 @@ function IssueCoverCard({ issue, selected, onSelect, onMarkWanted, onMarkSkipped
       </div>
     </div>
   );
-}
+});
 
 // === List View Component ===
 interface IssueListViewProps {
@@ -2272,7 +2280,7 @@ function IssueListView({
   );
 }
 
-// === List Row Component ===
+// === List Row Component - Memoized for performance ===
 interface IssueListRowProps {
   issue: Issue;
   selected: boolean;
@@ -2284,15 +2292,18 @@ interface IssueListRowProps {
   isSearching: boolean;
 }
 
-function IssueListRow({ issue, selected, onSelect, onMarkWanted, onMarkSkipped, onSearch, isUpdating, isSearching }: IssueListRowProps) {
+const STATUS_LABELS: Record<string, string> = {
+  owned: 'Owned',
+  wanted: 'Wanted',
+  missing: 'Missing',
+  skipped: 'Skipped',
+  edition: 'In Edition'
+};
+
+const IssueListRow = memo(function IssueListRow({ 
+  issue, selected, onSelect, onMarkWanted, onMarkSkipped, onSearch, isUpdating, isSearching 
+}: IssueListRowProps) {
   const status = getIssueStatus(issue);
-  const statusLabels: Record<string, string> = {
-    owned: 'Owned',
-    wanted: 'Wanted',
-    missing: 'Missing',
-    skipped: 'Skipped',
-    edition: 'In Edition'
-  };
   
   return (
     <tr className={`issue-row issue-row-${status} ${selected ? 'selected' : ''}`}>
@@ -2329,7 +2340,7 @@ function IssueListRow({ issue, selected, onSelect, onMarkWanted, onMarkSkipped, 
           {status === 'wanted' && <Clock size={12} />}
           {status === 'edition' && <BookOpen size={12} />}
           {status === 'skipped' && <X size={12} />}
-          {statusLabels[status]}
+          {STATUS_LABELS[status]}
         </span>
       </td>
       <td className="col-tags">
@@ -2394,7 +2405,7 @@ function IssueListRow({ issue, selected, onSelect, onMarkWanted, onMarkSkipped, 
       </td>
     </tr>
   );
-}
+});
 
 // === Helper Functions ===
 function getStatusBadge(status: string): string {

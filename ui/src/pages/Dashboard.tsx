@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download, AlertCircle, CheckCircle, Clock, Calendar, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -125,7 +126,14 @@ export function Dashboard() {
   );
 }
 
-function StatusCard({ 
+// Memoized to prevent re-renders when dashboard data changes
+const STATUS_CARD_COLORS = {
+  healthy: 'var(--accent-success)',
+  warning: 'var(--accent-warning)',
+  error: 'var(--accent-danger)',
+} as const;
+
+const StatusCard = memo(function StatusCard({ 
   icon: Icon, 
   label, 
   status, 
@@ -138,11 +146,6 @@ function StatusCard({
   message: string;
   linkTo?: string;
 }) {
-  const statusColors = {
-    healthy: 'var(--accent-success)',
-    warning: 'var(--accent-warning)',
-    error: 'var(--accent-danger)',
-  };
 
   const content = (
     <>
@@ -151,8 +154,8 @@ function StatusCard({
           width: '48px',
           height: '48px',
           borderRadius: 'var(--radius-md)',
-          background: `${statusColors[status]}15`,
-          color: statusColors[status],
+          background: `${STATUS_CARD_COLORS[status]}15`,
+          color: STATUS_CARD_COLORS[status],
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -184,7 +187,7 @@ function StatusCard({
       {content}
     </div>
   );
-}
+});
 
 function RecentActivityList() {
   const { data: activities, isLoading } = useQuery({

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Plus, RefreshCw, Trash2, Edit, BookOpen, Search, X, Loader2, AlertCircle, ExternalLink, Filter, ArrowUpDown, ArrowUp, ArrowDown, Grid, List, FolderSync, Check, AlertTriangle, FolderX } from 'lucide-react';
@@ -691,7 +691,7 @@ function AddSeriesModal({ onClose, onAdded }: AddSeriesModalProps) {
   );
 }
 
-// Series Search Result Card
+// Series Search Result Card - Memoized to prevent re-renders when parent state changes
 interface SeriesSearchResultProps {
   candidate: SeriesMatchCandidate;
   isSelected: boolean;
@@ -699,23 +699,34 @@ interface SeriesSearchResultProps {
   compact?: boolean;
 }
 
-function SeriesSearchResult({ candidate, isSelected, onSelect, compact = false }: SeriesSearchResultProps) {
-  const placeholderCover = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="150" viewBox="0 0 100 150"%3E%3Crect fill="%232a2d35" width="100" height="150"/%3E%3Ctext fill="%236b7280" font-family="sans-serif" font-size="10" x="50" y="75" text-anchor="middle"%3ENo Cover%3C/text%3E%3C/svg%3E';
-  
+const PLACEHOLDER_COVER = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="150" viewBox="0 0 100 150"%3E%3Crect fill="%232a2d35" width="100" height="150"/%3E%3Ctext fill="%236b7280" font-family="sans-serif" font-size="10" x="50" y="75" text-anchor="middle"%3ENo Cover%3C/text%3E%3C/svg%3E';
+
+const SeriesSearchResult = memo(function SeriesSearchResult({ 
+  candidate, 
+  isSelected, 
+  onSelect, 
+  compact = false 
+}: SeriesSearchResultProps) {
+  const handleImageError = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    e.currentTarget.src = PLACEHOLDER_COVER;
+  }, []);
+
+  const handleLinkClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+  }, []);
+
   return (
     <div
       className={`series-search-result ${isSelected ? 'selected' : ''} ${compact ? 'compact' : ''}`}
       onClick={onSelect}
     >
       <img
-        src={candidate.coverImageUrl || placeholderCover}
+        src={candidate.coverImageUrl || PLACEHOLDER_COVER}
         alt={candidate.title}
         className="series-search-result-cover"
         loading="lazy"
         decoding="async"
-        onError={(e) => {
-          (e.target as HTMLImageElement).src = placeholderCover;
-        }}
+        onError={handleImageError}
       />
       <div className="series-search-result-info">
         <div className="series-search-result-title">
@@ -732,7 +743,7 @@ function SeriesSearchResult({ candidate, isSelected, onSelect, compact = false }
               href={candidate.siteDetailUrl}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
+              onClick={handleLinkClick}
               className="series-search-result-link"
             >
               <ExternalLink size={12} />
@@ -749,7 +760,7 @@ function SeriesSearchResult({ candidate, isSelected, onSelect, compact = false }
       </div>
     </div>
   );
-}
+});
 
 function stripHtml(html: string): string {
   const doc = new DOMParser().parseFromString(html, 'text/html');

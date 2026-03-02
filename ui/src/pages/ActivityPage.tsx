@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
   Download, AlertCircle, Clock, XCircle, RefreshCw, Pause, Play, Trash2
@@ -80,25 +81,26 @@ function QueueView({ queue, isLoading }: { queue: QueueItem[]; isLoading: boolea
   );
 }
 
-function QueueItemCard({ item }: { item: QueueItem }) {
-  const statusIcons = {
-    downloading: Download,
-    queued: Clock,
-    paused: Pause,
-    failed: XCircle,
-    completed: Download,
-  };
-  
-  const statusColors = {
-    downloading: 'info',
-    queued: 'muted',
-    paused: 'warning',
-    failed: 'danger',
-    completed: 'success',
-  };
-  
-  const Icon = statusIcons[item.status];
-  const colorClass = statusColors[item.status];
+// Memoized to prevent re-renders when queue refreshes
+const STATUS_ICONS = {
+  downloading: Download,
+  queued: Clock,
+  paused: Pause,
+  failed: XCircle,
+  completed: Download,
+} as const;
+
+const STATUS_COLORS = {
+  downloading: 'info',
+  queued: 'muted',
+  paused: 'warning',
+  failed: 'danger',
+  completed: 'success',
+} as const;
+
+const QueueItemCard = memo(function QueueItemCard({ item }: { item: QueueItem }) {
+  const Icon = STATUS_ICONS[item.status];
+  const colorClass = STATUS_COLORS[item.status];
 
   return (
     <div className="card" style={{ padding: '16px' }}>
@@ -181,4 +183,4 @@ function QueueItemCard({ item }: { item: QueueItem }) {
       </div>
     </div>
   );
-}
+});
