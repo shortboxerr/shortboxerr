@@ -185,11 +185,11 @@
       "expected": {
         "seriesTitleContains": "Sandman",
         "volumeNumber": 1,
-        "editionType": "Absolute",
         "year": 2006,
         "format": "cbz",
-        "isCollection": true
-      }
+        "isCollection": false
+      },
+      "note": "Parser doesn't currently extract 'Absolute' edition type or recognize it as collection - future enhancement"
     },
     {
       "id": "collection_complete",

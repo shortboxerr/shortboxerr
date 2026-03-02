@@ -73,21 +73,23 @@ public class CoverServiceTests : IDisposable
 
     private void SetupHttpClient(HttpStatusCode statusCode, byte[]? content = null, string contentType = "image/jpeg")
     {
-        var mockHandler = new Mock<HttpMessageHandler>();
-        mockHandler.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(new HttpResponseMessage
+        _mockHttpClientFactory.Setup(x => x.CreateClient("CoverDownload"))
+            .Returns(() =>
             {
-                StatusCode = statusCode,
-                Content = content != null 
-                    ? new ByteArrayContent(content) { Headers = { ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType) } }
-                    : null
+                var mockHandler = new Mock<HttpMessageHandler>();
+                mockHandler.Protected()
+                    .Setup<Task<HttpResponseMessage>>("SendAsync",
+                        ItExpr.IsAny<HttpRequestMessage>(),
+                        ItExpr.IsAny<CancellationToken>())
+                    .ReturnsAsync(() => new HttpResponseMessage
+                    {
+                        StatusCode = statusCode,
+                        Content = content != null 
+                            ? new ByteArrayContent(content) { Headers = { ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType) } }
+                            : null
+                    });
+                return new HttpClient(mockHandler.Object);
             });
-
-        var client = new HttpClient(mockHandler.Object);
-        _mockHttpClientFactory.Setup(x => x.CreateClient("CoverDownload")).Returns(client);
     }
 
     [Fact]

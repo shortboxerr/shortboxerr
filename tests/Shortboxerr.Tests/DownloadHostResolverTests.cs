@@ -310,7 +310,7 @@ public class DownloadHostResolverTests
     public void Factory_CanResolve_ReturnsFalseForUnsupportedUrl()
     {
         var factory = new DownloadHostResolverFactory();
-        Assert.False(factory.CanResolve("https://mega.nz/file/abc123")); // Mega not implemented yet
+        Assert.False(factory.CanResolve("https://example-unsupported-host.com/file/abc123")); // Unknown host
     }
 
     [Fact]
