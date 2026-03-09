@@ -336,6 +336,17 @@ Add release date sorting options to the series list endpoint.
 
 **Effort:** S | **Priority:** P2
 
+#### 14.22 Enhanced Edition List Filters ✅ COMPLETED (Iteration 207)
+Add monitoring and status filters to the edition list endpoint.
+
+**Implemented:**
+- [x] `monitored` filter (true/false)
+- [x] `hasFile` filter (true/false)
+- [x] `editionType` filter (TradesPaperback, Hardcover, Omnibus, etc.)
+- [x] 9 unit tests for filter functionality
+
+**Effort:** S | **Priority:** P2
+
 #### 14.16 SignalR Real-Time Updates (*arr Parity) 🔄 IN PROGRESS (Iteration 200-201)
 Add SignalR hub for push notifications, matching the real-time update pattern in Sonarr/Radarr/Lidarr.
 

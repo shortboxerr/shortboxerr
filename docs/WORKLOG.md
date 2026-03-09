@@ -1,5 +1,40 @@
 # Worklog
 
+## Iteration 207 (2026-03-09)
+**EPIC 14.22: Enhanced Edition List Filters**
+
+### Summary
+Added monitored, hasFile, and editionType filters to the edition list endpoint.
+
+### Changes
+
+#### EditionEndpoints.cs
+- Added `monitored` filter (true/false)
+- Added `hasFile` filter (true/false)
+- Added `editionType` filter (TradesPaperback, Hardcover, Omnibus, etc.)
+- Updated Swagger documentation
+
+#### New Tests (9 tests)
+- `FilterByMonitored_True_ReturnsOnlyMonitored`
+- `FilterByMonitored_False_ReturnsOnlyUnmonitored`
+- `FilterByHasFile_True_ReturnsOnlyWithFiles`
+- `FilterByHasFile_False_ReturnsOnlyWithoutFiles`
+- `FilterByEditionType_TradesPaperback_ReturnsCorrect`
+- `FilterByEditionType_Hardcover_ReturnsCorrect`
+- `FilterByEditionType_Compendium_ReturnsCorrect`
+- `FilterByMonitoredAndHasFile_ReturnsCorrect`
+- `FilterBySeriesAndEditionType_CombinesFilters`
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Endpoints/EditionEndpoints.cs` | Add filters |
+| `tests/Shortboxerr.Tests/EditionFilterTests.cs` | 9 new tests |
+| `docs/TEST_BASELINE.md` | Update to 2598 |
+| `scripts/hooks/pre-commit` | Update TEST_MINIMUM |
+
+---
+
 ## Iteration 206 (2026-03-09)
 **EPIC 14.21: Series Release Date Sorting**
 

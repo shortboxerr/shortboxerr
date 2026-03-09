@@ -33,14 +33,14 @@ public class EditionFilterTests : IDisposable
 
         var editions = new List<EditionTitle>
         {
-            new() { Id = 1, Title = "Batman: Year One", SeriesId = 1, EditionType = EditionType.TradesPaperback, VolumeNumber = 1 },
-            new() { Id = 2, Title = "Batman: The Long Halloween", SeriesId = 1, EditionType = EditionType.TradesPaperback, VolumeNumber = 2 },
-            new() { Id = 3, Title = "Batman: Dark Victory", SeriesId = 1, EditionType = EditionType.TradesPaperback, VolumeNumber = 3 },
-            new() { Id = 4, Title = "Spider-Man: Blue", SeriesId = 2, EditionType = EditionType.TradesPaperback },
-            new() { Id = 5, Title = "Spider-Man: Life Story", SeriesId = 2, EditionType = EditionType.Hardcover },
-            new() { Id = 6, Title = "Saga Compendium One", SeriesId = 3, EditionType = EditionType.Compendium },
-            new() { Id = 7, Title = "Saga Deluxe Edition", SortTitle = "Saga Deluxe", SeriesId = 3, EditionType = EditionType.Hardcover },
-            new() { Id = 8, Title = "Watchmen", EditionType = EditionType.TradesPaperback }, // No series
+            new() { Id = 1, Title = "Batman: Year One", SeriesId = 1, EditionType = EditionType.TradesPaperback, VolumeNumber = 1, Monitored = true, HasFile = true },
+            new() { Id = 2, Title = "Batman: The Long Halloween", SeriesId = 1, EditionType = EditionType.TradesPaperback, VolumeNumber = 2, Monitored = true, HasFile = false },
+            new() { Id = 3, Title = "Batman: Dark Victory", SeriesId = 1, EditionType = EditionType.TradesPaperback, VolumeNumber = 3, Monitored = false, HasFile = false },
+            new() { Id = 4, Title = "Spider-Man: Blue", SeriesId = 2, EditionType = EditionType.TradesPaperback, Monitored = true, HasFile = true },
+            new() { Id = 5, Title = "Spider-Man: Life Story", SeriesId = 2, EditionType = EditionType.Hardcover, Monitored = true, HasFile = false },
+            new() { Id = 6, Title = "Saga Compendium One", SeriesId = 3, EditionType = EditionType.Compendium, Monitored = false, HasFile = true },
+            new() { Id = 7, Title = "Saga Deluxe Edition", SortTitle = "Saga Deluxe", SeriesId = 3, EditionType = EditionType.Hardcover, Monitored = true, HasFile = false },
+            new() { Id = 8, Title = "Watchmen", EditionType = EditionType.TradesPaperback, Monitored = false, HasFile = true }, // No series
         };
 
         _context.Series.AddRange(series);
@@ -186,6 +186,139 @@ public class EditionFilterTests : IDisposable
         // Assert
         Assert.Single(result);
         Assert.Equal("Batman: Year One", result[0].Title);
+    }
+
+    #endregion
+
+    #region Monitored Filter Tests
+
+    [Fact]
+    public async Task FilterByMonitored_True_ReturnsOnlyMonitored()
+    {
+        // Act
+        var result = await _context.EditionTitles
+            .Where(e => e.Monitored)
+            .ToListAsync();
+
+        // Assert - 5 editions are monitored
+        Assert.Equal(5, result.Count);
+        Assert.All(result, e => Assert.True(e.Monitored));
+    }
+
+    [Fact]
+    public async Task FilterByMonitored_False_ReturnsOnlyUnmonitored()
+    {
+        // Act
+        var result = await _context.EditionTitles
+            .Where(e => !e.Monitored)
+            .ToListAsync();
+
+        // Assert - 3 editions are not monitored
+        Assert.Equal(3, result.Count);
+        Assert.All(result, e => Assert.False(e.Monitored));
+    }
+
+    #endregion
+
+    #region HasFile Filter Tests
+
+    [Fact]
+    public async Task FilterByHasFile_True_ReturnsOnlyWithFiles()
+    {
+        // Act
+        var result = await _context.EditionTitles
+            .Where(e => e.HasFile)
+            .ToListAsync();
+
+        // Assert - 4 editions have files
+        Assert.Equal(4, result.Count);
+        Assert.All(result, e => Assert.True(e.HasFile));
+    }
+
+    [Fact]
+    public async Task FilterByHasFile_False_ReturnsOnlyWithoutFiles()
+    {
+        // Act
+        var result = await _context.EditionTitles
+            .Where(e => !e.HasFile)
+            .ToListAsync();
+
+        // Assert - 4 editions don't have files
+        Assert.Equal(4, result.Count);
+        Assert.All(result, e => Assert.False(e.HasFile));
+    }
+
+    #endregion
+
+    #region Edition Type Filter Tests
+
+    [Fact]
+    public async Task FilterByEditionType_TradesPaperback_ReturnsCorrect()
+    {
+        // Act
+        var result = await _context.EditionTitles
+            .Where(e => e.EditionType == EditionType.TradesPaperback)
+            .ToListAsync();
+
+        // Assert - 5 TPBs
+        Assert.Equal(5, result.Count);
+        Assert.All(result, e => Assert.Equal(EditionType.TradesPaperback, e.EditionType));
+    }
+
+    [Fact]
+    public async Task FilterByEditionType_Hardcover_ReturnsCorrect()
+    {
+        // Act
+        var result = await _context.EditionTitles
+            .Where(e => e.EditionType == EditionType.Hardcover)
+            .ToListAsync();
+
+        // Assert - 2 Hardcovers
+        Assert.Equal(2, result.Count);
+        Assert.All(result, e => Assert.Equal(EditionType.Hardcover, e.EditionType));
+    }
+
+    [Fact]
+    public async Task FilterByEditionType_Compendium_ReturnsCorrect()
+    {
+        // Act
+        var result = await _context.EditionTitles
+            .Where(e => e.EditionType == EditionType.Compendium)
+            .ToListAsync();
+
+        // Assert - 1 Compendium
+        Assert.Single(result);
+        Assert.Equal("Saga Compendium One", result[0].Title);
+    }
+
+    #endregion
+
+    #region Combined Filter Tests
+
+    [Fact]
+    public async Task FilterByMonitoredAndHasFile_ReturnsCorrect()
+    {
+        // Act - monitored but no file (wanted)
+        var result = await _context.EditionTitles
+            .Where(e => e.Monitored && !e.HasFile)
+            .ToListAsync();
+
+        // Assert - 3 editions are monitored but missing files
+        Assert.Equal(3, result.Count);
+    }
+
+    [Fact]
+    public async Task FilterBySeriesAndEditionType_CombinesFilters()
+    {
+        // Act - Batman TPBs only
+        var result = await _context.EditionTitles
+            .Where(e => e.SeriesId == 1)
+            .Where(e => e.EditionType == EditionType.TradesPaperback)
+            .ToListAsync();
+
+        // Assert
+        Assert.Equal(3, result.Count);
+        Assert.All(result, e => Assert.Contains("Batman", e.Title));
     }
 
     #endregion

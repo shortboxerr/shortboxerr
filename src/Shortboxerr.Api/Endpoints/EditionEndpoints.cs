@@ -21,6 +21,9 @@ public static class EditionEndpoints
             int pageSize = 20,
             int? seriesId = null,
             string? search = null,
+            bool? monitored = null,
+            bool? hasFile = null,
+            string? editionType = null,
             string? sortKey = "title",
             string? sortDir = "asc") =>
         {
@@ -41,6 +44,21 @@ public static class EditionEndpoints
                     e.Title.ToLower().Contains(searchLower) ||
                     (e.SortTitle != null && e.SortTitle.ToLower().Contains(searchLower)) ||
                     (e.Series != null && e.Series.Title.ToLower().Contains(searchLower)));
+            }
+
+            // Apply monitored filter
+            if (monitored.HasValue)
+                query = query.Where(e => e.Monitored == monitored.Value);
+
+            // Apply hasFile filter
+            if (hasFile.HasValue)
+                query = query.Where(e => e.HasFile == hasFile.Value);
+
+            // Apply edition type filter
+            if (!string.IsNullOrWhiteSpace(editionType) && 
+                Enum.TryParse<EditionType>(editionType, ignoreCase: true, out var parsedType))
+            {
+                query = query.Where(e => e.EditionType == parsedType);
             }
 
             // Apply sorting
@@ -71,7 +89,7 @@ public static class EditionEndpoints
         })
         .WithName("GetAllEditions")
         .WithSummary("Get all editions with optional filtering and sorting")
-        .WithDescription("Supports filtering by series ID and text search (title, series name). Supports sorting by title, releasedate, createdat, volumenumber.");
+        .WithDescription("Supports filtering by series ID, text search (title, series name), monitored status, hasFile status, and edition type. Supports sorting by title, releasedate, createdat, volumenumber.");
 
         // GET single edition by ID (basic info)
         group.MapGet("/{id:int}", async (ShortboxerrDbContext db, int id) =>
