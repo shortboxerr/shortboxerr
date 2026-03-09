@@ -1,5 +1,40 @@
 # Worklog
 
+## Iteration 202 (2026-03-09)
+**EPIC 14.12: Auto Re-Enrich on Week Transition**
+
+### Summary
+Added automatic cover re-enrichment trigger when the calendar week transitions (Monday).
+
+### Changes
+
+#### DiscoveryCoverEnrichmentService
+- Added `_lastProcessedWeekStart` field to track the current week
+- Added week transition detection in `ExecuteAsync` loop
+- When a new week is detected (Sunday → Monday), triggers force enrichment
+- Force enrichment retries issues with `NotFound` status that may now have covers
+
+#### New Tests (7 tests)
+- `GetWeekStart_ReturnsMonday` (6 parameterized tests) - Verifies week start calculation
+- `GetWeekStart_WeekTransitionDetection_WorksCorrectly` - Verifies week boundaries
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/BackgroundServices/DiscoveryCoverEnrichmentService.cs` | Week transition detection |
+| `tests/Shortboxerr.Tests/DiscoveryCoverEnrichmentServiceTests.cs` | 7 new tests |
+| `docs/TEST_BASELINE.md` | Update to 2559 |
+| `scripts/hooks/pre-commit` | Update TEST_MINIMUM |
+
+### Test Status
+- **Before:** 2552 passed, 0 failed
+- **After:** 2559 passed, 0 failed (+7 new tests)
+
+### Commits
+1. `feat: auto re-enrich covers on week transition` - 2ef0d5a
+
+---
+
 ## Iteration 201 (2026-03-09)
 **EPIC 14.16: SignalR Real-Time Updates (Background Service Integration)**
 

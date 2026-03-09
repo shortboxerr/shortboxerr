@@ -338,4 +338,50 @@ public class DiscoveryCoverEnrichmentServiceTests
         var entry = await dbContext.FallbackCoverEntries.FirstAsync();
         Assert.Null(entry.LastChecked); // Not updated due to error
     }
+
+    [Theory]
+    [InlineData("2026-03-09", "2026-03-09")] // Monday returns same day
+    [InlineData("2026-03-10", "2026-03-09")] // Tuesday returns Monday
+    [InlineData("2026-03-11", "2026-03-09")] // Wednesday returns Monday  
+    [InlineData("2026-03-14", "2026-03-09")] // Saturday returns Monday
+    [InlineData("2026-03-15", "2026-03-09")] // Sunday returns Monday
+    [InlineData("2026-03-16", "2026-03-16")] // Next Monday returns same day
+    public void GetWeekStart_ReturnsMonday(string inputDateStr, string expectedMondayStr)
+    {
+        // This tests the static GetWeekStart method via reflection since it's private
+        var inputDate = DateTime.Parse(inputDateStr);
+        var expectedMonday = DateTime.Parse(expectedMondayStr);
+
+        var getWeekStartMethod = typeof(DiscoveryCoverEnrichmentService)
+            .GetMethod("GetWeekStart", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+        Assert.NotNull(getWeekStartMethod);
+
+        var result = (DateTime)getWeekStartMethod.Invoke(null, new object[] { inputDate })!;
+        Assert.Equal(expectedMonday.Date, result.Date);
+    }
+
+    [Fact]
+    public void GetWeekStart_WeekTransitionDetection_WorksCorrectly()
+    {
+        // This tests the week transition detection concept
+        // When we cross from Sunday to Monday, we're in a new week
+        var lastSunday = new DateTime(2026, 3, 8); // Sunday
+        var monday = new DateTime(2026, 3, 9);     // Monday (new week)
+
+        var getWeekStartMethod = typeof(DiscoveryCoverEnrichmentService)
+            .GetMethod("GetWeekStart", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+        Assert.NotNull(getWeekStartMethod);
+
+        var sundayWeek = (DateTime)getWeekStartMethod.Invoke(null, new object[] { lastSunday })!;
+        var mondayWeek = (DateTime)getWeekStartMethod.Invoke(null, new object[] { monday })!;
+
+        // Sunday Mar 8 belongs to week starting Mar 2
+        Assert.Equal(new DateTime(2026, 3, 2).Date, sundayWeek.Date);
+        // Monday Mar 9 starts a new week
+        Assert.Equal(new DateTime(2026, 3, 9).Date, mondayWeek.Date);
+        // These are different weeks
+        Assert.True(mondayWeek > sundayWeek);
+    }
 }

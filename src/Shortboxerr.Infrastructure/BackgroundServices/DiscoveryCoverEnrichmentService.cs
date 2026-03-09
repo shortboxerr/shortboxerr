@@ -43,6 +43,7 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
     private readonly int _incrementalSaveBatchSize = 5; // Save and invalidate cache every N enriched issues
     
     private DateTime _lastCoverRefresh = DateTime.MinValue;
+    private DateTime _lastProcessedWeekStart = DateTime.MinValue;
     
     // Stats for this run
     private int _skippedHasComicVine;
@@ -78,7 +79,22 @@ public class DiscoveryCoverEnrichmentService : BackgroundService
         {
             try
             {
-                await EnrichMissingCoversAsync(stoppingToken);
+                // Check for week transition - force enrichment when a new week begins
+                var currentWeekStart = GetWeekStart(DateTime.UtcNow);
+                var forceNewWeek = false;
+                
+                if (_lastProcessedWeekStart != DateTime.MinValue && 
+                    currentWeekStart > _lastProcessedWeekStart)
+                {
+                    _logger.LogInformation(
+                        "Week transition detected: {OldWeek} -> {NewWeek}. Triggering force enrichment for new week.",
+                        _lastProcessedWeekStart.ToString("yyyy-MM-dd"),
+                        currentWeekStart.ToString("yyyy-MM-dd"));
+                    forceNewWeek = true;
+                }
+                _lastProcessedWeekStart = currentWeekStart;
+                
+                await EnrichMissingCoversAsync(stoppingToken, forceNewWeek);
                 
                 // Weekly check: re-query ComicVine for issues using fallback covers
                 if (DateTime.UtcNow - _lastCoverRefresh > _coverRefreshInterval)

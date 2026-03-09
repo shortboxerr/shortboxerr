@@ -197,7 +197,7 @@ Fix issue where future weeks show volume/series images instead of actual issue c
 **Deferred:**
 - [ ] Debug Metron lookup failures (requires production data analysis)
 - [ ] Lower confidence threshold for future issues (needs tuning)
-- [ ] Auto re-enrich on week transition (background service enhancement)
+- [x] Auto re-enrich on week transition (background service enhancement) ✅ Iteration 202
 
 **Effort:** M | **Priority:** P2
 
