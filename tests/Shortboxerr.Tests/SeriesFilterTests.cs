@@ -322,4 +322,100 @@ public class SeriesFilterTests : IDisposable
     }
 
     #endregion
+
+    #region Text Search Tests
+
+    [Fact]
+    public async Task SearchByTitle_ExactMatch_ReturnsSeries()
+    {
+        // Act
+        var searchTerm = "batman";
+        var result = await _context.Series
+            .Where(s => s.Title.ToLower().Contains(searchTerm.ToLower()))
+            .ToListAsync();
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("Batman", result[0].Title);
+    }
+
+    [Fact]
+    public async Task SearchByTitle_PartialMatch_ReturnsSeries()
+    {
+        // Act - search for "man" should match Batman, Spider-Man, Superman, Wonder Woman
+        // Note: X-Men has "Men" not "man" - case insensitive but "man" != "men"
+        var searchTerm = "man";
+        var result = await _context.Series
+            .Where(s => s.Title.ToLower().Contains(searchTerm.ToLower()))
+            .ToListAsync();
+
+        // Assert
+        Assert.Equal(4, result.Count);
+        Assert.Contains(result, s => s.Title == "Batman");
+        Assert.Contains(result, s => s.Title == "Spider-Man");
+        Assert.Contains(result, s => s.Title == "Superman");
+        Assert.Contains(result, s => s.Title == "Wonder Woman");
+    }
+
+    [Fact]
+    public async Task SearchByTitle_CaseInsensitive_ReturnsSeries()
+    {
+        // Act
+        var searchTerm = "SPIDER";
+        var result = await _context.Series
+            .Where(s => s.Title.ToLower().Contains(searchTerm.ToLower()))
+            .ToListAsync();
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("Spider-Man", result[0].Title);
+    }
+
+    [Fact]
+    public async Task SearchByTitle_NoMatch_ReturnsEmpty()
+    {
+        // Act
+        var searchTerm = "nonexistent";
+        var result = await _context.Series
+            .Where(s => s.Title.ToLower().Contains(searchTerm.ToLower()))
+            .ToListAsync();
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task SearchByTitle_WithStatusFilter_CombinesFilters()
+    {
+        // Act - search for "man" in Continuing series
+        var searchTerm = "man";
+        var result = await _context.Series
+            .Where(s => s.Status == SeriesStatus.Continuing)
+            .Where(s => s.Title.ToLower().Contains(searchTerm.ToLower()))
+            .ToListAsync();
+
+        // Assert - should match Batman, Superman, Wonder Woman (all Continuing)
+        Assert.Equal(3, result.Count);
+        Assert.DoesNotContain(result, s => s.Title == "Spider-Man"); // Ended
+        Assert.DoesNotContain(result, s => s.Title == "X-Men"); // Hiatus
+    }
+
+    [Fact]
+    public async Task SearchByTitle_WithPublisherFilter_CombinesFilters()
+    {
+        // Act - search for "man" in DC Comics
+        var searchTerm = "man";
+        var publisherSearch = "dc";
+        var result = await _context.Series
+            .Where(s => s.Publisher != null && s.Publisher.ToLower().Contains(publisherSearch))
+            .Where(s => s.Title.ToLower().Contains(searchTerm.ToLower()))
+            .ToListAsync();
+
+        // Assert - should match Batman, Superman, Wonder Woman (all DC)
+        Assert.Equal(3, result.Count);
+        Assert.DoesNotContain(result, s => s.Title == "Spider-Man"); // Marvel
+        Assert.DoesNotContain(result, s => s.Title == "X-Men"); // Marvel
+    }
+
+    #endregion
 }

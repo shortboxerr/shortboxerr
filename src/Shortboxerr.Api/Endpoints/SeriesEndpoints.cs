@@ -30,6 +30,7 @@ public static class SeriesEndpoints
             string? status = null,
             string? publisher = null,
             bool? monitored = null,
+            string? search = null,
             bool includePathMismatch = false) =>
         {
             // Check if series-annual integration is enabled (defaults to true)
@@ -37,10 +38,10 @@ public static class SeriesEndpoints
             var hideLinkedAnnuals = settings.EnableSeriesAnnualIntegration ?? true;
             
             // Generate cache key including query parameters
-            // v2 suffix added to invalidate old cache entries after schema change
+            // v3 suffix added for search parameter support
             var cacheKey = cacheService.GenerateKey(
                 CacheKeys.SeriesList,
-                "v2",
+                "v3",
                 page,
                 pageSize,
                 sortKey ?? "title",
@@ -48,6 +49,7 @@ public static class SeriesEndpoints
                 status ?? "all",
                 publisher ?? "all",
                 monitored?.ToString() ?? "all",
+                search ?? "",
                 hideLinkedAnnuals.ToString());
 
             // Build the query with split queries to prevent cartesian explosion
@@ -86,6 +88,15 @@ public static class SeriesEndpoints
             if (monitored.HasValue)
             {
                 query = query.Where(s => s.Monitored == monitored.Value);
+            }
+
+            // Apply text search filter (searches title and alternate titles)
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchLower = search.Trim().ToLower();
+                query = query.Where(s => 
+                    s.Title.ToLower().Contains(searchLower) ||
+                    (s.SortTitle != null && s.SortTitle.ToLower().Contains(searchLower)));
             }
 
             // Apply sorting
@@ -136,7 +147,7 @@ public static class SeriesEndpoints
         })
         .WithName("GetAllSeries")
         .WithSummary("Get all series with optional filtering and sorting")
-        .WithDescription("Supports filtering by status (Continuing/Ended/Hiatus), publisher, and monitored state. Supports sorting by title, startyear, createdat, status, publisher, issuecount.")
+        .WithDescription("Supports filtering by status (Continuing/Ended/Hiatus), publisher, monitored state, and text search (title). Supports sorting by title, startyear, createdat, status, publisher, issuecount.")
         .WithHttpCache(120); // 2 minutes HTTP cache for list view
 
         // GET filter options for series list

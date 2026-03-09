@@ -288,6 +288,18 @@ Add `/api/v1/system/status` endpoint matching the pattern used by Sonarr/Radarr 
 
 **Effort:** S | **Priority:** P3
 
+#### 14.18 Series List Text Search ✅ COMPLETED (Iteration 203)
+Add text search filtering to the series list API endpoint.
+
+**Implemented:**
+- [x] Add `search` query parameter to `GET /api/v1/series`
+- [x] Case-insensitive search on Title and SortTitle fields
+- [x] Combines with existing filters (status, publisher, monitored)
+- [x] Proper cache key versioning (v3)
+- [x] 6 unit tests for search functionality
+
+**Effort:** S | **Priority:** P2
+
 #### 14.16 SignalR Real-Time Updates (*arr Parity) 🔄 IN PROGRESS (Iteration 200-201)
 Add SignalR hub for push notifications, matching the real-time update pattern in Sonarr/Radarr/Lidarr.
 

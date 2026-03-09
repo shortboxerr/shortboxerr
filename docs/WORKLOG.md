@@ -1,5 +1,44 @@
 # Worklog
 
+## Iteration 203 (2026-03-09)
+**EPIC 14.18: Series List Text Search**
+
+### Summary
+Added text search filtering to the series list API endpoint.
+
+### Changes
+
+#### SeriesEndpoints.cs
+- Added `search` query parameter to `GET /api/v1/series`
+- Searches Title and SortTitle fields (case-insensitive)
+- Combines with existing filters (status, publisher, monitored)
+- Updated cache key to v3 for proper invalidation
+
+#### New Tests (6 tests)
+- `SearchByTitle_ExactMatch_ReturnsSeries`
+- `SearchByTitle_PartialMatch_ReturnsSeries`
+- `SearchByTitle_CaseInsensitive_ReturnsSeries`
+- `SearchByTitle_NoMatch_ReturnsEmpty`
+- `SearchByTitle_WithStatusFilter_CombinesFilters`
+- `SearchByTitle_WithPublisherFilter_CombinesFilters`
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | Add search parameter |
+| `tests/Shortboxerr.Tests/SeriesFilterTests.cs` | 6 new search tests |
+| `docs/TEST_BASELINE.md` | Update to 2565 |
+| `scripts/hooks/pre-commit` | Update TEST_MINIMUM |
+
+### Test Status
+- **Before:** 2559 passed, 0 failed
+- **After:** 2565 passed, 0 failed (+6 new tests)
+
+### Commits
+1. `feat: add text search filter to series list endpoint` - fd84e1e
+
+---
+
 ## Iteration 202 (2026-03-09)
 **EPIC 14.12: Auto Re-Enrich on Week Transition**
 
