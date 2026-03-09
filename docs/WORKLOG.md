@@ -1,5 +1,41 @@
 # Worklog
 
+## Iteration 200 (2026-03-09)
+**EPIC 14.16: SignalR Real-Time Updates (Backend Foundation)**
+
+### Summary
+Added SignalR hub infrastructure for real-time push notifications (*arr parity).
+
+### Changes
+
+#### Backend Infrastructure
+- Created `MessageHub` SignalR hub at `/signalr/messages`
+- Created `IMessageBroadcaster` interface in Core layer (injectable by background services)
+- Created `SignalRMessageBroadcaster` implementation with typed event methods
+- Added message types: `DownloadStartedMessage`, `DownloadCompletedMessage`, `ImportCompletedMessage`, `SearchResultsMessage`, `QueueUpdateMessage`, `SystemStatusMessage`
+- Updated CORS to allow credentials (required for SignalR)
+
+#### Deferred (Network Issues)
+- Frontend SignalR client (`@microsoft/signalr` package)
+- Wire up background services to broadcast events
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Core/SignalR/IMessageBroadcaster.cs` | New - Interface and message types |
+| `src/Shortboxerr.Api/Hubs/MessageHub.cs` | New - SignalR hub and broadcaster impl |
+| `src/Shortboxerr.Api/Program.cs` | Add SignalR services and hub mapping |
+| `docs/BACKLOG.md` | Mark 14.16 in progress |
+
+### Test Status
+- **Before:** 2544 passed, 0 failed
+- **After:** 2544 passed, 0 failed
+
+### Commits
+1. `feat: add SignalR hub infrastructure for real-time notifications` - pending
+
+---
+
 ## Iteration 199 (2026-03-09)
 **EPIC 21.6: Fix Premium Host Resolver Tests**
 

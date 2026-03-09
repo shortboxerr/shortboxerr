@@ -288,15 +288,23 @@ Add `/api/v1/system/status` endpoint matching the pattern used by Sonarr/Radarr 
 
 **Effort:** S | **Priority:** P3
 
-#### 14.16 SignalR Real-Time Updates (*arr Parity) 📋 PLANNED
+#### 14.16 SignalR Real-Time Updates (*arr Parity) 🔄 IN PROGRESS (Iteration 200)
 Add SignalR hub for push notifications, matching the real-time update pattern in Sonarr/Radarr/Lidarr.
 
-**Items:**
-- [ ] Add SignalR hub (`/signalr/messages` or similar)
-- [ ] Broadcast events: download started/completed, import complete, search results, queue updates
-- [ ] Frontend subscribes to relevant channels
-- [ ] Replace polling with push for Activity page, Queue, and notifications
+**Implemented:**
+- [x] Add SignalR hub at `/signalr/messages`
+- [x] Create `IMessageBroadcaster` interface in Core layer
+- [x] Implement `SignalRMessageBroadcaster` with typed messages:
+  - `DownloadStartedMessage`, `DownloadCompletedMessage`
+  - `ImportCompletedMessage`, `SearchResultsMessage`
+  - `QueueUpdateMessage`, `SystemStatusMessage`
+- [x] Configure CORS for SignalR (AllowCredentials)
+
+**Deferred:**
+- [ ] Frontend subscribes to relevant channels (npm network issues)
+- [ ] Replace polling with push for Activity page, Queue, notifications
 - [ ] Graceful fallback to polling if SignalR connection fails
+- [ ] Wire up background services to broadcast events
 
 **Effort:** L | **Priority:** P2
 

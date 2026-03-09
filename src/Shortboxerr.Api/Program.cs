@@ -5,6 +5,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
 using Serilog.Events;
 using Shortboxerr.Api.Endpoints;
+using Shortboxerr.Api.Hubs;
 using Shortboxerr.Api.Middleware;
 using Shortboxerr.Infrastructure;
 using Shortboxerr.Infrastructure.Logging;
@@ -58,7 +59,7 @@ builder.Host.UseSerilog();
 Log.Debug("Configuration sources loaded: {Sources}", 
     string.Join(", ", builder.Configuration.AsEnumerable().Select(c => c.Key).Take(10)));
 
-// Add CORS for development
+// Add CORS for development (with credentials for SignalR)
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -71,9 +72,14 @@ builder.Services.AddCors(options =>
                 "http://172.16.11.63:5052"
             )
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials(); // Required for SignalR
     });
 });
+
+// Add SignalR for real-time notifications (*arr parity)
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<Shortboxerr.Core.SignalR.IMessageBroadcaster, SignalRMessageBroadcaster>();
 
 // Add services to the container
 // Database path: container-first uses /config/shortboxerr.db
@@ -270,6 +276,9 @@ app.MapDownloadClientHealthEndpoints();
 app.MapHostBlacklistEndpoints();
 app.MapVariantCoverEndpoints();
 app.MapSetupEndpoints();
+
+// SignalR hub for real-time notifications
+app.MapHub<MessageHub>("/signalr/messages");
 
 // SPA fallback - serve index.html for client-side routes
 app.MapFallbackToFile("index.html");

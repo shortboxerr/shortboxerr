@@ -1,13 +1,13 @@
-# Self-Check: Iteration 199
+# Self-Check: Iteration 200
 
 ## Build Status
 - [x] `dotnet build` succeeds
-- [x] `npm run build` - no changes
+- [x] `npm run build` - no changes (frontend deferred)
 
 ## Test Status
-- **Before**: 2538 passed, 3 failed
+- **Before**: 2544 passed, 0 failed
 - **After**: 2544 passed, 0 failed
-- [x] All tests now pass (zero failures)
+- [x] All tests pass
 
 ## Lint Status
 - [x] No new lint errors on changed files
@@ -15,21 +15,18 @@
 ## Files Changed
 | File | Type |
 |------|------|
-| `tests/Shortboxerr.Tests/MegaResolverTests.cs` | Modified - Added mocked unit tests |
-| `tests/Shortboxerr.Tests/PremiumHostResolverTests.cs` | Modified - Added mocked unit tests |
-| `docs/BACKLOG.md` | Modified - Mark 21.6 and EPIC 21 complete |
-| `docs/WORKLOG.md` | Modified - Add iteration 199 entry |
+| `src/Shortboxerr.Core/SignalR/IMessageBroadcaster.cs` | New - Interface and message types |
+| `src/Shortboxerr.Api/Hubs/MessageHub.cs` | New - SignalR hub and broadcaster |
+| `src/Shortboxerr.Api/Program.cs` | Modified - Add SignalR services |
+| `docs/BACKLOG.md` | Modified - Mark 14.16 in progress |
+| `docs/WORKLOG.md` | Modified - Add iteration 200 entry |
 
 ## Commits
-1. `fix(tests): mark external service tests as Integration, accept Unknown failure` - 19357d5
-2. `fix(tests): replace integration tests with properly mocked unit tests` - 5a16bcd
+1. `feat: add SignalR hub infrastructure for real-time notifications` - pending
 
 ## Summary
-Fixed 3 failing integration tests (EPIC 21.6) by replacing them with properly mocked unit tests:
-1. Created testable resolver subclasses that inject mock HTTP handlers
-2. Tests now use deterministic mock responses instead of hitting real services
-3. Added more specific test cases (6 tests replace 3):
-   - Mega: -9 → FileNotFound, -3 → FileNotFound
-   - Rapidgator: 403 → AuthRequired, 404 → FileNotFound
-   - Uploaded: 403 → AuthRequired, 404 → FileNotFound
-4. All 2544 tests now pass
+Implemented backend SignalR infrastructure for real-time notifications (14.16):
+1. Created `/signalr/messages` hub endpoint
+2. Created `IMessageBroadcaster` interface in Core layer
+3. Added typed message classes for download/import/search/queue/system events
+4. Frontend client deferred due to npm network issues
