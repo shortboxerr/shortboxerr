@@ -1,5 +1,35 @@
 # Worklog
 
+## Iteration 206 (2026-03-09)
+**EPIC 14.21: Series Release Date Sorting**
+
+### Summary
+Added release date sorting options to the series list endpoint.
+
+### Changes
+
+#### SeriesEndpoints.cs
+- Added `latestrelease` sort option (sort by most recent issue release date)
+- Added `nextrelease` sort option (sort by soonest upcoming issue release)
+- Both use StoreDate with fallback to ReleaseDate
+- Updated Swagger documentation
+
+#### New Tests (4 tests)
+- `SortByLatestRelease_Ascending_ReturnsCorrectOrder`
+- `SortByLatestRelease_Descending_ReturnsCorrectOrder`
+- `SortByNextRelease_ReturnsUpcomingFirst`
+- `SortByLatestRelease_WithReleaseDate_FallsBackCorrectly`
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | Add sort options |
+| `tests/Shortboxerr.Tests/SeriesFilterTests.cs` | 4 new tests |
+| `docs/TEST_BASELINE.md` | Update to 2589 |
+| `scripts/hooks/pre-commit` | Update TEST_MINIMUM |
+
+---
+
 ## Iteration 205 (2026-03-09)
 **EPIC 14.20: Enhanced Wanted Endpoint Filters**
 

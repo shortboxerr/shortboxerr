@@ -325,6 +325,17 @@ Add advanced filtering to wanted issues and collections endpoints.
 
 **Effort:** S | **Priority:** P2
 
+#### 14.21 Series Release Date Sorting ✅ COMPLETED (Iteration 206)
+Add release date sorting options to the series list endpoint.
+
+**Implemented:**
+- [x] `latestrelease` sort (most recent issue release date)
+- [x] `nextrelease` sort (soonest upcoming issue)
+- [x] StoreDate with fallback to ReleaseDate
+- [x] 4 unit tests for sorting functionality
+
+**Effort:** S | **Priority:** P2
+
 #### 14.16 SignalR Real-Time Updates (*arr Parity) 🔄 IN PROGRESS (Iteration 200-201)
 Add SignalR hub for push notifications, matching the real-time update pattern in Sonarr/Radarr/Lidarr.
 

@@ -102,6 +102,7 @@ public static class SeriesEndpoints
             // Apply sorting
             // Note: For issue count sorting, we use .Count() method which EF Core translates
             // to a SQL COUNT subquery, avoiding N+1 issues
+            // For latestrelease sorting, we use Max() on the release dates
             query = (sortKey?.ToLowerInvariant(), sortDir?.ToLowerInvariant()) switch
             {
                 ("title", "desc") => query.OrderByDescending(s => s.SortTitle ?? s.Title),
@@ -116,6 +117,16 @@ public static class SeriesEndpoints
                 ("publisher", _) => query.OrderBy(s => s.Publisher),
                 ("issuecount", "desc") => query.OrderByDescending(s => s.Issues.Count()),
                 ("issuecount", _) => query.OrderBy(s => s.Issues.Count()),
+                ("latestrelease", "desc") => query.OrderByDescending(s => 
+                    s.Issues.Max(i => i.StoreDate ?? i.ReleaseDate)),
+                ("latestrelease", _) => query.OrderBy(s => 
+                    s.Issues.Max(i => i.StoreDate ?? i.ReleaseDate)),
+                ("nextrelease", "desc") => query.OrderByDescending(s => 
+                    s.Issues.Where(i => (i.StoreDate ?? i.ReleaseDate) > DateTime.Today)
+                        .Min(i => i.StoreDate ?? i.ReleaseDate)),
+                ("nextrelease", _) => query.OrderBy(s => 
+                    s.Issues.Where(i => (i.StoreDate ?? i.ReleaseDate) > DateTime.Today)
+                        .Min(i => i.StoreDate ?? i.ReleaseDate)),
                 _ => query.OrderBy(s => s.SortTitle ?? s.Title)
             };
 
@@ -147,7 +158,7 @@ public static class SeriesEndpoints
         })
         .WithName("GetAllSeries")
         .WithSummary("Get all series with optional filtering and sorting")
-        .WithDescription("Supports filtering by status (Continuing/Ended/Hiatus), publisher, monitored state, and text search (title). Supports sorting by title, startyear, createdat, status, publisher, issuecount.")
+        .WithDescription("Supports filtering by status (Continuing/Ended/Hiatus), publisher, monitored state, and text search (title). Supports sorting by title, startyear, createdat, status, publisher, issuecount, latestrelease (most recent issue), nextrelease (upcoming issues).")
         .WithHttpCache(120); // 2 minutes HTTP cache for list view
 
         // GET filter options for series list

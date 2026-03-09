@@ -5,7 +5,7 @@ set -euo pipefail
 # Established: Iteration 193, Feb 27, 2026
 # Baseline: 2541 tests
 
-TEST_MINIMUM=2585
+TEST_MINIMUM=2589
 
 echo "Running pre-commit test check..."
 

@@ -418,4 +418,122 @@ public class SeriesFilterTests : IDisposable
     }
 
     #endregion
+
+    #region Release Date Sorting Tests
+
+    [Fact]
+    public async Task SortByLatestRelease_Ascending_ReturnsCorrectOrder()
+    {
+        // Arrange - Add issues with different release dates
+        var issues = new List<Issue>
+        {
+            new() { Id = 1, SeriesId = 1, IssueNumber = 1, StoreDate = new DateTime(2024, 1, 1), Status = IssueStatus.Owned },
+            new() { Id = 2, SeriesId = 1, IssueNumber = 2, StoreDate = new DateTime(2024, 6, 1), Status = IssueStatus.Owned },
+            new() { Id = 3, SeriesId = 2, IssueNumber = 1, StoreDate = new DateTime(2023, 3, 1), Status = IssueStatus.Owned },
+            new() { Id = 4, SeriesId = 3, IssueNumber = 1, StoreDate = new DateTime(2024, 12, 1), Status = IssueStatus.Owned },
+        };
+        _context.Issues.AddRange(issues);
+        await _context.SaveChangesAsync();
+
+        // Act - Sort by latest release ascending (oldest latest first)
+        var result = await _context.Series
+            .Include(s => s.Issues)
+            .Where(s => s.Issues.Any())
+            .OrderBy(s => s.Issues.Max(i => i.StoreDate ?? i.ReleaseDate))
+            .ToListAsync();
+
+        // Assert
+        Assert.Equal(3, result.Count);
+        Assert.Equal("Spider-Man", result[0].Title); // 2023-03-01
+        Assert.Equal("Batman", result[1].Title);     // 2024-06-01
+        Assert.Equal("Superman", result[2].Title);   // 2024-12-01
+    }
+
+    [Fact]
+    public async Task SortByLatestRelease_Descending_ReturnsCorrectOrder()
+    {
+        // Arrange - Add issues with different release dates
+        var issues = new List<Issue>
+        {
+            new() { Id = 101, SeriesId = 1, IssueNumber = 1, StoreDate = new DateTime(2024, 1, 1), Status = IssueStatus.Owned },
+            new() { Id = 102, SeriesId = 1, IssueNumber = 2, StoreDate = new DateTime(2024, 6, 1), Status = IssueStatus.Owned },
+            new() { Id = 103, SeriesId = 2, IssueNumber = 1, StoreDate = new DateTime(2023, 3, 1), Status = IssueStatus.Owned },
+            new() { Id = 104, SeriesId = 3, IssueNumber = 1, StoreDate = new DateTime(2024, 12, 1), Status = IssueStatus.Owned },
+        };
+        _context.Issues.AddRange(issues);
+        await _context.SaveChangesAsync();
+
+        // Act - Sort by latest release descending (most recent first)
+        var result = await _context.Series
+            .Include(s => s.Issues)
+            .Where(s => s.Issues.Any())
+            .OrderByDescending(s => s.Issues.Max(i => i.StoreDate ?? i.ReleaseDate))
+            .ToListAsync();
+
+        // Assert
+        Assert.Equal(3, result.Count);
+        Assert.Equal("Superman", result[0].Title);   // 2024-12-01
+        Assert.Equal("Batman", result[1].Title);     // 2024-06-01
+        Assert.Equal("Spider-Man", result[2].Title); // 2023-03-01
+    }
+
+    [Fact]
+    public async Task SortByNextRelease_ReturnsUpcomingFirst()
+    {
+        // Arrange - Add issues with future dates
+        var today = DateTime.Today;
+        var issues = new List<Issue>
+        {
+            new() { Id = 201, SeriesId = 1, IssueNumber = 1, StoreDate = today.AddDays(-30), Status = IssueStatus.Owned },
+            new() { Id = 202, SeriesId = 1, IssueNumber = 2, StoreDate = today.AddDays(7), Status = IssueStatus.Wanted },  // Next week
+            new() { Id = 203, SeriesId = 2, IssueNumber = 1, StoreDate = today.AddDays(30), Status = IssueStatus.Wanted }, // Next month
+            new() { Id = 204, SeriesId = 3, IssueNumber = 1, StoreDate = today.AddDays(1), Status = IssueStatus.Wanted },  // Tomorrow
+        };
+        _context.Issues.AddRange(issues);
+        await _context.SaveChangesAsync();
+
+        // Act - Sort by next release ascending (soonest first)
+        var result = await _context.Series
+            .Include(s => s.Issues)
+            .Where(s => s.Issues.Any(i => (i.StoreDate ?? i.ReleaseDate) > today))
+            .OrderBy(s => s.Issues
+                .Where(i => (i.StoreDate ?? i.ReleaseDate) > today)
+                .Min(i => i.StoreDate ?? i.ReleaseDate))
+            .ToListAsync();
+
+        // Assert
+        Assert.Equal(3, result.Count);
+        Assert.Equal("Superman", result[0].Title);   // Tomorrow
+        Assert.Equal("Batman", result[1].Title);     // Next week
+        Assert.Equal("Spider-Man", result[2].Title); // Next month
+    }
+
+    [Fact]
+    public async Task SortByLatestRelease_WithReleaseDate_FallsBackCorrectly()
+    {
+        // Arrange - Mix of StoreDate and ReleaseDate
+        var issues = new List<Issue>
+        {
+            new() { Id = 301, SeriesId = 1, IssueNumber = 1, ReleaseDate = new DateTime(2024, 5, 1), Status = IssueStatus.Owned },
+            new() { Id = 302, SeriesId = 2, IssueNumber = 1, StoreDate = new DateTime(2024, 4, 1), Status = IssueStatus.Owned },
+            new() { Id = 303, SeriesId = 3, IssueNumber = 1, StoreDate = new DateTime(2024, 6, 1), Status = IssueStatus.Owned },
+        };
+        _context.Issues.AddRange(issues);
+        await _context.SaveChangesAsync();
+
+        // Act - Sort by latest release (uses StoreDate ?? ReleaseDate)
+        var result = await _context.Series
+            .Include(s => s.Issues)
+            .Where(s => s.Issues.Any())
+            .OrderByDescending(s => s.Issues.Max(i => i.StoreDate ?? i.ReleaseDate))
+            .ToListAsync();
+
+        // Assert
+        Assert.Equal(3, result.Count);
+        Assert.Equal("Superman", result[0].Title);   // 2024-06-01 (StoreDate)
+        Assert.Equal("Batman", result[1].Title);     // 2024-05-01 (ReleaseDate fallback)
+        Assert.Equal("Spider-Man", result[2].Title); // 2024-04-01 (StoreDate)
+    }
+
+    #endregion
 }
