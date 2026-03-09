@@ -30,7 +30,7 @@ dotnet test --no-build --verbosity quiet
 # (ReadLints tool on modified files)
 ```
 
-**CRITICAL**: If you introduce NEW test failures, fix them before committing. Pre-existing failures are acceptable but must not increase.
+**CRITICAL**: ALL tests must pass before committing. If any tests fail (new or pre-existing), fix them FIRST, then commit the fix separately before proceeding with other work. Never commit code while tests are failing.
 
 ---
 
