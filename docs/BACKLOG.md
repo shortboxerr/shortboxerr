@@ -712,14 +712,18 @@ Test baseline established at 2541 tests. Pre-commit hook prevents regression.
 
 3 integration tests were failing due to external service unpredictability.
 
-**Root Cause:** Tests hit real external services (Mega.nz, Rapidgator, Uploaded.net) which can return unexpected failure codes.
+**Root Cause:** Tests hit real external services (Mega.nz, Rapidgator, Uploaded.net) which returned unpredictable responses.
 
-**Classification:** Test Bug - assertions were too narrow for external service responses.
+**Classification:** Test Bug - tests were integration tests masquerading as unit tests.
 
 **Fix:**
-- [x] Added `[Trait("Category", "Integration")]` to mark as integration tests
-- [x] Added `Unknown` to valid failure reasons (external services are unpredictable)
-- [x] All 2541 tests now pass
+- [x] Replaced integration tests with properly mocked unit tests
+- [x] Created testable resolver subclasses that inject mock HTTP handlers
+- [x] Tests now verify specific scenarios with deterministic responses:
+  - Mega: API returns -9 (file not found), API returns -3 (error)
+  - Rapidgator: 403 (auth required), 404 (file not found)
+  - Uploaded: 403 (auth required), 404 (file not found)
+- [x] All 2544 tests now pass (added 3 more specific test cases)
 
 **Effort:** S | **Priority:** P0 (BLOCKING)
 

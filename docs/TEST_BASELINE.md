@@ -7,7 +7,7 @@
 
 | Metric | Value |
 |--------|-------|
-| **Total Tests** | 2541 |
+| **Total Tests** | 2544 |
 | **Passed** | 2541 |
 | **Failed** | 0 |
 | **Skipped** | 0 |

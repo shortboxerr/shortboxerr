@@ -4,31 +4,36 @@
 **EPIC 21.6: Fix Premium Host Resolver Tests**
 
 ### Summary
-Fixed 3 failing integration tests that hit real external services (Mega.nz, Rapidgator, Uploaded.net).
+Fixed 3 failing integration tests by replacing them with properly mocked unit tests.
 
 ### Root Cause Analysis
 - **Classification:** Test Bug
-- **Issue:** Tests called `ResolveAsync` on real external services which returned `Unknown` failure reason
-- **Problem:** Assertions only accepted specific failure reasons, not accounting for unpredictable external responses
+- **Issue:** Tests called `ResolveAsync` on real external services (Mega.nz, Rapidgator, Uploaded.net)
+- **Problem:** External services returned unpredictable responses, causing flaky tests
 
 ### Fix Applied
-- Added `[Trait("Category", "Integration")]` to mark tests as integration tests
-- Added `Unknown` to valid failure reasons in assertions
-- External services can respond unpredictably - tests now accept any failure
+- Replaced integration tests with properly mocked unit tests
+- Created testable resolver subclasses (`TestableMegaResolver`, `TestableRapidgatorResolver`, `TestableUploadedResolver`)
+- Mock HTTP handlers return deterministic responses
+- Tests verify specific scenarios:
+  - Mega: -9 response → FileNotFound, -3 response → FileNotFound
+  - Rapidgator: 403 → AuthenticationRequired, 404 → FileNotFound
+  - Uploaded: 403 → AuthenticationRequired, 404 → FileNotFound
 
 ### Files Changed
 | File | Change |
 |------|--------|
-| `tests/Shortboxerr.Tests/MegaResolverTests.cs` | Added Integration trait, expanded assertions |
-| `tests/Shortboxerr.Tests/PremiumHostResolverTests.cs` | Added Integration trait, expanded assertions |
+| `tests/Shortboxerr.Tests/MegaResolverTests.cs` | Added TestableMegaResolver, MockHttpMessageHandler, 2 mocked tests |
+| `tests/Shortboxerr.Tests/PremiumHostResolverTests.cs` | Added testable resolvers, 4 mocked tests |
 | `docs/BACKLOG.md` | Mark 21.6 complete, EPIC 21 complete |
 
 ### Test Status
 - **Before:** 2538 passed, 3 failed
-- **After:** 2541 passed, 0 failed
+- **After:** 2544 passed, 0 failed (added 3 more specific test cases)
 
 ### Commits
 1. `fix(tests): mark external service tests as Integration, accept Unknown failure` - 19357d5
+2. `fix(tests): replace integration tests with properly mocked unit tests` - 5a16bcd
 
 ---
 
