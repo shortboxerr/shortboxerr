@@ -1,4 +1,4 @@
-# Self-Check: Iteration 200
+# Self-Check: Iteration 201
 
 ## Build Status
 - [x] `dotnet build` succeeds
@@ -6,7 +6,7 @@
 
 ## Test Status
 - **Before**: 2544 passed, 0 failed
-- **After**: 2544 passed, 0 failed
+- **After**: 2552 passed, 0 failed (+8 new tests)
 - [x] All tests pass
 
 ## Lint Status
@@ -15,18 +15,16 @@
 ## Files Changed
 | File | Type |
 |------|------|
-| `src/Shortboxerr.Core/SignalR/IMessageBroadcaster.cs` | New - Interface and message types |
-| `src/Shortboxerr.Api/Hubs/MessageHub.cs` | New - SignalR hub and broadcaster |
-| `src/Shortboxerr.Api/Program.cs` | Modified - Add SignalR services |
-| `docs/BACKLOG.md` | Modified - Mark 14.16 in progress |
-| `docs/WORKLOG.md` | Modified - Add iteration 200 entry |
-
-## Commits
-1. `feat: add SignalR hub infrastructure for real-time notifications` - 48f969c
+| `src/Shortboxerr.Infrastructure/BackgroundServices/DdlImportBackgroundService.cs` | Modified - Add broadcasting |
+| `src/Shortboxerr.Infrastructure/BackgroundServices/AutoSearchBackgroundService.cs` | Modified - Add broadcasting |
+| `tests/Shortboxerr.Tests/SignalRMessageTests.cs` | New - 8 message type tests |
+| `docs/TEST_BASELINE.md` | Modified - Update to 2552 |
+| `scripts/hooks/pre-commit` | Modified - Update TEST_MINIMUM |
+| `docs/BACKLOG.md` | Modified - Update 14.16 progress |
+| `docs/WORKLOG.md` | Modified - Add iteration 201 entry |
 
 ## Summary
-Implemented backend SignalR infrastructure for real-time notifications (14.16):
-1. Created `/signalr/messages` hub endpoint
-2. Created `IMessageBroadcaster` interface in Core layer
-3. Added typed message classes for download/import/search/queue/system events
-4. Frontend client deferred due to npm network issues
+Wired up background services to broadcast real-time notifications via SignalR (14.16):
+1. DdlImportBackgroundService broadcasts ImportCompleted events
+2. AutoSearchBackgroundService broadcasts SearchResults events
+3. Added 8 unit tests for SignalR message types

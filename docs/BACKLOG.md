@@ -288,7 +288,7 @@ Add `/api/v1/system/status` endpoint matching the pattern used by Sonarr/Radarr 
 
 **Effort:** S | **Priority:** P3
 
-#### 14.16 SignalR Real-Time Updates (*arr Parity) 🔄 IN PROGRESS (Iteration 200)
+#### 14.16 SignalR Real-Time Updates (*arr Parity) 🔄 IN PROGRESS (Iteration 200-201)
 Add SignalR hub for push notifications, matching the real-time update pattern in Sonarr/Radarr/Lidarr.
 
 **Implemented:**
@@ -299,12 +299,14 @@ Add SignalR hub for push notifications, matching the real-time update pattern in
   - `ImportCompletedMessage`, `SearchResultsMessage`
   - `QueueUpdateMessage`, `SystemStatusMessage`
 - [x] Configure CORS for SignalR (AllowCredentials)
+- [x] Wire up DdlImportBackgroundService to broadcast ImportCompleted
+- [x] Wire up AutoSearchBackgroundService to broadcast SearchResults
+- [x] Add SignalR message unit tests (8 tests)
 
 **Deferred:**
 - [ ] Frontend subscribes to relevant channels (npm network issues)
 - [ ] Replace polling with push for Activity page, Queue, notifications
 - [ ] Graceful fallback to polling if SignalR connection fails
-- [ ] Wire up background services to broadcast events
 
 **Effort:** L | **Priority:** P2
 

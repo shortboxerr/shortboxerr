@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Shortboxerr.Core.Activity;
 using Shortboxerr.Core.Ddl;
 using Shortboxerr.Core.Services;
+using Shortboxerr.Core.SignalR;
 
 namespace Shortboxerr.Infrastructure.BackgroundServices;
 
@@ -134,6 +135,9 @@ public class DdlImportBackgroundService : BackgroundService
         // Get activity service for history tracking
         var activityService = scope.ServiceProvider.GetService<IActivityService>();
         
+        // Get message broadcaster for real-time notifications (optional)
+        var messageBroadcaster = scope.ServiceProvider.GetService<IMessageBroadcaster>();
+        
         var processed = 0;
         var succeeded = 0;
         var failed = 0;
@@ -209,6 +213,20 @@ public class DdlImportBackgroundService : BackgroundService
                         OutputPath = importResult.LibraryPath,
                         SourceUrl = download.SourceUrl
                     });
+                    
+                    // Broadcast real-time notification
+                    if (messageBroadcaster != null)
+                    {
+                        await messageBroadcaster.BroadcastImportCompletedAsync(new ImportCompletedMessage
+                        {
+                            SeriesTitle = importResult.SeriesTitle ?? download.ReleaseTitle ?? "Unknown",
+                            IssueNumber = importResult.IssueNumber?.ToString() ?? "?",
+                            FilePath = importResult.LibraryPath ?? download.DestinationPath,
+                            SeriesId = importResult.SeriesId,
+                            IssueId = importResult.IssueId,
+                            Success = true
+                        }, ct);
+                    }
                 }
                 else if (importResult.PendingManualReview)
                 {
@@ -244,6 +262,19 @@ public class DdlImportBackgroundService : BackgroundService
                         ErrorMessage = importResult.ErrorMessage,
                         SourceUrl = download.SourceUrl
                     });
+                    
+                    // Broadcast real-time notification for failure
+                    if (messageBroadcaster != null)
+                    {
+                        await messageBroadcaster.BroadcastImportCompletedAsync(new ImportCompletedMessage
+                        {
+                            SeriesTitle = download.ReleaseTitle ?? "Unknown",
+                            IssueNumber = "?",
+                            FilePath = download.DestinationPath,
+                            Success = false,
+                            ErrorMessage = importResult.ErrorMessage
+                        }, ct);
+                    }
                 }
                 
                 // Mark as processed (success or failure)

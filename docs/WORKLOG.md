@@ -1,5 +1,44 @@
 # Worklog
 
+## Iteration 201 (2026-03-09)
+**EPIC 14.16: SignalR Real-Time Updates (Background Service Integration)**
+
+### Summary
+Wired up background services to broadcast real-time notifications via SignalR.
+
+### Changes
+
+#### DdlImportBackgroundService
+- Added `IMessageBroadcaster` injection (optional, non-breaking)
+- Broadcasts `ImportCompletedMessage` on successful imports
+- Broadcasts `ImportCompletedMessage` (with `Success=false`) on failed imports
+
+#### AutoSearchBackgroundService
+- Added `IMessageBroadcaster` injection (optional, non-breaking)
+- Broadcasts `SearchResultsMessage` when auto-search finds results
+
+#### New Tests
+- Added `SignalRMessageTests.cs` with 8 tests covering all message types
+- Tests verify Type property, required fields, and timestamps
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Infrastructure/BackgroundServices/DdlImportBackgroundService.cs` | Add SignalR broadcasting |
+| `src/Shortboxerr.Infrastructure/BackgroundServices/AutoSearchBackgroundService.cs` | Add SignalR broadcasting |
+| `tests/Shortboxerr.Tests/SignalRMessageTests.cs` | New - Message type tests |
+| `docs/TEST_BASELINE.md` | Update baseline to 2552 |
+| `scripts/hooks/pre-commit` | Update TEST_MINIMUM to 2552 |
+
+### Test Status
+- **Before:** 2544 passed, 0 failed
+- **After:** 2552 passed, 0 failed (+8 new tests)
+
+### Commits
+1. `feat: wire up background services to broadcast SignalR events` - 4ef6b94
+
+---
+
 ## Iteration 200 (2026-03-09)
 **EPIC 14.16: SignalR Real-Time Updates (Backend Foundation)**
 

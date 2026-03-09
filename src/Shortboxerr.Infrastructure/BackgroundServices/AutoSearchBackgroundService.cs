@@ -5,6 +5,7 @@ using Shortboxerr.Core.Entities;
 using Shortboxerr.Core.Notifications;
 using Shortboxerr.Core.Search;
 using Shortboxerr.Core.Services;
+using Shortboxerr.Core.SignalR;
 
 namespace Shortboxerr.Infrastructure.BackgroundServices;
 
@@ -139,6 +140,26 @@ public class AutoSearchBackgroundService : BackgroundService
             _logger.LogInformation(
                 "Auto-search completed: {Searched} searched, {Found} found, {NotFound} not found, {Failed} failed",
                 result.TotalSearched, result.SuccessCount, result.NotFoundCount, result.FailedCount);
+
+            // Broadcast real-time search results
+            try
+            {
+                var messageBroadcaster = scope.ServiceProvider.GetService<IMessageBroadcaster>();
+                if (messageBroadcaster != null)
+                {
+                    var foundIssue = result.Results.FirstOrDefault(r => r.Success && r.CandidatesFound > 0);
+                    await messageBroadcaster.BroadcastSearchResultsAsync(new SearchResultsMessage
+                    {
+                        SearchQuery = "Auto-Search",
+                        ResultCount = result.SuccessCount,
+                        SeriesTitle = foundIssue?.SeriesTitle
+                    }, cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Failed to broadcast search results (non-critical)");
+            }
 
             // Send notification if any issues were found
             if (result.SuccessCount > 0)
