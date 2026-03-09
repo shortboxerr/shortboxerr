@@ -14,6 +14,54 @@ namespace Shortboxerr.Api.Endpoints;
 public static class SystemEndpoints
 {
     private static readonly DateTime StartTime = DateTime.UtcNow;
+    private static readonly string CommitHash = GetGitCommitHash();
+    private static readonly string BuildBranch = GetGitBranch();
+    
+    private static string GetGitCommitHash()
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo("git", "rev-parse --short HEAD")
+            {
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            using var process = Process.Start(startInfo);
+            if (process != null)
+            {
+                var output = process.StandardOutput.ReadToEnd().Trim();
+                process.WaitForExit(1000);
+                if (process.ExitCode == 0 && !string.IsNullOrEmpty(output))
+                    return output;
+            }
+        }
+        catch { }
+        return "unknown";
+    }
+    
+    private static string GetGitBranch()
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo("git", "rev-parse --abbrev-ref HEAD")
+            {
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            using var process = Process.Start(startInfo);
+            if (process != null)
+            {
+                var output = process.StandardOutput.ReadToEnd().Trim();
+                process.WaitForExit(1000);
+                if (process.ExitCode == 0 && !string.IsNullOrEmpty(output))
+                    return output;
+            }
+        }
+        catch { }
+        return "unknown";
+    }
 
     public static void MapSystemEndpoints(this IEndpointRouteBuilder app)
     {
@@ -434,7 +482,8 @@ public static class SystemEndpoints
         {
             AppName = "Shortboxerr",
             Version = version,
-            Branch = "main",
+            Branch = BuildBranch,
+            CommitHash = CommitHash,
             BuildTime = assembly.GetCustomAttribute<AssemblyMetadataAttribute>()?.Value,
             
             // Runtime info
@@ -525,6 +574,8 @@ public static class SystemEndpoints
         {
             AppName = "Shortboxerr",
             Version = version,
+            Branch = BuildBranch,
+            CommitHash = CommitHash,
             StartTime = StartTime,
             Uptime = DateTime.UtcNow - StartTime,
             IsHealthy = true,
@@ -636,6 +687,7 @@ public class SystemInfoResponse
     public required string AppName { get; set; }
     public required string Version { get; set; }
     public string? Branch { get; set; }
+    public string? CommitHash { get; set; }
     public string? BuildTime { get; set; }
 
     // Runtime
@@ -698,6 +750,8 @@ public class SystemStatusResponse
 {
     public required string AppName { get; set; }
     public required string Version { get; set; }
+    public string? Branch { get; set; }
+    public string? CommitHash { get; set; }
     public DateTime StartTime { get; set; }
     public TimeSpan Uptime { get; set; }
     public bool IsHealthy { get; set; }

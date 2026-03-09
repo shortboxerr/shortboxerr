@@ -135,6 +135,12 @@ export function Layout() {
             ))}
           </div>
         </nav>
+        
+        <div className="sidebar-footer">
+          <span className="version-info" title={`Build: ${__COMMIT_HASH__} (${__BRANCH__})`}>
+            v{__APP_VERSION__}
+          </span>
+        </div>
       </aside>
       
       <main className="main-content">

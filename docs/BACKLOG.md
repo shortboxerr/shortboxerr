@@ -253,29 +253,38 @@ Accept ComicVine IDs as search parameters when adding comics, auto-detecting IDs
 
 **Effort:** S | **Priority:** P2
 
-#### 14.14 Frontend Build-Time Version Embedding 📋 PLANNED
+#### 14.14 Frontend Build-Time Version Embedding ✅ COMPLETED (Iteration 198)
 Embed version/build info into the frontend at build time, matching how Sonarr/Radarr display version information.
 
-**Items:**
-- [ ] Add build-time version injection via Vite `define` or environment variables
-- [ ] Create `version.json` or embed in `index.html` during build
-- [ ] Display version in UI footer or System > Status page
-- [ ] Include: version, commit hash, build date
+**Implemented:**
+- [x] Add build-time version injection via Vite `define`
+  - `__APP_VERSION__`, `__COMMIT_HASH__`, `__COMMIT_DATE__`, `__BUILD_TIME__`, `__BRANCH__`
+- [x] Display version in UI sidebar footer
+  - Shows version number with tooltip showing commit hash and branch
+- [x] TypeScript declarations in `vite-env.d.ts`
 
 **Effort:** S | **Priority:** P3
 
-#### 14.15 System Status Endpoint (*arr Parity) 📋 PLANNED
+#### 14.15 System Status Endpoint (*arr Parity) ✅ COMPLETED (Iteration 198)
 Add `/api/v1/system/status` endpoint matching the pattern used by Sonarr/Radarr for frontend initialization.
 
-**Items:**
-- [ ] Create `/api/v1/system/status` endpoint returning:
-  - Version, build date, commit hash
-  - OS info, runtime info
+**Implemented:**
+- [x] `/api/v1/system/status` endpoint (pre-existing, enhanced)
+  - Version, commit hash, branch
   - Start time, uptime
+  - Memory usage (working set MB)
+  - Database statistics (series, issues, collections, files count)
+  - Indexer status (NZB + DDL sites)
+- [x] `/api/v1/system/info` endpoint (pre-existing, enhanced)
+  - Full OS info, runtime info
   - App data/config/log paths
-  - Authentication status
-- [ ] Frontend fetches on app load to populate system info
-- [ ] Consider `/initialize.json` alias for compatibility
+  - Disk space info
+  - Now includes commit hash and branch
+
+**Deferred:**
+- [ ] Frontend fetches on app load (not needed - version already in UI)
+- [ ] `/initialize.json` alias (not needed - endpoint works)
+- [ ] Authentication status (auth not implemented yet)
 
 **Effort:** S | **Priority:** P3
 

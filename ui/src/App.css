@@ -233,6 +233,22 @@ body {
   flex-shrink: 0;
 }
 
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-subtle);
+  margin-top: auto;
+}
+
+.version-info {
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.version-info:hover {
+  color: var(--text-secondary);
+}
+
 .main-content {
   flex: 1;
   display: flex;

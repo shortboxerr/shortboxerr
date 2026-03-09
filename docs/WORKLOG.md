@@ -1,5 +1,41 @@
 # Worklog
 
+## Iteration 198 (2026-03-09)
+**EPIC 14.14 & 14.15: Version Embedding & System Status**
+
+### Summary
+Added build-time version injection to frontend and enhanced system status endpoint with commit info.
+
+### Changes
+
+#### Frontend Build-Time Version (14.14)
+- Added Vite `define` config to inject `__APP_VERSION__`, `__COMMIT_HASH__`, `__BUILD_TIME__`, `__BRANCH__`
+- Git info fetched dynamically at build time via `child_process.execSync`
+- Created TypeScript declarations in `vite-env.d.ts`
+- Added version display in sidebar footer with tooltip for commit/branch info
+- CSS styling for subtle version indicator
+
+#### Backend System Status (14.15)
+- Added `CommitHash` and `Branch` fields to `SystemStatusResponse`
+- Added `CommitHash` field to `SystemInfoResponse`
+- Helper methods `GetGitCommitHash()` and `GetGitBranch()` to fetch at startup
+- Graceful fallback to "unknown" if git unavailable
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `ui/vite.config.ts` | Add define config for version injection |
+| `ui/src/vite-env.d.ts` | Add global constant declarations |
+| `ui/src/components/Layout.tsx` | Add version display in sidebar footer |
+| `ui/src/App.css` | Add sidebar-footer and version-info styles |
+| `src/Shortboxerr.Api/Endpoints/SystemEndpoints.cs` | Add commit/branch to DTOs and endpoints |
+| `docs/BACKLOG.md` | Mark 14.14 and 14.15 complete |
+
+### Commits
+1. `feat: add build-time version injection and enhance system status` - TBD
+
+---
+
 ## Iteration 197 (2026-03-09)
 **EPIC 20: Documentation Cleanup & Completion**
 
