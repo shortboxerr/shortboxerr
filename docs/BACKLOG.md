@@ -312,6 +312,19 @@ Add text search filtering to the edition list API endpoint.
 
 **Effort:** S | **Priority:** P2
 
+#### 14.20 Enhanced Wanted Endpoint Filters ✅ COMPLETED (Iteration 205)
+Add advanced filtering to wanted issues and collections endpoints.
+
+**Implemented:**
+- [x] Publisher filter for wanted issues
+- [x] Release date range filter (releasedAfter/releasedBefore) for wanted issues
+- [x] Publisher filter for wanted collections
+- [x] Release date range filter for wanted collections
+- [x] Edition type filter for wanted collections
+- [x] 9 unit tests for new filters
+
+**Effort:** S | **Priority:** P2
+
 #### 14.16 SignalR Real-Time Updates (*arr Parity) 🔄 IN PROGRESS (Iteration 200-201)
 Add SignalR hub for push notifications, matching the real-time update pattern in Sonarr/Radarr/Lidarr.
 

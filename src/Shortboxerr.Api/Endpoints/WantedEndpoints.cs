@@ -19,6 +19,9 @@ public static class WantedEndpoints
         group.MapGet("/issues", async (
             ShortboxerrDbContext db,
             string? search = null,
+            string? publisher = null,
+            DateTime? releasedAfter = null,
+            DateTime? releasedBefore = null,
             string? sortKey = "series",
             string? sortDir = "asc",
             int page = 1,
@@ -36,6 +39,29 @@ public static class WantedEndpoints
                 query = query.Where(i => 
                     (i.Title != null && i.Title.ToLower().Contains(searchLower)) ||
                     (i.Series != null && i.Series.Title.ToLower().Contains(searchLower)));
+            }
+
+            // Apply publisher filter
+            if (!string.IsNullOrWhiteSpace(publisher))
+            {
+                var publisherLower = publisher.ToLower();
+                query = query.Where(i => 
+                    i.Series != null && 
+                    i.Series.Publisher != null && 
+                    i.Series.Publisher.ToLower().Contains(publisherLower));
+            }
+
+            // Apply release date range filter
+            if (releasedAfter.HasValue)
+            {
+                query = query.Where(i => 
+                    (i.StoreDate ?? i.ReleaseDate) >= releasedAfter.Value.Date);
+            }
+
+            if (releasedBefore.HasValue)
+            {
+                query = query.Where(i => 
+                    (i.StoreDate ?? i.ReleaseDate) <= releasedBefore.Value.Date);
             }
 
             // Apply sorting (Note: SQLite doesn't support ORDER BY decimal, so IssueNumber sort is done in memory)
@@ -101,12 +127,17 @@ public static class WantedEndpoints
             });
         })
         .WithName("GetWantedIssues")
-        .WithDescription("Gets all issues with Wanted status");
+        .WithSummary("Gets all issues with Wanted status")
+        .WithDescription("Supports filtering by search term, publisher, and release date range (releasedAfter/releasedBefore). Supports sorting by series, releasedate, issue, added.");
 
         // GET wanted collections/editions
         group.MapGet("/collections", async (
             ShortboxerrDbContext db,
             string? search = null,
+            string? publisher = null,
+            DateTime? releasedAfter = null,
+            DateTime? releasedBefore = null,
+            string? editionType = null,
             string? sortKey = "title",
             string? sortDir = "asc",
             int page = 1,
@@ -125,6 +156,34 @@ public static class WantedEndpoints
                 query = query.Where(e => 
                     e.Title.ToLower().Contains(searchLower) ||
                     (e.Series != null && e.Series.Title.ToLower().Contains(searchLower)));
+            }
+
+            // Apply publisher filter
+            if (!string.IsNullOrWhiteSpace(publisher))
+            {
+                var publisherLower = publisher.ToLower();
+                query = query.Where(e => 
+                    (e.Publisher != null && e.Publisher.ToLower().Contains(publisherLower)) ||
+                    (e.Series != null && e.Series.Publisher != null && 
+                     e.Series.Publisher.ToLower().Contains(publisherLower)));
+            }
+
+            // Apply release date range filter
+            if (releasedAfter.HasValue)
+            {
+                query = query.Where(e => e.ReleaseDate >= releasedAfter.Value.Date);
+            }
+
+            if (releasedBefore.HasValue)
+            {
+                query = query.Where(e => e.ReleaseDate <= releasedBefore.Value.Date);
+            }
+
+            // Apply edition type filter
+            if (!string.IsNullOrWhiteSpace(editionType) && 
+                Enum.TryParse<EditionType>(editionType, ignoreCase: true, out var parsedType))
+            {
+                query = query.Where(e => e.EditionType == parsedType);
             }
 
             // Apply sorting
@@ -166,7 +225,8 @@ public static class WantedEndpoints
             });
         })
         .WithName("GetWantedCollections")
-        .WithDescription("Gets all monitored collections without files");
+        .WithSummary("Gets all monitored collections without files")
+        .WithDescription("Supports filtering by search term, publisher, release date range (releasedAfter/releasedBefore), and edition type. Supports sorting by title, series, added.");
 
         // GET combined wanted count (for dashboard)
         group.MapGet("/count", async (ShortboxerrDbContext db) =>

@@ -1,5 +1,39 @@
 # Worklog
 
+## Iteration 205 (2026-03-09)
+**EPIC 14.20: Enhanced Wanted Endpoint Filters**
+
+### Summary
+Added publisher, release date range, and edition type filters to the wanted issues and collections endpoints.
+
+### Changes
+
+#### WantedEndpoints.cs
+- Added `publisher`, `releasedAfter`, `releasedBefore` filters to `GET /api/v1/wanted/issues`
+- Added `publisher`, `releasedAfter`, `releasedBefore`, `editionType` filters to `GET /api/v1/wanted/collections`
+- Updated Swagger documentation for both endpoints
+
+#### New Tests (9 tests)
+- `GetWantedIssues_SupportsPublisherFilter`
+- `GetWantedIssues_SupportsReleaseDateAfterFilter`
+- `GetWantedIssues_SupportsReleaseDateBeforeFilter`
+- `GetWantedIssues_SupportsReleaseDateRangeFilter`
+- `GetWantedIssues_SupportsCombinedFilters`
+- `GetWantedCollections_SupportsPublisherFilter`
+- `GetWantedCollections_SupportsReleaseDateRangeFilter`
+- `GetWantedCollections_SupportsEditionTypeFilter`
+- `GetWantedCollections_SupportsCombinedFilters`
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Endpoints/WantedEndpoints.cs` | Add new filters |
+| `tests/Shortboxerr.Tests/WantedEndpointsTests.cs` | 9 new tests |
+| `docs/TEST_BASELINE.md` | Update to 2585 |
+| `scripts/hooks/pre-commit` | Update TEST_MINIMUM |
+
+---
+
 ## Iteration 204 (2026-03-09)
 **EPIC 14.19: Edition List Text Search**
 

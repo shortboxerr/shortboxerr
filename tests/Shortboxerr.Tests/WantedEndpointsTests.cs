@@ -79,6 +79,56 @@ public class WantedEndpointsTests : IClassFixture<WebApplicationFactory<Program>
         Assert.True(content.PageSize <= 10 || content.PageSize == 50); // Default might be 50
     }
 
+    [Fact]
+    public async Task GetWantedIssues_SupportsPublisherFilter()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/wanted/issues?publisher=marvel");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetWantedIssues_SupportsReleaseDateAfterFilter()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/wanted/issues?releasedAfter=2024-01-01");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetWantedIssues_SupportsReleaseDateBeforeFilter()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/wanted/issues?releasedBefore=2024-12-31");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetWantedIssues_SupportsReleaseDateRangeFilter()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/wanted/issues?releasedAfter=2024-01-01&releasedBefore=2024-12-31");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetWantedIssues_SupportsCombinedFilters()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/wanted/issues?search=batman&publisher=dc&releasedAfter=2020-01-01");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
     #endregion
 
     #region GET /api/v1/wanted/collections
@@ -112,6 +162,46 @@ public class WantedEndpointsTests : IClassFixture<WebApplicationFactory<Program>
     {
         // Act
         var response = await _client.GetAsync("/api/v1/wanted/collections?search=batman");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetWantedCollections_SupportsPublisherFilter()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/wanted/collections?publisher=dc");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetWantedCollections_SupportsReleaseDateRangeFilter()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/wanted/collections?releasedAfter=2024-01-01&releasedBefore=2024-12-31");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetWantedCollections_SupportsEditionTypeFilter()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/wanted/collections?editionType=Hardcover");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetWantedCollections_SupportsCombinedFilters()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/wanted/collections?search=batman&publisher=dc&editionType=TradesPaperback");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

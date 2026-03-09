@@ -1,12 +1,12 @@
-# Self-Check: Iteration 204
+# Self-Check: Iteration 205
 
 ## Build Status
 - [x] `dotnet build` succeeds
 - [ ] `npm run build` skipped (npm network issues)
 
 ## Test Status
-- **Before**: 2565 passed, 0 failed
-- **After**: 2576 passed, 0 failed (+11 new tests)
+- **Before**: 2576 passed, 0 failed
+- **After**: 2585 passed, 0 failed (+9 new tests)
 - [x] All tests pass
 
 ## Lint Status
@@ -15,17 +15,16 @@
 ## Files Changed
 | File | Type |
 |------|------|
-| `src/Shortboxerr.Api/Endpoints/EditionEndpoints.cs` | Modified - Add search parameter |
-| `tests/Shortboxerr.Tests/EditionFilterTests.cs` | Created - 11 new tests |
-| `docs/TEST_BASELINE.md` | Modified - Update to 2576 |
+| `src/Shortboxerr.Api/Endpoints/WantedEndpoints.cs` | Modified - Add filters |
+| `tests/Shortboxerr.Tests/WantedEndpointsTests.cs` | Modified - 9 new tests |
+| `docs/TEST_BASELINE.md` | Modified - Update to 2585 |
 | `scripts/hooks/pre-commit` | Modified - Update TEST_MINIMUM |
-| `docs/BACKLOG.md` | Modified - Add 14.19 |
-| `docs/WORKLOG.md` | Modified - Add iteration 204 entry |
+| `docs/BACKLOG.md` | Modified - Add 14.20 |
+| `docs/WORKLOG.md` | Modified - Add iteration 205 entry |
 
 ## Summary
-Added edition list text search (14.19):
-1. New `search` parameter on `GET /api/v1/editions`
-2. Searches Title, SortTitle, and parent Series.Title (case-insensitive)
-3. Combines with existing series filter
-4. Added Swagger documentation
-5. Created 11 unit tests for filter/search/sort functionality
+Added enhanced filters to wanted endpoints (14.20):
+1. Publisher filter for wanted issues and collections
+2. Release date range filter (releasedAfter/releasedBefore) for both endpoints
+3. Edition type filter for wanted collections
+4. Added 9 unit tests for the new filter parameters
