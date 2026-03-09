@@ -21,7 +21,7 @@
 | `docs/WORKLOG.md` | Modified - Add iteration 199 entry |
 
 ## Commits
-1. `fix(tests): mark external service tests as Integration, accept Unknown failure` - pending
+1. `fix(tests): mark external service tests as Integration, accept Unknown failure` - 19357d5
 
 ## Summary
 Fixed 3 failing integration tests (EPIC 21.6):

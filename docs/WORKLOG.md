@@ -28,7 +28,7 @@ Fixed 3 failing integration tests that hit real external services (Mega.nz, Rapi
 - **After:** 2541 passed, 0 failed
 
 ### Commits
-1. `fix(tests): mark external service tests as Integration, accept Unknown failure` - pending
+1. `fix(tests): mark external service tests as Integration, accept Unknown failure` - 19357d5
 
 ---
 
