@@ -253,6 +253,44 @@ Accept ComicVine IDs as search parameters when adding comics, auto-detecting IDs
 
 **Effort:** S | **Priority:** P2
 
+#### 14.14 Frontend Build-Time Version Embedding 📋 PLANNED
+Embed version/build info into the frontend at build time, matching how Sonarr/Radarr display version information.
+
+**Items:**
+- [ ] Add build-time version injection via Vite `define` or environment variables
+- [ ] Create `version.json` or embed in `index.html` during build
+- [ ] Display version in UI footer or System > Status page
+- [ ] Include: version, commit hash, build date
+
+**Effort:** S | **Priority:** P3
+
+#### 14.15 System Status Endpoint (*arr Parity) 📋 PLANNED
+Add `/api/v1/system/status` endpoint matching the pattern used by Sonarr/Radarr for frontend initialization.
+
+**Items:**
+- [ ] Create `/api/v1/system/status` endpoint returning:
+  - Version, build date, commit hash
+  - OS info, runtime info
+  - Start time, uptime
+  - App data/config/log paths
+  - Authentication status
+- [ ] Frontend fetches on app load to populate system info
+- [ ] Consider `/initialize.json` alias for compatibility
+
+**Effort:** S | **Priority:** P3
+
+#### 14.16 SignalR Real-Time Updates (*arr Parity) 📋 PLANNED
+Add SignalR hub for push notifications, matching the real-time update pattern in Sonarr/Radarr/Lidarr.
+
+**Items:**
+- [ ] Add SignalR hub (`/signalr/messages` or similar)
+- [ ] Broadcast events: download started/completed, import complete, search results, queue updates
+- [ ] Frontend subscribes to relevant channels
+- [ ] Replace polling with push for Activity page, Queue, and notifications
+- [ ] Graceful fallback to polling if SignalR connection fails
+
+**Effort:** L | **Priority:** P2
+
 ### Remaining Deferred Items
 | Item | EPIC | Effort | Status |
 |------|------|--------|--------|
