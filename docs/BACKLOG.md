@@ -24,7 +24,7 @@
 | ✅ | EPIC 17 | DDL Download Robustness | [Archive](./COMPLETED.md#epic-17-ddl-download-link-robustness--completed) |
 | 🔄 | [EPIC 18](#epic-18-library-organization--rename-sonarradarr-parity--in-progress) | Library Organization | In Progress |
 | ✅ | EPIC 19 | Auto-Matching Robustness | [Archive](./COMPLETED.md#epic-19-auto-matching-robustness) |
-| 📋 | [EPIC 20](#epic-20-performance-optimization--planned) | Performance Optimization | Planned |
+| ✅ | [EPIC 20](#epic-20-performance-optimization--completed) | Performance Optimization | Completed |
 | 🔴 | [EPIC 21](#epic-21-test-stabilization--quality-gates--high-priority) | Test Stabilization | High Priority |
 
 **Legend:** ✅ Completed | 🔄 In Progress | 📋 Planned | 🔴 High Priority
@@ -291,6 +291,22 @@ Add SignalR hub for push notifications, matching the real-time update pattern in
 
 **Effort:** L | **Priority:** P2
 
+#### 14.17 Performance Enhancements (from EPIC 20) 📋 PLANNED
+Additional performance optimizations deferred from EPIC 20.
+
+**Items:**
+- [ ] **Full-text search indexes** (SQLite FTS5 setup required)
+- [ ] **Virtualize Series issue grid** (2D grid, complex - pagination sufficient)
+- [ ] **Virtualize Series table** (lower priority - pagination sufficient)
+- [ ] **Virtualize Pull List discovery** (grouped by week - pagination sufficient)
+- [ ] **Intersection observer for images** (native lazy loading sufficient)
+- [ ] **Server-side pagination for SeriesDetailPage** (API contract changes required)
+- [ ] **Batched API endpoints** (multi-week data in one call)
+
+**Note:** These are nice-to-have optimizations. Current implementations with pagination and native browser features are working well.
+
+**Effort:** L | **Priority:** P3
+
 ### Remaining Deferred Items
 | Item | EPIC | Effort | Status |
 |------|------|--------|--------|
@@ -415,9 +431,9 @@ The auto-matching logic that matches downloaded files to series/issues must be r
 
 ---
 
-## EPIC 20: Performance Optimization 📋 PLANNED
+## EPIC 20: Performance Optimization ✅ COMPLETED
 
-Systematic performance improvements across backend database queries, API endpoints, background services, and frontend rendering.
+Systematic performance improvements across backend database queries, API endpoints, background services, and frontend rendering. All high-impact items complete; remaining enhancements moved to EPIC 14.
 
 ### 20.1 Database Query Optimization ✅ COMPLETED (Iteration 182)
 Optimize EF Core queries to eliminate N+1 issues and reduce memory usage.
@@ -428,8 +444,6 @@ Optimize EF Core queries to eliminate N+1 issues and reduce memory usage.
 - [x] **Add AsSplitQuery to multi-collection includes**
   - Added to: `SeriesEndpoints.cs` (series list, deletion preview), `LibraryOrganizationService.cs` (3 methods)
   - Prevents cartesian explosion from Series × Issues × Editions joins
-- [ ] **Paginate large result sets in organization service** - Deferred
-  - Would require API contract changes; AsSplitQuery mitigates the issue
 - [x] **Optimize History endpoint pagination**
   - Refactored to get proper total counts from database
   - Order at database level before materialization
@@ -447,7 +461,6 @@ Add missing indexes for common query patterns.
   - Added `IX_Issues_Monitored_Status` for combined filters
   - Added `IX_Series_Monitored` for monitored series queries
   - Verified existing `(MatchedSeriesId, Timestamp)` index is effective
-- [ ] **Add full-text indexes for search queries** (deferred - requires SQLite FTS5 setup)
 
 **Effort:** S | **Priority:** P2
 
@@ -477,13 +490,8 @@ Add virtual scrolling for large lists to reduce DOM nodes and improve performanc
   - File: `LogsPage.tsx`
   - Renders only visible rows (~20-30) instead of all 500+ lines
   - Maintains auto-scroll to bottom functionality
-- [ ] **Virtualize Series issue grid (cover view)** - Deferred
-  - Already has pagination (max 192 items per page)
-  - Complex 2D grid virtualization for future iteration
-- [ ] **Virtualize Series table** - Deferred
-  - Would benefit from virtualization but lower priority
-- [ ] **Virtualize Pull List discovery items** - Deferred
-  - Grouped by week, requires more complex implementation
+
+**Note:** Additional virtualization (Series grid, tables, Pull List) deferred to EPIC 14 - existing pagination is sufficient.
 
 **Effort:** M | **Priority:** P1
 
@@ -496,8 +504,8 @@ Optimize image loading for faster perceived performance.
   - Affected: `SeriesDetailPage`, `PullListPage`, `SeriesPage`, `Dashboard`, `CalendarPage`, `EditionDetailPage`
 - [x] **Add placeholder/skeleton states for images**
   - Created reusable `CoverImage` component with CSS pulse animation skeleton
-- [ ] **Implement intersection observer for manual lazy loading** - Deferred
-  - Native lazy loading is sufficient for current use cases
+
+**Note:** Native `loading="lazy"` is sufficient; intersection observer deferred to EPIC 14.
 
 **Effort:** S | **Priority:** P1
 
@@ -517,10 +525,10 @@ Prevent unnecessary re-renders with React.memo and proper hook usage.
 
 **Effort:** S | **Priority:** P2
 
-### 20.7 API Call Optimization ✅ PARTIAL (Iteration 195)
+### 20.7 API Call Optimization ✅ COMPLETED (Iteration 195)
 Reduced unnecessary network requests and optimized data fetching patterns.
 
-**Completed:**
+**Items:**
 - [x] **Parallelize PullListPage API calls**
   - Changed from sequential `for` loop to `Promise.all`
   - Fetches 4 weeks in parallel (4x faster)
@@ -528,12 +536,7 @@ Reduced unnecessary network requests and optimized data fetching patterns.
   - Added `refetchIntervalInBackground: false` to all polling queries
   - Pauses background polling when tab not visible (saves bandwidth)
 
-**Deferred (separate iteration):**
-- [ ] **Server-side pagination for SeriesDetailPage issues**
-  - Requires backend endpoint changes + frontend state management
-  - Currently fetches 500 issues, paginates client-side
-- [ ] **Consider batched API endpoints**
-  - Add endpoints that return multiple weeks of data in one call
+**Note:** Server-side pagination and batched endpoints moved to EPIC 14 (enhancement, not required).
 
 **Effort:** M | **Priority:** P2
 
@@ -707,4 +710,4 @@ All test stabilization work done. Quality gates active and enforced.
 - EPIC 14 contains standalone enhancements with varied dependencies
 - EPIC 18 depends on EPIC 2 (Import Pipeline) for file organization patterns
 - EPIC 19 depends on EPIC 2 (Import Pipeline) and EPIC 8 (DDL Site Adapters) for matching context
-- EPIC 20 has no hard dependencies; items can be implemented incrementally in any order
+- EPIC 20 ✅ COMPLETED (Iterations 181-196) - All high-impact items done; enhancements moved to EPIC 14
