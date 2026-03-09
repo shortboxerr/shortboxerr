@@ -1,3 +1,4 @@
+using System.Net;
 using Shortboxerr.Core.Ddl;
 using Shortboxerr.Infrastructure.Ddl.Resolvers;
 
@@ -308,22 +309,34 @@ public class MegaResolverTests
     }
 
     [Fact]
-    [Trait("Category", "Integration")]
-    public async Task ResolveAsync_NonExistentFile_ReturnsFileNotFound()
+    public async Task ResolveAsync_ApiReturnsNotFound_ReturnsFileNotFound()
     {
-        var resolver = new MegaResolver();
-        // Use a valid URL format but with a non-existent file ID
-        var result = await resolver.ResolveAsync("https://mega.nz/file/XXXXXXXX#YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY");
+        // Use a testable resolver that returns a mock "file not found" API response
+        var resolver = new TestableMegaResolver(
+            // Mega API returns -9 for file not found
+            @"[-9]"
+        );
+        
+        var result = await resolver.ResolveAsync("https://mega.nz/file/abc12345#YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY");
 
         Assert.False(result.Success);
-        // External service responses are unpredictable - accept any failure reason
-        Assert.True(
-            result.FailureReason == HostResolverFailureReason.FileNotFound ||
-            result.FailureReason == HostResolverFailureReason.ParseError ||
-            result.FailureReason == HostResolverFailureReason.NetworkError ||
-            result.FailureReason == HostResolverFailureReason.Unknown,
-            $"Expected FileNotFound, ParseError, NetworkError, or Unknown but got {result.FailureReason}"
+        Assert.Equal(HostResolverFailureReason.FileNotFound, result.FailureReason);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ApiReturnsError_ReturnsAppropriateFailure()
+    {
+        // Use a testable resolver that returns a mock error response
+        var resolver = new TestableMegaResolver(
+            // Mega API returns -3 for temporary unavailable
+            @"[-3]"
         );
+        
+        var result = await resolver.ResolveAsync("https://mega.nz/file/abc12345#YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY");
+
+        Assert.False(result.Success);
+        // -3 maps to FileNotFound in current implementation
+        Assert.Equal(HostResolverFailureReason.FileNotFound, result.FailureReason);
     }
 
     #endregion
@@ -417,3 +430,57 @@ public class MegaResolverTests
 
     #endregion
 }
+
+#region Test Helpers
+
+/// <summary>
+/// Testable MegaResolver that allows injecting mock HTTP responses.
+/// </summary>
+internal class TestableMegaResolver : MegaResolver
+{
+    private readonly string _mockResponse;
+    private readonly HttpStatusCode _statusCode;
+
+    public TestableMegaResolver(string mockResponse, HttpStatusCode statusCode = HttpStatusCode.OK)
+    {
+        _mockResponse = mockResponse;
+        _statusCode = statusCode;
+    }
+
+    protected override HttpClient CreateHttpClient(HostResolverOptions options)
+    {
+        var handler = new MockHttpMessageHandler(_mockResponse, _statusCode);
+        return new HttpClient(handler)
+        {
+            Timeout = TimeSpan.FromSeconds(30)
+        };
+    }
+}
+
+/// <summary>
+/// Mock HTTP message handler that returns predetermined responses.
+/// </summary>
+internal class MockHttpMessageHandler : HttpMessageHandler
+{
+    private readonly string _response;
+    private readonly HttpStatusCode _statusCode;
+
+    public MockHttpMessageHandler(string response, HttpStatusCode statusCode = HttpStatusCode.OK)
+    {
+        _response = response;
+        _statusCode = statusCode;
+    }
+
+    protected override Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken)
+    {
+        var response = new HttpResponseMessage(_statusCode)
+        {
+            Content = new StringContent(_response, System.Text.Encoding.UTF8, "application/json")
+        };
+        return Task.FromResult(response);
+    }
+}
+
+#endregion

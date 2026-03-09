@@ -1,3 +1,4 @@
+using System.Net;
 using Shortboxerr.Core.Ddl;
 using Shortboxerr.Infrastructure.Ddl.Resolvers;
 
@@ -152,22 +153,31 @@ public class PremiumHostResolverTests
     }
 
     [Fact]
-    [Trait("Category", "Integration")]
-    public async Task RapidgatorResolver_ResolveAsync_WithoutCredentials_ReturnsFailure()
+    public async Task RapidgatorResolver_ResolveAsync_WithoutCredentials_ReturnsAuthRequired()
     {
-        var resolver = new RapidgatorResolver();
+        // Mock a 401 response indicating premium required
+        var resolver = new TestableRapidgatorResolver(
+            @"<html><body>Premium account required</body></html>",
+            HttpStatusCode.Forbidden
+        );
+        var result = await resolver.ResolveAsync("https://rapidgator.net/file/abc123");
+
+        Assert.False(result.Success);
+        Assert.Equal(HostResolverFailureReason.AuthenticationRequired, result.FailureReason);
+    }
+
+    [Fact]
+    public async Task RapidgatorResolver_ResolveAsync_FileNotFound_ReturnsFileNotFound()
+    {
+        // Mock a 404 response
+        var resolver = new TestableRapidgatorResolver(
+            @"<html><body>File not found</body></html>",
+            HttpStatusCode.NotFound
+        );
         var result = await resolver.ResolveAsync("https://rapidgator.net/file/invalid123");
 
         Assert.False(result.Success);
-        // External service responses are unpredictable - accept any failure reason
-        Assert.True(
-            result.FailureReason == HostResolverFailureReason.AuthenticationRequired ||
-            result.FailureReason == HostResolverFailureReason.FileNotFound ||
-            result.FailureReason == HostResolverFailureReason.NetworkError ||
-            result.FailureReason == HostResolverFailureReason.HostUnavailable ||
-            result.FailureReason == HostResolverFailureReason.Unknown,
-            $"Expected auth required, file not found, network error, host unavailable, or unknown but got {result.FailureReason}"
-        );
+        Assert.Equal(HostResolverFailureReason.FileNotFound, result.FailureReason);
     }
 
     #endregion
@@ -336,22 +346,31 @@ public class PremiumHostResolverTests
     }
 
     [Fact]
-    [Trait("Category", "Integration")]
-    public async Task UploadedResolver_ResolveAsync_WithoutCredentials_ReturnsFailure()
+    public async Task UploadedResolver_ResolveAsync_WithoutCredentials_ReturnsAuthRequired()
     {
-        var resolver = new UploadedResolver();
+        // Mock a 403 response indicating premium required
+        var resolver = new TestableUploadedResolver(
+            @"<html><body>Premium account required for download</body></html>",
+            HttpStatusCode.Forbidden
+        );
+        var result = await resolver.ResolveAsync("https://uploaded.net/file/abc123");
+
+        Assert.False(result.Success);
+        Assert.Equal(HostResolverFailureReason.AuthenticationRequired, result.FailureReason);
+    }
+
+    [Fact]
+    public async Task UploadedResolver_ResolveAsync_FileNotFound_ReturnsFileNotFound()
+    {
+        // Mock a 404 response
+        var resolver = new TestableUploadedResolver(
+            @"<html><body>File not found</body></html>",
+            HttpStatusCode.NotFound
+        );
         var result = await resolver.ResolveAsync("https://uploaded.net/file/invalid123");
 
         Assert.False(result.Success);
-        // External service responses are unpredictable - accept any failure reason
-        Assert.True(
-            result.FailureReason == HostResolverFailureReason.AuthenticationRequired ||
-            result.FailureReason == HostResolverFailureReason.FileNotFound ||
-            result.FailureReason == HostResolverFailureReason.NetworkError ||
-            result.FailureReason == HostResolverFailureReason.HostUnavailable ||
-            result.FailureReason == HostResolverFailureReason.Unknown,
-            $"Expected auth required, file not found, network error, host unavailable, or unknown but got {result.FailureReason}"
-        );
+        Assert.Equal(HostResolverFailureReason.FileNotFound, result.FailureReason);
     }
 
     #endregion
@@ -521,3 +540,81 @@ public class PremiumHostResolverTests
 
     #endregion
 }
+
+#region Test Helpers
+
+/// <summary>
+/// Testable RapidgatorResolver that allows injecting mock HTTP responses.
+/// </summary>
+internal class TestableRapidgatorResolver : RapidgatorResolver
+{
+    private readonly string _mockResponse;
+    private readonly HttpStatusCode _statusCode;
+
+    public TestableRapidgatorResolver(string mockResponse, HttpStatusCode statusCode = HttpStatusCode.OK)
+    {
+        _mockResponse = mockResponse;
+        _statusCode = statusCode;
+    }
+
+    protected override HttpClient CreateHttpClient(HostResolverOptions options)
+    {
+        var handler = new PremiumMockHttpMessageHandler(_mockResponse, _statusCode);
+        return new HttpClient(handler)
+        {
+            Timeout = TimeSpan.FromSeconds(30)
+        };
+    }
+}
+
+/// <summary>
+/// Testable UploadedResolver that allows injecting mock HTTP responses.
+/// </summary>
+internal class TestableUploadedResolver : UploadedResolver
+{
+    private readonly string _mockResponse;
+    private readonly HttpStatusCode _statusCode;
+
+    public TestableUploadedResolver(string mockResponse, HttpStatusCode statusCode = HttpStatusCode.OK)
+    {
+        _mockResponse = mockResponse;
+        _statusCode = statusCode;
+    }
+
+    protected override HttpClient CreateHttpClient(HostResolverOptions options)
+    {
+        var handler = new PremiumMockHttpMessageHandler(_mockResponse, _statusCode);
+        return new HttpClient(handler)
+        {
+            Timeout = TimeSpan.FromSeconds(30)
+        };
+    }
+}
+
+/// <summary>
+/// Mock HTTP message handler that returns predetermined responses.
+/// </summary>
+internal class PremiumMockHttpMessageHandler : HttpMessageHandler
+{
+    private readonly string _response;
+    private readonly HttpStatusCode _statusCode;
+
+    public PremiumMockHttpMessageHandler(string response, HttpStatusCode statusCode = HttpStatusCode.OK)
+    {
+        _response = response;
+        _statusCode = statusCode;
+    }
+
+    protected override Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken)
+    {
+        var response = new HttpResponseMessage(_statusCode)
+        {
+            Content = new StringContent(_response, System.Text.Encoding.UTF8, "text/html")
+        };
+        return Task.FromResult(response);
+    }
+}
+
+#endregion
