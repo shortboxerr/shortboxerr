@@ -1,5 +1,42 @@
 # Worklog
 
+## Iteration 204 (2026-03-09)
+**EPIC 14.19: Edition List Text Search**
+
+### Summary
+Added text search filtering to the edition list API endpoint.
+
+### Changes
+
+#### EditionEndpoints.cs
+- Added `search` query parameter to `GET /api/v1/editions`
+- Searches Title, SortTitle, and parent Series.Title fields (case-insensitive)
+- Combines with existing series filter
+- Added Swagger documentation for the endpoint
+
+#### New Tests (11 tests)
+- `FilterBySeries_ReturnsOnlySeriesEditions`
+- `FilterBySeries_NoSeries_ReturnsEmpty`
+- `SearchByTitle_ExactMatch_ReturnsEdition`
+- `SearchByTitle_PartialMatch_ReturnsEditions`
+- `SearchByTitle_CaseInsensitive_ReturnsEdition`
+- `SearchByTitle_NoMatch_ReturnsEmpty`
+- `SearchBySortTitle_ReturnsEdition`
+- `SearchBySeriesName_ReturnsEditions`
+- `SearchByTitle_WithSeriesFilter_CombinesFilters`
+- `SortByTitle_Ascending_SortsCorrectly`
+- `SortByVolumeNumber_Ascending_SortsCorrectly`
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/Shortboxerr.Api/Endpoints/EditionEndpoints.cs` | Add search parameter |
+| `tests/Shortboxerr.Tests/EditionFilterTests.cs` | 11 new tests |
+| `docs/TEST_BASELINE.md` | Update to 2576 |
+| `scripts/hooks/pre-commit` | Update TEST_MINIMUM |
+
+---
+
 ## Iteration 203 (2026-03-09)
 **EPIC 14.18: Series List Text Search**
 

@@ -20,6 +20,7 @@ public static class EditionEndpoints
             int page = 1,
             int pageSize = 20,
             int? seriesId = null,
+            string? search = null,
             string? sortKey = "title",
             string? sortDir = "asc") =>
         {
@@ -31,6 +32,16 @@ public static class EditionEndpoints
             // Filter by series if specified
             if (seriesId.HasValue)
                 query = query.Where(e => e.SeriesId == seriesId.Value);
+
+            // Apply text search filter
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchLower = search.Trim().ToLower();
+                query = query.Where(e =>
+                    e.Title.ToLower().Contains(searchLower) ||
+                    (e.SortTitle != null && e.SortTitle.ToLower().Contains(searchLower)) ||
+                    (e.Series != null && e.Series.Title.ToLower().Contains(searchLower)));
+            }
 
             // Apply sorting
             query = (sortKey?.ToLowerInvariant(), sortDir?.ToLowerInvariant()) switch
@@ -58,7 +69,9 @@ public static class EditionEndpoints
                 pageSize,
                 totalRecords));
         })
-        .WithName("GetAllEditions");
+        .WithName("GetAllEditions")
+        .WithSummary("Get all editions with optional filtering and sorting")
+        .WithDescription("Supports filtering by series ID and text search (title, series name). Supports sorting by title, releasedate, createdat, volumenumber.");
 
         // GET single edition by ID (basic info)
         group.MapGet("/{id:int}", async (ShortboxerrDbContext db, int id) =>

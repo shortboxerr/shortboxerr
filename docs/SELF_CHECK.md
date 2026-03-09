@@ -1,12 +1,12 @@
-# Self-Check: Iteration 203
+# Self-Check: Iteration 204
 
 ## Build Status
 - [x] `dotnet build` succeeds
-- [x] `npm run build` succeeds
+- [ ] `npm run build` skipped (npm network issues)
 
 ## Test Status
-- **Before**: 2559 passed, 0 failed
-- **After**: 2565 passed, 0 failed (+6 new tests)
+- **Before**: 2565 passed, 0 failed
+- **After**: 2576 passed, 0 failed (+11 new tests)
 - [x] All tests pass
 
 ## Lint Status
@@ -15,16 +15,17 @@
 ## Files Changed
 | File | Type |
 |------|------|
-| `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | Modified - Add search parameter |
-| `tests/Shortboxerr.Tests/SeriesFilterTests.cs` | Modified - 6 new tests |
-| `docs/TEST_BASELINE.md` | Modified - Update to 2565 |
+| `src/Shortboxerr.Api/Endpoints/EditionEndpoints.cs` | Modified - Add search parameter |
+| `tests/Shortboxerr.Tests/EditionFilterTests.cs` | Created - 11 new tests |
+| `docs/TEST_BASELINE.md` | Modified - Update to 2576 |
 | `scripts/hooks/pre-commit` | Modified - Update TEST_MINIMUM |
-| `docs/BACKLOG.md` | Modified - Add 14.18 |
-| `docs/WORKLOG.md` | Modified - Add iteration 203 entry |
+| `docs/BACKLOG.md` | Modified - Add 14.19 |
+| `docs/WORKLOG.md` | Modified - Add iteration 204 entry |
 
 ## Summary
-Added series list text search (14.18):
-1. New `search` parameter on `GET /api/v1/series`
-2. Searches Title and SortTitle (case-insensitive)
-3. Combines with existing filters
-4. Added 6 unit tests for search functionality
+Added edition list text search (14.19):
+1. New `search` parameter on `GET /api/v1/editions`
+2. Searches Title, SortTitle, and parent Series.Title (case-insensitive)
+3. Combines with existing series filter
+4. Added Swagger documentation
+5. Created 11 unit tests for filter/search/sort functionality

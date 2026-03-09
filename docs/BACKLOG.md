@@ -300,6 +300,18 @@ Add text search filtering to the series list API endpoint.
 
 **Effort:** S | **Priority:** P2
 
+#### 14.19 Edition List Text Search ✅ COMPLETED (Iteration 204)
+Add text search filtering to the edition list API endpoint.
+
+**Implemented:**
+- [x] Add `search` query parameter to `GET /api/v1/editions`
+- [x] Case-insensitive search on Title, SortTitle, and Series.Title fields
+- [x] Combines with existing series filter
+- [x] Added Swagger documentation
+- [x] 11 unit tests for filter/search/sort functionality
+
+**Effort:** S | **Priority:** P2
+
 #### 14.16 SignalR Real-Time Updates (*arr Parity) 🔄 IN PROGRESS (Iteration 200-201)
 Add SignalR hub for push notifications, matching the real-time update pattern in Sonarr/Radarr/Lidarr.
 
