@@ -358,14 +358,14 @@ public class TelegramNotificationProviderTests
             EventType = NotificationEventType.Test,
             Title = "Test",
             Message = "Test message",
-            Url = "http://localhost:5000/series/123"
+            Url = "http://localhost:5052/series/123"
         };
         var settings = CreateValidSettings();
 
         await _provider.SendAsync(notification, settings);
 
         Assert.NotNull(capturedBody);
-        Assert.Contains("http://localhost:5000/series/123", capturedBody);
+        Assert.Contains("http://localhost:5052/series/123", capturedBody);
     }
 
     #endregion

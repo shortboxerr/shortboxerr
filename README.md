@@ -12,14 +12,14 @@ All development should happen in-container (dotnet, node, etc.).
 | Port | Service | Description |
 |------|---------|-------------|
 | **8585** | Frontend | User-facing (Vite dev server) |
-| **5000** | Backend | Internal API (proxied by Vite) |
+| **5052** | Backend | Internal API (proxied by Vite) |
 
 Access the app at **http://localhost:8585**
 
 ### Starting Dev Servers
 ```bash
 # Backend (terminal 1)
-cd src/Shortboxerr.Api && dotnet run --urls "http://0.0.0.0:5000"
+cd src/Shortboxerr.Api && dotnet run --urls "http://0.0.0.0:5052"
 
 # Frontend (terminal 2)
 cd ui && npm run dev
@@ -38,15 +38,15 @@ pkill -9 -f "vite" 2>/dev/null || true
 sleep 3
 
 # 3. VERIFY ports are free
-lsof -i :5000 -i :8585 2>/dev/null | grep LISTEN || echo "OK"
+lsof -i :5052 -i :8585 2>/dev/null | grep LISTEN || echo "OK"
 
 # 4. START (backend first, then frontend)
-cd src/Shortboxerr.Api && dotnet run --urls "http://0.0.0.0:5000" &
+cd src/Shortboxerr.Api && dotnet run --urls "http://0.0.0.0:5052" &
 sleep 3
 cd ui && npm run dev &
 
-# 5. FINAL CHECK - should show ONLY 5000 and 8585
-lsof -i :5000 -i :8585 -i :8586 | grep LISTEN
+# 5. FINAL CHECK - should show ONLY 5052 and 8585
+lsof -i :5052 -i :8585 -i :8586 | grep LISTEN
 ```
 
 > **Warning:** Never run `pkill -f "node"` - it kills Cursor's internal server.

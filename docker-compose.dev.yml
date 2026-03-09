@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: .devcontainer/Dockerfile
     ports:
-      - "5000:5000"
+      - "5052:5052"
       - "8585:8585"
     volumes:
       - .:/workspaces/shortboxerr:cached

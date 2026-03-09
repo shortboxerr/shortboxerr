@@ -90,7 +90,7 @@ Changed expected value from "DC Comics" to "DC" to make test pass.
 
 **Ports (DO NOT CHANGE):**
 - **8585** - Frontend (Vite dev server, bound to 0.0.0.0)
-- **5000** - Backend API (proxied by Vite)
+- **5052** - Backend API (proxied by Vite)
 
 **Restart servers after each commit (STOP-WAIT-VERIFY-START):**
 
@@ -106,18 +106,18 @@ pkill -9 -f "vite" 2>/dev/null || true
 sleep 3
 
 # 3. VERIFY - Confirm ports are free (CRITICAL!)
-lsof -i :5000 -i :8585 2>/dev/null | grep LISTEN && echo "ERROR: Ports still in use!" || echo "Ports are free"
+lsof -i :5052 -i :8585 2>/dev/null | grep LISTEN && echo "ERROR: Ports still in use!" || echo "Ports are free"
 
 # 4. START Backend first, wait for ready
-cd /workspaces/shortboxerr/src/Shortboxerr.Api && dotnet run --urls "http://0.0.0.0:5000" &
+cd /workspaces/shortboxerr/src/Shortboxerr.Api && dotnet run --urls "http://0.0.0.0:5052" &
 sleep 3
 
 # 5. START Frontend
 cd /workspaces/shortboxerr/ui && npm run dev &
 
 # 6. FINAL VERIFY - Only these two ports should be in use
-lsof -i :5000 -i :8585 -i :8586 2>/dev/null | grep LISTEN
-# Expected: 5000 (Shortboxerr) and 8585 (node) ONLY
+lsof -i :5052 -i :8585 -i :8586 2>/dev/null | grep LISTEN
+# Expected: 5052 (Shortboxerr) and 8585 (node) ONLY
 # If 8586 appears, something went wrong - repeat from step 1
 ```
 
