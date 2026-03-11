@@ -337,4 +337,60 @@ public class LibraryOrganizationServiceTests : IDisposable
         Assert.Contains("Batman", preview.Files[0].NewFileName);
         Assert.Contains("#001", preview.Files[0].NewFileName);
     }
+
+    [Fact]
+    public async Task ExecuteSeriesRename_WhenOneFileFails_RollsBackSuccessfulMovesAndDoesNotUpdateDb()
+    {
+        // Arrange: series with two files; second file's destination already exists so second move fails
+        var currentDir = Path.Combine(_tempDir, "current");
+        Directory.CreateDirectory(currentDir);
+        var file1Path = Path.Combine(currentDir, "file1.cbz");
+        var file2Path = Path.Combine(currentDir, "file2.cbz");
+        await File.WriteAllTextAsync(file1Path, "content1");
+        await File.WriteAllTextAsync(file2Path, "content2");
+
+        var series = new Series
+        {
+            Title = "Batman",
+            Publisher = "DC Comics",
+            StartYear = 2016,
+            Path = currentDir
+        };
+        _db.Series.Add(series);
+        await _db.SaveChangesAsync();
+
+        var issue1 = new Issue { SeriesId = series.Id, IssueNumber = 1, Title = "One" };
+        var issue2 = new Issue { SeriesId = series.Id, IssueNumber = 2, Title = "Two" };
+        _db.Issues.AddRange(issue1, issue2);
+        await _db.SaveChangesAsync();
+
+        var asset1 = new FileAsset { Path = file1Path, Format = "cbz", Size = 100, IssueId = issue1.Id };
+        var asset2 = new FileAsset { Path = file2Path, Format = "cbz", Size = 100, IssueId = issue2.Id };
+        _db.FileAssets.AddRange(asset1, asset2);
+        await _db.SaveChangesAsync();
+
+        var preview = await _service.GetSeriesRenamePreviewAsync(series.Id);
+        Assert.NotNull(preview);
+        Assert.True(preview.CanRename);
+        var secondFileNewPath = preview.Files[1].NewPath;
+        await File.WriteAllTextAsync(secondFileNewPath, "blocker"); // cause "destination already exists" for second move
+
+        // Act
+        var result = await _service.ExecuteSeriesRenameAsync(series.Id);
+
+        // Assert: operation failed
+        Assert.False(result.Success);
+        Assert.Equal(1, result.FilesRenamed);
+        Assert.Equal(1, result.FilesFailed);
+        Assert.Contains("rolled back", result.Error ?? "");
+
+        // First file was moved then rolled back: should be back at original path
+        Assert.True(File.Exists(file1Path), "First file should be back at original path after rollback");
+        Assert.False(File.Exists(preview.Files[0].NewPath), "First file should no longer be at new path after rollback");
+
+        // DB unchanged: series path still old
+        var updatedSeries = await _db.Series.FindAsync(series.Id);
+        Assert.NotNull(updatedSeries);
+        Assert.Equal(currentDir, updatedSeries.Path);
+    }
 }

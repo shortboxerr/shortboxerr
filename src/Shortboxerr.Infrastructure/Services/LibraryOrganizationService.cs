@@ -192,7 +192,7 @@ public class LibraryOrganizationService : ILibraryOrganizationService
             // Track source directories for cleanup
             var sourceDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            // Move/rename files
+            // Move/rename files (atomic: if any move fails, rollback and do not update DB)
             foreach (var filePreview in preview.Files)
             {
                 // Track source directory before moving
@@ -215,7 +215,19 @@ public class LibraryOrganizationService : ILibraryOrganizationService
                 }
             }
 
-            // Update series path in database
+            // Atomic rollback: if any file failed, move successful files back and do not update DB
+            if (result.FilesFailed > 0)
+            {
+                RollbackFileMoves(result.FileResults);
+                result.Success = false;
+                result.Error = $"{result.FilesFailed} file(s) failed to rename; rolled back {result.FilesRenamed} successful move(s).";
+                _logger.LogWarning(
+                    "Organize series {SeriesTitle} failed after {FilesRenamed} moves; rolled back to keep state consistent",
+                    series.Title, result.FilesRenamed);
+                return result;
+            }
+
+            // Update series path in database (only when all moves succeeded)
             var previousPath = series.Path;
             series.Path = preview.NewPath;
             series.UpdatedAt = DateTime.UtcNow;
@@ -433,6 +445,33 @@ public class LibraryOrganizationService : ILibraryOrganizationService
         }
 
         return preview;
+    }
+
+    /// <summary>
+    /// Rolls back file moves by moving each successfully moved file back to its previous path.
+    /// Used to keep the series organize operation atomic when any file move fails.
+    /// </summary>
+    private void RollbackFileMoves(List<FileRenameResult> fileResults)
+    {
+        foreach (var fr in fileResults)
+        {
+            if (!fr.Success || string.IsNullOrEmpty(fr.NewPath) || string.IsNullOrEmpty(fr.PreviousPath))
+                continue;
+            if (string.Equals(fr.PreviousPath, fr.NewPath, StringComparison.OrdinalIgnoreCase))
+                continue;
+            try
+            {
+                if (File.Exists(fr.NewPath))
+                {
+                    File.Move(fr.NewPath, fr.PreviousPath);
+                    _logger.LogDebug("Rolled back file: {NewPath} -> {PreviousPath}", fr.NewPath, fr.PreviousPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to rollback file move: {NewPath} -> {PreviousPath}", fr.NewPath, fr.PreviousPath);
+            }
+        }
     }
 
     private async Task<FileRenameResult> MoveFileAsync(

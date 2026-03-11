@@ -1,5 +1,26 @@
 # Worklog
 
+## Iteration 221 (2026-03-11)
+**EPIC 18.6: Atomic operations (per-series) – Library organize**
+
+### Summary
+Single-series organize is now atomic: if any file move fails, all already-moved files are rolled back to their previous paths and the database is not updated. This keeps disk and DB consistent (all-or-nothing per series).
+
+### Changes
+- **LibraryOrganizationService:** After the file-move loop, if any move failed, call new `RollbackFileMoves` to move successful files back to their previous paths, then return failure without updating `series.Path` or saving `FileAsset` paths.
+- **LibraryOrganizationServiceTests:** Added `ExecuteSeriesRename_WhenOneFileFails_RollsBackSuccessfulMovesAndDoesNotUpdateDb` – two files, second move fails (destination exists); assert rollback and DB unchanged.
+
+### Files Changed
+| File | Type |
+|------|------|
+| `src/Shortboxerr.Infrastructure/Services/LibraryOrganizationService.cs` | atomic rollback |
+| `tests/Shortboxerr.Tests/LibraryOrganizationServiceTests.cs` | +1 test |
+| `docs/BACKLOG.md` | 18.6 atomic done |
+| `docs/WORKLOG.md` | Iteration 221 |
+| `docs/SELF_CHECK.md` | Iteration 221 |
+
+---
+
 ## Iteration 220 (2026-03-11)
 **EPIC 14.13: Quick filters by publisher/year (Add Series)**
 

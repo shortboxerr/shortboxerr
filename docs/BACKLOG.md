@@ -474,7 +474,7 @@ Reorganize existing library files to match current naming format settings.
 
 ### 18.6 Safety & Rollback (Partial)
 - [x] Dry-run mode (Iteration 179)
-- [ ] **Atomic operations (per-series)** 📋 Ready (M) – Ensure each series organize is atomic (all-or-nothing); pick when prioritizing safety.
+- [x] **Atomic operations (per-series)** ✅ COMPLETED (Iteration 221) – On any file-move failure, roll back successful moves and do not update DB; single-series organize is all-or-nothing.
 - [ ] **Undo support** 📋 Ready (L, stretch) – Restore previous paths after organize; design first (e.g. journal or snapshot), then implement.
 
 ### 18.7 UI Indicators ✅ COMPLETED
