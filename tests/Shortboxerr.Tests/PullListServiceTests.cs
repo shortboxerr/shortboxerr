@@ -1035,6 +1035,34 @@ public class PullListServiceTests : IDisposable
             Times.Once());
     }
 
+    [Fact]
+    public async Task GetWeeklyDiscoveryBatchAsync_ReturnsRequestedNumberOfWeeks()
+    {
+        var mockResult = new ComicVineSearchResult<ComicVineIssue>
+        {
+            Success = true,
+            Results = new List<ComicVineIssue>(),
+            TotalResults = 0
+        };
+        _mockComicVineClient
+            .Setup(c => c.GetIssuesByStoreDateAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(mockResult);
+        _mockComicVineClient.Setup(c => c.IsConfiguredAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        var startDate = new DateTime(2026, 2, 4);
+        const int count = 3;
+
+        var result = await _service.GetWeeklyDiscoveryBatchAsync(startDate, count);
+
+        Assert.Equal(count, result.Count);
+        for (var i = 0; i < result.Count; i++)
+        {
+            Assert.NotNull(result[i]);
+            if (i > 0)
+                Assert.Equal(7, (result[i].WeekStart - result[i - 1].WeekStart).TotalDays);
+        }
+    }
+
     #endregion
 
     #region Discovery Publishers Tests

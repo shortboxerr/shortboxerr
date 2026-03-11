@@ -1,5 +1,37 @@
 # Worklog
 
+## Iteration 213 (2026-03-11)
+**EPIC 14.17: Batched API endpoints (multi-week discovery)**
+
+### Summary
+Added batched pull list discovery endpoint: one call returns multiple consecutive weeks (1–16).
+
+### Changes
+
+#### IPullListService / PullListService
+- `GetWeeklyDiscoveryBatchAsync(DateTime startDate, int count, DiscoveryFilter?, CancellationToken)` – returns `IReadOnlyList<WeeklyDiscoveryList>`; count clamped to 1–16; weeks fetched in parallel via `Task.WhenAll`.
+
+#### PullListEndpoints.cs
+- `GET /api/v1/pulllist/discover/weeks?startDate=&count=` – returns array of weekly discovery lists (same filter query params as single-week).
+
+#### PullListServiceTests.cs
+- `GetWeeklyDiscoveryBatchAsync_ReturnsRequestedNumberOfWeeks` – asserts count and 7-day spacing of WeekStart.
+
+### Files Changed
+| File | Type |
+|------|------|
+| `src/Shortboxerr.Core/PullList/IPullListService.cs` | +GetWeeklyDiscoveryBatchAsync |
+| `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` | implementation |
+| `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` | +discover/weeks endpoint |
+| `tests/Shortboxerr.Tests/PullListServiceTests.cs` | +1 test |
+| `docs/TEST_BASELINE.md` | 2605 |
+| `scripts/hooks/pre-commit` | TEST_MINIMUM 2605 |
+| `docs/BACKLOG.md` | 14.17 batched done |
+| `docs/WORKLOG.md` | Iteration 213 |
+| `docs/SELF_CHECK.md` | Iteration 213 |
+
+---
+
 ## Iteration 212 (2026-03-11)
 **EPIC 14.7.5: Edge Case Handling**
 

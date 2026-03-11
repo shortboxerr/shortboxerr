@@ -890,6 +890,23 @@ public class PullListService : IPullListService
         return discoveryList;
     }
 
+    public async Task<IReadOnlyList<WeeklyDiscoveryList>> GetWeeklyDiscoveryBatchAsync(
+        DateTime startDate,
+        int count,
+        DiscoveryFilter? filter = null,
+        CancellationToken cancellationToken = default)
+    {
+        const int maxWeeks = 16;
+        var capped = Math.Clamp(count, 1, maxWeeks);
+        var weekDates = new List<DateTime>();
+        for (var i = 0; i < capped; i++)
+        {
+            weekDates.Add(startDate.AddDays(i * 7));
+        }
+        var results = await Task.WhenAll(weekDates.Select(weekOf => GetWeeklyDiscoveryAsync(weekOf, filter, cancellationToken)));
+        return results;
+    }
+
     /// <summary>
     /// Fetches weekly releases using WalkSoftly as primary source, falling back to ComicVine.
     /// </summary>

@@ -59,6 +59,20 @@ public interface IPullListService
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets discovery releases for multiple consecutive weeks in one call (batched).
+    /// Use for reducing round-trips when the client needs several weeks (e.g. pull list calendar).
+    /// </summary>
+    /// <param name="startDate">Any date in the first week.</param>
+    /// <param name="count">Number of weeks (1–16).</param>
+    /// <param name="filter">Optional filter applied to each week.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<IReadOnlyList<WeeklyDiscoveryList>> GetWeeklyDiscoveryBatchAsync(
+        DateTime startDate,
+        int count,
+        DiscoveryFilter? filter = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets available publishers for discovery filtering for a specific week.
     /// Returns publishers from library series that have releases this week,
     /// plus optionally fetches publisher info from ComicVine for new series.

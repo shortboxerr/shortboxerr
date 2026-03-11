@@ -166,6 +166,35 @@ public static class PullListEndpoints
         .WithDescription("Gets all ComicVine releases for a specific week (discovery mode).")
         .Produces<WeeklyDiscoveryList>(200);
 
+        // GET /api/v1/pulllist/discover/weeks - batched multi-week discovery (14.17)
+        group.MapGet("/discover/weeks", async (
+            [FromQuery] DateTime? startDate,
+            [FromQuery] int? count,
+            [FromServices] IPullListService pullListService,
+            [FromQuery] string? publishers,
+            [FromQuery] bool? inLibraryOnly,
+            [FromQuery] bool? newOnly,
+            [FromQuery] bool? includeAnnuals,
+            [FromQuery] bool? includeSpecials,
+            CancellationToken cancellationToken) =>
+        {
+            var filter = new DiscoveryFilter
+            {
+                Publishers = string.IsNullOrEmpty(publishers) ? null : publishers.Split(',').ToList(),
+                InLibraryOnly = inLibraryOnly,
+                NewOnly = newOnly,
+                IncludeAnnuals = includeAnnuals ?? true,
+                IncludeSpecials = includeSpecials ?? true
+            };
+            var start = startDate ?? DateTime.Today;
+            var weeks = Math.Clamp(count ?? 4, 1, 16);
+            var result = await pullListService.GetWeeklyDiscoveryBatchAsync(start, weeks, filter, cancellationToken);
+            return Results.Ok(result);
+        })
+        .WithName("GetWeeklyDiscoveryBatch")
+        .WithDescription("Gets discovery releases for multiple consecutive weeks in one call (1-16 weeks).")
+        .Produces<IReadOnlyList<WeeklyDiscoveryList>>(200);
+
         // GET /api/v1/pulllist/discover/publishers - get available publishers for filter
         group.MapGet("/discover/publishers", async (
             [FromServices] IPullListService pullListService,

@@ -384,7 +384,7 @@ Additional performance optimizations deferred from EPIC 20.
 - [ ] **Virtualize Pull List discovery** (grouped by week - pagination sufficient)
 - [ ] **Intersection observer for images** (native lazy loading sufficient)
 - [ ] **Server-side pagination for SeriesDetailPage** (API contract changes required)
-- [ ] **Batched API endpoints** (multi-week data in one call)
+- [x] **Batched API endpoints** (multi-week data in one call) ✅ COMPLETED (Iteration 213)
 
 **Note:** These are nice-to-have optimizations. Current implementations with pagination and native browser features are working well.
 
