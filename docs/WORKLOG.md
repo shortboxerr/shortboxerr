@@ -1,5 +1,29 @@
 # Worklog
 
+## Iteration 210 (2026-03-11)
+**EPIC 14.7.3: Unit Test Coverage Expansion**
+
+### Summary
+Added unit tests for cover cache behavior: issue cache clear and discovery path layout.
+
+### Changes
+
+#### CoverServiceTests.cs
+- `ClearIssueCoverCacheAsync_DeletesIssueCacheDirectory` – issue cache directory removed after clear.
+- `GetDiscoveryCoverAsync_FilePath_MatchesDiscoveryCacheLayout` – discovery path contains discovery/{id}/medium.jpg.
+
+### Files Changed
+| File | Type |
+|------|------|
+| `tests/Shortboxerr.Tests/CoverServiceTests.cs` | +2 tests |
+| `docs/TEST_BASELINE.md` | 2603 |
+| `scripts/hooks/pre-commit` | TEST_MINIMUM 2603 |
+| `docs/BACKLOG.md` | 14.7.3 complete |
+| `docs/WORKLOG.md` | Iteration 210 |
+| `docs/SELF_CHECK.md` | Iteration 210 |
+
+---
+
 ## Iteration 209 (2026-03-11)
 **EPIC 14.7.2: Cover Source Integration Testing**
 

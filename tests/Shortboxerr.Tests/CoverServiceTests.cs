@@ -311,6 +311,21 @@ public class CoverServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ClearIssueCoverCacheAsync_DeletesIssueCacheDirectory()
+    {
+        const int issueId = 456;
+        var issueDir = Path.Combine(_testCacheDir, "issues", issueId.ToString());
+        Directory.CreateDirectory(issueDir);
+        await File.WriteAllBytesAsync(Path.Combine(issueDir, "medium.jpg"), new byte[] { 0xFF, 0xD8, 0xFF });
+
+        Assert.True(Directory.Exists(issueDir));
+
+        await _service.ClearIssueCoverCacheAsync(issueId);
+
+        Assert.False(Directory.Exists(issueDir));
+    }
+
+    [Fact]
     public async Task GetCacheStatsAsync_ReturnsCorrectStatistics()
     {
         // Arrange - Create some cached files
@@ -551,6 +566,32 @@ public class CoverServiceTests : IDisposable
         Assert.False(result.Success);
         Assert.NotNull(result.Error);
         Assert.Contains("99999", result.Error);
+    }
+
+    /// <summary>
+    /// EPIC 14.7.3: Verifies discovery cache path layout (discovery/{id}/{size}.jpg) for API/source alignment.
+    /// </summary>
+    [Fact]
+    public async Task GetDiscoveryCoverAsync_FilePath_MatchesDiscoveryCacheLayout()
+    {
+        var imageBytes = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0 };
+        SetupHttpClient(HttpStatusCode.OK, imageBytes);
+
+        const int coverId = 11111;
+        await _service.DownloadExternalCoverAsync(
+            "https://example.com/cover.jpg",
+            CoverType.Discovery,
+            coverId,
+            CoverCacheSource.Metron,
+            CoverSize.Medium);
+
+        var result = await _service.GetDiscoveryCoverAsync(coverId, CoverSize.Medium);
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.FilePath);
+        Assert.Contains("discovery", result.FilePath);
+        Assert.Contains(coverId.ToString(), result.FilePath);
+        Assert.EndsWith("medium.jpg", result.FilePath);
     }
 
     #endregion
