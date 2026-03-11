@@ -1,5 +1,25 @@
 # Worklog
 
+## Iteration 218 (2026-03-11)
+**EPIC 14.25: ESLint accepted warnings – security & safety validation**
+
+### Summary
+Reviewed each accepted ESLint rule in ui/eslint.config.js for security and app safety. Documented outcome in docs/SECURITY.md under a new subsection “ESLint Accepted Warnings (UI)” with per-rule assessment and a reminder to re-check when changing accepted warnings.
+
+### Changes
+- **docs/SECURITY.md:** Added “ESLint Accepted Warnings (UI)” table (set-state-in-effect, only-export-components, no-explicit-any, static-components) and note to re-validate when config changes.
+- **docs/BACKLOG.md:** 14.25 complete.
+
+### Files Changed
+| File | Type |
+|------|------|
+| `docs/SECURITY.md` | ESLint security subsection |
+| `docs/BACKLOG.md` | 14.25 done |
+| `docs/WORKLOG.md` | Iteration 218 |
+| `docs/SELF_CHECK.md` | Iteration 218 |
+
+---
+
 ## Iteration 217 (2026-03-11)
 **EPIC 14.23: ESLint – document accepted warnings**
 

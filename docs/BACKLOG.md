@@ -419,6 +419,16 @@ Address npm audit findings in `ui/` (1 moderate, 2 high vulnerabilities).
 
 **Effort:** S | **Priority:** P2
 
+#### 14.25 ESLint Accepted Warnings: Security & Safety Validation ✅ COMPLETED (Iteration 218)
+Validate `ui/eslint.config.js` and the documented accepted warnings to ensure they do not introduce app or security risk.
+
+**Goals:**
+- [x] Review each downgraded rule for security implications (set-state-in-effect, only-export-components, no-explicit-any, static-components).
+- [x] Confirm accepted patterns align with project security stance (docs/SECURITY.md).
+- [x] Document outcome: added “ESLint Accepted Warnings (UI)” subsection to docs/SECURITY.md with per-rule assessment and reminder to re-check when changing accepted warnings.
+
+**Effort:** S | **Priority:** P2
+
 ### Remaining Deferred Items
 | Item | EPIC | Effort | Status |
 |------|------|--------|--------|
