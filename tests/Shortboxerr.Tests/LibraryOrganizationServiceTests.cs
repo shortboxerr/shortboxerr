@@ -373,6 +373,9 @@ public class LibraryOrganizationServiceTests : IDisposable
         Assert.NotNull(preview);
         Assert.True(preview.CanRename);
         var secondFileNewPath = preview.Files[1].NewPath;
+        var secondFileNewDir = Path.GetDirectoryName(secondFileNewPath);
+        if (!string.IsNullOrEmpty(secondFileNewDir))
+            Directory.CreateDirectory(secondFileNewDir);
         await File.WriteAllTextAsync(secondFileNewPath, "blocker"); // cause "destination already exists" for second move
 
         // Act
