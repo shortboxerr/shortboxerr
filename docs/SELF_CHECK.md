@@ -1,12 +1,12 @@
-# Self-Check: Iteration 219
+# Self-Check: Iteration 220
 
 ## Build Status
 - [x] `dotnet build` succeeds (dev container)
-- [ ] `npm run build` skipped (backend-only)
+- [x] `npm run build` succeeds (ui)
 
 ## Test Status
-- **Before**: 2606 passed, 0 failed
-- **After**: 2607 passed, 0 failed (+1 test)
+- **Before**: 2607 passed, 0 failed
+- **After**: 2607 passed, 0 failed
 - [x] No NEW test failures introduced
 
 ## Lint Status
@@ -15,17 +15,13 @@
 ## Files Changed
 | File | Type |
 |------|------|
-| `src/Shortboxerr.Core/ComicVine/IEditionMetadataService.cs` | EditionSearchResult Query, IsDirectLookup |
-| `src/Shortboxerr.Api/Endpoints/EditionMetadataEndpoints.cs` | volume ID in edition search |
-| `tests/Shortboxerr.Tests/EditionMetadataServiceTests.cs` | +1 test |
-| `docs/TEST_BASELINE.md` | 2607 |
-| `scripts/hooks/pre-commit` | TEST_MINIMUM 2607 |
-| `docs/BACKLOG.md` | 14.11 Edition Search done |
-| `docs/WORKLOG.md` | Iteration 219 |
-| `docs/SELF_CHECK.md` | Iteration 219 |
+| `ui/src/pages/SeriesPage.tsx` | quick filters publisher/year |
+| `docs/BACKLOG.md` | 14.13 done |
+| `docs/WORKLOG.md` | Iteration 220 |
+| `docs/SELF_CHECK.md` | Iteration 220 |
 
 ## Commits
-1. `feat: edition/collection search by ComicVine volume ID (14.11)` – (pending)
+1. `feat(ui): Add Series quick filters by publisher and year (14.13)` – (pending)
 
 ## Summary
-EPIC 14.11 Update Edition/Collection Search: GET /api/v1/editions/comicvine/search now accepts ComicVine volume ID (4050-xxxxx); direct lookup returns single result with IsDirectLookup. Test count 2606 → 2607.
+EPIC 14.13: Add Series modal now has optional Publisher and Year (From/To) filters; values are sent to ComicVine search API.

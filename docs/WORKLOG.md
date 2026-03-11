@@ -1,5 +1,24 @@
 # Worklog
 
+## Iteration 220 (2026-03-11)
+**EPIC 14.13: Quick filters by publisher/year (Add Series)**
+
+### Summary
+Add Series modal now has optional quick filters: Publisher (text) and Year range (From / To). When set, they are passed to the ComicVine series search API; results are filtered server-side.
+
+### Changes
+- **SeriesPage.tsx (AddSeriesModal):** Added state for publisherFilter, yearStartFilter, yearEndFilter. Included in useQuery key and passed to api.searchSeriesFromComicVine. Added a filter row with Publisher input and Year From/To number inputs.
+
+### Files Changed
+| File | Type |
+|------|------|
+| `ui/src/pages/SeriesPage.tsx` | quick filters UI + query params |
+| `docs/BACKLOG.md` | 14.13 quick filters done |
+| `docs/WORKLOG.md` | Iteration 220 |
+| `docs/SELF_CHECK.md` | Iteration 220 |
+
+---
+
 ## Iteration 219 (2026-03-11)
 **EPIC 14.11: Update Edition/Collection Search – ComicVine volume ID**
 

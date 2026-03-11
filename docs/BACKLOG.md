@@ -223,7 +223,7 @@ Improve the "Add Series" experience to handle large result sets better and allow
 
 **Optional enhancements (Ready to pick):**
 - [ ] **Replace Add Series modal with dedicated page** 📋 Ready (M) – Modal is sufficient; pick when UX prioritizes a full-page flow.
-- [ ] **Quick filters by publisher/year** 📋 Ready (S) – Add filter chips or dropdowns on Add Series results.
+- [x] **Quick filters by publisher/year** ✅ COMPLETED (Iteration 220) – Add Series modal: optional Publisher text filter and Year range (From/To); passed to ComicVine search API.
 
 **Effort:** M | **Priority:** P2
 

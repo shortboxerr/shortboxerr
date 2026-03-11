@@ -433,6 +433,9 @@ type ViewMode = 'list' | 'grid';
 function AddSeriesModal({ onClose, onAdded }: AddSeriesModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [publisherFilter, setPublisherFilter] = useState('');
+  const [yearStartFilter, setYearStartFilter] = useState<number | ''>('');
+  const [yearEndFilter, setYearEndFilter] = useState<number | ''>('');
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [addError, setAddError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -449,8 +452,20 @@ function AddSeriesModal({ onClose, onAdded }: AddSeriesModalProps) {
   }, [searchQuery]);
 
   const { data: searchResults, isLoading: isSearching, error: searchError } = useQuery({
-    queryKey: ['comicvine-search', debouncedQuery],
-    queryFn: () => api.searchSeriesFromComicVine(debouncedQuery, { limit: 50 }),
+    queryKey: [
+      'comicvine-search',
+      debouncedQuery,
+      publisherFilter || null,
+      yearStartFilter === '' ? null : yearStartFilter,
+      yearEndFilter === '' ? null : yearEndFilter,
+    ],
+    queryFn: () =>
+      api.searchSeriesFromComicVine(debouncedQuery, {
+        limit: 50,
+        publisher: publisherFilter.trim() || undefined,
+        yearStart: yearStartFilter === '' ? undefined : Number(yearStartFilter),
+        yearEnd: yearEndFilter === '' ? undefined : Number(yearEndFilter),
+      }),
     enabled: debouncedQuery.length >= 2,
     staleTime: 60000,
   });
@@ -606,6 +621,45 @@ function AddSeriesModal({ onClose, onAdded }: AddSeriesModalProps) {
             <div className="form-hint">
               Search ComicVine for series to add to your library. Enter at least 2 characters.
             </div>
+          </div>
+
+          {/* Quick filters: publisher and year range (14.13) */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px', fontSize: '13px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)' }}>
+              Publisher:
+              <input
+                type="text"
+                className="input"
+                placeholder="e.g. DC Comics"
+                value={publisherFilter}
+                onChange={(e) => setPublisherFilter(e.target.value)}
+                style={{ width: '140px', padding: '6px 8px' }}
+              />
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)' }}>
+              Year:
+              <input
+                type="number"
+                className="input"
+                placeholder="From"
+                min={1900}
+                max={2100}
+                value={yearStartFilter === '' ? '' : yearStartFilter}
+                onChange={(e) => setYearStartFilter(e.target.value === '' ? '' : parseInt(e.target.value, 10) || '')}
+                style={{ width: '72px', padding: '6px 8px' }}
+              />
+              <span style={{ color: 'var(--text-muted)' }}>–</span>
+              <input
+                type="number"
+                className="input"
+                placeholder="To"
+                min={1900}
+                max={2100}
+                value={yearEndFilter === '' ? '' : yearEndFilter}
+                onChange={(e) => setYearEndFilter(e.target.value === '' ? '' : parseInt(e.target.value, 10) || '')}
+                style={{ width: '72px', padding: '6px 8px' }}
+              />
+            </label>
           </div>
 
           {/* API Key Warning */}
