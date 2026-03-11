@@ -176,8 +176,13 @@ Comprehensive examination of the issue data and cover acquisition pipeline.
 - 14.7.1 Code Architecture Review ✅ COMPLETED (Iteration 208)
 - 14.7.2 Cover Source Integration Testing ✅ COMPLETED (Iteration 209)
 - 14.7.3 Unit Test Coverage Expansion ✅ COMPLETED (Iteration 210)
-- 14.7.4 Refactoring Candidates
+- 14.7.4 Refactoring Candidates ✅ COMPLETED (Iteration 211)
 - 14.7.5 Edge Case Handling
+
+**Refactoring candidates (14.7.4, from docs/research/ISSUE_COVER_ARCHITECTURE.md):**
+- Cover source integration testing: explicit tests that each source (ComicVine, Metron, volume fallback) is invoked in correct order; discovery cache keys align with API.
+- Unit test coverage: CoverService path logic, revalidation, discovery key mapping; CoverFallbackService lookup order and cache key format.
+- Edge cases: missing CV ID, rate limiting (Metron 429), behavior when both CV and Metron fail for an issue.
 
 #### 14.12 Future Week Cover Enrichment Improvements ✅ COMPLETED (Iteration 188)
 Fix issue where future weeks show volume/series images instead of actual issue covers from Metron.

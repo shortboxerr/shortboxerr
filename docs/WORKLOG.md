@@ -1,5 +1,26 @@
 # Worklog
 
+## Iteration 211 (2026-03-11)
+**EPIC 14.7.4: Refactoring Candidates**
+
+### Summary
+Documented refactoring candidates for issue/cover pipeline in BACKLOG (from ISSUE_COVER_ARCHITECTURE.md).
+
+### Changes
+
+#### BACKLOG.md
+- Added refactoring candidates list under 14.7: cover source integration tests, unit test coverage areas, edge cases (missing CV ID, 429, CV+Metron fail).
+- Marked 14.7.4 complete.
+
+### Files Changed
+| File | Type |
+|------|------|
+| `docs/BACKLOG.md` | 14.7.4 + candidates list |
+| `docs/WORKLOG.md` | Iteration 211 |
+| `docs/SELF_CHECK.md` | Iteration 211 |
+
+---
+
 ## Iteration 210 (2026-03-11)
 **EPIC 14.7.3: Unit Test Coverage Expansion**
 
