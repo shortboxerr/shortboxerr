@@ -26,7 +26,7 @@
 1. `chore: document dev container commands for build/test in rules` - 611c3e0
 2. `docs: add 14.7.1 issue/cover architecture review` - 9fe5178
 3. `test: add 14.7.2 cover source integration tests` - e5f2d4c
-4. `test: add 14.7.3 unit test coverage for cover cache` - (pending)
+4. `test: add 14.7.3 unit test coverage for cover cache` - fba0aab
 
 ## Summary
 - EPIC 14.7.3 Unit Test Coverage Expansion: ClearIssueCoverCacheAsync_DeletesIssueCacheDirectory, GetDiscoveryCoverAsync_FilePath_MatchesDiscoveryCacheLayout.
