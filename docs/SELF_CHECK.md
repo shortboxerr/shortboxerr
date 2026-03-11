@@ -1,27 +1,31 @@
-# Self-Check: Iteration 218
+# Self-Check: Iteration 219
 
 ## Build Status
 - [x] `dotnet build` succeeds (dev container)
-- [x] `npm run build` not required (docs-only)
+- [ ] `npm run build` skipped (backend-only)
 
 ## Test Status
 - **Before**: 2606 passed, 0 failed
-- **After**: 2606 passed, 0 failed
+- **After**: 2607 passed, 0 failed (+1 test)
 - [x] No NEW test failures introduced
 
 ## Lint Status
-- [x] No new lint errors on changed files (docs only)
+- [x] No new lint errors on changed files
 
 ## Files Changed
 | File | Type |
 |------|------|
-| `docs/SECURITY.md` | ESLint accepted warnings subsection |
-| `docs/BACKLOG.md` | 14.25 complete |
-| `docs/WORKLOG.md` | Iteration 218 |
-| `docs/SELF_CHECK.md` | Iteration 218 |
+| `src/Shortboxerr.Core/ComicVine/IEditionMetadataService.cs` | EditionSearchResult Query, IsDirectLookup |
+| `src/Shortboxerr.Api/Endpoints/EditionMetadataEndpoints.cs` | volume ID in edition search |
+| `tests/Shortboxerr.Tests/EditionMetadataServiceTests.cs` | +1 test |
+| `docs/TEST_BASELINE.md` | 2607 |
+| `scripts/hooks/pre-commit` | TEST_MINIMUM 2607 |
+| `docs/BACKLOG.md` | 14.11 Edition Search done |
+| `docs/WORKLOG.md` | Iteration 219 |
+| `docs/SELF_CHECK.md` | Iteration 219 |
 
 ## Commits
-1. `docs: validate ESLint accepted warnings for security (14.25)` – (pending)
+1. `feat: edition/collection search by ComicVine volume ID (14.11)` – (pending)
 
 ## Summary
-EPIC 14.25: Security and safety validation of ui/eslint.config.js accepted warnings. Documented per-rule assessment in SECURITY.md; all four rules accepted with no change to security stance.
+EPIC 14.11 Update Edition/Collection Search: GET /api/v1/editions/comicvine/search now accepts ComicVine volume ID (4050-xxxxx); direct lookup returns single result with IsDirectLookup. Test count 2606 → 2607.

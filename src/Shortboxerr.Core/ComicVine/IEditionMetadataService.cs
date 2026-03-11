@@ -79,6 +79,16 @@ public class EditionSearchResult
     public int TotalResults { get; set; }
     public int Page { get; set; }
     public int Limit { get; set; }
+
+    /// <summary>
+    /// The original search query.
+    /// </summary>
+    public string? Query { get; set; }
+
+    /// <summary>
+    /// True if this was a direct ComicVine volume ID lookup rather than a text search.
+    /// </summary>
+    public bool IsDirectLookup { get; set; }
 }
 
 /// <summary>

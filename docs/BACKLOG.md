@@ -199,9 +199,9 @@ Fix issue where future weeks show volume/series images instead of actual issue c
 - [x] **Frontend type updates**
   - Added `coverSource`, `enrichmentStatus`, `isVolumeFallbackCover` to TS interface
 
-**Deferred:**
-- [ ] Debug Metron lookup failures (requires production data analysis)
-- [ ] Lower confidence threshold for future issues (needs tuning)
+**Optional / Ready when needed:**
+- [ ] **Debug Metron lookup failures** 📋 Ready (S) – When production logs or sample failing IDs are available; add logging/diagnostics and fix lookup path.
+- [ ] **Lower confidence threshold for future issues** 📋 Ready (S) – Add tuning knob in settings; validate with real data when prioritizing.
 - [x] Auto re-enrich on week transition (background service enhancement) ✅ Iteration 202
 
 **Effort:** M | **Priority:** P2
@@ -221,9 +221,9 @@ Improve the "Add Series" experience to handle large result sets better and allow
   - Progress indicator (Adding 1 of N...)
   - Select All / Deselect All button
 
-**Deferred:**
-- [ ] Replace modal with dedicated page (future - modal works fine now)
-- [ ] Quick filters by publisher/year (future enhancement)
+**Optional enhancements (Ready to pick):**
+- [ ] **Replace Add Series modal with dedicated page** 📋 Ready (M) – Modal is sufficient; pick when UX prioritizes a full-page flow.
+- [ ] **Quick filters by publisher/year** 📋 Ready (S) – Add filter chips or dropdowns on Add Series results.
 
 **Effort:** M | **Priority:** P2
 
@@ -253,7 +253,7 @@ Accept ComicVine IDs as search parameters when adding comics, auto-detecting IDs
   - If volume ID detected, fetches directly via `GetSeriesByComicVineIdAsync`
   - Returns as single match with `IsDirectLookup` flag
 - [x] **Update Issue Search/Lookup** ✅ COMPLETED (Iteration 215)
-- [ ] **Update Edition/Collection Search** (deferred - future enhancement)
+- [x] **Update Edition/Collection Search** ✅ COMPLETED (Iteration 219) – Edition/collection search accepts ComicVine volume ID (4050-xxxxx); direct lookup via GetEditionByComicVineIdAsync.
 - [x] **UI hint for ID input** ✅ COMPLETED (Iteration 214)
 
 **Effort:** S | **Priority:** P2
@@ -286,10 +286,10 @@ Add `/api/v1/system/status` endpoint matching the pattern used by Sonarr/Radarr 
   - Disk space info
   - Now includes commit hash and branch
 
-**Deferred:**
-- [ ] Frontend fetches on app load (not needed - version already in UI)
-- [ ] `/initialize.json` alias (not needed - endpoint works)
-- [ ] Authentication status (auth not implemented yet)
+**Optional / Blocked:**
+- [ ] Frontend fetches on app load – **Won't do** for now (version already in UI).
+- [ ] `/initialize.json` alias – **Won't do** (current endpoint sufficient).
+- [ ] Authentication status in status endpoint – **📋 Ready when auth exists** (blocked on auth implementation).
 
 **Effort:** S | **Priority:** P3
 
@@ -367,23 +367,22 @@ Add SignalR hub for push notifications, matching the real-time update pattern in
 - [x] Wire up AutoSearchBackgroundService to broadcast SearchResults
 - [x] Add SignalR message unit tests (8 tests)
 
-**Deferred:**
-- [ ] Frontend subscribes to relevant channels (npm network issues)
-- [ ] Replace polling with push for Activity page, Queue, notifications
-- [ ] Graceful fallback to polling if SignalR connection fails
+**Remaining (Ready to work):**
+- [ ] **Frontend SignalR client** 📋 Ready (L) – Subscribe to hub from UI; replace polling on Activity/Queue where applicable. (Previously blocked by npm/network; re-try when environment allows.)
+- [ ] **Graceful fallback to polling** 📋 Ready (S) – If SignalR connection fails, fall back to existing polling; document in UI.
 
 **Effort:** L | **Priority:** P2
 
 #### 14.17 Performance Enhancements (from EPIC 20) 📋 PLANNED
-Additional performance optimizations deferred from EPIC 20.
+Additional performance optimizations deferred from EPIC 20. All sub-items are **ready to pick** when prioritizing performance (low priority).
 
 **Items:**
-- [ ] **Full-text search indexes** (SQLite FTS5 setup required)
-- [ ] **Virtualize Series issue grid** (2D grid, complex - pagination sufficient)
-- [ ] **Virtualize Series table** (lower priority - pagination sufficient)
-- [ ] **Virtualize Pull List discovery** (grouped by week - pagination sufficient)
-- [ ] **Intersection observer for images** (native lazy loading sufficient)
-- [ ] **Server-side pagination for SeriesDetailPage** (API contract changes required)
+- [ ] **Full-text search indexes** 📋 Ready (M) – SQLite FTS5 setup; improves search on series/editions.
+- [ ] **Virtualize Series issue grid** 📋 Ready (L) – 2D grid virtualization; pagination is sufficient for now.
+- [ ] **Virtualize Series table** 📋 Ready (M) – Lower priority; pagination sufficient.
+- [ ] **Virtualize Pull List discovery** 📋 Ready (M) – Grouped by week; pagination sufficient.
+- [ ] **Intersection observer for images** 📋 Ready (S) – Native `loading="lazy"` is sufficient; optional.
+- [ ] **Server-side pagination for SeriesDetailPage** 📋 Ready (M) – Requires API contract changes.
 - [x] **Batched API endpoints** (multi-week data in one call) ✅ COMPLETED (Iteration 213)
 
 **Note:** These are nice-to-have optimizations. Current implementations with pagination and native browser features are working well.
@@ -429,15 +428,18 @@ Validate `ui/eslint.config.js` and the documented accepted warnings to ensure th
 
 **Effort:** S | **Priority:** P2
 
-### Remaining Deferred Items
-| Item | EPIC | Effort | Status |
-|------|------|--------|--------|
-| Character/team appearances | 9 | M | Foundation complete |
-| Usenet/NZB from DDL sites | 8 | M | Deferred (future session; M effort) |
-| Folder download (Dropbox/Drive) | 8 | M | Deferred (future session; M effort) |
-| ~~Distributed cache pub/sub~~ | 12 | L | ✅ COMPLETED (Iteration 180) |
+### Items Available for Work (formerly Deferred)
 
-**Note:** Usenet/NZB from DDL and Folder download are implementable (Ready) but M effort; deferred to a future session per backlog-exhaustion run. All other READY or next-in-line items have been completed this run (iterations 211–214).
+These items are in a **workable** status: either Ready to pick when capacity allows, or Planned with a clear unblock condition.
+
+| Item | EPIC | Effort | Status | Next step |
+|------|------|--------|--------|-----------|
+| **Character/team appearances** | 9 | M | 📋 Ready | Foundation complete; implement UI + API for character/team data (ComicVine or Metron). |
+| **Usenet/NZB from DDL sites** | 8 | M | 📋 Ready | Implementable; extend DDL pipeline to consume NZB/Usenet from DDL sources. Pick when M capacity available. |
+| **Folder download (Dropbox/Drive)** | 8 | M | 📋 Ready | Implementable; add folder-based download (Dropbox, GDrive, etc.). Pick when M capacity available. |
+| ~~Distributed cache pub/sub~~ | 12 | L | ✅ COMPLETED (Iteration 180) | — |
+
+**Status legend:** 📋 Ready = unblocked, can be scheduled; **Won't do** = out of scope for now; **Ready when X** = blocked until X is done. Treat all 📋 Ready items as normal backlog; prioritize by EPIC and effort.
 
 ---
 
@@ -472,8 +474,8 @@ Reorganize existing library files to match current naming format settings.
 
 ### 18.6 Safety & Rollback (Partial)
 - [x] Dry-run mode (Iteration 179)
-- [ ] Atomic operations (per-series) - Deferred
-- [ ] Undo support (stretch goal) - Deferred
+- [ ] **Atomic operations (per-series)** 📋 Ready (M) – Ensure each series organize is atomic (all-or-nothing); pick when prioritizing safety.
+- [ ] **Undo support** 📋 Ready (L, stretch) – Restore previous paths after organize; design first (e.g. journal or snapshot), then implement.
 
 ### 18.7 UI Indicators ✅ COMPLETED
 - [x] Series list path mismatch indicator (Iteration 170)

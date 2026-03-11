@@ -26,6 +26,42 @@ public static class EditionMetadataEndpoints
                 return Results.BadRequest(new { message = "Query is required" });
             }
 
+            var q = query.Trim();
+
+            // Check if query is a ComicVine volume ID (e.g. 4050-12345 or URL) - direct edition/collection lookup (14.11)
+            var parsedVolumeId = ComicVineIdParser.TryParseAs(q, ComicVineResourceType.Volume);
+            if (parsedVolumeId != null)
+            {
+                var edition = await metadataService.GetEditionByComicVineIdAsync(
+                    parsedVolumeId.NumericId, cancellationToken);
+
+                if (edition != null)
+                {
+                    return Results.Ok(new EditionSearchResult
+                    {
+                        Success = true,
+                        Results = new List<EditionMatchCandidate> { edition },
+                        TotalResults = 1,
+                        Page = 1,
+                        Limit = 1,
+                        Query = q,
+                        IsDirectLookup = true
+                    });
+                }
+
+                return Results.Ok(new EditionSearchResult
+                {
+                    Success = true,
+                    Results = new List<EditionMatchCandidate>(),
+                    TotalResults = 0,
+                    Page = 1,
+                    Limit = limit,
+                    Query = q,
+                    IsDirectLookup = true,
+                    Error = $"ComicVine volume {parsedVolumeId.FullId} not found"
+                });
+            }
+
             var result = await metadataService.SearchEditionsAsync(
                 query, publisher, year, page, limit, cancellationToken);
 

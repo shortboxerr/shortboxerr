@@ -1,5 +1,30 @@
 # Worklog
 
+## Iteration 219 (2026-03-11)
+**EPIC 14.11: Update Edition/Collection Search – ComicVine volume ID**
+
+### Summary
+Edition/collection ComicVine search endpoint now accepts a ComicVine volume ID (e.g. 4050-12345 or URL). When the query parses as a volume ID, the endpoint calls GetEditionByComicVineIdAsync and returns a single result with IsDirectLookup = true; otherwise text search unchanged.
+
+### Changes
+- **IEditionMetadataService / EditionSearchResult:** Added Query and IsDirectLookup to EditionSearchResult.
+- **EditionMetadataEndpoints.cs:** In GET /api/v1/editions/comicvine/search, check for volume ID via ComicVineIdParser.TryParseAs(Volume); if present, direct lookup and return single result.
+- **EditionMetadataServiceTests:** GetEditionByComicVineIdAsync_WhenQueryIsVolumeId_ReturnsEditionForDirectLookup.
+
+### Files Changed
+| File | Type |
+|------|------|
+| `src/Shortboxerr.Core/ComicVine/IEditionMetadataService.cs` | EditionSearchResult + Query, IsDirectLookup |
+| `src/Shortboxerr.Api/Endpoints/EditionMetadataEndpoints.cs` | volume ID branch in comicvine/search |
+| `tests/Shortboxerr.Tests/EditionMetadataServiceTests.cs` | +1 test |
+| `docs/TEST_BASELINE.md` | 2607 |
+| `scripts/hooks/pre-commit` | TEST_MINIMUM 2607 |
+| `docs/BACKLOG.md` | 14.11 Edition Search done |
+| `docs/WORKLOG.md` | Iteration 219 |
+| `docs/SELF_CHECK.md` | Iteration 219 |
+
+---
+
 ## Iteration 218 (2026-03-11)
 **EPIC 14.25: ESLint accepted warnings – security & safety validation**
 

@@ -184,6 +184,40 @@ public class EditionMetadataServiceTests : IDisposable
         Assert.Null(result);
     }
 
+    /// <summary>
+    /// When search endpoint receives ComicVine volume ID (e.g. 4050-12345), it parses and calls
+    /// GetEditionByComicVineIdAsync; this test verifies that path returns the edition (14.11).
+    /// </summary>
+    [Fact]
+    public async Task GetEditionByComicVineIdAsync_WhenQueryIsVolumeId_ReturnsEditionForDirectLookup()
+    {
+        var parsed = ComicVineIdParser.TryParseAs("4050-12345", ComicVineResourceType.Volume);
+        Assert.NotNull(parsed);
+        Assert.Equal(12345, parsed.NumericId);
+
+        _mockComicVineClient
+            .Setup(x => x.GetVolumeAsync(12345, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ComicVineResult<ComicVineVolume>
+            {
+                Success = true,
+                StatusCode = 1,
+                Data = new ComicVineVolume
+                {
+                    Id = 12345,
+                    Name = "Batman: The Dark Knight Returns",
+                    StartYear = 1986,
+                    Publisher = new ComicVinePublisherRef { Id = 10, Name = "DC Comics" },
+                    IssueCount = 4
+                }
+            });
+
+        var result = await _service.GetEditionByComicVineIdAsync(parsed.NumericId);
+
+        Assert.NotNull(result);
+        Assert.Equal(12345, result.ComicVineId);
+        Assert.Equal("Batman: The Dark Knight Returns", result.Title);
+    }
+
     #endregion
 
     #region Match Tests
