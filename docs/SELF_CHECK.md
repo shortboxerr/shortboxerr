@@ -1,13 +1,13 @@
-# Self-Check: Iteration 221
+# Self-Check: Iteration 222
 
 ## Build Status
-- [ ] `dotnet build` succeeds (run in dev container)
-- [ ] `npm run build` succeeds (run in dev container)
+- [x] `dotnet build` succeeds (dev container)
+- [ ] `npm run build` succeeds (run in dev container if needed)
 
 ## Test Status
-- **Before**: 2607 passed, 0 failed
-- **After**: 2608 passed, 0 failed (expected +1 test)
-- [ ] No NEW test failures introduced
+- **Before**: 2608 passed, 0 failed (after test fix)
+- **After**: 2608 passed, 0 failed
+- [x] No NEW test failures introduced
 
 ## Lint Status
 - [x] No new lint errors on changed files
@@ -15,17 +15,16 @@
 ## Files Changed
 | File | Type |
 |------|------|
-| `src/Shortboxerr.Infrastructure/Services/LibraryOrganizationService.cs` | atomic rollback |
-| `tests/Shortboxerr.Tests/LibraryOrganizationServiceTests.cs` | +1 test |
-| `docs/BACKLOG.md` | 18.6 atomic done |
-| `docs/WORKLOG.md` | Iteration 221 |
-| `docs/SELF_CHECK.md` | Iteration 221 |
-| `docs/TEST_BASELINE.md` | 2608 |
-| `scripts/hooks/pre-commit` | TEST_MINIMUM 2608 |
+| `tests/Shortboxerr.Tests/LibraryOrganizationServiceTests.cs` | test fix (parent dir) |
+| `docs/ARCHITECTURE.md` | SignalR fallback policy |
+| `ui/src/pages/ActivityPage.tsx` | fallback comment |
+| `docs/BACKLOG.md` | 14.16 fallback done |
+| `docs/WORKLOG.md` | Iteration 222 |
+| `docs/SELF_CHECK.md` | Iteration 222 |
 
 ## Commits
-1. `feat(library): atomic per-series organize with rollback on failure (18.6)` – (pending)
+1. `fix(tests): create parent dir for blocker file in atomic-rollback test` – 57e245c4
+2. `chore(docs): document SignalR fallback to polling (14.16)` – (pending)
 
 ## Summary
-EPIC 18.6: Single-series organize is now all-or-nothing. If any file move fails, successful moves are rolled back and the database is not updated. New test verifies rollback and unchanged DB when second of two moves fails (destination exists).
-**Note:** Build/test were not run on host (dotnet not available); run in dev container to verify.
+Fixed rollback test in dev container; documented graceful fallback to polling for when SignalR client is added.

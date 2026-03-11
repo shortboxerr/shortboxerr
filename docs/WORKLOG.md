@@ -1,5 +1,30 @@
 # Worklog
 
+## Iteration 222 (2026-03-11)
+**Test fix + EPIC 14.16: Graceful fallback to polling (documentation)**
+
+### Summary
+- Fixed failing test `ExecuteSeriesRename_WhenOneFileFails_RollsBackSuccessfulMovesAndDoesNotUpdateDb` in dev container (create parent dir before writing blocker file).
+- Documented SignalR fallback policy: when frontend SignalR client is added, it must fall back to existing polling when the connection fails.
+
+### Changes
+- **LibraryOrganizationServiceTests:** Create directory for second file's NewPath before writing blocker file (fixes DirectoryNotFoundException in container).
+- **docs/ARCHITECTURE.md:** Added "Real-time updates (SignalR)" with fallback-to-polling requirement.
+- **ActivityPage.tsx:** Comment that current polling is the intended fallback when SignalR is added.
+- **docs/BACKLOG.md:** 14.16 Graceful fallback to polling marked complete.
+
+### Files Changed
+| File | Type |
+|------|------|
+| `tests/Shortboxerr.Tests/LibraryOrganizationServiceTests.cs` | test fix |
+| `docs/ARCHITECTURE.md` | SignalR fallback policy |
+| `ui/src/pages/ActivityPage.tsx` | fallback comment |
+| `docs/BACKLOG.md` | 14.16 fallback done |
+| `docs/WORKLOG.md` | Iteration 222 |
+| `docs/SELF_CHECK.md` | Iteration 222 |
+
+---
+
 ## Iteration 221 (2026-03-11)
 **EPIC 18.6: Atomic operations (per-series) – Library organize**
 

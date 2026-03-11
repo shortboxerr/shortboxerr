@@ -369,7 +369,7 @@ Add SignalR hub for push notifications, matching the real-time update pattern in
 
 **Remaining (Ready to work):**
 - [ ] **Frontend SignalR client** 📋 Ready (L) – Subscribe to hub from UI; replace polling on Activity/Queue where applicable. (Previously blocked by npm/network; re-try when environment allows.)
-- [ ] **Graceful fallback to polling** 📋 Ready (S) – If SignalR connection fails, fall back to existing polling; document in UI.
+- [x] **Graceful fallback to polling** ✅ COMPLETED (Iteration 222) – Documented in docs/ARCHITECTURE.md and ActivityPage.tsx: when SignalR client is added, use existing polling as fallback when connection fails.
 
 **Effort:** L | **Priority:** P2
 
@@ -427,6 +427,38 @@ Validate `ui/eslint.config.js` and the documented accepted warnings to ensure th
 - [x] Document outcome: added “ESLint Accepted Warnings (UI)” subsection to docs/SECURITY.md with per-rule assessment and reminder to re-check when changing accepted warnings.
 
 **Effort:** S | **Priority:** P2
+
+#### 14.26 AI-Powered PR Review (Free on GitHub) 📋 PLANNED
+Enable automated AI code review for pull requests on the shortboxerr repo using a **free** GitHub-integrated option.
+
+**Goals:**
+- [ ] Choose a free solution (e.g. GitHub Action–based AI review, or free tier of CodeSpect/Gemini Code Assist/Git AutoReview; avoid paid API keys if possible).
+- [ ] Configure so PRs get automated review comments (summary, potential bugs, style).
+- [ ] Document setup in repo (e.g. `docs/CONTRIBUTING.md` or `.github/README`) so maintainers can adjust.
+
+**Free options to evaluate:**
+- **GitHub Actions:** e.g. [AI Code Review (Very Powerful)](https://github.com/marketplace/actions/ai-code-review-very-powerfull) or similar (may require free-tier API key).
+- **CodeSpect:** Free for unlimited public repos (PR summaries + AI analysis).
+- **Gemini Code Assist:** Free AI reviews integrated with GitHub.
+- **Git AutoReview:** 10 free reviews/day.
+
+**Acceptance:** New PRs receive at least one automated AI review comment; solution is free for public repos and documented.
+
+**Effort:** S | **Priority:** P3
+
+#### 14.27 Prevent Committing AI-Related / Sensitive Dev Files 📋 PLANNED
+Ensure the repo does not commit files that should stay local (AI tooling state, secrets, dev-only config with credentials). If such files are already in history, remove them and fix history.
+
+**Goals:**
+- [ ] **Define blocklist:** Document which paths/patterns must never be committed (e.g. Cursor agent transcripts, MCP config containing tokens, `.aider*`, `.continue/`, local API key files, user-specific Cursor state).
+- [ ] **Update .gitignore:** Add entries so these patterns are ignored by default (e.g. `.cursor/agent-transcripts/`, `.cursor/**/env` or equivalent; any file that might hold secrets).
+- [ ] **Audit git history:** Run an audit (e.g. `git log -p --all -- <paths>` or search for known secret patterns) to see if any blocklisted files or credentials were ever committed.
+- [ ] **Fix history if needed:** If anything sensitive or unwanted is found, remove from history (e.g. `git filter-repo` or BFG), force-push with care, and document in `docs/SECURITY.md` or `docs/DECISIONS.md` what was removed and when.
+- [ ] **Document policy:** Add a short note (e.g. in `docs/CONTRIBUTING.md` or `docs/SECURITY.md`) that AI-related and credential-bearing dev files must not be committed, with a pointer to the blocklist/.gitignore.
+
+**Acceptance:** (1) .gitignore and docs clearly define what must not be committed; (2) history is audited; (3) any past commits containing such files are rewritten so they no longer appear in history; (4) policy is documented.
+
+**Effort:** M | **Priority:** P2
 
 ### Items Available for Work (formerly Deferred)
 

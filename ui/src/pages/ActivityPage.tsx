@@ -17,6 +17,7 @@ interface QueueItem {
 }
 
 export function ActivityPage() {
+  // When SignalR client is added, use this polling as fallback when connection fails (see docs/ARCHITECTURE.md).
   const { data: queue, isLoading, refetch } = useQuery({
     queryKey: ['activity-queue'],
     queryFn: api.getActivityQueue,

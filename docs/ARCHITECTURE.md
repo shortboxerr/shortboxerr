@@ -19,3 +19,7 @@
 
 ## Containerized Dev
 - Use .devcontainer for all development work to avoid host pollution.
+
+## Real-time updates (SignalR)
+- Backend exposes a SignalR hub at `/signalr/messages` for push notifications (queue, import, search results).
+- **Fallback to polling:** When a frontend SignalR client is added, it MUST gracefully fall back to the existing polling behavior (e.g. `refetchInterval` on Activity/Queue) if the SignalR connection fails or is unavailable. Do not leave the UI without updates when the hub is down.
