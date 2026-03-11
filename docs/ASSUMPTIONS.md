@@ -1,5 +1,13 @@
 # Assumptions (Auto-logged)
 
+## Decision policy (agent)
+The agent does not ask the user questions. When a decision is needed, it chooses based on **industry standards**, **best coding practices**, and project context (Arr-like, Mylar3 parity), then documents the choice here. Rationale is included when the choice is non-obvious.
+
+## Backlog exhaustion (CONTINUE loop)
+When running "repeat until nothing remains", the agent re-reads CONTINUE.md after each iteration and implements the next READY or implementable item. **Exhausted** means: every such item is either completed or explicitly deferred in BACKLOG with a reason. Remaining Deferred table items (e.g. Usenet/NZB from DDL, Folder download) are M effort and may be left for future sessions; 14.17 items (FTS5, virtualize, etc.) are documented in BACKLOG as deferred (pagination/lazy loading sufficient).
+
+---
+
 - Defaults should match Mylar3 behavior. If exact values unknown, use reasonable Arr-like defaults and mark TODO.
 - Preferred archive: CBZ
 - Default DB: SQLite for MVP
