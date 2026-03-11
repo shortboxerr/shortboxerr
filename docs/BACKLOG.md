@@ -394,9 +394,11 @@ Additional performance optimizations deferred from EPIC 20.
 | Item | EPIC | Effort | Status |
 |------|------|--------|--------|
 | Character/team appearances | 9 | M | Foundation complete |
-| Usenet/NZB from DDL sites | 8 | M | Ready |
-| Folder download (Dropbox/Drive) | 8 | M | Ready |
+| Usenet/NZB from DDL sites | 8 | M | Deferred (future session; M effort) |
+| Folder download (Dropbox/Drive) | 8 | M | Deferred (future session; M effort) |
 | ~~Distributed cache pub/sub~~ | 12 | L | ✅ COMPLETED (Iteration 180) |
+
+**Note:** Usenet/NZB from DDL and Folder download are implementable (Ready) but M effort; deferred to a future session per backlog-exhaustion run. All other READY or next-in-line items have been completed this run (iterations 211–214).
 
 ---
 
