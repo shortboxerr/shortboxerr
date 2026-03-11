@@ -1,5 +1,37 @@
 # Worklog
 
+## Iteration 215 (2026-03-11)
+**EPIC 14.11: Update Issue Search/Lookup**
+
+### Summary
+Series search now accepts ComicVine issue IDs (4000-xxxxx): looks up the issue's volume and returns that series as a direct lookup so the user can add the series from an issue ID.
+
+### Changes
+
+#### ISeriesMetadataService / SeriesMetadataService
+- `GetSeriesByComicVineIssueIdAsync(int issueId, CancellationToken)` – fetches issue via ComicVine, then returns series by issue.Volume.Id using existing GetSeriesByComicVineIdAsync.
+
+#### SeriesMetadataEndpoints.cs
+- After volume-ID check, added issue-ID check: if query parses as ComicVine issue ID, call GetSeriesByComicVineIssueIdAsync and return single result with IsDirectLookup = true.
+
+#### SeriesMetadataServiceTests.cs
+- `GetSeriesByComicVineIssueIdAsync_WithValidIssueId_ReturnsVolumeCandidate` – mocks GetIssueAsync (issue with Volume.Id) and GetVolumeAsync, asserts candidate returned.
+
+### Files Changed
+| File | Type |
+|------|------|
+| `src/Shortboxerr.Core/ComicVine/ISeriesMetadataService.cs` | +GetSeriesByComicVineIssueIdAsync |
+| `src/Shortboxerr.Infrastructure/ComicVine/SeriesMetadataService.cs` | implementation |
+| `src/Shortboxerr.Api/Endpoints/SeriesMetadataEndpoints.cs` | issue ID branch in search |
+| `tests/Shortboxerr.Tests/SeriesMetadataServiceTests.cs` | +1 test |
+| `docs/TEST_BASELINE.md` | 2606 |
+| `scripts/hooks/pre-commit` | TEST_MINIMUM 2606 |
+| `docs/BACKLOG.md` | 14.11 Issue Search done |
+| `docs/WORKLOG.md` | Iteration 215 |
+| `docs/SELF_CHECK.md` | Iteration 215 |
+
+---
+
 ## Iteration 214 (2026-03-11)
 **EPIC 14.11: UI hint for ComicVine ID input (Add Series)**
 

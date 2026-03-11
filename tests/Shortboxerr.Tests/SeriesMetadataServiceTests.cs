@@ -133,6 +133,44 @@ public class SeriesMetadataServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetSeriesByComicVineIssueIdAsync_WithValidIssueId_ReturnsVolumeCandidate()
+    {
+        const int issueId = 123456;
+        const int volumeId = 796;
+        _mockComicVineClient.Setup(x => x.IsConfigured).Returns(true);
+        _mockComicVineClient.Setup(x => x.GetIssueAsync(issueId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ComicVineResult<ComicVineIssue>
+            {
+                Success = true,
+                Data = new ComicVineIssue
+                {
+                    Id = issueId,
+                    IssueNumber = "1",
+                    Volume = new ComicVineVolumeRef { Id = volumeId, Name = "Batman" }
+                }
+            });
+        _mockComicVineClient.Setup(x => x.GetVolumeAsync(volumeId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ComicVineResult<ComicVineVolume>
+            {
+                Success = true,
+                Data = new ComicVineVolume
+                {
+                    Id = volumeId,
+                    Name = "Batman",
+                    StartYear = 1940,
+                    Publisher = new ComicVinePublisherRef { Id = 10, Name = "DC Comics" }
+                }
+            });
+
+        var result = await _service.GetSeriesByComicVineIssueIdAsync(issueId);
+
+        Assert.NotNull(result);
+        Assert.Equal(volumeId, result.ComicVineId);
+        Assert.Equal("Batman", result.Title);
+        Assert.Equal("DC Comics", result.Publisher);
+    }
+
+    [Fact]
     public async Task MatchSeriesAsync_WithValidIds_UpdatesSeries()
     {
         // Arrange

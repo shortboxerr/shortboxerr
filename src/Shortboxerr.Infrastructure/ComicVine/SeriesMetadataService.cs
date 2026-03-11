@@ -165,6 +165,34 @@ public class SeriesMetadataService : ISeriesMetadataService
     }
 
     /// <inheritdoc />
+    public async Task<SeriesMatchCandidate?> GetSeriesByComicVineIssueIdAsync(
+        int issueId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!_comicVineClient.IsConfigured)
+        {
+            return null;
+        }
+
+        try
+        {
+            var issueResult = await _comicVineClient.GetIssueAsync(issueId, cancellationToken);
+            if (!issueResult.Success || issueResult.Data?.Volume == null)
+            {
+                return null;
+            }
+
+            var volumeId = issueResult.Data.Volume.Id;
+            return await GetSeriesByComicVineIdAsync(volumeId, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get series from ComicVine issue: {IssueId}", issueId);
+            return null;
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<SeriesMatchResult> MatchSeriesAsync(
         int seriesId,
         int comicVineVolumeId,

@@ -118,17 +118,15 @@ public static class SeriesMetadataEndpoints
             return Results.BadRequest(new { error = "Search query is required" });
         }
 
-        // Check if query is a ComicVine ID (e.g., "4050-12345" or URL)
-        var parsedId = ComicVineIdParser.TryParseAs(q, ComicVineResourceType.Volume);
-        if (parsedId != null)
+        // Check if query is a ComicVine volume ID (e.g., "4050-12345" or URL)
+        var parsedVolumeId = ComicVineIdParser.TryParseAs(q, ComicVineResourceType.Volume);
+        if (parsedVolumeId != null)
         {
-            // Direct lookup by ID instead of search
             var volumeResult = await metadataService.GetSeriesByComicVineIdAsync(
-                parsedId.NumericId, cancellationToken);
+                parsedVolumeId.NumericId, cancellationToken);
 
             if (volumeResult != null)
             {
-                // Return as a single-result search
                 return Results.Ok(new SeriesSearchResult
                 {
                     Success = true,
@@ -140,20 +138,52 @@ public static class SeriesMetadataEndpoints
                     IsDirectLookup = true
                 });
             }
-            else
+
+            return Results.Ok(new SeriesSearchResult
+            {
+                Success = true,
+                Results = new List<SeriesMatchCandidate>(),
+                TotalResults = 0,
+                Page = 1,
+                PageSize = limit,
+                Query = q,
+                IsDirectLookup = true,
+                Error = $"ComicVine volume {parsedVolumeId.FullId} not found"
+            });
+        }
+
+        // Check if query is a ComicVine issue ID (e.g., "4000-123456") - look up issue's volume, return series (14.11)
+        var parsedIssueId = ComicVineIdParser.TryParseAs(q, ComicVineResourceType.Issue);
+        if (parsedIssueId != null)
+        {
+            var seriesResult = await metadataService.GetSeriesByComicVineIssueIdAsync(
+                parsedIssueId.NumericId, cancellationToken);
+
+            if (seriesResult != null)
             {
                 return Results.Ok(new SeriesSearchResult
                 {
                     Success = true,
-                    Results = new List<SeriesMatchCandidate>(),
-                    TotalResults = 0,
+                    Results = new List<SeriesMatchCandidate> { seriesResult },
+                    TotalResults = 1,
                     Page = 1,
-                    PageSize = limit,
+                    PageSize = 1,
                     Query = q,
-                    IsDirectLookup = true,
-                    Error = $"ComicVine volume {parsedId.FullId} not found"
+                    IsDirectLookup = true
                 });
             }
+
+            return Results.Ok(new SeriesSearchResult
+            {
+                Success = true,
+                Results = new List<SeriesMatchCandidate>(),
+                TotalResults = 0,
+                Page = 1,
+                PageSize = limit,
+                Query = q,
+                IsDirectLookup = true,
+                Error = $"ComicVine issue {parsedIssueId.FullId} not found or has no volume"
+            });
         }
 
         // Regular text search

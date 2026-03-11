@@ -28,6 +28,14 @@ public interface ISeriesMetadataService
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets a series from ComicVine by an issue ID (looks up the issue's volume, then returns the series/volume).
+    /// Used when the user searches by ComicVine issue ID (e.g. 4000-123456) in Add Series.
+    /// </summary>
+    Task<SeriesMatchCandidate?> GetSeriesByComicVineIssueIdAsync(
+        int issueId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Matches a local series to a ComicVine volume.
     /// </summary>
     Task<SeriesMatchResult> MatchSeriesAsync(

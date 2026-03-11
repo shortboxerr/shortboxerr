@@ -252,7 +252,7 @@ Accept ComicVine IDs as search parameters when adding comics, auto-detecting IDs
   - Detects if search term matches ComicVine ID pattern
   - If volume ID detected, fetches directly via `GetSeriesByComicVineIdAsync`
   - Returns as single match with `IsDirectLookup` flag
-- [ ] **Update Issue Search/Lookup** (deferred - future enhancement)
+- [x] **Update Issue Search/Lookup** ✅ COMPLETED (Iteration 215)
 - [ ] **Update Edition/Collection Search** (deferred - future enhancement)
 - [x] **UI hint for ID input** ✅ COMPLETED (Iteration 214)
 
