@@ -593,7 +593,7 @@ function AddSeriesModal({ onClose, onAdded }: AddSeriesModalProps) {
               <input
                 type="text"
                 className="input"
-                placeholder="Search for a series (e.g., Batman, Spider-Man, Saga)..."
+                placeholder="Search by title or ComicVine ID (e.g. Batman, 4050-12345)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus

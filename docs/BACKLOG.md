@@ -254,7 +254,7 @@ Accept ComicVine IDs as search parameters when adding comics, auto-detecting IDs
   - Returns as single match with `IsDirectLookup` flag
 - [ ] **Update Issue Search/Lookup** (deferred - future enhancement)
 - [ ] **Update Edition/Collection Search** (deferred - future enhancement)
-- [ ] **UI hint for ID input** (deferred - future enhancement)
+- [x] **UI hint for ID input** ✅ COMPLETED (Iteration 214)
 
 **Effort:** S | **Priority:** P2
 

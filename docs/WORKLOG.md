@@ -1,5 +1,26 @@
 # Worklog
 
+## Iteration 214 (2026-03-11)
+**EPIC 14.11: UI hint for ComicVine ID input (Add Series)**
+
+### Summary
+Added placeholder text in Add Series search box to hint at ComicVine ID search (e.g. 4050-12345).
+
+### Changes
+
+#### SeriesPage.tsx
+- Updated Add Series modal search input placeholder from "Search for a series (e.g., Batman, Spider-Man, Saga)..." to "Search by title or ComicVine ID (e.g. Batman, 4050-12345)...".
+
+### Files Changed
+| File | Type |
+|------|------|
+| `ui/src/pages/SeriesPage.tsx` | placeholder text |
+| `docs/BACKLOG.md` | 14.11 UI hint complete |
+| `docs/WORKLOG.md` | Iteration 214 |
+| `docs/SELF_CHECK.md` | Iteration 214 |
+
+---
+
 ## Iteration 213 (2026-03-11)
 **EPIC 14.17: Batched API endpoints (multi-week discovery)**
 
