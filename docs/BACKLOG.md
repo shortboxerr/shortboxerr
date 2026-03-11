@@ -390,17 +390,21 @@ Additional performance optimizations deferred from EPIC 20.
 
 **Effort:** L | **Priority:** P3
 
-#### 14.23 ESLint: Address UI Lint Warnings 📋 PLANNED
+#### 14.23 ESLint: Address UI Lint Warnings 🔄 IN PROGRESS
 Resolve or formally accept the 22 current ESLint warnings so the UI lint run is clean (zero warnings) or exceptions are documented.
 
-**Current warnings (as of backlog entry):**
-- **react-refresh/only-export-components:** App.tsx (useTheme), Toast.tsx (toast helpers). Option: move hooks/helpers to separate files or document co-location as intentional.
-- **react-hooks/set-state-in-effect:** Layout (sidebar on route change), ManualImportPage, PullListPage, SeriesDetailPage (viewMode, currentPage reset), WantedPage (tab from URL). Option: refactor to derive state during render or use sync-from-external pattern; or document and keep as warn.
-- **@typescript-eslint/no-explicit-any:** api/client.ts (9 locations, generated or hand-written). Option: add proper types or narrow `any` to `unknown` with guards.
-- **react-hooks/exhaustive-deps:** ManualImportPage, SeriesDetailPage (useMemo deps). Option: wrap expressions in useMemo or add eslint-disable with comment.
-- **react-hooks/incompatible-library:** LogsPage (TanStack useVirtualizer). Option: document or suppress with comment.
+- [x] **Document accepted warnings** (Iteration 217): Added block comment in `ui/eslint.config.js` listing each downgraded rule and rationale (set-state-in-effect, only-export-components, no-explicit-any, static-components).
+- [ ] Reduce warnings to zero or keep as documented warns; address exhaustive-deps / incompatible-library if desired.
 
-**Acceptance:** Either zero warnings, or an eslint.config.js / docs note that lists accepted warnings and rationale.
+**Current warnings (as of backlog entry):**
+- **react-refresh/only-export-components:** App.tsx (useTheme), Toast.tsx (toast helpers). Documented in config.
+- **react-hooks/set-state-in-effect:** Layout, ManualImportPage, PullListPage, SeriesDetailPage, WantedPage. Documented in config.
+- **@typescript-eslint/no-explicit-any:** api/client.ts (9 locations). Documented in config.
+- **react-hooks/static-components:** Documented in config.
+- **react-hooks/exhaustive-deps:** ManualImportPage, SeriesDetailPage (useMemo deps). Option: wrap in useMemo or disable with comment.
+- **react-hooks/incompatible-library:** LogsPage (TanStack useVirtualizer). Option: document or suppress.
+
+**Acceptance:** Either zero warnings, or an eslint.config.js / docs note that lists accepted warnings and rationale. (Documentation done; zero warnings optional.)
 
 **Effort:** M | **Priority:** P2
 

@@ -1,8 +1,8 @@
-# Self-Check: Iteration 216
+# Self-Check: Iteration 217
 
 ## Build Status
 - [x] `dotnet build` succeeds (dev container)
-- [x] `npm run build` succeeds (ui, after audit fix)
+- [x] `npm run build` succeeds (ui)
 
 ## Test Status
 - **Before**: 2606 passed, 0 failed
@@ -10,18 +10,18 @@
 - [x] No NEW test failures introduced
 
 ## Lint Status
-- [x] No new lint errors on changed files (only package-lock changed)
+- [x] No new lint errors on changed files (config comment only)
 
 ## Files Changed
 | File | Type |
 |------|------|
-| `ui/package-lock.json` | npm audit fix |
-| `docs/BACKLOG.md` | 14.24 complete |
-| `docs/WORKLOG.md` | Iteration 216 |
-| `docs/SELF_CHECK.md` | Iteration 216 |
+| `ui/eslint.config.js` | document accepted warnings |
+| `docs/BACKLOG.md` | 14.23 in progress |
+| `docs/WORKLOG.md` | Iteration 217 |
+| `docs/SELF_CHECK.md` | Iteration 217 |
 
 ## Commits
-1. `chore(ui): resolve npm audit vulnerabilities (14.24)` – (pending)
+1. `chore(ui): document accepted ESLint warnings in config (14.23)` – (pending)
 
 ## Summary
-EPIC 14.24: npm audit in ui/ reported 3 vulnerabilities (ajv, minimatch, rollup). Applied `npm audit fix`; 0 vulnerabilities remaining. UI build verified.
+EPIC 14.23: Added eslint.config.js block comment listing accepted warnings and rationale. 14.23 “Document accepted warnings” task complete; reducing to zero warnings remains optional.

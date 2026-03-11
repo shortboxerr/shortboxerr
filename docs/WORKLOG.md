@@ -1,5 +1,25 @@
 # Worklog
 
+## Iteration 217 (2026-03-11)
+**EPIC 14.23: ESLint – document accepted warnings**
+
+### Summary
+Added a block comment at the top of `ui/eslint.config.js` that lists all accepted (downgraded-to-warn) ESLint rules and the rationale for each, satisfying the “docs note” acceptance for 14.23.
+
+### Changes
+- **ui/eslint.config.js:** Documented accepted warnings (set-state-in-effect, only-export-components, no-explicit-any, static-components) and when to refactor.
+- **docs/BACKLOG.md:** 14.23 in progress; “Document accepted warnings” task complete.
+
+### Files Changed
+| File | Type |
+|------|------|
+| `ui/eslint.config.js` | docs block |
+| `docs/BACKLOG.md` | 14.23 in progress |
+| `docs/WORKLOG.md` | Iteration 217 |
+| `docs/SELF_CHECK.md` | Iteration 217 |
+
+---
+
 ## Iteration 216 (2026-03-11)
 **EPIC 14.24: npm audit – resolve UI dependency vulnerabilities**
 
