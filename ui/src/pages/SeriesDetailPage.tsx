@@ -1137,6 +1137,71 @@ export function SeriesDetailPage() {
   );
 }
 
+// Tri-state checkbox for series settings (declared outside modal so not created during render)
+function TriStateCheckbox({
+  value,
+  onChange,
+  label,
+  globalDefault,
+}: {
+  value: boolean | null;
+  onChange: (v: boolean | null) => void;
+  label: string;
+  globalDefault: boolean;
+}) {
+  const cycle = () => {
+    if (value === null) onChange(true);
+    else if (value === true) onChange(false);
+    else onChange(null);
+  };
+
+  return (
+    <div
+      className="tristate-checkbox"
+      onClick={cycle}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        cursor: 'pointer',
+        padding: '8px',
+        borderRadius: 'var(--radius-sm)',
+        background: 'var(--bg-tertiary)',
+        marginBottom: '8px',
+      }}
+    >
+      <div
+        style={{
+          width: '20px',
+          height: '20px',
+          borderRadius: '4px',
+          border: '2px solid var(--border-color)',
+          background: value === null ? 'transparent' : value ? 'var(--accent-primary)' : 'transparent',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '12px',
+          color: 'white',
+        }}
+      >
+        {value === null && <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>—</span>}
+        {value === true && <Check size={14} />}
+        {value === false && <X size={14} />}
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{label}</div>
+        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+          {value === null
+            ? `Using global default (${globalDefault ? 'enabled' : 'disabled'})`
+            : value
+              ? 'Enabled for this series'
+              : 'Disabled for this series'}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // === Series Settings Modal ===
 interface SeriesSettingsModalProps {
   seriesTitle: string;
@@ -1161,68 +1226,6 @@ function SeriesSettingsModal({ seriesTitle, settings, onClose, onSave, isSaving 
     });
   };
 
-  // Tri-state checkbox helper: null = use global default, true/false = override
-  const TriStateCheckbox = ({ 
-    value, 
-    onChange, 
-    label, 
-    globalDefault 
-  }: { 
-    value: boolean | null; 
-    onChange: (v: boolean | null) => void; 
-    label: string;
-    globalDefault: boolean;
-  }) => {
-    const cycle = () => {
-      if (value === null) onChange(true);
-      else if (value === true) onChange(false);
-      else onChange(null);
-    };
-
-    return (
-      <div 
-        className="tristate-checkbox" 
-        onClick={cycle}
-        style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '10px', 
-          cursor: 'pointer',
-          padding: '8px',
-          borderRadius: 'var(--radius-sm)',
-          background: 'var(--bg-tertiary)',
-          marginBottom: '8px'
-        }}
-      >
-        <div style={{
-          width: '20px',
-          height: '20px',
-          borderRadius: '4px',
-          border: '2px solid var(--border-color)',
-          background: value === null ? 'transparent' : value ? 'var(--accent-primary)' : 'transparent',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '12px',
-          color: 'white'
-        }}>
-          {value === null && <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>—</span>}
-          {value === true && <Check size={14} />}
-          {value === false && <X size={14} />}
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{label}</div>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-            {value === null 
-              ? `Using global default (${globalDefault ? 'enabled' : 'disabled'})`
-              : value ? 'Enabled for this series' : 'Disabled for this series'
-            }
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
@@ -1233,13 +1236,15 @@ function SeriesSettingsModal({ seriesTitle, settings, onClose, onSave, isSaving 
           </button>
         </div>
         <div className="modal-body">
-          <div style={{ 
-            background: 'var(--bg-secondary)', 
-            padding: '12px 16px', 
-            borderRadius: 'var(--radius-md)', 
-            marginBottom: '16px',
-            border: '1px solid var(--border-color)'
-          }}>
+          <div
+            style={{
+              background: 'var(--bg-secondary)',
+              padding: '12px 16px',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: '16px',
+              border: '1px solid var(--border-color)',
+            }}
+          >
             <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>
               {seriesTitle}
             </div>
@@ -1249,40 +1254,50 @@ function SeriesSettingsModal({ seriesTitle, settings, onClose, onSave, isSaving 
           </div>
 
           <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <div
+              style={{
+                fontSize: '12px',
+                color: 'var(--text-muted)',
+                marginBottom: '8px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}
+            >
               Issue Types
             </div>
-            
-            <TriStateCheckbox 
-              value={includeAnnuals} 
+
+            <TriStateCheckbox
+              value={includeAnnuals}
               onChange={setIncludeAnnuals}
               label="Include Annuals"
               globalDefault={true}
             />
-            
-            <TriStateCheckbox 
-              value={includeSpecials} 
+
+            <TriStateCheckbox
+              value={includeSpecials}
               onChange={setIncludeSpecials}
               label="Include Specials"
               globalDefault={false}
             />
-            
-            <TriStateCheckbox 
-              value={skipVariants} 
+
+            <TriStateCheckbox
+              value={skipVariants}
               onChange={setSkipVariants}
               label="Skip Variant Covers"
               globalDefault={true}
             />
           </div>
 
-          <div style={{ 
-            fontSize: '11px', 
-            color: 'var(--text-muted)', 
-            background: 'var(--bg-tertiary)',
-            padding: '10px 12px',
-            borderRadius: 'var(--radius-sm)',
-            lineHeight: '1.5'
-          }}>
+          <div
+            style={{
+              fontSize: '11px',
+              color: 'var(--text-muted)',
+              background: 'var(--bg-tertiary)',
+              padding: '10px 12px',
+              borderRadius: 'var(--radius-sm)',
+              lineHeight: '1.5',
+            }}
+          >
             <strong>Click to cycle:</strong> Use global → Enable → Disable → Use global
             <br />
             Changes only affect auto-add behavior for new issues. Existing wanted issues are not affected.

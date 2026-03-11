@@ -71,49 +71,39 @@ function getSystemTheme(): 'dark' | 'light' {
 }
 
 function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('dark');
-  const [effectiveTheme, setEffectiveTheme] = useState<'dark' | 'light'>('dark');
+  // User override (when they change theme before API has loaded); null = use API or default
+  const [userThemeOverride, setUserThemeOverride] = useState<Theme | null>(null);
+  // System preference when theme is 'system'; updated only via media query callback
+  const [systemTheme, setSystemTheme] = useState<'dark' | 'light'>(() => getSystemTheme());
 
-  // Load theme from API on startup
   const { data: uiSettings } = useQuery({
     queryKey: ['uiSettings'],
     queryFn: api.getUiSettings,
-    staleTime: Infinity, // Don't refetch unless explicitly invalidated
+    staleTime: Infinity,
   });
 
-  // Update theme when API data loads
-  useEffect(() => {
-    if (uiSettings?.theme) {
-      setThemeState(uiSettings.theme);
-    }
-  }, [uiSettings]);
+  // Derive theme in render (no setState in effect)
+  const theme: Theme = userThemeOverride ?? uiSettings?.theme ?? 'dark';
+  const effectiveTheme: 'dark' | 'light' = theme === 'system' ? systemTheme : theme;
 
   // Apply theme to document
-  // Theme variables are defined in CSS via [data-theme="light"] selector
-  // This approach is more maintainable and ensures all variables are properly scoped
   useEffect(() => {
-    const newEffectiveTheme = theme === 'system' ? getSystemTheme() : theme;
-    setEffectiveTheme(newEffectiveTheme);
-    
-    // Apply theme via data attribute - CSS handles the variable values
-    document.documentElement.dataset.theme = newEffectiveTheme;
-  }, [theme]);
+    document.documentElement.dataset.theme = effectiveTheme;
+  }, [effectiveTheme]);
 
-  // Listen for system theme changes
+  // Subscribe to system preference changes when theme is 'system' (setState in callback, not effect body)
   useEffect(() => {
     if (theme !== 'system') return;
-    
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = (e: MediaQueryListEvent) => {
-      setEffectiveTheme(e.matches ? 'dark' : 'light');
+      setSystemTheme(e.matches ? 'dark' : 'light');
     };
-    
     mediaQuery.addEventListener('change', handler);
     return () => mediaQuery.removeEventListener('change', handler);
   }, [theme]);
 
   const setTheme = async (newTheme: Theme) => {
-    setThemeState(newTheme);
+    setUserThemeOverride(newTheme);
     try {
       await api.updateUiSettings({ theme: newTheme });
       // Invalidate the query to keep cache in sync
