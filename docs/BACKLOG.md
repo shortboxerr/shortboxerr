@@ -390,6 +390,31 @@ Additional performance optimizations deferred from EPIC 20.
 
 **Effort:** L | **Priority:** P3
 
+#### 14.23 ESLint: Address UI Lint Warnings 📋 PLANNED
+Resolve or formally accept the 22 current ESLint warnings so the UI lint run is clean (zero warnings) or exceptions are documented.
+
+**Current warnings (as of backlog entry):**
+- **react-refresh/only-export-components:** App.tsx (useTheme), Toast.tsx (toast helpers). Option: move hooks/helpers to separate files or document co-location as intentional.
+- **react-hooks/set-state-in-effect:** Layout (sidebar on route change), ManualImportPage, PullListPage, SeriesDetailPage (viewMode, currentPage reset), WantedPage (tab from URL). Option: refactor to derive state during render or use sync-from-external pattern; or document and keep as warn.
+- **@typescript-eslint/no-explicit-any:** api/client.ts (9 locations, generated or hand-written). Option: add proper types or narrow `any` to `unknown` with guards.
+- **react-hooks/exhaustive-deps:** ManualImportPage, SeriesDetailPage (useMemo deps). Option: wrap expressions in useMemo or add eslint-disable with comment.
+- **react-hooks/incompatible-library:** LogsPage (TanStack useVirtualizer). Option: document or suppress with comment.
+
+**Acceptance:** Either zero warnings, or an eslint.config.js / docs note that lists accepted warnings and rationale.
+
+**Effort:** M | **Priority:** P2
+
+#### 14.24 npm audit: Resolve UI Dependency Vulnerabilities ✅ COMPLETED (Iteration 216)
+Address npm audit findings in `ui/` (1 moderate, 2 high vulnerabilities).
+
+**Tasks:**
+- [x] Run `npm audit` in `ui/` and capture current report (ajv, minimatch, rollup)
+- [x] Apply `npm audit fix` – resolved all 3 (0 vulnerabilities remaining)
+- [x] Re-run audit after changes – clean
+- [x] UI build verified after fix
+
+**Effort:** S | **Priority:** P2
+
 ### Remaining Deferred Items
 | Item | EPIC | Effort | Status |
 |------|------|--------|--------|

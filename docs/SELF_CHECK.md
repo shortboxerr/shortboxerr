@@ -1,32 +1,27 @@
-# Self-Check: Iteration 215
+# Self-Check: Iteration 216
 
 ## Build Status
 - [x] `dotnet build` succeeds (dev container)
-- [ ] `npm run build` skipped (backend-only)
+- [x] `npm run build` succeeds (ui, after audit fix)
 
 ## Test Status
-- **Before**: 2605 passed, 0 failed
-- **After**: 2606 passed, 0 failed (+1 test)
+- **Before**: 2606 passed, 0 failed
+- **After**: 2606 passed, 0 failed
 - [x] No NEW test failures introduced
 
 ## Lint Status
-- [x] No new lint errors on changed files
+- [x] No new lint errors on changed files (only package-lock changed)
 
 ## Files Changed
 | File | Type |
 |------|------|
-| `src/Shortboxerr.Core/ComicVine/ISeriesMetadataService.cs` | +GetSeriesByComicVineIssueIdAsync |
-| `src/Shortboxerr.Infrastructure/ComicVine/SeriesMetadataService.cs` | implementation |
-| `src/Shortboxerr.Api/Endpoints/SeriesMetadataEndpoints.cs` | issue ID in search |
-| `tests/Shortboxerr.Tests/SeriesMetadataServiceTests.cs` | +1 test |
-| `docs/TEST_BASELINE.md` | 2606 |
-| `scripts/hooks/pre-commit` | TEST_MINIMUM 2606 |
-| `docs/BACKLOG.md` | 14.11 Issue Search done |
-| `docs/WORKLOG.md` | Iteration 215 |
-| `docs/SELF_CHECK.md` | Overwritten |
+| `ui/package-lock.json` | npm audit fix |
+| `docs/BACKLOG.md` | 14.24 complete |
+| `docs/WORKLOG.md` | Iteration 216 |
+| `docs/SELF_CHECK.md` | Iteration 216 |
 
 ## Commits
-1. `feat: 14.11 ComicVine issue ID search/lookup in Add Series` - (pending)
+1. `chore(ui): resolve npm audit vulnerabilities (14.24)` – (pending)
 
 ## Summary
-EPIC 14.11 Update Issue Search/Lookup: series search accepts ComicVine issue IDs (e.g. 4000-123456), looks up issue's volume, returns series as direct lookup. Test count 2605 → 2606.
+EPIC 14.24: npm audit in ui/ reported 3 vulnerabilities (ajv, minimatch, rollup). Applied `npm audit fix`; 0 vulnerabilities remaining. UI build verified.

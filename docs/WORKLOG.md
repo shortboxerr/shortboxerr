@@ -1,5 +1,27 @@
 # Worklog
 
+## Iteration 216 (2026-03-11)
+**EPIC 14.24: npm audit – resolve UI dependency vulnerabilities**
+
+### Summary
+Ran `npm audit` in `ui/`, applied `npm audit fix`. All 3 vulnerabilities (ajv moderate, minimatch high, rollup high) were resolved; post-fix audit reports 0 vulnerabilities. UI build verified.
+
+### Changes
+- **ui/package-lock.json:** Updated transitive deps (e.g. rollup 4.57.1 → 4.59.0, ajv, minimatch) per audit fix.
+- **docs/BACKLOG.md:** Marked 14.24 complete.
+- **docs/WORKLOG.md:** Iteration 216.
+- **docs/SELF_CHECK.md:** Iteration 216 self-check.
+
+### Files Changed
+| File | Type |
+|------|------|
+| `ui/package-lock.json` | audit fix |
+| `docs/BACKLOG.md` | 14.24 done |
+| `docs/WORKLOG.md` | Iteration 216 |
+| `docs/SELF_CHECK.md` | Iteration 216 |
+
+---
+
 ## Iteration 215 (2026-03-11)
 **EPIC 14.11: Update Issue Search/Lookup**
 
