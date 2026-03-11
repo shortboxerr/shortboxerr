@@ -1,13 +1,13 @@
-# Self-Check: Iteration 207
+# Self-Check: Iteration 208
 
 ## Build Status
-- [x] `dotnet build` succeeds
-- [ ] `npm run build` skipped (npm network issues)
+- [x] `dotnet build` succeeds (dev container)
+- [ ] `npm run build` skipped (optional for doc-only iteration)
 
 ## Test Status
-- **Before**: 2589 passed, 0 failed
-- **After**: 2598 passed, 0 failed (+9 new tests)
-- [x] All tests pass
+- **Before**: 2598 passed, 0 failed
+- **After**: 2598 passed, 0 failed (no code change)
+- [x] No NEW test failures introduced
 
 ## Lint Status
 - [x] No new lint errors on changed files
@@ -15,16 +15,16 @@
 ## Files Changed
 | File | Type |
 |------|------|
-| `src/Shortboxerr.Api/Endpoints/EditionEndpoints.cs` | Modified - Add filters |
-| `tests/Shortboxerr.Tests/EditionFilterTests.cs` | Modified - 9 new tests |
-| `docs/TEST_BASELINE.md` | Modified - Update to 2598 |
-| `scripts/hooks/pre-commit` | Modified - Update TEST_MINIMUM |
-| `docs/BACKLOG.md` | Modified - Add 14.22 |
-| `docs/WORKLOG.md` | Modified - Add iteration 207 entry |
+| `docs/research/ISSUE_COVER_ARCHITECTURE.md` | New - 14.7.1 architecture doc |
+| `docs/BACKLOG.md` | Modified - 14.7.1 complete |
+| `docs/WORKLOG.md` | Modified - iteration 208 entry |
+| `docs/SELF_CHECK.md` | Overwritten |
+
+## Commits
+1. `chore: document dev container commands for build/test in rules` - 611c3e0
+2. `docs: add 14.7.1 issue/cover architecture review` - (pending)
 
 ## Summary
-Added enhanced filters to editions endpoint (14.22):
-1. `monitored` filter (true/false)
-2. `hasFile` filter (true/false)
-3. `editionType` filter (TradesPaperback, Hardcover, Omnibus, etc.)
-4. Added 9 unit tests for filter functionality
+- Committed dev container rules update.
+- Added EPIC 14.7.1 Code Architecture Review document describing issue data and cover acquisition (CoverService, CoverFallbackService, pull list enrichment, API, cache layout, refactoring candidates).
+- No code or test changes; docs only.

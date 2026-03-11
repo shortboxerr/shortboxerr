@@ -1,5 +1,37 @@
 # Worklog
 
+## Iteration 208 (2026-03-11)
+**EPIC 14.7.1: Code Architecture Review (Issue Data & Cover Acquisition)**
+
+### Summary
+Documented the architecture of the issue data and cover acquisition pipeline for refactoring planning.
+
+### Changes
+
+#### docs/research/ISSUE_COVER_ARCHITECTURE.md (new)
+- Data sources hierarchy (ComicVine → Metron → WalkSoftly → volume fallback)
+- ICoverService / CoverService: cache layout, series/issue/discovery flows, sizes
+- ICoverFallbackService / CoverFallbackService: lookup order, in-memory cache
+- Pull list and discovery cover enrichment (PullListService, DiscoveryCoverEnrichmentService, DiscoveryUpgradeBackgroundService)
+- Variant cover service (separate flow)
+- API surface (CoverEndpoints)
+- Issue metadata flow and cache lifecycle/limits
+- Refactoring candidates for 14.7.2+
+
+#### .cursor/rules.md
+- Documented dev container commands for build/test (docker compose -f docker-compose.dev.yml run --rm dev \<command\>)
+
+### Files Changed
+| File | Type |
+|------|------|
+| `docs/research/ISSUE_COVER_ARCHITECTURE.md` | New - architecture doc |
+| `docs/BACKLOG.md` | Mark 14.7.1 complete |
+| `docs/WORKLOG.md` | Add iteration 208 |
+| `docs/SELF_CHECK.md` | Update for iteration 208 |
+| `.cursor/rules.md` | Document dev container commands (committed separately) |
+
+---
+
 ## Iteration 207 (2026-03-09)
 **EPIC 14.22: Enhanced Edition List Filters**
 
