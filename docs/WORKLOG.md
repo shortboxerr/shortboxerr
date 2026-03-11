@@ -1,5 +1,33 @@
 # Worklog
 
+## Iteration 209 (2026-03-11)
+**EPIC 14.7.2: Cover Source Integration Testing**
+
+### Summary
+Added tests that verify cover source order and discovery cache key alignment with the API.
+
+### Changes
+
+#### CoverServiceTests.cs
+- `GetDiscoveryCoverAsync_ReturnsCachedCover_WhenStoredWithSameId` – verifies discovery cover stored by ID is retrieved by same ID (API/service alignment).
+- `GetDiscoveryCoverAsync_ReturnsNotFound_WhenNoCachedCover` – not-found path.
+
+#### CoverFallbackServiceTests.cs
+- `GetCoverByCvIdAsync_ReturnsMetronCover_WhenFoundViaVolumeIdAndNumber` – verifies fallback order: when CV issue ID lookup fails, Metron by CV volume ID + issue number is used before volume URL.
+
+### Files Changed
+| File | Type |
+|------|------|
+| `tests/Shortboxerr.Tests/CoverServiceTests.cs` | +2 tests |
+| `tests/Shortboxerr.Tests/CoverFallbackServiceTests.cs` | +1 test |
+| `docs/TEST_BASELINE.md` | 2601 |
+| `scripts/hooks/pre-commit` | TEST_MINIMUM 2601 |
+| `docs/BACKLOG.md` | 14.7.2 complete |
+| `docs/WORKLOG.md` | Iteration 209 |
+| `docs/SELF_CHECK.md` | Iteration 209 |
+
+---
+
 ## Iteration 208 (2026-03-11)
 **EPIC 14.7.1: Code Architecture Review (Issue Data & Cover Acquisition)**
 

@@ -329,6 +329,44 @@ public class CoverFallbackServiceTests
         Assert.Equal("https://metron.jpg", result.CoverUrl);
     }
 
+    /// <summary>
+    /// EPIC 14.7.2: Verifies cover source order - when CV issue ID lookup fails,
+    /// fallback uses Metron by CV volume ID + issue number before volume URL.
+    /// </summary>
+    [Fact]
+    public async Task GetCoverByCvIdAsync_ReturnsMetronCover_WhenFoundViaVolumeIdAndNumber()
+    {
+        const int cvIssueId = 99999;
+        const int cvVolumeId = 4050;
+        const string issueNumber = "5";
+
+        _metronClientMock.Setup(c => c.GetIssueByCvIdAsync(cvIssueId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(MetronIssueResult.NotFound("Not in Metron by CV id"));
+
+        _metronClientMock.Setup(c => c.GetSeriesByCvIdAsync(cvVolumeId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(MetronSeriesResult.Found(new MetronSeries { Id = 100, Name = "Test Series" }));
+
+        var metronIssue = new MetronIssue
+        {
+            Id = 200,
+            CvId = cvIssueId,
+            Number = issueNumber,
+            ImageUrl = "https://metron.cloud/volume-issue-cover.jpg",
+            Series = new MetronSeries { Name = "Test Series" }
+        };
+
+        _metronClientMock.Setup(c => c.GetIssueBySeriesIdAsync(100, issueNumber, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(MetronIssueResult.Found(metronIssue));
+
+        var service = CreateService();
+
+        var result = await service.GetCoverByCvIdAsync(cvIssueId, comicVineVolumeId: cvVolumeId, issueNumber: issueNumber, volumeCoverUrl: "https://volume-fallback.jpg");
+
+        Assert.True(result.Success);
+        Assert.Equal(CoverSource.Metron, result.Source);
+        Assert.Equal("https://metron.cloud/volume-issue-cover.jpg", result.CoverUrl);
+    }
+
     [Fact]
     public async Task GetCoverByCvIdAsync_TracksResolutionTime()
     {

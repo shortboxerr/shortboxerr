@@ -510,6 +510,49 @@ public class CoverServiceTests : IDisposable
         Assert.Null(metadata);
     }
 
+    /// <summary>
+    /// EPIC 14.7.2: Verifies discovery cache key alignment - the same ID used to store a discovery cover
+    /// is used by GetDiscoveryCoverAsync to retrieve it (aligns with API /api/v1/covers/discovery/{id}).
+    /// </summary>
+    [Fact]
+    public async Task GetDiscoveryCoverAsync_ReturnsCachedCover_WhenStoredWithSameId()
+    {
+        // Arrange - store a discovery cover with DownloadExternalCoverAsync (as enrichment does)
+        var imageBytes = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0 };
+        SetupHttpClient(HttpStatusCode.OK, imageBytes);
+
+        const int discoveryCoverId = 98765;
+        var downloadResult = await _service.DownloadExternalCoverAsync(
+            "https://metron.cloud/discovery/cover.jpg",
+            CoverType.Discovery,
+            discoveryCoverId,
+            CoverCacheSource.Metron,
+            CoverSize.Medium);
+
+        Assert.True(downloadResult.Success, "Setup: store discovery cover failed");
+        Assert.NotNull(downloadResult.FilePath);
+
+        // Act - retrieve via same ID (as API endpoint does)
+        var getResult = await _service.GetDiscoveryCoverAsync(discoveryCoverId, CoverSize.Medium);
+
+        // Assert - same cache path, success
+        Assert.True(getResult.Success, getResult.Error);
+        Assert.NotNull(getResult.FilePath);
+        Assert.Equal(downloadResult.FilePath, getResult.FilePath);
+        Assert.Equal(CoverType.Discovery, getResult.CoverType);
+        Assert.Equal(discoveryCoverId, getResult.EntityId);
+    }
+
+    [Fact]
+    public async Task GetDiscoveryCoverAsync_ReturnsNotFound_WhenNoCachedCover()
+    {
+        var result = await _service.GetDiscoveryCoverAsync(99999, CoverSize.Medium);
+
+        Assert.False(result.Success);
+        Assert.NotNull(result.Error);
+        Assert.Contains("99999", result.Error);
+    }
+
     #endregion
 }
 

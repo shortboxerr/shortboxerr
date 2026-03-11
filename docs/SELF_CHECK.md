@@ -1,12 +1,12 @@
-# Self-Check: Iteration 208
+# Self-Check: Iteration 209
 
 ## Build Status
 - [x] `dotnet build` succeeds (dev container)
-- [ ] `npm run build` skipped (optional for doc-only iteration)
+- [ ] `npm run build` skipped (backend-only iteration)
 
 ## Test Status
 - **Before**: 2598 passed, 0 failed
-- **After**: 2598 passed, 0 failed (no code change)
+- **After**: 2601 passed, 0 failed (+3 tests)
 - [x] No NEW test failures introduced
 
 ## Lint Status
@@ -15,16 +15,19 @@
 ## Files Changed
 | File | Type |
 |------|------|
-| `docs/research/ISSUE_COVER_ARCHITECTURE.md` | New - 14.7.1 architecture doc |
-| `docs/BACKLOG.md` | Modified - 14.7.1 complete |
-| `docs/WORKLOG.md` | Modified - iteration 208 entry |
+| `tests/Shortboxerr.Tests/CoverServiceTests.cs` | +2 tests (14.7.2) |
+| `tests/Shortboxerr.Tests/CoverFallbackServiceTests.cs` | +1 test (14.7.2) |
+| `docs/TEST_BASELINE.md` | 2601 |
+| `scripts/hooks/pre-commit` | TEST_MINIMUM 2601 |
+| `docs/BACKLOG.md` | 14.7.2 complete |
+| `docs/WORKLOG.md` | Iteration 209 |
 | `docs/SELF_CHECK.md` | Overwritten |
 
 ## Commits
 1. `chore: document dev container commands for build/test in rules` - 611c3e0
-2. `docs: add 14.7.1 issue/cover architecture review` - (pending)
+2. `docs: add 14.7.1 issue/cover architecture review` - 9fe5178
+3. `test: add 14.7.2 cover source integration tests` - (pending)
 
 ## Summary
-- Committed dev container rules update.
-- Added EPIC 14.7.1 Code Architecture Review document describing issue data and cover acquisition (CoverService, CoverFallbackService, pull list enrichment, API, cache layout, refactoring candidates).
-- No code or test changes; docs only.
+- EPIC 14.7.2 Cover Source Integration Testing: added 3 tests verifying discovery cache key alignment (GetDiscoveryCoverAsync after DownloadExternalCoverAsync with same ID) and cover fallback source order (Metron by volume ID + issue number before volume URL).
+- Test count 2598 → 2601.
