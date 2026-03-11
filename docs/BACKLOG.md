@@ -177,7 +177,7 @@ Comprehensive examination of the issue data and cover acquisition pipeline.
 - 14.7.2 Cover Source Integration Testing ✅ COMPLETED (Iteration 209)
 - 14.7.3 Unit Test Coverage Expansion ✅ COMPLETED (Iteration 210)
 - 14.7.4 Refactoring Candidates ✅ COMPLETED (Iteration 211)
-- 14.7.5 Edge Case Handling
+- 14.7.5 Edge Case Handling ✅ COMPLETED (Iteration 212)
 
 **Refactoring candidates (14.7.4, from docs/research/ISSUE_COVER_ARCHITECTURE.md):**
 - Cover source integration testing: explicit tests that each source (ComicVine, Metron, volume fallback) is invoked in correct order; discovery cache keys align with API.

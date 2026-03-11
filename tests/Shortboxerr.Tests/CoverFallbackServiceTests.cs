@@ -501,4 +501,22 @@ public class CoverFallbackServiceTests
         Assert.NotNull(result.MatchConfidence);
         Assert.True(result.MatchConfidence > 0.70);
     }
+
+    /// <summary>
+    /// EPIC 14.7.5: Edge case - when Metron returns 429 Rate Limited, fall back to volume cover URL.
+    /// </summary>
+    [Fact]
+    public async Task GetCoverByCvIdAsync_WhenMetronReturns429_FallsBackToVolumeCover()
+    {
+        _metronClientMock.Setup(c => c.GetIssueByCvIdAsync(It.IsAny<int>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(MetronIssueResult.Failed("Rate limited", 429));
+
+        var service = CreateService();
+
+        var result = await service.GetCoverByCvIdAsync(12345, volumeCoverUrl: "https://volume-fallback.jpg");
+
+        Assert.True(result.Success);
+        Assert.Equal(CoverSource.ComicVineVolume, result.Source);
+        Assert.Equal("https://volume-fallback.jpg", result.CoverUrl);
+    }
 }

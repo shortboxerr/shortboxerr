@@ -1,5 +1,28 @@
 # Worklog
 
+## Iteration 212 (2026-03-11)
+**EPIC 14.7.5: Edge Case Handling**
+
+### Summary
+Added edge case test: Metron 429 rate limit falls back to volume cover URL.
+
+### Changes
+
+#### CoverFallbackServiceTests.cs
+- `GetCoverByCvIdAsync_WhenMetronReturns429_FallsBackToVolumeCover` – when Metron returns 429, service returns volume cover URL (no further Metron calls).
+
+### Files Changed
+| File | Type |
+|------|------|
+| `tests/Shortboxerr.Tests/CoverFallbackServiceTests.cs` | +1 test |
+| `docs/TEST_BASELINE.md` | 2604 |
+| `scripts/hooks/pre-commit` | TEST_MINIMUM 2604 |
+| `docs/BACKLOG.md` | 14.7.5 complete |
+| `docs/WORKLOG.md` | Iteration 212 |
+| `docs/SELF_CHECK.md` | Iteration 212 |
+
+---
+
 ## Iteration 211 (2026-03-11)
 **EPIC 14.7.4: Refactoring Candidates**
 
