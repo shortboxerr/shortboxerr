@@ -35,8 +35,15 @@ If assumptions are needed:
 
 ## Containerized development (MANDATORY)
 - All development must happen inside the Dev Container defined in .devcontainer/.
-- Do NOT rely on host-installed SDKs.
-- Ensure commands in docs and scripts run inside the container.
+- Do NOT rely on host-installed SDKs (dotnet, node, etc. may not be on host PATH).
+- **Run build, test, and npm commands inside the container:**
+  ```bash
+  docker compose -f docker-compose.dev.yml run --rm dev <command>
+  ```
+  Example: `docker compose -f docker-compose.dev.yml run --rm dev dotnet build --verbosity quiet`
+  Example: `docker compose -f docker-compose.dev.yml run --rm dev dotnet test --no-build --verbosity quiet`
+  Example: `docker compose -f docker-compose.dev.yml run --rm dev sh -c "cd ui && npm run build"`
+- Ensure commands in docs and scripts are written to run inside the container.
 
 ## Boundaries
 - Do not add license/rights gating sections.
