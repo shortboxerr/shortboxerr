@@ -1,0 +1,26 @@
+# CodeRabbit AI code review – https://docs.coderabbit.ai
+# Free for public repos. Install: https://github.com/apps/coderabbitai
+
+language: "en-US"
+early_access: false
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: true
+  review_status: true
+  review_details: false
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - "!**/node_modules/**"
+    - "!**/package-lock.json"
+    - "!**/bin/**"
+    - "!**/obj/**"
+    - "!**/dist/**"
+    - "!**/.next/**"
+    - "!**/coverage/**"
+    - "!**/Playwright/**"   # Playwright browsers
+chat:
+  auto_reply: true

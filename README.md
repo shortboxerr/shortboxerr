@@ -4,6 +4,8 @@ Arr-like comic automation platform with Mylar3 behavioral parity and first-class
 
 **License:** [GPL-3.0](LICENSE) (same as Sonarr/Radarr).
 
+**Code review:** [CodeRabbit](https://github.com/apps/coderabbitai) is enabled for this repo (free for public repos). [Install the app](https://github.com/apps/coderabbitai) on this repository to get AI PR reviews. Config: [.coderabbit.yaml](.coderabbit.yaml).
+
 ## Development (Dev Container)
 Open this repo in Cursor and use the Dev Container:
 - Command Palette → "Dev Containers: Reopen in Container"
