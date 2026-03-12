@@ -4,6 +4,16 @@ This document captures intentional design decisions and known technical debt dis
 
 ---
 
+## Image lazy loading (14.17 – Intersection observer)
+
+**Decision**: Rely on native `loading="lazy"` and `decoding="async"` on cover images; do not add a custom Intersection Observer for image loading.
+
+**Rationale**: Native lazy loading is supported in current browsers and is sufficient for grid/list views (Series, Pull List, Calendar, Dashboard, etc.). A custom observer would add complexity without meaningful gain for this app’s usage. If we need finer control (e.g. placeholder until in view) later, we can revisit.
+
+**Where**: Cover images use `loading="lazy"` in `CoverImage.tsx`, `SeriesDetailPage`, `PullListPage`, `CalendarPage`, `Dashboard`, `EditionDetailPage`, `SeriesPage`.
+
+---
+
 ## Audit: Iteration 190 - Git History Test Analysis
 
 **Date**: 2026-02-27  

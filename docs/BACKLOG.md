@@ -381,7 +381,7 @@ Additional performance optimizations deferred from EPIC 20. All sub-items are **
 - [ ] **Virtualize Series issue grid** 📋 Ready (L) – 2D grid virtualization; pagination is sufficient for now.
 - [ ] **Virtualize Series table** 📋 Ready (M) – Lower priority; pagination sufficient.
 - [ ] **Virtualize Pull List discovery** 📋 Ready (M) – Grouped by week; pagination sufficient.
-- [ ] **Intersection observer for images** 📋 Ready (S) – Native `loading="lazy"` is sufficient; optional.
+- [x] **Intersection observer for images** ✅ COMPLETED (Iteration 224) – Documented in docs/DECISIONS.md: we rely on native `loading="lazy"`; custom observer deferred.
 - [ ] **Server-side pagination for SeriesDetailPage** 📋 Ready (M) – Requires API contract changes.
 - [x] **Batched API endpoints** (multi-week data in one call) ✅ COMPLETED (Iteration 213)
 

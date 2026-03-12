@@ -1,5 +1,25 @@
 # Worklog
 
+## Iteration 224 (2026-03-12)
+**EPIC 14.17: Intersection observer for images – document decision**
+
+### Summary
+Documented that we rely on native `loading="lazy"` for cover images and do not add a custom Intersection Observer (sufficient for current usage; optional enhancement deferred).
+
+### Changes
+- **docs/DECISIONS.md:** Added "Image lazy loading" section with decision and rationale.
+- **docs/BACKLOG.md:** Marked "Intersection observer for images" complete (Iteration 224).
+
+### Files Changed
+| File | Type |
+|------|------|
+| `docs/DECISIONS.md` | image lazy-loading decision |
+| `docs/BACKLOG.md` | 14.17 intersection observer done |
+| `docs/WORKLOG.md` | Iteration 224 |
+| `docs/SELF_CHECK.md` | Iteration 224 |
+
+---
+
 ## Iteration 223 (2026-03-12)
 **EPIC 14.17: Full-text search (FTS5) for series list**
 
