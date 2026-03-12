@@ -222,7 +222,7 @@ Improve the "Add Series" experience to handle large result sets better and allow
   - Select All / Deselect All button
 
 **Optional enhancements (Ready to pick):**
-- [ ] **Replace Add Series modal with dedicated page** 📋 Ready (M) – Modal is sufficient; pick when UX prioritizes a full-page flow.
+- [x] **Replace Add Series modal with dedicated page** ✅ COMPLETED (Iteration 225) – Dedicated route `/series/add` with full-page Add Series flow; Series page "Add Series" navigates there. Shared `AddSeriesContent` component.
 - [x] **Quick filters by publisher/year** ✅ COMPLETED (Iteration 220) – Add Series modal: optional Publisher text filter and Year range (From/To); passed to ComicVine search API.
 
 **Effort:** M | **Priority:** P2

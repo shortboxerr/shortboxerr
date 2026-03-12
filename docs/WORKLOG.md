@@ -1,5 +1,30 @@
 # Worklog
 
+## Iteration 225 (2026-03-12)
+**EPIC 14.13: Replace Add Series modal with dedicated page**
+
+### Summary
+Add Series is now a full page at `/series/add`. Series page "Add Series" buttons navigate there. Shared `AddSeriesContent` component holds search, filters, results, and add logic; `AddSeriesPage` wraps it with page header and Back button.
+
+### Changes
+- **AddSeriesContent.tsx (new):** Reusable add-series UI (search, publisher/year filters, sort, list/grid, batch add). Used by Add Series page.
+- **AddSeriesPage.tsx (new):** Page at `/series/add` with Back to Series and title; uses AddSeriesContent; onAdded refetches and navigates to /series.
+- **App.tsx:** Route `series/add` → AddSeriesPage (lazy).
+- **SeriesPage:** Removed AddSeriesModal and inline search/result components; "Add Series" → navigate('/series/add'). Restored X, AlertCircle, Loader2 for other modals.
+
+### Files Changed
+| File | Type |
+|------|------|
+| `ui/src/components/AddSeriesContent.tsx` | new |
+| `ui/src/pages/AddSeriesPage.tsx` | new |
+| `ui/src/App.tsx` | route series/add |
+| `ui/src/pages/SeriesPage.tsx` | remove modal, navigate to add page |
+| `docs/BACKLOG.md` | 14.13 replace modal done |
+| `docs/WORKLOG.md` | Iteration 225 |
+| `docs/SELF_CHECK.md` | Iteration 225 |
+
+---
+
 ## Iteration 224 (2026-03-12)
 **EPIC 14.17: Intersection observer for images – document decision**
 

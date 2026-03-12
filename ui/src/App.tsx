@@ -20,6 +20,7 @@ const HistoryPage = lazy(() => import('./pages/HistoryPage').then(m => ({ defaul
 const WantedPage = lazy(() => import('./pages/WantedPage').then(m => ({ default: m.WantedPage })));
 const CalendarPage = lazy(() => import('./pages/CalendarPage').then(m => ({ default: m.CalendarPage })));
 const LogsPage = lazy(() => import('./pages/LogsPage'));
+const AddSeriesPage = lazy(() => import('./pages/AddSeriesPage').then(m => ({ default: m.AddSeriesPage })));
 
 function PageLoader() {
   return (
@@ -131,6 +132,7 @@ function App() {
                 <Route path="/" element={<Layout />}>
                   <Route index element={<Dashboard />} />
                   <Route path="series" element={<SeriesPage />} />
+                  <Route path="series/add" element={<AddSeriesPage />} />
                   <Route path="series/:id" element={<SeriesDetailPage />} />
                   <Route path="collections" element={<CollectionsPage />} />
                   <Route path="collections/:id" element={<EditionDetailPage />} />
