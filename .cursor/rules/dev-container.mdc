@@ -1,0 +1,16 @@
+---
+description: All development and testing run in the Dev Container; do not assume host tooling.
+alwaysApply: true
+---
+
+# Development Container (MANDATORY)
+
+**All development and testing in this project happen inside the development container.**
+
+- Do **not** assume `dotnet`, `node`, `npm`, or other SDKs are available on the host. They are provided inside the Dev Container (`.devcontainer/`).
+- When you need to build, test, or run UI commands, run them **inside the container**, for example:
+  - `docker compose -f docker-compose.dev.yml run --rm dev dotnet build --verbosity quiet`
+  - `docker compose -f docker-compose.dev.yml run --rm dev dotnet test --no-build --verbosity quiet`
+  - `docker compose -f docker-compose.dev.yml run --rm dev sh -c "cd ui && npm run build"`
+- Docs, scripts, and commit messages should refer to running commands in the container when relevant.
+- If the host has no `dotnet`/`node`, do not treat that as a blocker: the intended environment is the Dev Container.
