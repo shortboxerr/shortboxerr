@@ -13,6 +13,7 @@ If a tool is needed (dotnet, node, sqlite tooling), add it to the devcontainer i
 ## Git workflow (MANDATORY)
 - Use git for all changes.
 - Commit after every logical breakpoint (small, reviewable commits).
+- **Do not leave uncommitted files.** Before finishing an iteration, run `git status`. Commit any staged or untracked changes that belong in the repo. If you unstage some files to keep a commit focused, commit the remainder in the next commit in the same session.
 - Breakpoints examples:
   - initial repo scaffold
   - add/extend DB migration + entity mapping

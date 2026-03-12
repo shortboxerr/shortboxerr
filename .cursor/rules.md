@@ -25,6 +25,7 @@ If assumptions are needed:
   - why
   - how to test (in commit body if non-trivial)
 - Never squash. Keep history granular.
+- **Never leave uncommitted files.** Before ending an iteration or session, run `git status`. If anything is staged or untracked (that belongs in the repo), commit it in the same session. If you unstage files to make a focused commit, commit the rest in the next commit immediately—do not leave them for later.
 
 ## Output requirements (every iteration)
 - Update docs/WORKLOG.md (append)
