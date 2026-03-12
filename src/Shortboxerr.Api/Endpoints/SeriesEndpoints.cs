@@ -31,17 +31,18 @@ public static class SeriesEndpoints
             string? publisher = null,
             bool? monitored = null,
             string? search = null,
-            bool includePathMismatch = false) =>
+            bool includePathMismatch = false,
+            CancellationToken cancellationToken = default) =>
         {
             // Check if series-annual integration is enabled (defaults to true)
             var settings = await pullListService.GetSettingsAsync();
             var hideLinkedAnnuals = settings.EnableSeriesAnnualIntegration ?? true;
             
             // Generate cache key including query parameters
-            // v3 suffix added for search parameter support
+            // v4: FTS5 used for search when SQLite
             var cacheKey = cacheService.GenerateKey(
                 CacheKeys.SeriesList,
-                "v3",
+                "v4",
                 page,
                 pageSize,
                 sortKey ?? "title",
@@ -90,13 +91,24 @@ public static class SeriesEndpoints
                 query = query.Where(s => s.Monitored == monitored.Value);
             }
 
-            // Apply text search filter (searches title and alternate titles)
+            // Apply text search filter (FTS5 when SQLite and Series_fts returns IDs, else title/sort title LIKE)
             if (!string.IsNullOrWhiteSpace(search))
             {
-                var searchLower = search.Trim().ToLower();
-                query = query.Where(s => 
-                    s.Title.ToLower().Contains(searchLower) ||
-                    (s.SortTitle != null && s.SortTitle.ToLower().Contains(searchLower)));
+                var searchTrimmed = search.Trim();
+                var searchLower = searchTrimmed.ToLower();
+                var useFts = db.Database.IsSqlite();
+                if (useFts)
+                {
+                    var ftsIds = await db.GetSeriesIdsFromFtsAsync(searchTrimmed, cancellationToken);
+                    if (ftsIds.Count > 0)
+                        query = query.Where(s => ftsIds.Contains(s.Id));
+                    else
+                        useFts = false; // fall back to LIKE (no FTS matches or Series_fts not present)
+                }
+                if (!useFts)
+                    query = query.Where(s =>
+                        s.Title.ToLower().Contains(searchLower) ||
+                        (s.SortTitle != null && s.SortTitle.ToLower().Contains(searchLower)));
             }
 
             // Apply sorting

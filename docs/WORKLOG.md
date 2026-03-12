@@ -1,5 +1,29 @@
 # Worklog
 
+## Iteration 223 (2026-03-12)
+**EPIC 14.17: Full-text search (FTS5) for series list**
+
+### Summary
+Added SQLite FTS5 for the series list search. When the database is SQLite and the Series_fts table exists (after migration), the series list endpoint uses FTS for the search parameter; otherwise it falls back to the existing title/sort title LIKE behavior.
+
+### Changes
+- **Migration AddSeriesFts5:** Creates Series_fts virtual table (content=Series, content_rowid=Id), triggers to keep FTS in sync on INSERT/UPDATE/DELETE, and initial population from Series.
+- **SeriesFtsHelper:** Extension method GetSeriesIdsFromFtsAsync on ShortboxerrDbContext; returns matching series IDs from FTS5 MATCH; catches SqliteException (e.g. table missing) and returns empty.
+- **SeriesEndpoints:** When search is present and IsSqlite(), call FTS helper; if FTS returns IDs use them to filter, else fall back to LIKE. Cache key bumped to v4.
+- **docs/BACKLOG.md:** 14.17 Full-text search (Series) marked complete.
+
+### Files Changed
+| File | Type |
+|------|------|
+| `src/Shortboxerr.Infrastructure/Persistence/Migrations/20260311240000_AddSeriesFts5.cs` | new migration |
+| `src/Shortboxerr.Infrastructure/Persistence/SeriesFtsHelper.cs` | new helper |
+| `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | FTS + fallback, cache v4 |
+| `docs/BACKLOG.md` | 14.17 series FTS done |
+| `docs/WORKLOG.md` | Iteration 223 |
+| `docs/SELF_CHECK.md` | Iteration 223 |
+
+---
+
 ## Iteration 222 (2026-03-11)
 **Test fix + EPIC 14.16: Graceful fallback to polling (documentation)**
 

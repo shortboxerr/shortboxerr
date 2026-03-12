@@ -377,7 +377,7 @@ Add SignalR hub for push notifications, matching the real-time update pattern in
 Additional performance optimizations deferred from EPIC 20. All sub-items are **ready to pick** when prioritizing performance (low priority).
 
 **Items:**
-- [ ] **Full-text search indexes** 📋 Ready (M) – SQLite FTS5 setup; improves search on series/editions.
+- [x] **Full-text search indexes (Series)** ✅ COMPLETED (Iteration 223) – SQLite FTS5 for series list search: migration AddSeriesFts5, SeriesFtsHelper, series endpoint uses FTS when SQLite and falls back to LIKE when FTS returns no IDs. Editions FTS can be added later.
 - [ ] **Virtualize Series issue grid** 📋 Ready (L) – 2D grid virtualization; pagination is sufficient for now.
 - [ ] **Virtualize Series table** 📋 Ready (M) – Lower priority; pagination sufficient.
 - [ ] **Virtualize Pull List discovery** 📋 Ready (M) – Grouped by week; pagination sufficient.
