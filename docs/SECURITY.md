@@ -200,3 +200,24 @@ The `CredentialEncryptionServiceTests` suite verifies:
 - Handling of corrupted/tampered data
 
 Run tests: `dotnet test --filter "CredentialEncryption"`
+
+## AI and Dev Tooling: Do Not Commit
+
+The following paths and patterns **must never be committed** to the repo. They are listed in `.gitignore`; this section is the authoritative blocklist and policy.
+
+### Blocklist
+
+| Pattern | Reason |
+|--------|--------|
+| `.cursor/agent-transcripts/` | Agent chat transcripts may contain context you do not want in repo history. |
+| `.cursor/**/env`, `.cursor/**/*.env` | MCP or tool config may hold API keys/tokens; use global Cursor config (e.g. `~/.cursor/mcp.json`) for tokens. |
+| `.aider*` | Aider AI editor state. |
+| `.continue/` | Continue.dev state and config. |
+| `.env`, `.env.local`, `.env.*.local` | Local environment and secrets. |
+| `*.secrets.json` | User secrets (e.g. `appsettings.secrets.json`). |
+
+### Policy
+
+- **Before committing:** Ensure no blocklisted file is staged. If you use Cursor MCP with a GitHub token, store it only in **global** config (e.g. `~/.cursor/mcp.json`), not in the project’s `.cursor/mcp.json` (see `.cursor/README.md`).
+- **If you accidentally committed a secret:** Revoke the credential immediately (e.g. GitHub token), then remove it from history (e.g. `git filter-repo` or BFG) and force-push. Document the incident in this file or `docs/DECISIONS.md` if significant.
+- **Audit:** Periodically run `git log --all --name-only --pretty=format:''` and check for any blocklisted path; if found, fix history and update `.gitignore`/this section.
