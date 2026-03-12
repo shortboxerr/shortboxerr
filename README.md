@@ -2,6 +2,8 @@
 
 Arr-like comic automation platform with Mylar3 behavioral parity and first-class collected editions.
 
+**License:** [GPL-3.0](LICENSE) (same as Sonarr/Radarr).
+
 ## Development (Dev Container)
 Open this repo in Cursor and use the Dev Container:
 - Command Palette → "Dev Containers: Reopen in Container"
