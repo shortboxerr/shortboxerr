@@ -4,6 +4,7 @@
 language: "en-US"
 early_access: false
 reviews:
+  auto_title_placeholder: "@auto-title"
   profile: "chill"
   request_changes_workflow: false
   high_level_summary: true
