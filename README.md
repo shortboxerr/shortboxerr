@@ -29,6 +29,16 @@ cd src/Shortboxerr.Api && dotnet run --urls "http://0.0.0.0:5052"
 cd ui && npm run dev
 ```
 
+### Verify dev servers
+
+After both are up, from the repo root:
+
+```bash
+make check-servers
+```
+
+This checks API `/ping`, `/health` (including database), and the Vite root URL. Override URLs if needed: `make check-servers API_URL=http://127.0.0.1:5052 UI_URL=http://127.0.0.1:8586`.
+
 ### Restarting Servers (STOP-WAIT-VERIFY-START)
 
 **Important:** Vite auto-increments port if 8585 is busy (→ 8586, 8587...). Always verify ports are free!
