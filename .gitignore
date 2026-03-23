@@ -54,3 +54,14 @@ Thumbs.db
 
 # Runtime data
 **/covers/
+
+# AI / dev tooling – do not commit (see docs/SECURITY.md)
+.cursor/agent-transcripts/
+.cursor/**/env
+.cursor/**/*.env
+.aider*
+.continue/
+.env
+.env.local
+.env.*.local
+*.secrets.json
