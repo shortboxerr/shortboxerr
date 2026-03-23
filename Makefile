@@ -4,7 +4,7 @@ SHELL := /bin/bash
 API_URL ?= http://127.0.0.1:5052
 UI_URL  ?= http://127.0.0.1:8585
 
-.PHONY: help restore build test run fmt lint install-hooks check-servers
+.PHONY: help restore build test run fmt lint install-hooks dev-up dev-down check-servers
 
 help:
 	@echo "Targets:"
@@ -12,6 +12,8 @@ help:
 	@echo "  build          dotnet build"
 	@echo "  test           dotnet test"
 	@echo "  run            dotnet run --project src/Shortboxerr.Api"
+	@echo "  dev-up         start backend (5052) + frontend (8585) in background"
+	@echo "  dev-down       stop backend + frontend dev servers"
 	@echo "  check-servers  verify API + Vite dev servers respond (see API_URL, UI_URL)"
 	@echo "  fmt            dotnet format (if available) or noop"
 	@echo "  install-hooks  install git hooks from scripts/hooks"
@@ -41,13 +43,59 @@ install-hooks:
 	@chmod +x .git/hooks/commit-msg
 	@echo "Installed commit-msg hook."
 
+# Start backend and frontend in background with logs under .logs/.
+dev-up:
+	@mkdir -p .logs
+	@echo "Checking backend port 5052 is free ..."
+	@lsof -i :5052 -sTCP:LISTEN >/dev/null 2>&1 && { echo "FAIL: port 5052 is already in use. Run 'make dev-down' or stop the process first." >&2; exit 1; } || true
+	@echo "Checking frontend port 8585 is free ..."
+	@lsof -i :8585 -sTCP:LISTEN >/dev/null 2>&1 && { echo "FAIL: port 8585 is already in use. Run 'make dev-down' or stop the process first." >&2; exit 1; } || true
+	@echo "Starting backend on 5052 ..."
+	@nohup bash -lc 'cd src/Shortboxerr.Api && dotnet run --urls "http://0.0.0.0:5052"' > .logs/backend.log 2>&1 &
+	@echo "Waiting for backend readiness ($(API_URL)/ping) ..."
+	@for i in {1..30}; do \
+		if curl -sfS --max-time 2 "$(API_URL)/ping" >/dev/null 2>&1; then \
+			echo "  Backend is ready."; \
+			break; \
+		fi; \
+		if [ $$i -eq 30 ]; then \
+			echo "FAIL: backend did not become ready in time. See .logs/backend.log" >&2; \
+			exit 1; \
+		fi; \
+		sleep 1; \
+	done
+	@echo "Starting frontend on 8585 ..."
+	@nohup bash -lc 'cd ui && npm run dev -- --host 0.0.0.0 --port 8585 --strictPort' > .logs/frontend.log 2>&1 &
+	@echo "Waiting for frontend readiness ($(UI_URL)/) ..."
+	@for i in {1..20}; do \
+		if curl -sfS --max-time 2 -o /dev/null "$(UI_URL)/"; then \
+			echo "  Frontend is ready."; \
+			break; \
+		fi; \
+		if [ $$i -eq 20 ]; then \
+			echo "FAIL: frontend did not become ready in time. See .logs/frontend.log" >&2; \
+			exit 1; \
+		fi; \
+		sleep 1; \
+	done
+	@$(MAKE) check-servers || { echo "Startup check failed. See .logs/backend.log and .logs/frontend.log" >&2; exit 1; }
+	@echo "Servers started. Logs: .logs/backend.log, .logs/frontend.log"
+
+dev-down:
+	@api_pid=$$(lsof -t -i :5052 -sTCP:LISTEN 2>/dev/null | head -n1); \
+	if [ -n "$$api_pid" ]; then kill "$$api_pid" >/dev/null 2>&1 || true; fi
+	@ui_pid=$$(lsof -t -i :8585 -sTCP:LISTEN 2>/dev/null | head -n1); \
+	if [ -n "$$ui_pid" ]; then kill "$$ui_pid" >/dev/null 2>&1 || true; fi
+	@sleep 1
+	@echo "Stopped backend/frontend dev servers (if they were running)."
+
 # Verify dev servers: API liveness + health (incl. DB) and Vite on UI_URL.
 # Run inside the dev container after starting backend and frontend (README).
 check-servers:
 	@command -v curl >/dev/null || { echo "check-servers: curl is required" >&2; exit 1; }
 	@echo "Checking API liveness $(API_URL)/ping ..."
-	@body=$$(curl -sfS --max-time 5 "$(API_URL)/ping") || { echo "FAIL: API not reachable at $(API_URL) (start: cd src/Shortboxerr.Api && dotnet run --urls \"http://0.0.0.0:5052\")" >&2; exit 1; }
-	@echo "$$body" | grep -qE '^pong$$|^"pong"$$' || { echo "FAIL: unexpected /ping response: $$body" >&2; exit 1; }
+	@code=$$(curl -sfS --max-time 5 -o /dev/null -w '%{http_code}' "$(API_URL)/ping") || { echo "FAIL: API not reachable at $(API_URL) (start: cd src/Shortboxerr.Api && dotnet run --urls \"http://0.0.0.0:5052\")" >&2; exit 1; }; \
+	test "$$code" = "200" || { echo "FAIL: /ping HTTP $$code (expected 200)" >&2; exit 1; }
 	@echo "  OK"
 	@echo "Checking API health $(API_URL)/health ..."
 	@health=$$(mktemp) && trap 'rm -f "$$health"' EXIT; \
