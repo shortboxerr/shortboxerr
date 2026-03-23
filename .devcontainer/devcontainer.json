@@ -3,6 +3,9 @@
   "dockerComposeFile": ["../docker-compose.dev.yml"],
   "service": "dev",
   "workspaceFolder": "/workspaces/shortboxerr",
+  "containerEnv": {
+    "GH_TOKEN": "${localEnv:GH_TOKEN}"
+  },
   "customizations": {
     "vscode": {
       "settings": {
@@ -15,5 +18,5 @@
       ]
     }
   },
-  "postCreateCommand": "dotnet --info"
+  "postCreateCommand": "dotnet --info && (sudo chown -R vscode:vscode /home/vscode/.nuget /workspaces/shortboxerr 2>/dev/null || true) && ( [ -z \"${GH_TOKEN}\" ] || echo \"${GH_TOKEN}\" | gh auth login --with-token )"
 }
