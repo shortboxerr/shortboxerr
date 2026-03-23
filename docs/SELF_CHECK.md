@@ -1,12 +1,12 @@
-# Self-Check: Iteration 225
+# Self-Check: Iteration 226
 
 ## Build Status
-- [x] `dotnet build` (not run this iteration; UI-only)
-- [x] `npm run build` succeeds (dev container)
+- [x] `dotnet build` succeeds
+- [x] `npm run build` succeeds
 
 ## Test Status
 - **Before**: 2608 passed, 0 failed
-- **After**: (no backend test changes)
+- **After**: 2610 passed, 0 failed
 - [x] No NEW test failures introduced
 
 ## Lint Status
@@ -15,16 +15,15 @@
 ## Files Changed
 | File | Type |
 |------|------|
-| `ui/src/components/AddSeriesContent.tsx` | new |
-| `ui/src/pages/AddSeriesPage.tsx` | new |
-| `ui/src/App.tsx` | route series/add |
-| `ui/src/pages/SeriesPage.tsx` | remove modal, navigate |
-| `docs/BACKLOG.md` | 14.13 done |
-| `docs/WORKLOG.md` | Iteration 225 |
-| `docs/SELF_CHECK.md` | Iteration 225 |
+| `src/Shortboxerr.Api/Endpoints/ComicVineEndpoints.cs` | validation logic |
+| `tests/Shortboxerr.Tests/SettingsEndpointTests.cs` | +2 ComicVine tests |
+| `docs/BACKLOG.md` | 9.14 done |
+| `docs/WORKLOG.md` | Iteration 226 |
+| `docs/SELF_CHECK.md` | Iteration 226 |
+| `docs/ASSUMPTIONS.md` | environment note |
 
 ## Commits
-1. `feat(ui): Add Series as dedicated page at /series/add (14.13)` – (pending)
+1. `fix(comicvine): require validated API key before enabling` - (pending)
 
 ## Summary
-Replaced Add Series modal with full page; Series page links to /series/add.
+ComicVine enablement now requires a configured API key plus a successful connection test before `Enabled=true` is persisted.

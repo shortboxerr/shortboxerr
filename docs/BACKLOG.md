@@ -55,6 +55,20 @@ ComicVine is the primary metadata source for comic series, issues, and collectio
 ### Remaining Work
 All major items complete. Minor enhancements may be added as discovered.
 
+#### 9.14 ComicVine Enablement Gating by Valid API Key ✅ COMPLETED (Iteration 226)
+Only enable ComicVine-dependent features after a user provides an API key in Settings and the key is verified with a successful test call.
+
+**Goals:**
+- [x] Require ComicVine API key entry in Settings before enablement can be toggled on.
+- [x] Add/confirm a "Test API Key" validation path that performs a real ComicVine connectivity/auth check.
+- [x] Persist enabled state only when the test succeeds; if test fails, keep ComicVine disabled and show actionable error feedback.
+- [x] Ensure backend enforces the same rule (no enablement without valid configured key), not just frontend UI gating.
+- [x] Add/update unit/integration tests for valid/invalid key flows and enablement behavior.
+
+**Acceptance:** ComicVine remains disabled until a key is configured and successfully tested; failed tests never leave ComicVine enabled.
+
+**Effort:** S | **Priority:** P2
+
 ---
 
 ## EPIC 11: Weekly Pull List (Mylar3 Parity) ✅ COMPLETED

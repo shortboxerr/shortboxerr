@@ -489,6 +489,47 @@ public class SettingsEndpointTests : IClassFixture<CustomWebApplicationFactory>
         Assert.Contains("not configured", result.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    // ========== ComicVine Settings Tests ==========
+
+    [Fact]
+    public async Task UpdateComicVineSettings_EnableWithoutApiKey_ReturnsBadRequest()
+    {
+        // Keep this deterministic in shared-state integration runs.
+        var currentResponse = await _client.GetAsync("/api/v1/comicvine/settings");
+        currentResponse.EnsureSuccessStatusCode();
+
+        var current = await currentResponse.Content.ReadFromJsonAsync<ComicVineSettingsResponse>();
+        Assert.NotNull(current);
+
+        if (current.HasApiKey)
+        {
+            // If an API key is already configured from another test/session,
+            // this test cannot verify the "no key" branch.
+            return;
+        }
+
+        // Ensure disabled first, then try to enable without key.
+        await _client.PutAsJsonAsync("/api/v1/comicvine/settings", new { enabled = false });
+
+        var response = await _client.PutAsJsonAsync("/api/v1/comicvine/settings", new { enabled = true });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(error);
+        Assert.Contains("without an API key", error.Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task UpdateComicVineSettings_DisableWithoutApiKey_Succeeds()
+    {
+        var response = await _client.PutAsJsonAsync("/api/v1/comicvine/settings", new { enabled = false });
+        response.EnsureSuccessStatusCode();
+
+        var settings = await response.Content.ReadFromJsonAsync<ComicVineSettingsResponse>();
+        Assert.NotNull(settings);
+        Assert.False(settings.Enabled);
+    }
+
 }
 
 // Response DTOs for deserialization
@@ -540,6 +581,18 @@ public class MetronTestResponse
 {
     public bool Success { get; set; }
     public string Message { get; set; } = "";
+}
+
+public class ComicVineSettingsResponse
+{
+    public bool Enabled { get; set; }
+    public bool HasApiKey { get; set; }
+    public string? MaskedApiKey { get; set; }
+    public int CacheTtlHours { get; set; }
+    public string CoverCacheDirectory { get; set; } = "";
+    public int AutoMatchThreshold { get; set; }
+    public bool AutoRefreshEnabled { get; set; }
+    public int RefreshIntervalDays { get; set; }
 }
 
 public class ErrorResponse

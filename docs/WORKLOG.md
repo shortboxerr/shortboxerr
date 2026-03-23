@@ -1,5 +1,32 @@
 # Worklog
 
+## Iteration 226 (2026-03-23)
+**EPIC 9.14: ComicVine enablement gating by validated API key**
+
+### Summary
+ComicVine can no longer be enabled unless an API key is configured and the key passes a real connection test. This closes a gap where enablement could be toggled on before credentials were validated.
+
+### Changes
+- **ComicVineEndpoints:** Added backend validation in `PUT /api/v1/comicvine/settings` for enable transitions.
+  - Rejects enabling when no API key is configured.
+  - Persists settings in disabled state, runs `TestConnectionAsync`, and only enables when the test succeeds.
+  - Returns `400` with actionable error/test message when validation fails.
+- **SettingsEndpointTests:** Added integration coverage for ComicVine settings gating:
+  - enabling without API key returns `400`
+  - disabling without API key still succeeds
+- **docs/BACKLOG.md:** Marked 9.14 complete.
+
+### Files Changed
+| File | Type |
+|------|------|
+| `src/Shortboxerr.Api/Endpoints/ComicVineEndpoints.cs` | enablement validation + test gate |
+| `tests/Shortboxerr.Tests/SettingsEndpointTests.cs` | ComicVine settings tests |
+| `docs/BACKLOG.md` | 9.14 marked complete |
+| `docs/WORKLOG.md` | Iteration 226 |
+| `docs/SELF_CHECK.md` | Iteration 226 |
+
+---
+
 ## Iteration 225 (2026-03-12)
 **EPIC 14.13: Replace Add Series modal with dedicated page**
 

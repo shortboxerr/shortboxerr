@@ -110,6 +110,7 @@ public static class ComicVineEndpoints
     private static async Task<IResult> UpdateSettings(
         [FromBody] ComicVineSettingsRequest request,
         ISettingsService settingsService,
+        IComicVineClient comicVineClient,
         CancellationToken cancellationToken)
     {
         // Get existing settings
@@ -127,6 +128,34 @@ public static class ComicVineEndpoints
             AutoRefreshEnabled = request.AutoRefreshEnabled ?? existing?.AutoRefreshEnabled ?? true,
             RefreshIntervalDays = request.RefreshIntervalDays ?? existing?.RefreshIntervalDays ?? 7
         };
+
+        var wasEnabled = existing?.Enabled ?? false;
+        var isEnableTransition = settings.Enabled && !wasEnabled;
+
+        // Enforce: ComicVine can only be enabled after a key is configured and validated.
+        if (isEnableTransition)
+        {
+            if (string.IsNullOrWhiteSpace(settings.ApiKey))
+            {
+                return Results.BadRequest(new { error = "Cannot enable ComicVine without an API key configured" });
+            }
+
+            // Persist key/settings while staying disabled, then validate connection.
+            settings.Enabled = false;
+            await settingsService.SetAsync("comicvine", settings, cancellationToken);
+
+            var testResult = await comicVineClient.TestConnectionAsync(cancellationToken);
+            if (!testResult.Success)
+            {
+                return Results.BadRequest(new
+                {
+                    error = "Cannot enable ComicVine until API key test succeeds",
+                    testMessage = testResult.Message
+                });
+            }
+
+            settings.Enabled = true;
+        }
 
         await settingsService.SetAsync("comicvine", settings, cancellationToken);
 
