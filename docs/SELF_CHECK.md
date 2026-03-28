@@ -16,6 +16,7 @@ Theme provider split, toast module split, pages/layout/client typing, CI ESLint,
 ## Commits
 
 1. `fix(ui): zero ESLint warnings and CI lint gate`
+2. `docs: add ui lint to CONTRIBUTING quality gates`
 
 ## Summary
 

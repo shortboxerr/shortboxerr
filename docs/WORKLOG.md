@@ -26,7 +26,7 @@ Achieved **zero** `eslint` warnings: extracted **`useTheme`** to `theme/ThemeCon
 | `docs/WORKLOG.md` | this entry |
 | `docs/SELF_CHECK.md` | Iteration 237 |
 
-**Commit:** `fix(ui): zero ESLint warnings and CI lint gate`
+**Commits:** `fix(ui): zero ESLint warnings and CI lint gate`; `docs: add ui lint to CONTRIBUTING quality gates`.
 
 ---
 
