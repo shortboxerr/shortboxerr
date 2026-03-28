@@ -33,7 +33,8 @@
 
 ## Commits
 
-1. `fix(security): NuGet remediation, CI vulnerable check, SECURITY docs` — (this iteration)
+1. `fix(security): NuGet remediation, CI vulnerable check, SECURITY docs`
+2. `chore: refresh wwwroot asset hashes after ui build` (post `npm run build` gate)
 
 ## Summary
 

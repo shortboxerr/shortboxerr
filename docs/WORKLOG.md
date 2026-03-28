@@ -22,6 +22,9 @@ Security-focused continue-dev: cleared all `dotnet list package --vulnerable --i
 | `docs/BACKLOG.md` | 14.28–14.31 status |
 | `docs/WORKLOG.md` | this entry |
 | `docs/SELF_CHECK.md` | Iteration 233 |
+| `src/Shortboxerr.Api/wwwroot/**` | quality gate: `npm run build` refreshed hashed bundles |
+
+**Commits:** `fix(security): NuGet remediation…` (95bd682); `chore: refresh wwwroot asset hashes after ui build` (1e5ee46).
 
 ---
 
