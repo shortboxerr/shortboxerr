@@ -30,8 +30,7 @@
 
 ## Commits
 
-1. `chore(security): Dependabot, CI audits, Gitleaks, ui lockfile, docs`
-2. `chore: refresh wwwroot after ui build`
+1. `chore(security): Dependabot, CI npm audit and Gitleaks, backlog 14.27/29` (includes ui lockfile + wwwroot refresh)
 
 ## Summary
 

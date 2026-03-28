@@ -23,6 +23,8 @@ Security iteration: **14.27** closed — `.gitignore` now includes **`.devcontai
 | `ui/package-lock.json` | `npm audit fix` so CI `npm audit --audit-level=high` passes |
 | `src/Shortboxerr.Api/wwwroot/**` | refreshed after `npm run build` |
 
+**Commit:** `chore(security): Dependabot, CI npm audit and Gitleaks, backlog 14.27/29` (a6f1544).
+
 ---
 
 ## Iteration 233 (2026-03-28)
