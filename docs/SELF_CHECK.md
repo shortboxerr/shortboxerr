@@ -31,6 +31,7 @@
 ## Commits
 
 1. `chore(security): Dependabot, CI npm audit and Gitleaks, backlog 14.27/29` (includes ui lockfile + wwwroot refresh)
+2. `docs: align SELF_CHECK and WORKLOG 234 with single security commit`
 
 ## Summary
 
