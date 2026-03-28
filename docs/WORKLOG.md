@@ -1,5 +1,22 @@
 # Worklog
 
+## Iteration 230 (2026-03-28)
+**fix(ci): Docker restore without tests project; stabilize cache event tests**
+
+### Summary
+CI `docker-build` failed: `dotnet restore` on full solution required `tests/Shortboxerr.Tests.csproj` before COPY. Restore now targets `src/Shortboxerr.Api/Shortboxerr.Api.csproj` only. `CacheEventPublisherTests` integration cases used fixed `Thread.Sleep(50)` while `CacheService` publishes via `Task.Run`; replaced with polling wait up to 10s for minimum event counts to fix flaky failures on GitHub runners.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `Dockerfile` | restore API project only |
+| `tests/Shortboxerr.Tests/CacheEventPublisherTests.cs` | poll for async events |
+| `docs/WORKLOG.md` | this entry |
+| `docs/SELF_CHECK.md` | Iteration 230 |
+
+---
+
 ## Iteration 229 (2026-03-28)
 **fix: CodeRabbit PR review (MD058, security assertion, reset baseline, masked key)**
 
