@@ -1,5 +1,28 @@
 # Worklog
 
+## Iteration 238 (2026-03-28)
+
+**docs(security): GitHub SECURITY policy, CI table, Docker notes**
+
+### Summary
+
+Security-focused continue-dev: added **`.github/SECURITY.md`** for vulnerability reporting (private reporting / advisories, not public issues), links to **`docs/SECURITY.md`** and CI. Expanded **`docs/SECURITY.md`** with a **CI checks table** (NuGet, npm audit, ESLint, Gitleaks, Docker gate) and a **Docker / container** subsection (multi-stage build, non-root user, no baked secrets). **`docs/CONTRIBUTING.md`** links reporters to `.github/SECURITY.md`. **BACKLOG 14.32** complete; **EPIC 22.8** “secrets in logs/artifacts” partially addressed via documentation.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `.github/SECURITY.md` | new |
+| `docs/SECURITY.md` | CI table, Docker, checklist |
+| `docs/CONTRIBUTING.md` | reporting link |
+| `docs/BACKLOG.md` | 14.32, 22.8 |
+| `docs/WORKLOG.md` | this entry |
+| `docs/SELF_CHECK.md` | Iteration 238 |
+
+**Commit:** `docs(security): GitHub policy, CI and Docker security notes`
+
+---
+
 ## Iteration 237 (2026-03-28)
 
 **fix(ui): zero ESLint warnings; enforce in CI**

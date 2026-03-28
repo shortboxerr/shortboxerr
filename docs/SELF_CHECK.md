@@ -1,23 +1,18 @@
-# Self-Check: Iteration 237
+# Self-Check: Iteration 238
 
-## Lint
+## Build / tests
 
-- [x] `cd ui && npm run lint` — **0** warnings (`--max-warnings 0`)
-
-## Build
-
-- [x] `cd ui && npm run build`
 - [x] `dotnet build` / `dotnet test` — 2610 passed
+- [x] `cd ui && npm run lint` — 0 warnings
 
-## Files
+## Scope
 
-Theme provider split, toast module split, pages/layout/client typing, CI ESLint, docs.
+Documentation and policy only (no application code).
 
 ## Commits
 
-1. `fix(ui): zero ESLint warnings and CI lint gate`
-2. `docs: add ui lint to CONTRIBUTING quality gates`
+1. `docs(security): GitHub policy, CI and Docker security notes`
 
 ## Summary
 
-UI lint is clean; regressions prevented via `max-warnings 0` and CI.
+Public-facing security policy and deeper operator docs for CI + Docker; backlog 14.32 and partial 22.8.

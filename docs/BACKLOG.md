@@ -514,6 +514,16 @@ The Mar 2026 security audit was lightweight (grep, `docs/SECURITY.md`, package v
 
 **Effort:** L | **Priority:** P3
 
+#### 14.32 Vulnerability disclosure & container security notes ✅ COMPLETED (Iteration 238)
+Make it easy for reporters to disclose issues safely and document how the shipped container relates to secrets and supply chain.
+
+**Delivered (Iteration 238):**
+- [x] **`.github/SECURITY.md`** — supported branches, how to report (private reporting / advisories, not public issues), pointer to `docs/SECURITY.md` and CI summary.
+- [x] **`docs/SECURITY.md`** — CI checks table (NuGet, npm audit, ESLint, Gitleaks, Docker gate); **Docker** subsection (multi-stage, non-root user, no baked `.env`/secrets in image layers).
+- [x] **`docs/CONTRIBUTING.md`** — link to `.github/SECURITY.md` for vulnerability reports.
+
+**Effort:** S | **Priority:** P2
+
 ### Items Available for Work (formerly Deferred)
 
 These items are in a **workable** status: either Ready to pick when capacity allows, or Planned with a clear unblock condition.
@@ -982,7 +992,7 @@ Migrate from direct `dev` pushes to a PR-first workflow targeting `main`, with b
 
 ### 22.8 Security/Compliance for Release Automation 📋 PLANNED
 - [ ] Scope and rotate GitHub tokens/secrets for release jobs.
-- [ ] Ensure no secrets leak in logs/artifacts.
+- [x] Ensure no secrets leak in logs/artifacts — **partial (Iteration 238):** `docs/SECURITY.md` documents Docker image hygiene (no baked secrets), CI secret scanning (Gitleaks), and contributor reporting via `.github/SECURITY.md`. **Release** workflow log/artifact review still TBD when EPIC 22 adds publish jobs.
 - [x] Gate dependency/license/security scans as required or advisory before release — **partial (Iteration 235):** `main`/`dev` **CI** already runs NuGet vulnerability check, npm audit (high+), and Gitleaks; Dependabot opens update PRs. Dedicated **release** workflow gates still TBD when EPIC 22 automates releases.
 
 **Acceptance:** Release automation follows least-privilege and existing security policy.

@@ -24,6 +24,7 @@ Run commands inside the [development container](https://github.com/shortboxerr/s
 
 ## Security
 
+- **Report vulnerabilities:** use private channels — see [`.github/SECURITY.md`](../.github/SECURITY.md) (do not use public issues for undisclosed security bugs).
 - Do not commit secrets, API keys, or local AI tool state. Authoritative blocklist and policy: [SECURITY.md](./SECURITY.md) (section *AI and Dev Tooling: Do Not Commit*). Ignored patterns: root `.gitignore`.
 - **Cursor / MCP:** Keep `.cursor/mcp.json` free of tokens; use `~/.cursor/mcp.json` or env for PATs. See [.cursor/README.md](../.cursor/README.md).
 - **Dev container:** Never commit `.devcontainer/local-secrets/` (gitignored); used only for optional local GitHub token file.

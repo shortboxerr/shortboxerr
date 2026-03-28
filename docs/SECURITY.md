@@ -207,7 +207,21 @@ Short, informal model for operators and reviewers (not a formal STRIDE exercise)
 
 ### Automated checks (CI)
 
-On push/PR, CI runs **vulnerable NuGet** listing, **`npm audit`** (high+) for `ui/` and `tests/e2e`, and **Gitleaks** on full history. See `.github/workflows/ci.yml` and `docs/CONTRIBUTING.md`. Deeper static analysis (e.g. Semgrep, OSV beyond NuGet advisory DB) remains optional.
+| Job / step | Purpose |
+|------------|---------|
+| `dotnet list package --vulnerable --include-transitive` | Fails if NuGet advisory DB reports known issues in the solution graph. |
+| **`npm audit`** (`ui/`, `tests/e2e`, `--audit-level=high`) | Fails on high/critical npm advisories for those trees. |
+| **`npm run lint`** (UI only, `--max-warnings 0`) | Blocks new ESLint warnings (includes hooks/refresh rules relevant to safe React patterns). |
+| **Gitleaks** (full history) | Detects accidentally committed secrets. |
+| **Docker build** (after above) | Ensures the release image still builds; image runs the API as a **non-root** user (see below). |
+
+Workflow: `.github/workflows/ci.yml`. Contributor expectations: `docs/CONTRIBUTING.md`. **Vulnerability disclosure:** `.github/SECURITY.md`.
+
+Deeper static analysis (e.g. Semgrep, OSV beyond NuGet advisory DB) remains optional for a future iteration.
+
+### Docker image
+
+The **`Dockerfile`** builds a **multi-stage** image: only `src/Shortboxerr.Api` (and dependencies) is published; **tests and e2e** trees are not copied into the image. Runtime stage uses **`mcr.microsoft.com/dotnet/aspnet:8.0`**, runs as user **`shortboxerr`** (non-root), and does **not** bake in `.env`, user secrets, or dev-only paths. Build-time secrets must not be passed as `ARG`/`ENV` for layers that ship to registry; use runtime env or orchestrator secrets for production configuration.
 
 ## Code Review Checklist
 
@@ -223,6 +237,7 @@ When reviewing code that handles credentials, verify:
 - [ ] Error messages don't include credential values
 - [ ] New dependencies: no new high/critical NuGet advisories without mitigation (`dotnet list package --vulnerable`)
 - [ ] Frontend build does not embed secrets in `wwwroot` bundles
+- [ ] Undisclosed security issues are **not** discussed in public issues before fix (use `.github/SECURITY.md`)
 
 ## Adding New Credential Types
 
