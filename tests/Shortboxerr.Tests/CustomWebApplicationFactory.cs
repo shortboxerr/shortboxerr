@@ -19,8 +19,10 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IDisp
 
     /// <summary>
     /// Test API key used for all test requests.
+    /// Distinct from production keys (sk_live_*) so secret scanners do not block git push;
+    /// still long and stable for middleware/auth tests.
     /// </summary>
-    public const string TestApiKey = "test-api-key-for-integration-tests";
+    public const string TestApiKey = "sbxr_test_0123456789abcdef0123456789abcdef";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
