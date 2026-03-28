@@ -1,5 +1,30 @@
 # Worklog
 
+## Iteration 233 (2026-03-28)
+
+**fix(security): NuGet vulnerability remediation, CI check, SECURITY backlog**
+
+### Summary
+
+Security-focused continue-dev: cleared all `dotnet list package --vulnerable --include-transitive` findings. Bumped ASP.NET Core / EF Core packages from 8.0.0 to **8.0.11**; aligned `Microsoft.Extensions.Options` (8.0.2) and `Microsoft.Extensions.Hosting.Abstractions` (8.0.1) because 8.0.11 is not published for those on NuGet. Added repo-root **`Directory.Build.props`** with direct references to **Microsoft.Extensions.Caching.Memory** 8.0.1, **System.Text.Json** 8.0.6, **System.Text.Encodings.Web** 8.0.0 (clears critical GHSA-ghhp-997w-qr28 on transitive 4.5.0). Test project pins **System.Net.Http** 4.3.4 and **System.Text.RegularExpressions** 4.3.1. CI runs **`dotnet list package --vulnerable --include-transitive`** after restore. Documented NuGet pins, `wwwroot` secret policy, and e2e audit/release boundary in **`docs/SECURITY.md`**. Marked BACKLOG **14.28** and **14.30** complete; **14.29** doc goal done; **14.31** NuGet CI sub-goal done.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `Directory.Build.props` | new — transitive security pins |
+| `src/Shortboxerr.Api/Shortboxerr.Api.csproj` | package versions |
+| `src/Shortboxerr.Infrastructure/Shortboxerr.Infrastructure.csproj` | package versions |
+| `src/Shortboxerr.Core/Shortboxerr.Core.csproj` | package versions |
+| `tests/Shortboxerr.Tests/Shortboxerr.Tests.csproj` | package versions + legacy overrides |
+| `.github/workflows/ci.yml` | vulnerable package check |
+| `docs/SECURITY.md` | supply chain, wwwroot, e2e, checklist |
+| `docs/BACKLOG.md` | 14.28–14.31 status |
+| `docs/WORKLOG.md` | this entry |
+| `docs/SELF_CHECK.md` | Iteration 233 |
+
+---
+
 ## Iteration 232 (2026-03-28)
 
 **fix(tests): serialize CacheEventPublisherTests for CI**

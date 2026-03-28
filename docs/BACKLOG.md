@@ -466,6 +466,7 @@ Ensure the repo does not commit files that should stay local (AI tooling state, 
 
 **Goals:**
 - [ ] **Define blocklist:** Document which paths/patterns must never be committed (e.g. Cursor agent transcripts, MCP config containing tokens, `.aider*`, `.continue/`, local API key files, user-specific Cursor state).
+- [ ] **Verify MCP / Cursor config in repo:** Confirm committed `.cursor/mcp.json` (and similar) use a token-free launcher or placeholders only—raw PATs belong in user/global config or env (`GITHUB_PERSONAL_ACCESS_TOKEN` / `GH_TOKEN`), per `docs/SECURITY.md`.
 - [ ] **Update .gitignore:** Add entries so these patterns are ignored by default (e.g. `.cursor/agent-transcripts/`, `.cursor/**/env` or equivalent; any file that might hold secrets).
 - [ ] **Audit git history:** Run an audit (e.g. `git log -p --all -- <paths>` or search for known secret patterns) to see if any blocklisted files or credentials were ever committed.
 - [ ] **Fix history if needed:** If anything sensitive or unwanted is found, remove from history (e.g. `git filter-repo` or BFG), force-push with care, and document in `docs/SECURITY.md` or `docs/DECISIONS.md` what was removed and when.
@@ -474,6 +475,50 @@ Ensure the repo does not commit files that should stay local (AI tooling state, 
 **Acceptance:** (1) .gitignore and docs clearly define what must not be committed; (2) history is audited; (3) any past commits containing such files are rewritten so they no longer appear in history; (4) policy is documented.
 
 **Effort:** M | **Priority:** P2
+
+#### 14.28 Resolve NuGet transitive vulnerabilities (security audit Mar 2026) ✅ COMPLETED (Iteration 233)
+`dotnet list package --vulnerable --include-transitive` reported high-severity transitive packages. Clear them by bumping direct dependencies, central package management, or explicit version overrides so the resolved graph uses patched versions.
+
+**Packages called out in audit:**
+- [x] **Microsoft.Extensions.Caching.Memory** (8.0.0) — [GHSA-qj66-m88j-hmgj](https://github.com/advisories/GHSA-qj66-m88j-hmgj) — pinned via `Directory.Build.props` (8.0.1)
+- [x] **System.Text.Json** (8.0.0) — [GHSA-hh2w-p6rv-4g7w](https://github.com/advisories/GHSA-hh2w-p6rv-4g7w), [GHSA-8g4q-xg66-9fp4](https://github.com/advisories/GHSA-8g4q-xg66-9fp4) — pinned 8.0.6 in `Directory.Build.props`
+- [x] **System.Text.Encodings.Web** (4.5.0, critical) — resolved by pinning 8.0.0 in `Directory.Build.props` (surfaced after other bumps)
+- [x] **Shortboxerr.Tests only:** **System.Net.Http** / **System.Text.RegularExpressions** — explicit 4.3.4 / 4.3.1 in test csproj
+
+**Also:** Bumped shared `Microsoft.AspNetCore.*` / `Microsoft.EntityFrameworkCore.*` references to **8.0.11**; `Microsoft.Extensions.Options` → **8.0.2**, `Microsoft.Extensions.Hosting.Abstractions` → **8.0.1** (8.0.11 not published for those packages on NuGet).
+
+**Acceptance:** `dotnet list package --vulnerable --include-transitive` reports no known vulnerabilities for solution projects (or documented exceptions with mitigation).
+
+**Effort:** M | **Priority:** P2
+
+#### 14.29 Build output: no secrets in `wwwroot` / UI bundles 📋 PLANNED
+Treat `wwwroot` and Vite `dist` as build artifacts only. Ensure CI and docs guard against injecting API keys or other credentials at build time; optional follow-up: secret scanning on produced JS (e.g. gitleaks patterns) if automation is desired.
+
+**Goals:**
+- [x] Document in `docs/SECURITY.md` or build docs that frontend bundles must never embed runtime secrets; review env-based `define` usage (Iteration 233: "Build output" under Frontend Security).
+- [ ] Optionally add a CI step or pre-release checklist that scans dist/wwwroot for high-risk patterns (beyond normal code review).
+
+**Effort:** S | **Priority:** P3
+
+#### 14.30 E2E folder: dependency audit & release boundary ✅ COMPLETED (Iteration 233)
+`tests/e2e/` has its own `node_modules` tree. Keep lockfile discipline and periodically run `npm audit` there; confirm Playwright/e2e dependencies are never packaged into release images or published artifacts.
+
+**Goals:**
+- [x] Run `npm audit` in `tests/e2e/` on a recurring basis (or wire into CI) — audit run Mar 2026: 0 vulnerabilities; policy captured in `docs/SECURITY.md`.
+- [x] Confirm Docker/release pipelines exclude e2e `node_modules` from shipped bits (documented in `docs/SECURITY.md`).
+
+**Effort:** S | **Priority:** P3
+
+#### 14.31 Deeper security posture (tooling & threat model) 📋 PLANNED
+The Mar 2026 security audit was lightweight (grep, `docs/SECURITY.md`, package vulnerability list). Schedule deeper work when warranted.
+
+**Goals:**
+- [ ] Enable or tune **Dependabot** (NuGet + npm) for the repo; align with branch protection.
+- [x] Add a recurring **`dotnet list package --vulnerable`** (and/or `npm audit`) step in CI with non-zero exit on high/critical (policy TBD) — **NuGet:** CI step added Iteration 233; **npm:** still optional for `ui/` / e2e in CI.
+- [ ] Evaluate **OSV**, **Semgrep**, or **gitleaks** (or GitHub secret scanning) on PRs.
+- [ ] Optional: short **threat model** or data-flow note for API key handling, encryption at rest, and reverse-proxy deployment.
+
+**Effort:** L | **Priority:** P3
 
 ### Items Available for Work (formerly Deferred)
 

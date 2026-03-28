@@ -165,6 +165,23 @@ The UI uses `ui/eslint.config.js` with some rules downgraded to `warn`. These we
 
 When adding or changing accepted warnings in `eslint.config.js`, re-check that the pattern does not weaken credential handling, logging, or injection defenses, and update this section if needed.
 
+### Build output (`wwwroot` / Vite `dist`)
+
+- Treat published UI assets under `wwwroot` (or `ui/dist`) as **build artifacts**, not a source of truth for secrets.
+- Do **not** inject API keys, tokens, or passwords via Vite `define`, env files, or CI variables into the client bundle. The app loads credentials from the API after the user configures settings; the SPA must not embed runtime secrets.
+- When reviewing build or Docker changes, confirm nothing copies `.env` or secret files into the image or static output.
+
+## NuGet supply chain
+
+- **Pinned transitive packages:** `Directory.Build.props` at the repo root adds direct references so known-vulnerable transitive versions (e.g. `Microsoft.Extensions.Caching.Memory`, `System.Text.Json`, `System.Text.Encodings.Web`) resolve to patched releases. The test project also pins legacy `System.Net.Http` / `System.Text.RegularExpressions` where the graph still pulled 4.3.0.
+- **Framework alignment:** Application packages (`Microsoft.AspNetCore.*`, `Microsoft.EntityFrameworkCore.*`, etc.) should stay on a consistent **8.0.x** line (patch bumps together when upgrading). Individual `Microsoft.Extensions.*` packages do not always publish every patch number; use NuGet version lists rather than assuming `8.0.11` exists for all extension packages.
+- **Verification:** Run `dotnet list package --vulnerable --include-transitive` in the dev container after dependency changes. CI runs the same check (see `.github/workflows/ci.yml`).
+
+## E2E test dependencies
+
+- `tests/e2e/` has its own `package.json` and `node_modules`. It is **not** shipped in release images; keep it that way.
+- Periodically run `npm audit` in `tests/e2e/` (e.g. when touching Playwright or adding e2e deps).
+
 ## Code Review Checklist
 
 When reviewing code that handles credentials, verify:
@@ -177,6 +194,8 @@ When reviewing code that handles credentials, verify:
 - [ ] No `console.log` with credential values
 - [ ] URLs with credentials in query strings are not logged
 - [ ] Error messages don't include credential values
+- [ ] New dependencies: no new high/critical NuGet advisories without mitigation (`dotnet list package --vulnerable`)
+- [ ] Frontend build does not embed secrets in `wwwroot` bundles
 
 ## Adding New Credential Types
 
