@@ -1,30 +1,29 @@
-# Self-Check: Iteration 227
+# Self-Check: Iteration 228
 
 ## Build Status
-- [x] `dotnet build` succeeds
-- [x] `npm run build` succeeds
+- [x] `dotnet build` succeeds (no app code changed)
+- [x] `npm run build` not required for this iteration
 
 ## Test Status
-- **Before**: widespread failures (`401` on API routes; `SettingsEndpointTests` races after regenerate)
-- **After**: 2610 passed, 0 failed
-- [x] No NEW test failures introduced
+- [x] No test code changed; prior suite remains valid
 
 ## Lint Status
-- [x] No new lint errors on changed files
+- [x] Shell script `bash -n` clean
 
 ## Files Changed
 | File | Type |
 |------|------|
-| `tests/Shortboxerr.Tests/PullListCacheTierTests.cs` | `CreateAuthenticatedClient` |
-| `tests/Shortboxerr.Tests/SystemEndpointsTests.cs` | factory + authenticated client |
-| `tests/Shortboxerr.Tests/BaseEndpointTest.cs` | `Factory` |
-| `tests/Shortboxerr.Tests/CustomWebApplicationFactory.cs` | `ResetApiKeyToTestDefault` |
-| `tests/Shortboxerr.Tests/SettingsEndpointTests.cs` | collection, finally reset, assertions |
-| `tests/Shortboxerr.Tests/SettingsEndpointTestsCollection.cs` | new |
-| `src/Shortboxerr.Api/wwwroot/**` | UI build |
+| `.devcontainer/devcontainer.json` | PAT env + gh login |
+| `docker-compose.dev.yml` | host env passthrough |
+| `.cursor/mcp.json` | GitHub MCP via launcher |
+| `.cursor/github-mcp.sh` | new |
+| `.devcontainer/local-secrets/.gitignore` | new |
+| `.cursor/rules/dev-container.mdc` | token docs |
+| `docs/WORKLOG.md` | Iteration 228 |
+| `docs/SELF_CHECK.md` | this file |
 
 ## Commits
-1. `fix(tests): stabilize integration tests for API key middleware` — (this iteration)
+1. `chore(devcontainer): GitHub MCP launcher and PAT env forwarding` — (this iteration)
 
 ## Summary
-Integration tests now send the seeded test API key where required; settings tests no longer leave the DB key out of sync with the shared client, and no longer run in parallel against one mutable key.
+GitHub MCP gets a reliable token path inside the dev container; host `${localEnv:…}` forwarding remains for rebuild-time injection.

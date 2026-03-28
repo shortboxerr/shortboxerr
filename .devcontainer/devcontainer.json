@@ -4,7 +4,12 @@
   "service": "dev",
   "workspaceFolder": "/workspaces/shortboxerr",
   "containerEnv": {
-    "GH_TOKEN": "${localEnv:GH_TOKEN}"
+    "GH_TOKEN": "${localEnv:GH_TOKEN}",
+    "GITHUB_PERSONAL_ACCESS_TOKEN": "${localEnv:GITHUB_PERSONAL_ACCESS_TOKEN}"
+  },
+  "remoteEnv": {
+    "GH_TOKEN": "${localEnv:GH_TOKEN}",
+    "GITHUB_PERSONAL_ACCESS_TOKEN": "${localEnv:GITHUB_PERSONAL_ACCESS_TOKEN}"
   },
   "customizations": {
     "vscode": {
@@ -18,5 +23,5 @@
       ]
     }
   },
-  "postCreateCommand": "dotnet --info && (sudo chown -R vscode:vscode /home/vscode/.nuget /workspaces/shortboxerr 2>/dev/null || true) && ( [ -z \"${GH_TOKEN}\" ] || echo \"${GH_TOKEN}\" | gh auth login --with-token )"
+  "postCreateCommand": "dotnet --info && (sudo chown -R vscode:vscode /home/vscode/.nuget /workspaces/shortboxerr 2>/dev/null || true) && if [ -n \"${GH_TOKEN}\" ]; then echo \"${GH_TOKEN}\" | gh auth login --with-token; elif [ -n \"${GITHUB_PERSONAL_ACCESS_TOKEN}\" ]; then echo \"${GITHUB_PERSONAL_ACCESS_TOKEN}\" | gh auth login --with-token; fi"
 }

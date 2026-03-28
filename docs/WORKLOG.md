@@ -1,5 +1,33 @@
 # Worklog
 
+## Iteration 228 (2026-03-28)
+**chore(devcontainer): GitHub MCP token resolution and host env forwarding**
+
+### Summary
+Cursor often does not pass `remoteEnv` into MCP subprocesses, so `@modelcontextprotocol/server-github` saw no `GITHUB_PERSONAL_ACCESS_TOKEN`. Forward PAT-related vars from the host at container create time, pass them through Compose for plain `docker compose` runs, and add `.cursor/github-mcp.sh` to resolve the token from env, `gh auth token`, or a gitignored one-line file under `.devcontainer/local-secrets/`.
+
+### Changes
+- **devcontainer.json:** `GITHUB_PERSONAL_ACCESS_TOKEN` in `containerEnv` / `remoteEnv`; `postCreateCommand` uses `GH_TOKEN` or `GITHUB_PERSONAL_ACCESS_TOKEN` for `gh auth login --with-token`.
+- **docker-compose.dev.yml:** Forward `GH_TOKEN` and `GITHUB_PERSONAL_ACCESS_TOKEN` from host.
+- **.cursor/mcp.json:** Start GitHub MCP via `bash .cursor/github-mcp.sh`.
+- **.cursor/github-mcp.sh:** Launcher (executable) with fallbacks and clear errors.
+- **.devcontainer/local-secrets/.gitignore:** Ignore local PAT file pattern.
+- **.cursor/rules/dev-container.mdc:** Document token forwarding and macOS/Cursor.app gotchas.
+
+### Files Changed
+| File | Type |
+|------|------|
+| `.devcontainer/devcontainer.json` | env + postCreate |
+| `docker-compose.dev.yml` | env passthrough |
+| `.cursor/mcp.json` | MCP command |
+| `.cursor/github-mcp.sh` | new launcher |
+| `.devcontainer/local-secrets/.gitignore` | new |
+| `.cursor/rules/dev-container.mdc` | docs for agents |
+| `docs/WORKLOG.md` | Iteration 228 |
+| `docs/SELF_CHECK.md` | Iteration 228 |
+
+---
+
 ## Iteration 227 (2026-03-28)
 **fix(tests): integration clients and Settings API key test isolation**
 

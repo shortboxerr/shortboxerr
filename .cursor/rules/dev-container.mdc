@@ -14,3 +14,17 @@ alwaysApply: true
   - `docker compose -f docker-compose.dev.yml run --rm dev sh -c "cd ui && npm run build"`
 - Docs, scripts, and commit messages should refer to running commands in the container when relevant.
 - If the host has no `dotnet`/`node`, do not treat that as a blocker: the intended environment is the Dev Container.
+
+## GitHub token (host → container)
+
+**GitHub MCP** is started via `.cursor/github-mcp.sh` because Cursor often **does not** pass `devcontainer.json` `remoteEnv` into MCP child processes.
+
+The script resolves a token in this order:
+
+1. **`GITHUB_PERSONAL_ACCESS_TOKEN`** or **`GH_TOKEN`** in the process environment (when Dev Containers successfully forwarded `${localEnv:…}` from the host at rebuild time).
+2. **`gh auth token`** — works after `postCreateCommand` ran `gh auth login --with-token`, or after you run **`gh auth login`** in a container terminal (then restart the GitHub MCP server in Cursor).
+3. **`.devcontainer/local-secrets/github_token`** — one line, PAT only; that directory is gitignored (see `local-secrets/.gitignore`).
+
+**Host env gotcha:** `${localEnv:VAR}` is read when the container is **created/rebuilt**, from the environment of the process that started it. On macOS, **Cursor.app** often does not see variables you only set in `~/.zshrc`. Fix: export the token in the same environment Cursor inherits (e.g. launch Cursor from a terminal, use a small wrapper script, or use the secrets file / `gh auth login` inside the container).
+
+`.devcontainer/devcontainer.json` still forwards `GH_TOKEN` and `GITHUB_PERSONAL_ACCESS_TOKEN` via `containerEnv` and `remoteEnv`. `docker-compose.dev.yml` passes them from the host for plain `docker compose` runs.
