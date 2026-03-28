@@ -1,11 +1,22 @@
-# Self-Check: Iteration 230
+# Self-Check: Iteration 231
 
 ## Build Status
-- [x] `dotnet restore src/Shortboxerr.Api/Shortboxerr.Api.csproj` + `dotnet publish ... --no-restore` succeeds
-- [x] `dotnet test` — `CacheEventPublisherTests` passed
+
+- [x] `dotnet build` not required (docs only)
+- [x] `npx markdownlint-cli2 docs/WORKLOG.md docs/SELF_CHECK.md` — 0 errors
 
 ## Summary
-Unblocks PR CI: Docker image build no longer restores missing test project; cache event tests wait for async publishes instead of a fixed 50ms sleep.
+
+`markdownlint-cli2 --fix` cleared MD058 table spacing across the worklog;
+SELF_CHECK line length and spacing aligned with markdownlint defaults.
+
+## Files Changed
+
+| File                 | Type                         |
+| -------------------- | ---------------------------- |
+| `docs/WORKLOG.md`    | MD058 + iteration 231        |
+| `docs/SELF_CHECK.md` | MD013, spacing, this file    |
 
 ## Commits
-1. `fix(ci): Docker restore and flaky cache event tests` — (this iteration)
+
+1. `chore(docs): markdownlint MD058 for WORKLOG and SELF_CHECK` — (this iteration)

@@ -1,9 +1,28 @@
 # Worklog
 
+## Iteration 231 (2026-03-28)
+
+**chore(docs): markdownlint MD058 across WORKLOG; tidy SELF_CHECK**
+
+### Summary
+
+Applied `markdownlint-cli2 --fix` to `docs/WORKLOG.md` so every table has blank lines before and after (MD058), matching CodeRabbit / markdownlint. Adjusted `docs/SELF_CHECK.md` line wraps for MD013 after the same tool added heading spacing.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `docs/WORKLOG.md` | MD058 bulk fix + this entry |
+| `docs/SELF_CHECK.md` | MD013 wraps, spacing |
+
+---
+
 ## Iteration 230 (2026-03-28)
+
 **fix(ci): Docker restore without tests project; stabilize cache event tests**
 
 ### Summary
+
 CI `docker-build` failed: `dotnet restore` on full solution required `tests/Shortboxerr.Tests.csproj` before COPY. Restore now targets `src/Shortboxerr.Api/Shortboxerr.Api.csproj` only. `CacheEventPublisherTests` integration cases used fixed `Thread.Sleep(50)` while `CacheService` publishes via `Task.Run`; replaced with polling wait up to 10s for minimum event counts to fix flaky failures on GitHub runners.
 
 ### Files Changed
@@ -18,9 +37,11 @@ CI `docker-build` failed: `dotnet restore` on full solution required `tests/Shor
 ---
 
 ## Iteration 229 (2026-03-28)
+
 **fix: CodeRabbit PR review (MD058, security assertion, reset baseline, masked key)**
 
 ### Summary
+
 Addressed CodeRabbit review on PR #3: markdownlint MD058 blank lines before `### Files Changed` tables across `docs/WORKLOG.md`; removed API key fragments from test failure messages; `ResetApiKeyToTestDefault` also restores `security.apiKeyEnabled`; tightened masked-key assertion to match `MaskApiKey` shape (`^.{8}...{4}$`).
 
 ### Files Changed
@@ -35,12 +56,15 @@ Addressed CodeRabbit review on PR #3: markdownlint MD058 blank lines before `###
 ---
 
 ## Iteration 228 (2026-03-28)
+
 **chore(devcontainer): GitHub MCP token resolution and host env forwarding**
 
 ### Summary
+
 Cursor often does not pass `remoteEnv` into MCP subprocesses, so `@modelcontextprotocol/server-github` saw no `GITHUB_PERSONAL_ACCESS_TOKEN`. Forward PAT-related vars from the host at container create time, pass them through Compose for plain `docker compose` runs, and add `.cursor/github-mcp.sh` to resolve the token from env, `gh auth token`, or a gitignored one-line file under `.devcontainer/local-secrets/`.
 
 ### Changes
+
 - **devcontainer.json:** `GITHUB_PERSONAL_ACCESS_TOKEN` in `containerEnv` / `remoteEnv`; `postCreateCommand` uses `GH_TOKEN` or `GITHUB_PERSONAL_ACCESS_TOKEN` for `gh auth login --with-token`.
 - **docker-compose.dev.yml:** Forward `GH_TOKEN` and `GITHUB_PERSONAL_ACCESS_TOKEN` from host.
 - **.cursor/mcp.json:** Start GitHub MCP via `bash .cursor/github-mcp.sh`.
@@ -64,12 +88,15 @@ Cursor often does not pass `remoteEnv` into MCP subprocesses, so `@modelcontextp
 ---
 
 ## Iteration 227 (2026-03-28)
+
 **fix(tests): integration clients and Settings API key test isolation**
 
 ### Summary
+
 Full `dotnet test` was failing with widespread `401 Unauthorized` on `/api/*` routes. Root causes: some integration tests used an unauthenticated `HttpClient`; `SettingsEndpointTests` shared one client whose `X-Api-Key` no longer matched the DB after `regenerate`, and tests in that class ran in parallel against the same fixture. Assertions also assumed production `sk_live_*` keys while the factory seeds `sbxr_test_*` for scanner safety.
 
 ### Changes
+
 - **PullListCacheTierTests / SystemEndpointsTests:** Use `CreateAuthenticatedClient()` (and `CustomWebApplicationFactory` where needed) so API key middleware accepts requests.
 - **CustomWebApplicationFactory:** `ResetApiKeyToTestDefault()` restores `security.apiKey` after regenerate tests.
 - **BaseEndpointTest:** Expose `Factory` for tests that need factory helpers.
@@ -78,6 +105,7 @@ Full `dotnet test` was failing with widespread `401 Unauthorized` on `/api/*` ro
 - **wwwroot:** Rebuilt UI assets from `npm run build`.
 
 ### Classification
+
 Test bug / fixture isolation — not application auth logic.
 
 ### Files Changed
@@ -97,12 +125,15 @@ Test bug / fixture isolation — not application auth logic.
 ---
 
 ## Iteration 226 (2026-03-23)
+
 **EPIC 9.14: ComicVine enablement gating by validated API key**
 
 ### Summary
+
 ComicVine can no longer be enabled unless an API key is configured and the key passes a real connection test. This closes a gap where enablement could be toggled on before credentials were validated.
 
 ### Changes
+
 - **ComicVineEndpoints:** Added backend validation in `PUT /api/v1/comicvine/settings` for enable transitions.
   - Rejects enabling when no API key is configured.
   - Persists settings in disabled state, runs `TestConnectionAsync`, and only enables when the test succeeds.
@@ -125,12 +156,15 @@ ComicVine can no longer be enabled unless an API key is configured and the key p
 ---
 
 ## Iteration 225 (2026-03-12)
+
 **EPIC 14.13: Replace Add Series modal with dedicated page**
 
 ### Summary
+
 Add Series is now a full page at `/series/add`. Series page "Add Series" buttons navigate there. Shared `AddSeriesContent` component holds search, filters, results, and add logic; `AddSeriesPage` wraps it with page header and Back button.
 
 ### Changes
+
 - **AddSeriesContent.tsx (new):** Reusable add-series UI (search, publisher/year filters, sort, list/grid, batch add). Used by Add Series page.
 - **AddSeriesPage.tsx (new):** Page at `/series/add` with Back to Series and title; uses AddSeriesContent; onAdded refetches and navigates to /series.
 - **App.tsx:** Route `series/add` → AddSeriesPage (lazy).
@@ -151,12 +185,15 @@ Add Series is now a full page at `/series/add`. Series page "Add Series" buttons
 ---
 
 ## Iteration 224 (2026-03-12)
+
 **EPIC 14.17: Intersection observer for images – document decision**
 
 ### Summary
+
 Documented that we rely on native `loading="lazy"` for cover images and do not add a custom Intersection Observer (sufficient for current usage; optional enhancement deferred).
 
 ### Changes
+
 - **docs/DECISIONS.md:** Added "Image lazy loading" section with decision and rationale.
 - **docs/BACKLOG.md:** Marked "Intersection observer for images" complete (Iteration 224).
 
@@ -172,12 +209,15 @@ Documented that we rely on native `loading="lazy"` for cover images and do not a
 ---
 
 ## Iteration 223 (2026-03-12)
+
 **EPIC 14.17: Full-text search (FTS5) for series list**
 
 ### Summary
+
 Added SQLite FTS5 for the series list search. When the database is SQLite and the Series_fts table exists (after migration), the series list endpoint uses FTS for the search parameter; otherwise it falls back to the existing title/sort title LIKE behavior.
 
 ### Changes
+
 - **Migration AddSeriesFts5:** Creates Series_fts virtual table (content=Series, content_rowid=Id), triggers to keep FTS in sync on INSERT/UPDATE/DELETE, and initial population from Series.
 - **SeriesFtsHelper:** Extension method GetSeriesIdsFromFtsAsync on ShortboxerrDbContext; returns matching series IDs from FTS5 MATCH; catches SqliteException (e.g. table missing) and returns empty.
 - **SeriesEndpoints:** When search is present and IsSqlite(), call FTS helper; if FTS returns IDs use them to filter, else fall back to LIKE. Cache key bumped to v4.
@@ -197,13 +237,16 @@ Added SQLite FTS5 for the series list search. When the database is SQLite and th
 ---
 
 ## Iteration 222 (2026-03-11)
+
 **Test fix + EPIC 14.16: Graceful fallback to polling (documentation)**
 
 ### Summary
+
 - Fixed failing test `ExecuteSeriesRename_WhenOneFileFails_RollsBackSuccessfulMovesAndDoesNotUpdateDb` in dev container (create parent dir before writing blocker file).
 - Documented SignalR fallback policy: when frontend SignalR client is added, it must fall back to existing polling when the connection fails.
 
 ### Changes
+
 - **LibraryOrganizationServiceTests:** Create directory for second file's NewPath before writing blocker file (fixes DirectoryNotFoundException in container).
 - **docs/ARCHITECTURE.md:** Added "Real-time updates (SignalR)" with fallback-to-polling requirement.
 - **ActivityPage.tsx:** Comment that current polling is the intended fallback when SignalR is added.
@@ -223,12 +266,15 @@ Added SQLite FTS5 for the series list search. When the database is SQLite and th
 ---
 
 ## Iteration 221 (2026-03-11)
+
 **EPIC 18.6: Atomic operations (per-series) – Library organize**
 
 ### Summary
+
 Single-series organize is now atomic: if any file move fails, all already-moved files are rolled back to their previous paths and the database is not updated. This keeps disk and DB consistent (all-or-nothing per series).
 
 ### Changes
+
 - **LibraryOrganizationService:** After the file-move loop, if any move failed, call new `RollbackFileMoves` to move successful files back to their previous paths, then return failure without updating `series.Path` or saving `FileAsset` paths.
 - **LibraryOrganizationServiceTests:** Added `ExecuteSeriesRename_WhenOneFileFails_RollsBackSuccessfulMovesAndDoesNotUpdateDb` – two files, second move fails (destination exists); assert rollback and DB unchanged.
 
@@ -245,12 +291,15 @@ Single-series organize is now atomic: if any file move fails, all already-moved 
 ---
 
 ## Iteration 220 (2026-03-11)
+
 **EPIC 14.13: Quick filters by publisher/year (Add Series)**
 
 ### Summary
+
 Add Series modal now has optional quick filters: Publisher (text) and Year range (From / To). When set, they are passed to the ComicVine series search API; results are filtered server-side.
 
 ### Changes
+
 - **SeriesPage.tsx (AddSeriesModal):** Added state for publisherFilter, yearStartFilter, yearEndFilter. Included in useQuery key and passed to api.searchSeriesFromComicVine. Added a filter row with Publisher input and Year From/To number inputs.
 
 ### Files Changed
@@ -265,12 +314,15 @@ Add Series modal now has optional quick filters: Publisher (text) and Year range
 ---
 
 ## Iteration 219 (2026-03-11)
+
 **EPIC 14.11: Update Edition/Collection Search – ComicVine volume ID**
 
 ### Summary
+
 Edition/collection ComicVine search endpoint now accepts a ComicVine volume ID (e.g. 4050-12345 or URL). When the query parses as a volume ID, the endpoint calls GetEditionByComicVineIdAsync and returns a single result with IsDirectLookup = true; otherwise text search unchanged.
 
 ### Changes
+
 - **IEditionMetadataService / EditionSearchResult:** Added Query and IsDirectLookup to EditionSearchResult.
 - **EditionMetadataEndpoints.cs:** In GET /api/v1/editions/comicvine/search, check for volume ID via ComicVineIdParser.TryParseAs(Volume); if present, direct lookup and return single result.
 - **EditionMetadataServiceTests:** GetEditionByComicVineIdAsync_WhenQueryIsVolumeId_ReturnsEditionForDirectLookup.
@@ -291,12 +343,15 @@ Edition/collection ComicVine search endpoint now accepts a ComicVine volume ID (
 ---
 
 ## Iteration 218 (2026-03-11)
+
 **EPIC 14.25: ESLint accepted warnings – security & safety validation**
 
 ### Summary
+
 Reviewed each accepted ESLint rule in ui/eslint.config.js for security and app safety. Documented outcome in docs/SECURITY.md under a new subsection “ESLint Accepted Warnings (UI)” with per-rule assessment and a reminder to re-check when changing accepted warnings.
 
 ### Changes
+
 - **docs/SECURITY.md:** Added “ESLint Accepted Warnings (UI)” table (set-state-in-effect, only-export-components, no-explicit-any, static-components) and note to re-validate when config changes.
 - **docs/BACKLOG.md:** 14.25 complete.
 
@@ -312,12 +367,15 @@ Reviewed each accepted ESLint rule in ui/eslint.config.js for security and app s
 ---
 
 ## Iteration 217 (2026-03-11)
+
 **EPIC 14.23: ESLint – document accepted warnings**
 
 ### Summary
+
 Added a block comment at the top of `ui/eslint.config.js` that lists all accepted (downgraded-to-warn) ESLint rules and the rationale for each, satisfying the “docs note” acceptance for 14.23.
 
 ### Changes
+
 - **ui/eslint.config.js:** Documented accepted warnings (set-state-in-effect, only-export-components, no-explicit-any, static-components) and when to refactor.
 - **docs/BACKLOG.md:** 14.23 in progress; “Document accepted warnings” task complete.
 
@@ -333,12 +391,15 @@ Added a block comment at the top of `ui/eslint.config.js` that lists all accepte
 ---
 
 ## Iteration 216 (2026-03-11)
+
 **EPIC 14.24: npm audit – resolve UI dependency vulnerabilities**
 
 ### Summary
+
 Ran `npm audit` in `ui/`, applied `npm audit fix`. All 3 vulnerabilities (ajv moderate, minimatch high, rollup high) were resolved; post-fix audit reports 0 vulnerabilities. UI build verified.
 
 ### Changes
+
 - **ui/package-lock.json:** Updated transitive deps (e.g. rollup 4.57.1 → 4.59.0, ajv, minimatch) per audit fix.
 - **docs/BACKLOG.md:** Marked 14.24 complete.
 - **docs/WORKLOG.md:** Iteration 216.
@@ -356,20 +417,25 @@ Ran `npm audit` in `ui/`, applied `npm audit fix`. All 3 vulnerabilities (ajv mo
 ---
 
 ## Iteration 215 (2026-03-11)
+
 **EPIC 14.11: Update Issue Search/Lookup**
 
 ### Summary
+
 Series search now accepts ComicVine issue IDs (4000-xxxxx): looks up the issue's volume and returns that series as a direct lookup so the user can add the series from an issue ID.
 
 ### Changes
 
 #### ISeriesMetadataService / SeriesMetadataService
+
 - `GetSeriesByComicVineIssueIdAsync(int issueId, CancellationToken)` – fetches issue via ComicVine, then returns series by issue.Volume.Id using existing GetSeriesByComicVineIdAsync.
 
 #### SeriesMetadataEndpoints.cs
+
 - After volume-ID check, added issue-ID check: if query parses as ComicVine issue ID, call GetSeriesByComicVineIssueIdAsync and return single result with IsDirectLookup = true.
 
 #### SeriesMetadataServiceTests.cs
+
 - `GetSeriesByComicVineIssueIdAsync_WithValidIssueId_ReturnsVolumeCandidate` – mocks GetIssueAsync (issue with Volume.Id) and GetVolumeAsync, asserts candidate returned.
 
 ### Files Changed
@@ -389,14 +455,17 @@ Series search now accepts ComicVine issue IDs (4000-xxxxx): looks up the issue's
 ---
 
 ## Iteration 214 (2026-03-11)
+
 **EPIC 14.11: UI hint for ComicVine ID input (Add Series)**
 
 ### Summary
+
 Added placeholder text in Add Series search box to hint at ComicVine ID search (e.g. 4050-12345).
 
 ### Changes
 
 #### SeriesPage.tsx
+
 - Updated Add Series modal search input placeholder from "Search for a series (e.g., Batman, Spider-Man, Saga)..." to "Search by title or ComicVine ID (e.g. Batman, 4050-12345)...".
 
 ### Files Changed
@@ -411,20 +480,25 @@ Added placeholder text in Add Series search box to hint at ComicVine ID search (
 ---
 
 ## Iteration 213 (2026-03-11)
+
 **EPIC 14.17: Batched API endpoints (multi-week discovery)**
 
 ### Summary
+
 Added batched pull list discovery endpoint: one call returns multiple consecutive weeks (1–16).
 
 ### Changes
 
 #### IPullListService / PullListService
+
 - `GetWeeklyDiscoveryBatchAsync(DateTime startDate, int count, DiscoveryFilter?, CancellationToken)` – returns `IReadOnlyList<WeeklyDiscoveryList>`; count clamped to 1–16; weeks fetched in parallel via `Task.WhenAll`.
 
 #### PullListEndpoints.cs
+
 - `GET /api/v1/pulllist/discover/weeks?startDate=&count=` – returns array of weekly discovery lists (same filter query params as single-week).
 
 #### PullListServiceTests.cs
+
 - `GetWeeklyDiscoveryBatchAsync_ReturnsRequestedNumberOfWeeks` – asserts count and 7-day spacing of WeekStart.
 
 ### Files Changed
@@ -444,14 +518,17 @@ Added batched pull list discovery endpoint: one call returns multiple consecutiv
 ---
 
 ## Iteration 212 (2026-03-11)
+
 **EPIC 14.7.5: Edge Case Handling**
 
 ### Summary
+
 Added edge case test: Metron 429 rate limit falls back to volume cover URL.
 
 ### Changes
 
 #### CoverFallbackServiceTests.cs
+
 - `GetCoverByCvIdAsync_WhenMetronReturns429_FallsBackToVolumeCover` – when Metron returns 429, service returns volume cover URL (no further Metron calls).
 
 ### Files Changed
@@ -468,14 +545,17 @@ Added edge case test: Metron 429 rate limit falls back to volume cover URL.
 ---
 
 ## Iteration 211 (2026-03-11)
+
 **EPIC 14.7.4: Refactoring Candidates**
 
 ### Summary
+
 Documented refactoring candidates for issue/cover pipeline in BACKLOG (from ISSUE_COVER_ARCHITECTURE.md).
 
 ### Changes
 
 #### BACKLOG.md
+
 - Added refactoring candidates list under 14.7: cover source integration tests, unit test coverage areas, edge cases (missing CV ID, 429, CV+Metron fail).
 - Marked 14.7.4 complete.
 
@@ -490,14 +570,17 @@ Documented refactoring candidates for issue/cover pipeline in BACKLOG (from ISSU
 ---
 
 ## Iteration 210 (2026-03-11)
+
 **EPIC 14.7.3: Unit Test Coverage Expansion**
 
 ### Summary
+
 Added unit tests for cover cache behavior: issue cache clear and discovery path layout.
 
 ### Changes
 
 #### CoverServiceTests.cs
+
 - `ClearIssueCoverCacheAsync_DeletesIssueCacheDirectory` – issue cache directory removed after clear.
 - `GetDiscoveryCoverAsync_FilePath_MatchesDiscoveryCacheLayout` – discovery path contains discovery/{id}/medium.jpg.
 
@@ -515,18 +598,22 @@ Added unit tests for cover cache behavior: issue cache clear and discovery path 
 ---
 
 ## Iteration 209 (2026-03-11)
+
 **EPIC 14.7.2: Cover Source Integration Testing**
 
 ### Summary
+
 Added tests that verify cover source order and discovery cache key alignment with the API.
 
 ### Changes
 
 #### CoverServiceTests.cs
+
 - `GetDiscoveryCoverAsync_ReturnsCachedCover_WhenStoredWithSameId` – verifies discovery cover stored by ID is retrieved by same ID (API/service alignment).
 - `GetDiscoveryCoverAsync_ReturnsNotFound_WhenNoCachedCover` – not-found path.
 
 #### CoverFallbackServiceTests.cs
+
 - `GetCoverByCvIdAsync_ReturnsMetronCover_WhenFoundViaVolumeIdAndNumber` – verifies fallback order: when CV issue ID lookup fails, Metron by CV volume ID + issue number is used before volume URL.
 
 ### Files Changed
@@ -544,14 +631,17 @@ Added tests that verify cover source order and discovery cache key alignment wit
 ---
 
 ## Iteration 208 (2026-03-11)
+
 **EPIC 14.7.1: Code Architecture Review (Issue Data & Cover Acquisition)**
 
 ### Summary
+
 Documented the architecture of the issue data and cover acquisition pipeline for refactoring planning.
 
 ### Changes
 
 #### docs/research/ISSUE_COVER_ARCHITECTURE.md (new)
+
 - Data sources hierarchy (ComicVine → Metron → WalkSoftly → volume fallback)
 - ICoverService / CoverService: cache layout, series/issue/discovery flows, sizes
 - ICoverFallbackService / CoverFallbackService: lookup order, in-memory cache
@@ -562,6 +652,7 @@ Documented the architecture of the issue data and cover acquisition pipeline for
 - Refactoring candidates for 14.7.2+
 
 #### .cursor/rules.md
+
 - Documented dev container commands for build/test (docker compose -f docker-compose.dev.yml run --rm dev \<command\>)
 
 ### Files Changed
@@ -577,20 +668,24 @@ Documented the architecture of the issue data and cover acquisition pipeline for
 ---
 
 ## Iteration 207 (2026-03-09)
+
 **EPIC 14.22: Enhanced Edition List Filters**
 
 ### Summary
+
 Added monitored, hasFile, and editionType filters to the edition list endpoint.
 
 ### Changes
 
 #### EditionEndpoints.cs
+
 - Added `monitored` filter (true/false)
 - Added `hasFile` filter (true/false)
 - Added `editionType` filter (TradesPaperback, Hardcover, Omnibus, etc.)
 - Updated Swagger documentation
 
 #### New Tests (9 tests)
+
 - `FilterByMonitored_True_ReturnsOnlyMonitored`
 - `FilterByMonitored_False_ReturnsOnlyUnmonitored`
 - `FilterByHasFile_True_ReturnsOnlyWithFiles`
@@ -613,20 +708,24 @@ Added monitored, hasFile, and editionType filters to the edition list endpoint.
 ---
 
 ## Iteration 206 (2026-03-09)
+
 **EPIC 14.21: Series Release Date Sorting**
 
 ### Summary
+
 Added release date sorting options to the series list endpoint.
 
 ### Changes
 
 #### SeriesEndpoints.cs
+
 - Added `latestrelease` sort option (sort by most recent issue release date)
 - Added `nextrelease` sort option (sort by soonest upcoming issue release)
 - Both use StoreDate with fallback to ReleaseDate
 - Updated Swagger documentation
 
 #### New Tests (4 tests)
+
 - `SortByLatestRelease_Ascending_ReturnsCorrectOrder`
 - `SortByLatestRelease_Descending_ReturnsCorrectOrder`
 - `SortByNextRelease_ReturnsUpcomingFirst`
@@ -644,19 +743,23 @@ Added release date sorting options to the series list endpoint.
 ---
 
 ## Iteration 205 (2026-03-09)
+
 **EPIC 14.20: Enhanced Wanted Endpoint Filters**
 
 ### Summary
+
 Added publisher, release date range, and edition type filters to the wanted issues and collections endpoints.
 
 ### Changes
 
 #### WantedEndpoints.cs
+
 - Added `publisher`, `releasedAfter`, `releasedBefore` filters to `GET /api/v1/wanted/issues`
 - Added `publisher`, `releasedAfter`, `releasedBefore`, `editionType` filters to `GET /api/v1/wanted/collections`
 - Updated Swagger documentation for both endpoints
 
 #### New Tests (9 tests)
+
 - `GetWantedIssues_SupportsPublisherFilter`
 - `GetWantedIssues_SupportsReleaseDateAfterFilter`
 - `GetWantedIssues_SupportsReleaseDateBeforeFilter`
@@ -679,20 +782,24 @@ Added publisher, release date range, and edition type filters to the wanted issu
 ---
 
 ## Iteration 204 (2026-03-09)
+
 **EPIC 14.19: Edition List Text Search**
 
 ### Summary
+
 Added text search filtering to the edition list API endpoint.
 
 ### Changes
 
 #### EditionEndpoints.cs
+
 - Added `search` query parameter to `GET /api/v1/editions`
 - Searches Title, SortTitle, and parent Series.Title fields (case-insensitive)
 - Combines with existing series filter
 - Added Swagger documentation for the endpoint
 
 #### New Tests (11 tests)
+
 - `FilterBySeries_ReturnsOnlySeriesEditions`
 - `FilterBySeries_NoSeries_ReturnsEmpty`
 - `SearchByTitle_ExactMatch_ReturnsEdition`
@@ -717,20 +824,24 @@ Added text search filtering to the edition list API endpoint.
 ---
 
 ## Iteration 203 (2026-03-09)
+
 **EPIC 14.18: Series List Text Search**
 
 ### Summary
+
 Added text search filtering to the series list API endpoint.
 
 ### Changes
 
 #### SeriesEndpoints.cs
+
 - Added `search` query parameter to `GET /api/v1/series`
 - Searches Title and SortTitle fields (case-insensitive)
 - Combines with existing filters (status, publisher, monitored)
 - Updated cache key to v3 for proper invalidation
 
 #### New Tests (6 tests)
+
 - `SearchByTitle_ExactMatch_ReturnsSeries`
 - `SearchByTitle_PartialMatch_ReturnsSeries`
 - `SearchByTitle_CaseInsensitive_ReturnsSeries`
@@ -748,29 +859,35 @@ Added text search filtering to the series list API endpoint.
 | `scripts/hooks/pre-commit` | Update TEST_MINIMUM |
 
 ### Test Status
+
 - **Before:** 2559 passed, 0 failed
 - **After:** 2565 passed, 0 failed (+6 new tests)
 
 ### Commits
+
 1. `feat: add text search filter to series list endpoint` - fd84e1e
 
 ---
 
 ## Iteration 202 (2026-03-09)
+
 **EPIC 14.12: Auto Re-Enrich on Week Transition**
 
 ### Summary
+
 Added automatic cover re-enrichment trigger when the calendar week transitions (Monday).
 
 ### Changes
 
 #### DiscoveryCoverEnrichmentService
+
 - Added `_lastProcessedWeekStart` field to track the current week
 - Added week transition detection in `ExecuteAsync` loop
 - When a new week is detected (Sunday → Monday), triggers force enrichment
 - Force enrichment retries issues with `NotFound` status that may now have covers
 
 #### New Tests (7 tests)
+
 - `GetWeekStart_ReturnsMonday` (6 parameterized tests) - Verifies week start calculation
 - `GetWeekStart_WeekTransitionDetection_WorksCorrectly` - Verifies week boundaries
 
@@ -784,32 +901,39 @@ Added automatic cover re-enrichment trigger when the calendar week transitions (
 | `scripts/hooks/pre-commit` | Update TEST_MINIMUM |
 
 ### Test Status
+
 - **Before:** 2552 passed, 0 failed
 - **After:** 2559 passed, 0 failed (+7 new tests)
 
 ### Commits
+
 1. `feat: auto re-enrich covers on week transition` - 2ef0d5a
 
 ---
 
 ## Iteration 201 (2026-03-09)
+
 **EPIC 14.16: SignalR Real-Time Updates (Background Service Integration)**
 
 ### Summary
+
 Wired up background services to broadcast real-time notifications via SignalR.
 
 ### Changes
 
 #### DdlImportBackgroundService
+
 - Added `IMessageBroadcaster` injection (optional, non-breaking)
 - Broadcasts `ImportCompletedMessage` on successful imports
 - Broadcasts `ImportCompletedMessage` (with `Success=false`) on failed imports
 
 #### AutoSearchBackgroundService
+
 - Added `IMessageBroadcaster` injection (optional, non-breaking)
 - Broadcasts `SearchResultsMessage` when auto-search finds results
 
 #### New Tests
+
 - Added `SignalRMessageTests.cs` with 8 tests covering all message types
 - Tests verify Type property, required fields, and timestamps
 
@@ -824,23 +948,28 @@ Wired up background services to broadcast real-time notifications via SignalR.
 | `scripts/hooks/pre-commit` | Update TEST_MINIMUM to 2552 |
 
 ### Test Status
+
 - **Before:** 2544 passed, 0 failed
 - **After:** 2552 passed, 0 failed (+8 new tests)
 
 ### Commits
+
 1. `feat: wire up background services to broadcast SignalR events` - 4ef6b94
 
 ---
 
 ## Iteration 200 (2026-03-09)
+
 **EPIC 14.16: SignalR Real-Time Updates (Backend Foundation)**
 
 ### Summary
+
 Added SignalR hub infrastructure for real-time push notifications (*arr parity).
 
 ### Changes
 
 #### Backend Infrastructure
+
 - Created `MessageHub` SignalR hub at `/signalr/messages`
 - Created `IMessageBroadcaster` interface in Core layer (injectable by background services)
 - Created `SignalRMessageBroadcaster` implementation with typed event methods
@@ -848,6 +977,7 @@ Added SignalR hub infrastructure for real-time push notifications (*arr parity).
 - Updated CORS to allow credentials (required for SignalR)
 
 #### Deferred (Network Issues)
+
 - Frontend SignalR client (`@microsoft/signalr` package)
 - Wire up background services to broadcast events
 
@@ -861,26 +991,32 @@ Added SignalR hub infrastructure for real-time push notifications (*arr parity).
 | `docs/BACKLOG.md` | Mark 14.16 in progress |
 
 ### Test Status
+
 - **Before:** 2544 passed, 0 failed
 - **After:** 2544 passed, 0 failed
 
 ### Commits
+
 1. `feat: add SignalR hub infrastructure for real-time notifications` - 48f969c
 
 ---
 
 ## Iteration 199 (2026-03-09)
+
 **EPIC 21.6: Fix Premium Host Resolver Tests**
 
 ### Summary
+
 Fixed 3 failing integration tests by replacing them with properly mocked unit tests.
 
 ### Root Cause Analysis
+
 - **Classification:** Test Bug
 - **Issue:** Tests called `ResolveAsync` on real external services (Mega.nz, Rapidgator, Uploaded.net)
 - **Problem:** External services returned unpredictable responses, causing flaky tests
 
 ### Fix Applied
+
 - Replaced integration tests with properly mocked unit tests
 - Created testable resolver subclasses (`TestableMegaResolver`, `TestableRapidgatorResolver`, `TestableUploadedResolver`)
 - Mock HTTP handlers return deterministic responses
@@ -898,24 +1034,29 @@ Fixed 3 failing integration tests by replacing them with properly mocked unit te
 | `docs/BACKLOG.md` | Mark 21.6 complete, EPIC 21 complete |
 
 ### Test Status
+
 - **Before:** 2538 passed, 3 failed
 - **After:** 2544 passed, 0 failed (added 3 more specific test cases)
 
 ### Commits
+
 1. `fix(tests): mark external service tests as Integration, accept Unknown failure` - 19357d5
 2. `fix(tests): replace integration tests with properly mocked unit tests` - 5a16bcd
 
 ---
 
 ## Iteration 198 (2026-03-09)
+
 **EPIC 14.14 & 14.15: Version Embedding & System Status**
 
 ### Summary
+
 Added build-time version injection to frontend and enhanced system status endpoint with commit info.
 
 ### Changes
 
 #### Frontend Build-Time Version (14.14)
+
 - Added Vite `define` config to inject `__APP_VERSION__`, `__COMMIT_HASH__`, `__BUILD_TIME__`, `__BRANCH__`
 - Git info fetched dynamically at build time via `child_process.execSync`
 - Created TypeScript declarations in `vite-env.d.ts`
@@ -923,6 +1064,7 @@ Added build-time version injection to frontend and enhanced system status endpoi
 - CSS styling for subtle version indicator
 
 #### Backend System Status (14.15)
+
 - Added `CommitHash` and `Branch` fields to `SystemStatusResponse`
 - Added `CommitHash` field to `SystemInfoResponse`
 - Helper methods `GetGitCommitHash()` and `GetGitBranch()` to fetch at startup
@@ -940,24 +1082,30 @@ Added build-time version injection to frontend and enhanced system status endpoi
 | `docs/BACKLOG.md` | Mark 14.14 and 14.15 complete |
 
 ### Commits
+
 1. `feat: add build-time version injection and enhance system status` - 123f4da
 
 ---
 
 ## Iteration 197 (2026-03-09)
+
 **EPIC 20: Documentation Cleanup & Completion**
 
 ### Summary
+
 Marked EPIC 20 as complete and consolidated deferred items into EPIC 14.
 
 ### Changes
 
 #### Status Update
+
 - Marked EPIC 20 as ✅ COMPLETED in Quick Navigation
 - Updated header from "📋 PLANNED" to "✅ COMPLETED"
 
 #### Deferred Items Cleanup
+
 All "Deferred" items had documented reasons (working alternatives exist):
+
 - 20.1 Large result pagination → AsSplitQuery mitigates
 - 20.2 Full-text indexes → Requires SQLite FTS5 setup
 - 20.4 Additional virtualization → Pagination sufficient
@@ -973,22 +1121,27 @@ These were moved to **EPIC 14.17 Performance Enhancements** as nice-to-have futu
 | `docs/BACKLOG.md` | Mark EPIC 20 complete, add 14.17, update notes |
 
 ### Commits
+
 1. `chore(docs): mark EPIC 20 complete, consolidate deferred items` - TBD
 
 ---
 
 ## Iteration 196 (2026-02-27)
+
 **EPIC 20.8: Bundle Optimization**
 
 ### Summary
+
 Reduced frontend bundle size by 38% through code splitting and lazy loading.
 
 ### Changes
 
 #### 1. Bundle Analysis Tooling
+
 Added `rollup-plugin-visualizer` for bundle analysis. Generates `bundle-stats.html` on each build.
 
 #### 2. Manual Chunks (Vendor Splitting)
+
 ```typescript
 manualChunks: {
   'react-vendor': ['react', 'react-dom', 'react-router-dom'],
@@ -998,7 +1151,9 @@ manualChunks: {
 ```
 
 #### 3. Lazy Loading Heavy Pages
+
 9 pages converted to lazy loading with `React.lazy()`:
+
 - SettingsPage (179 KB) - largest page
 - PullListPage (19 KB)
 - LogsPage (23 KB)
@@ -1010,6 +1165,7 @@ manualChunks: {
 - HistoryPage (4 KB)
 
 #### 4. Results
+
 | Metric | Before | After | Change |
 |--------|--------|-------|--------|
 | Initial bundle | 665 KB | 410 KB | -38% |
@@ -1027,22 +1183,27 @@ manualChunks: {
 | `docs/WORKLOG.md` | Add Iteration 196 |
 
 ### Commits
+
 1. `feat(ui): bundle optimization with code splitting (EPIC 20.8)` - TBD
 
 ---
 
 ## Iteration 195 (2026-02-27)
+
 **EPIC 20.7: API Call Optimization (Partial)**
 
 ### Summary
+
 Optimized frontend API call patterns to reduce unnecessary network requests.
 
 ### Changes
 
 #### 1. Parallel API Calls in PullListPage
+
 **File**: `PullListPage.tsx`
 
 Before: Sequential loop fetching 4 weeks one at a time
+
 ```typescript
 for (let i = 1; i <= 4; i++) {
   const data = await api.getWeeklyDiscoveryByDate(dateStr, {});
@@ -1051,6 +1212,7 @@ for (let i = 1; i <= 4; i++) {
 ```
 
 After: Parallel fetching with `Promise.all`
+
 ```typescript
 const weekPromises = [1, 2, 3, 4].map((i) => {
   return api.getWeeklyDiscoveryByDate(dateStr, {});
@@ -1059,9 +1221,11 @@ return Promise.all(weekPromises);
 ```
 
 #### 2. Smart Polling (Pause When Tab Hidden)
+
 **Files**: `ActivityPage.tsx`, `LogsPage.tsx`, `SettingsPage.tsx`
 
 Added `refetchIntervalInBackground: false` to all polling queries:
+
 - Activity queue (3s interval)
 - Log files (30s interval)
 - Log content (5s interval for recent logs)
@@ -1072,6 +1236,7 @@ Added `refetchIntervalInBackground: false` to all polling queries:
 This pauses polling when the browser tab is not visible, saving bandwidth and reducing server load.
 
 ### Deferred Items
+
 - Server-side pagination for SeriesDetailPage (larger scope)
 - Batched API endpoints for multiple weeks
 
@@ -1087,19 +1252,23 @@ This pauses polling when the browser tab is not visible, saving bandwidth and re
 | `docs/WORKLOG.md` | Add Iteration 195 |
 
 ### Commits
+
 1. `feat(ui): optimize API call patterns (EPIC 20.7)` - TBD
 
 ---
 
 ## Iteration 194 (2026-02-27)
+
 **EPIC 20.3: Background Service Optimization**
 
 ### Summary
+
 Optimized three background services for improved performance and configurability.
 
 ### Changes
 
 #### 1. DDL Import Parallelization
+
 **File**: `DdlImportBackgroundService.cs`
 
 - Replaced sequential `foreach` loop with `Parallel.ForEachAsync`
@@ -1117,6 +1286,7 @@ await Parallel.ForEachAsync(pendingDownloads, parallelOptions, async (download, 
 ```
 
 #### 2. Configurable Auto-Search Batch Size
+
 **Files**: `AutoSearchBackgroundService.cs`, `SearchSettings.cs`
 
 - Added `AutoSearchBatchSize` property to `SearchSettings` (default: 50)
@@ -1124,10 +1294,12 @@ await Parallel.ForEachAsync(pendingDownloads, parallelOptions, async (download, 
 - Users can now tune batch size via settings
 
 #### 3. MatchHistoryService Database Aggregation
+
 **File**: `MatchHistoryService.cs`
 
 Before: Loaded all records with `ToListAsync()` then aggregated in memory.
 After: Uses database aggregation queries:
+
 - `CountAsync` for counts
 - `GroupBy` + `Select` for outcome distribution
 - `AverageAsync`, `MinAsync`, `MaxAsync` for statistics
@@ -1144,22 +1316,27 @@ After: Uses database aggregation queries:
 | `docs/WORKLOG.md` | Add Iteration 194 |
 
 ### Commits
+
 1. `feat: optimize background services (EPIC 20.3)` - TBD
 
 ---
 
 ## Iteration 193 (2026-02-27)
+
 **EPIC 21.2: Establish Test Baseline**
 
 ### Summary
+
 Established a verified test baseline at 2541 tests and added automated regression prevention.
 
 ### Deliverables
+
 1. **`docs/TEST_BASELINE.md`** - Documents current test count with breakdown by class
 2. **`.git/hooks/pre-commit`** - Enforces test minimum before commits to test files
 3. **Flaky test audit** - Verified no flaky tests (2 consecutive runs passed)
 
 ### Pre-commit Hook Behavior
+
 - Runs only when test files are staged
 - Runs full test suite
 - Blocks commit if:
@@ -1177,26 +1354,33 @@ Established a verified test baseline at 2541 tests and added automated regressio
 | `docs/SELF_CHECK.md` | Iteration 193 status |
 
 ### Commits
+
 1. `chore: establish test baseline with regression prevention (EPIC 21.2)` - TBD
 
 ---
 
 ## Iteration 192 (2026-02-27)
+
 **EPIC 21.5: Fix DdlReleaseParser Release Group Regex**
 
 ### Summary
+
 Fixed AUDIT-002: The release group regex was truncating hyphenated groups like "DC-Empire" to just "Empire", causing the `ReleaseGroupPublishers` dictionary lookup to fail.
 
 ### Root Cause
+
 Two issues working together:
+
 1. The regex `[^-]+?` stopped at the first hyphen
 2. Publisher extraction ran BEFORE release group extraction, so "DC" was extracted separately
 
 ### Fix Applied
+
 1. Changed regex from `[^-]+?` to `[A-Za-z][\w-]+` to allow hyphens in capture
 2. Reordered parsing: extract release group BEFORE inline publisher extraction
 
 ### Before/After
+
 ```
 Input:  "Batman 001 (2023) - DC-Empire.cbz"
 Before: ReleaseGroup = "Empire", Publisher = "DC"
@@ -1204,6 +1388,7 @@ After:  ReleaseGroup = "DC-Empire", Publisher = "DC Comics", PublisherHint = "DC
 ```
 
 ### Test Expectations Restored
+
 - "DC-Empire" → "DC Comics" (was incorrectly "DC")
 - "Image-Empire" → "Image Comics" (was incorrectly "Image")
 
@@ -1218,17 +1403,21 @@ After:  ReleaseGroup = "DC-Empire", Publisher = "DC Comics", PublisherHint = "DC
 | `docs/WORKLOG.md` | Add Iteration 192 |
 
 ### Commits
+
 1. `fix: DdlReleaseParser release group regex for hyphenated names (AUDIT-002)` - TBD
 
 ---
 
 ## Iteration 191 (2026-02-27)
+
 **EPIC 21.4: Fix GetComicsAdapter Feature Regression**
 
 ### Summary
+
 Restored 6 methods lost during the V2 rename (commit `a6192fe`) and 12 deleted tests from commit `4d4afa9`. GetComicsAdapter now has full feature parity with ReadComicOnlineAdapter.
 
 ### Restored Methods
+
 | Method | Description |
 |--------|-------------|
 | `GetRssFeedAsync` | Get latest releases from main RSS feed |
@@ -1239,10 +1428,12 @@ Restored 6 methods lost during the V2 rename (commit `a6192fe`) and 12 deleted t
 | `GetAvailableCategories` | List all categories with display names |
 
 ### Helper Methods Added
+
 - `MapPublisherToCategory` - Maps publisher names to category slugs
 - `CreateCandidateFromRssItem` - Creates DdlCandidate from RSS feed item
 
 ### Tests Restored
+
 - 12 tests for publisher RSS methods and category mapping
 - Test count: 2529 → 2541
 
@@ -1256,14 +1447,17 @@ Restored 6 methods lost during the V2 rename (commit `a6192fe`) and 12 deleted t
 | `docs/WORKLOG.md` | Add Iteration 191 |
 
 ### Commits
+
 1. `fix: restore GetComicsAdapter RSS/category methods (AUDIT-001)` - TBD
 
 ---
 
 ## Iteration 190 (2026-02-27)
+
 **EPIC 21.3: Audit Git History for Masked Bugs**
 
 ### Summary
+
 Comprehensive audit of git history to identify test changes that may have masked bugs rather than fixed them. Found 2 critical bugs that were hidden by test modifications, plus 2 documented missing features.
 
 ### Findings
@@ -1278,6 +1472,7 @@ Comprehensive audit of git history to identify test changes that may have masked
 ### AUDIT-001: GetComicsAdapter Feature Regression
 
 **Timeline:**
+
 1. `dad408b` - Added `GetPublisherRssFeedAsync`, `GetPublisherAsync` methods
 2. `b78ab5f` - Added RSS feed and category browsing features
 3. `a6192fe` - **Renamed GetComicsAdapterV2 → GetComicsAdapter, REPLACING old adapter**
@@ -1288,6 +1483,7 @@ Comprehensive audit of git history to identify test changes that may have masked
 ### AUDIT-002: DdlReleaseParser Release Group Bug
 
 **Problem:** Regex `\s-\s*([^-]+?)\s*$` stops at first hyphen
+
 ```
 Input:    "Batman 001 (2023) - DC-Empire.cbz"
 Actual:   ReleaseGroup = "Empire", Publisher = "DC"
@@ -1299,6 +1495,7 @@ Expected: ReleaseGroup = "DC-Empire", Publisher = "DC Comics"
 ### Legitimate Fixes Verified
 
 These test changes from Iteration 189 were categorized as legitimate:
+
 - ActivityService test isolation (test bug)
 - MetronClient mock setup (test bug)
 - GetComicsAdapter HTML fixtures (test bug)
@@ -1308,6 +1505,7 @@ These test changes from Iteration 189 were categorized as legitimate:
 - Mega.nz support (stale test - feature added)
 
 ### Files Created/Changed
+
 | File | Change |
 |------|--------|
 | `docs/DECISIONS.md` | NEW - Document design decisions and audit findings |
@@ -1315,14 +1513,17 @@ These test changes from Iteration 189 were categorized as legitimate:
 | `docs/WORKLOG.md` | Add Iteration 190 entry |
 
 ### Commits
+
 1. `chore(docs): EPIC 21.3 - Audit git history for masked bugs` - TBD
 
 ---
 
 ## Iteration 189 (2026-03-02)
+
 **EPIC 21.1: Fix Existing Test Failures**
 
 ### Summary
+
 Fixed all 45 failing tests, bringing the test suite to 2529 passing tests with 0 failures. This establishes a reliable test baseline for the quality gates in CONTINUE.md.
 
 ### Root Causes Fixed
@@ -1358,6 +1559,7 @@ Fixed all 45 failing tests, bringing the test suite to 2529 passing tests with 0
 | `tests/Shortboxerr.Tests/Fixtures/ddl_parsing_golden.json` | Align 'Absolute' edition expectations |
 
 ### Commits
+
 1. `fix: resolve duplicate DdlCandidateDto causing Swagger schema conflict` - 5a3ad89
 2. `fix(tests): repair MetronClientTests mock setup` - b1c6d72
 3. `fix: replace server-side GroupBy+ToDictionary with client-side evaluation` - ee33627
@@ -1370,19 +1572,23 @@ Fixed all 45 failing tests, bringing the test suite to 2529 passing tests with 0
 ---
 
 ## Iteration 188 (2026-03-02)
+
 **EPIC 14.12: Future Week Cover Enrichment Improvements**
 
 ### Summary
+
 Added UI feedback for issues using volume fallback covers and a manual trigger to refresh missing covers from Metron.
 
 ### Changes
 
 #### Backend Changes
+
 - Added `IsVolumeFallbackCover` boolean field to `DiscoverableIssue` model
 - Set field based on `CoverSource == "VolumeFallback"` or `EnrichmentStatus == HasVolumeFallback`
 - Field propagates through API response for frontend display
 
 #### Frontend Changes
+
 - Added types: `CoverDataSource`, `EnrichmentStatus`, `isVolumeFallbackCover`
 - Added `triggerCoverEnrichment` API function
 - Added visual indicator on pull list cards for volume fallback covers
@@ -1400,9 +1606,11 @@ Added UI feedback for issues using volume fallback covers and a manual trigger t
 | `ui/src/App.css` | Styles for fallback indicator |
 
 ### Commits
+
 1. `feat(ui): add cover source indicator and refresh button for pull list (EPIC 14.12)`
 
 ### Deferred Items
+
 | Item | Reason |
 |------|--------|
 | Debug Metron lookup failures | Requires production data analysis |
@@ -1412,17 +1620,21 @@ Added UI feedback for issues using volume fallback covers and a manual trigger t
 ---
 
 ## Iteration 187 (2026-03-02)
+
 **EPIC 14.13: Add Series Flow Improvements**
 
 ### Summary
+
 Redesigned the Add Series modal for better usability when dealing with large search result sets. Added a compact list view, multi-select with batch adding, and changed the default sort to newest first.
 
 ### Changes
 
 #### Default Sort Order
+
 Changed from "Most Issues" (popularity) to "Newest First" (year descending). Users typically want recent series, not vintage reprints.
 
 #### List View Mode
+
 Added a table-based list view as the default (toggleable to grid):
 
 | Column | Purpose |
@@ -1435,6 +1647,7 @@ Added a table-based list view as the default (toggleable to grid):
 | Link | ComicVine external link |
 
 #### Multi-Select & Batch Add
+
 - Checkboxes on each row for selection
 - "Select All / Deselect All" button
 - "Add X Series" button shows count of selected
@@ -1449,9 +1662,11 @@ Added a table-based list view as the default (toggleable to grid):
 | `ui/src/App.css` | Styles for add-series-table |
 
 ### Commits
+
 1. `feat(ui): improve Add Series flow with list view and batch add (EPIC 14.13)`
 
 ### Deferred Items
+
 | Item | Reason |
 |------|--------|
 | Replace modal with page | Modal works well enough with new list view |
@@ -1460,14 +1675,17 @@ Added a table-based list view as the default (toggleable to grid):
 ---
 
 ## Iteration 186 (2026-03-02)
+
 **EPIC 20.6: Frontend Component Memoization**
 
 ### Summary
+
 Applied React.memo to list item components that render frequently to prevent unnecessary re-renders when parent state changes. Also extracted constant values outside components to prevent recreation on each render.
 
 ### Changes
 
 #### Memoized Components
+
 | Component | File | Purpose |
 |-----------|------|---------|
 | `SeriesSearchResult` | SeriesPage.tsx | Search results in add series modal |
@@ -1477,6 +1695,7 @@ Applied React.memo to list item components that render frequently to prevent unn
 | `StatusCard` | Dashboard.tsx | Status indicators |
 
 #### Optimizations Applied
+
 - Wrapped components with `React.memo()` for shallow prop comparison
 - Added `useCallback` for event handlers (image error, mouse events)
 - Extracted constant objects (placeholder images, status maps) outside components
@@ -1492,19 +1711,23 @@ Applied React.memo to list item components that render frequently to prevent unn
 | `ui/src/pages/Dashboard.tsx` | Memoized StatusCard |
 
 ### Commits
+
 1. `feat(ui): memoize list item components for performance (EPIC 20.6)`
 
 ---
 
 ## Iteration 185 (2026-03-02)
+
 **EPIC 20.2: Database Index Optimization**
 
 ### Summary
+
 Added performance indexes to the database for commonly-used query patterns. These indexes significantly improve query performance for wanted issues, pull list views, and monitored series filtering.
 
 ### Changes
 
 #### New Database Indexes
+
 | Index Name | Table | Columns | Purpose |
 |------------|-------|---------|---------|
 | `IX_Issues_Status` | Issues | Status | Wanted issues queries (`WHERE Status = 'Wanted'`) |
@@ -1513,6 +1736,7 @@ Added performance indexes to the database for commonly-used query patterns. Thes
 | `IX_Series_Monitored` | Series | Monitored | Monitored series list queries |
 
 **Query patterns optimized:**
+
 - Wanted issues list (`WHERE Status = IssueStatus.Wanted`)
 - Pull list week views (`WHERE StoreDate >= X AND StoreDate < Y`)
 - Monitored issues count (`WHERE Monitored = true AND Status = X`)
@@ -1526,9 +1750,11 @@ Added performance indexes to the database for commonly-used query patterns. Thes
 | `src/Shortboxerr.Infrastructure/Persistence/Migrations/20260302135928_AddPerformanceIndexes.cs` | New migration |
 
 ### Commits
+
 1. `feat(db): add performance indexes for common query patterns (EPIC 20.2)`
 
 ### Deferred Items
+
 | Item | Reason |
 |------|--------|
 | Full-text search indexes | Requires SQLite FTS5 setup - separate implementation needed |
@@ -1536,15 +1762,19 @@ Added performance indexes to the database for commonly-used query patterns. Thes
 ---
 
 ## Iteration 184 (2026-02-27)
+
 **EPIC 14.11: ComicVine ID Search Support**
 
 ### Summary
+
 Added support for detecting and parsing ComicVine IDs from user input, enabling direct lookup by ID instead of text search. When users paste a ComicVine ID (e.g., `4050-12345`) or URL into the series search, the system now performs a direct API lookup rather than a text search.
 
 ### Changes
 
 #### ComicVineIdParser Utility
+
 Created new `ComicVineIdParser` static class with:
+
 - Regex patterns for all ComicVine resource types (Volume, Issue, StoryArc, Character, Publisher)
 - Support for prefixed format (`4050-12345`), plain numeric IDs, and ComicVine URLs
 - Type-specific parsing methods (`TryParseAs`, `IsVolumeId`, etc.)
@@ -1558,13 +1788,17 @@ Created new `ComicVineIdParser` static class with:
 | Plain numeric | `12345` | Requires context |
 
 #### Series Search Endpoint Enhancement
+
 Updated `SearchComicVine` endpoint in `SeriesMetadataEndpoints.cs`:
+
 - Auto-detects ComicVine volume IDs in search query
 - Performs direct lookup via `GetSeriesByComicVineIdAsync` instead of search
 - Returns result with `IsDirectLookup: true` flag for frontend differentiation
 
 #### SeriesSearchResult Model Updates
+
 Added new properties to `SeriesSearchResult`:
+
 - `IsDirectLookup`: Indicates ID lookup vs text search
 - `Query`: The original search query
 - `PageSize`: Alias for `Limit` (API consistency)
@@ -1579,9 +1813,11 @@ Added new properties to `SeriesSearchResult`:
 | `tests/Shortboxerr.Tests/ComicVineIdParserTests.cs` | New - 49 test cases |
 
 ### Commits
+
 1. `feat(comicvine): add ComicVine ID parsing and direct lookup support (EPIC 14.11)`
 
 ### Deferred Items
+
 | Item | Reason |
 |------|--------|
 | Issue Search/Lookup | Future enhancement - separate use case |
@@ -1591,17 +1827,21 @@ Added new properties to `SeriesSearchResult`:
 ---
 
 ## Iteration 183 (2026-03-01)
+
 **EPIC 20.4: Frontend Virtualization**
 
 ### Summary
+
 Implemented virtual scrolling for the LogsPage to efficiently render large log files. Only visible rows are rendered to the DOM, reducing DOM nodes by ~95% for large log files.
 
 ### Changes
 
 #### Virtualization Library
+
 - Installed `@tanstack/react-virtual` package
 
 #### LogsPage Virtualization
+
 | Before | After |
 |--------|-------|
 | All 500+ log lines rendered to DOM | Only ~20-30 visible rows rendered |
@@ -1609,6 +1849,7 @@ Implemented virtual scrolling for the LogsPage to efficiently render large log f
 | Scroll jank with many lines | Smooth scrolling with virtualization |
 
 **Implementation:**
+
 - Added `useVirtualizer` hook with estimated row height of 32px
 - 10-row overscan for smoother scrolling
 - Maintains auto-scroll to bottom functionality for live logs
@@ -1622,9 +1863,11 @@ Implemented virtual scrolling for the LogsPage to efficiently render large log f
 | `ui/src/pages/LogsPage.tsx` | Virtualized log line rendering |
 
 ### Commits
+
 1. `feat(ui): add virtualization to LogsPage for efficient log rendering (EPIC 20.4)`
 
 ### Deferred Items
+
 | Component | Reason |
 |-----------|--------|
 | SeriesDetailPage issue grid | Already has pagination (max 192 items), complex 2D grid |
@@ -1634,14 +1877,17 @@ Implemented virtual scrolling for the LogsPage to efficiently render large log f
 ---
 
 ## Iteration 182 (2026-03-01)
+
 **EPIC 20.1: Database Query Optimization**
 
 ### Summary
+
 Optimized EF Core queries to prevent N+1 issues and cartesian explosion from multi-collection includes. Also improved History endpoint pagination for accurate counts and efficient data fetching.
 
 ### Changes
 
 #### AsSplitQuery for Multi-Collection Includes
+
 Added `.AsSplitQuery()` to queries with multiple collection navigations to prevent cartesian explosion:
 
 | File | Method/Location |
@@ -1653,20 +1899,25 @@ Added `.AsSplitQuery()` to queries with multiple collection navigations to preve
 | `LibraryOrganizationService.cs` | ExecuteSeriesRenameAsync |
 
 #### Issue Count Sorting Fix
+
 Changed `s.Issues.Count` (property) to `s.Issues.Count()` (method) in SeriesEndpoints sorting:
+
 - EF Core translates `.Count()` method to a proper SQL COUNT subquery
 - The `.Count` property could trigger lazy loading or client-side evaluation
 
 #### History Endpoint Pagination Optimization
+
 Refactored `GetHistory` method in `HistoryEndpoints.cs`:
+
 - **Before**: Loaded `pageSize * 2` from each source, merged in memory, wrong total count
-- **After**: 
+- **After**:
   - Separate count queries for accurate pagination
   - Order by date at database level before materialization
   - Reduced over-fetching from `pageSize * 2` to `page * pageSize`
   - Map to DTOs client-side to avoid EF Core translation issues
 
 ### Performance Impact
+
 | Change | Impact |
 |--------|--------|
 | AsSplitQuery | Prevents massive result sets from Series × Issues × Editions cartesian product |
@@ -1682,22 +1933,27 @@ Refactored `GetHistory` method in `HistoryEndpoints.cs`:
 | `HistoryEndpoints.cs` | Refactored pagination logic |
 
 ### Commits
+
 1. `feat(perf): optimize database queries to prevent N+1 and cartesian explosion (EPIC 20.1)`
 
 ### Deferred
+
 - **Organization service pagination**: Would require API contract changes; AsSplitQuery mitigates the issue for now
 
 ---
 
 ## Iteration 181 (2026-02-27)
+
 **EPIC 20.5: Frontend Image Optimization**
 
 ### Summary
+
 Implemented image lazy loading across all pages with cover images to improve initial page load performance. Created a reusable `CoverImage` component with skeleton loading states.
 
 ### Changes
 
 #### Lazy Loading Implementation
+
 Added `loading="lazy"` and `decoding="async"` to all cover image `<img>` tags:
 
 | Page | Components Updated |
@@ -1710,14 +1966,18 @@ Added `loading="lazy"` and `decoding="async"` to all cover image `<img>` tags:
 | `EditionDetailPage.tsx` | Edition content item covers |
 
 #### CoverImage Component
+
 Created new reusable component at `ui/src/components/CoverImage.tsx`:
+
 - Handles loading, error, and loaded states
 - Shows skeleton pulse animation while loading
 - Fades in smoothly when loaded
 - Provides consistent fallback placeholder
 
 ### Bug Fix
+
 Fixed duplicate endpoint name conflict from Iteration 180:
+
 - Renamed `SystemEndpoints.ClearCache` to `SystemClearCache`
 - Resolved conflict with `CacheEndpoints.ClearCache`
 - Fixed 94 test failures caused by the naming conflict
@@ -1737,23 +1997,28 @@ Fixed duplicate endpoint name conflict from Iteration 180:
 | `SystemEndpoints.cs` | Fix - Renamed endpoint to resolve conflict |
 
 ### Performance Impact
+
 - **Initial Load**: Deferred loading of off-screen images until user scrolls near them
 - **Bandwidth**: Reduced unnecessary image downloads for below-fold content
 - **Main Thread**: Async decoding prevents blocking during image decode
 
 ### Commits
+
 1. `feat(ui): add lazy loading to cover images for performance (EPIC 20.5)`
 2. `fix(api): resolve duplicate endpoint name 'ClearCache' from iteration 180`
 
 ---
 
 ## Iteration 180 (2026-02-27)
+
 **EPIC 12: Distributed Cache Pub/Sub Infrastructure**
 
 ### Summary
+
 Implemented cache event publishing infrastructure to support future multi-instance deployments. Also fixed broken unit tests that referenced non-existent GetComicsAdapter methods.
 
 ### Build Fix
+
 - Removed broken tests calling non-existent `GetComicsAdapter` methods:
   - `ParseDownloadLinks` tests (method doesn't exist)
   - `GetPublisherRssFeedAsync` tests (method doesn't exist)
@@ -1764,6 +2029,7 @@ Implemented cache event publishing infrastructure to support future multi-instan
 - Deleted `GetComicsAdapterRssTests.cs` entirely
 
 ### Cache Event Publisher
+
 | Component | Description |
 |-----------|-------------|
 | `ICacheEventPublisher` | Interface for publishing cache invalidation events |
@@ -1772,6 +2038,7 @@ Implemented cache event publishing infrastructure to support future multi-instan
 | `LocalCacheEventPublisher` | In-memory implementation for single-instance deployments |
 
 ### CacheService Integration
+
 - Updated `CacheService` constructor to accept optional `ICacheEventPublisher`
 - Publishes events on:
   - `Set()` - Added or Updated
@@ -1781,6 +2048,7 @@ Implemented cache event publishing infrastructure to support future multi-instan
   - Eviction callback - Evicted
 
 ### API Endpoints
+
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/v1/system/cache/stats` | GET | Cache statistics (hits, misses, item count) |
@@ -1788,7 +2056,9 @@ Implemented cache event publishing infrastructure to support future multi-instan
 | `/api/v1/system/cache/clear` | POST | Clear all cached data |
 
 ### Tests Added
+
 11 new unit tests covering:
+
 - LocalCacheEventPublisher event storage and retrieval
 - Subscriber notification and unsubscription
 - Event ordering (newest first)
@@ -1812,18 +2082,22 @@ Implemented cache event publishing infrastructure to support future multi-instan
 | `.gitignore` | Modified - Added covers/ directory |
 
 ### Commits
+
 1. `fix(tests): remove broken tests calling non-existent GetComicsAdapter methods`
 2. `feat(cache): add cache event publisher for distributed cache coordination (EPIC 12)`
 
 ---
 
 ## Iteration 179 (2026-02-27)
+
 **EPIC 18.5 + 18.6: Library Organization Enhancements**
 
 ### Summary
+
 Added auto-organize on format change and dry-run mode for library organization operations.
 
 ### 18.5: Auto-organize on Format Change
+
 - Added `AutoOrganizeOnFormatChange` setting to `GeneralSettings`
 - Backend detects when `SeriesFolderFormat`, `IssueFileFormat`, or `CollectionFileFormat` changes
 - When enabled, triggers background organization of all series
@@ -1831,6 +2105,7 @@ Added auto-organize on format change and dry-run mode for library organization o
 - Default: disabled (requires manual "Organize All" from System Tasks)
 
 ### 18.6: Dry-run Mode
+
 - Added `dryRun` parameter to `ExecuteSeriesRenameAsync` methods
 - When `dryRun=true`, simulates the operation without making changes
 - Returns detailed results showing what WOULD happen
@@ -1852,20 +2127,24 @@ Added auto-organize on format change and dry-run mode for library organization o
 | `SettingsPage.tsx` | Added toggle UI |
 
 ### Commits
+
 - `feat(organize): auto-organize library on format change (18.5)`
 - `feat(organize): add dry-run mode for library organization (18.6)`
 
 ---
 
 ## Iteration 178 (2026-02-27)
+
 **EPIC 11.27: Pull List Data Flow Refactoring - Local Cover Caching Integration**
 
 ### Summary
+
 Completed the local cover caching integration for discovery covers. When the upgrade service transitions issues from interim Metron data to authoritative ComicVine data, it now also downloads the ComicVine cover locally for caching.
 
 ### Implementation
 
 **DiscoveryUpgradeBackgroundService:**
+
 - Added `ICoverService` parameter to `UpgradeWeekAsync`
 - When upgrading an issue with new ComicVine data:
   - Downloads the cover using `DownloadExternalCoverAsync` with `CoverCacheSource.ComicVine`
@@ -1874,6 +2153,7 @@ Completed the local cover caching integration for discovery covers. When the upg
   - Preserves original URL in `OriginalUrl` property
 
 **Cover Caching Architecture (Complete):**
+
 1. `DiscoveryCoverEnrichmentService` - Downloads Metron covers locally when enriching
 2. `DiscoveryUpgradeBackgroundService` - Downloads ComicVine covers locally when upgrading
 3. `CoverService.GetDiscoveryCoverAsync` - Serves cached covers from disk
@@ -1886,23 +2166,28 @@ Completed the local cover caching integration for discovery covers. When the upg
 | `tests/Shortboxerr.Tests/DiscoveryUpgradeBackgroundServiceTests.cs` | Added 5 new tests for cover caching |
 
 ### Commits
+
 - `feat(covers): download ComicVine covers locally during upgrade (11.27)`
 - `test(covers): add local cover caching tests for discovery upgrade`
 
 ### Tests
+
 - All 15 DiscoveryUpgradeBackgroundServiceTests pass
 
 ---
 
 ## Iteration 177 (2026-02-27)
+
 **EPIC 19.5: Matching Audit & Logging**
 
 ### Summary
+
 Implemented comprehensive match history logging to track auto-matching decisions over time. This enables accuracy analysis, identification of problematic series, and continuous improvement of matching quality.
 
 ### Implementation
 
 **Backend (Core):**
+
 - Added `MatchHistory` entity with fields for:
   - Parsed release info (title, series, issue, year, publisher)
   - Match outcome and confidence score
@@ -1911,6 +2196,7 @@ Implemented comprehensive match history logging to track auto-matching decisions
 - Added `MatchOutcome` enum: NoMatch, AutoImported, PendingReview, ManuallyApproved, ManuallyRejected, ManuallyCorrected
 
 **Backend (Infrastructure):**
+
 - Created `IMatchHistoryService` interface with methods:
   - `LogMatchAsync` - record match decisions
   - `VerifyMatchAsync` - mark matches correct/incorrect
@@ -1922,6 +2208,7 @@ Implemented comprehensive match history logging to track auto-matching decisions
 - Added EF Core migration for MatchHistories table
 
 **API:**
+
 - Added `MatchHistoryEndpoints`:
   - `GET /api/match-history` - paginated history with filtering
   - `GET /api/match-history/{id}` - single record
@@ -1930,6 +2217,7 @@ Implemented comprehensive match history logging to track auto-matching decisions
   - `GET /api/match-history/problematic-series` - high-mismatch series
 
 **Frontend:**
+
 - Added TypeScript interfaces for match history types
 - Added API client methods for all endpoints
 - Added `MatchStatisticsSection` component to Import Settings showing:
@@ -1955,44 +2243,53 @@ Implemented comprehensive match history logging to track auto-matching decisions
 | `tests/Shortboxerr.Tests/MatchHistoryServiceTests.cs` | 5 unit tests |
 
 ### Commits
+
 - `feat(audit): add match history logging and API (EPIC 19.5)`
 - `feat(audit): add match statistics UI and unit tests (EPIC 19.5)`
 
 ### Tests
+
 - All 5 MatchHistoryService tests pass
 - Covers: logging, filtering, statistics, verification, problematic series
 
 ---
 
 ## Iteration 176 (2026-02-24)
+
 **EPIC 19.4: Match Verification & Confirmation**
 
 ### Summary
+
 Implemented match verification settings to help catch auto-matching errors early. Added settings to require confirmation for first issues, detect low confidence matches, and show detailed match reasoning.
 
 ### Implementation
 
 **Backend (Core):**
+
 - Added new properties to `DdlMatchResult`:
   - `IsFirstIssueForSeries` - indicates if series has no existing files
   - `IsLowConfidence` - flags borderline confidence matches
   - `ReviewReason` - explains why manual review is required
 
 **New AutoMatchSettings:**
+
 - `RequireConfirmationForFirstIssue` (default: true) - require manual confirmation for first issue imported to any series
 - `LowConfidenceThreshold` (default: 70) - threshold for borderline matches
 - `ShowMatchReasoning` (default: true) - show detailed reasoning in UI
 
 **Backend (Infrastructure):**
+
 - Added `IsFirstIssueForSeriesAsync` to check if series has existing files
 - Added `GetVerificationPropertiesAsync` helper for verification logic
 - Updated all `AutoMatchAsync` return paths with verification properties
 
 **API:**
+
 - Added validation for LowConfidenceThreshold (0-100)
 - Added new settings to AutoMatchSettingsRequest DTO
 
 **Frontend:**
+
 - Added "Match Verification" section to Settings page with:
   - Confirm First Issue toggle
   - Low Confidence Threshold slider
@@ -2012,9 +2309,11 @@ Implemented match verification settings to help catch auto-matching errors early
 | `tests/Shortboxerr.Tests/DdlImportServiceTests.cs` | Added 6 verification tests |
 
 ### Commits
+
 - `feat(automatch): add match verification settings (EPIC 19.4)`
 
 ### Testing Results
+
 - Backend Build: SUCCESS
 - Frontend Build: SUCCESS  
 - Tests: 35 DdlImportService tests pass (6 new verification tests)
@@ -2022,14 +2321,17 @@ Implemented match verification settings to help catch auto-matching errors early
 ---
 
 ## Iteration 175 (2026-02-24)
+
 **EPIC 19.3: Release Parser Improvements**
 
 ### Summary
+
 Enhanced the DDL release parser with improved extraction for year, volume, reboot indicators, series versions, and publisher hints from release group naming. These improvements provide better metadata extraction for more accurate auto-matching.
 
 ### Implementation
 
 **Backend (Core):**
+
 - Added year extraction from bracket format: `[2023]`
 - Enhanced volume parsing:
   - Ordinal words: Vol. One, Vol. Two, Volume Three
@@ -2047,6 +2349,7 @@ Enhanced the DDL release parser with improved extraction for year, volume, reboo
 - Added disambiguation year detection for modern series
 
 **New DdlParsedInfo Properties:**
+
 - `RebootIndicator` - detected reboot/revival indicator
 - `SeriesVersion` - detected series version indicator  
 - `DisambiguationYear` - year used to disambiguate series runs
@@ -2061,23 +2364,28 @@ Enhanced the DDL release parser with improved extraction for year, volume, reboo
 | `tests/Shortboxerr.Tests/DdlReleaseParserTests.cs` | Added 18 new parser tests |
 
 ### Commits
+
 - `feat(parser): enhance release parser with improved extraction (EPIC 19.3)`
 
 ### Testing Results
+
 - Backend Build: SUCCESS
 - Tests: 43 parser tests pass (18 new tests added)
 
 ---
 
 ## Iteration 174 (2026-02-24)
+
 **EPIC 19.2: Series Name Disambiguation**
 
 ### Summary
+
 Enhanced auto-matching with publisher-based disambiguation to improve match accuracy when multiple series share the same name. Added detailed confidence scoring breakdown for diagnostics.
 
 ### Implementation
 
 **Backend (Core + Infrastructure):**
+
 - Added `ConfidenceBreakdown` class with detailed score components (title, year, publisher adjustments)
 - Added publisher matching settings to `AutoMatchSettings`:
   - `PublisherMatchBonus` (default +15)
@@ -2092,10 +2400,12 @@ Enhanced auto-matching with publisher-based disambiguation to improve match accu
 - Added `ScoreBreakdown` property to `DdlMatchResult`
 
 **API:**
+
 - Updated `AutoMatchSettingsRequest` with publisher settings
 - Updated `UpdateAutoMatchSettings` endpoint to validate and persist publisher settings
 
 **Frontend:**
+
 - Added "Publisher Matching" settings section with:
   - Publisher Match Bonus input
   - Publisher Mismatch Penalty input
@@ -2126,11 +2436,13 @@ Enhanced auto-matching with publisher-based disambiguation to improve match accu
 | `tests/Shortboxerr.Tests/DdlImportServiceTests.cs` | Added 5 publisher disambiguation tests |
 
 ### Commits
+
 - `feat(automatch): add publisher disambiguation for series matching (EPIC 19.2)`
 - `feat(ui): add publisher matching settings in Import settings tab`
 - `test(automatch): add publisher disambiguation tests (EPIC 19.2)`
 
 ### Testing Results
+
 - Backend Build: SUCCESS
 - Frontend Build: SUCCESS
 - Tests: 18 DdlImportService tests pass (5 new publisher tests added)
@@ -2138,14 +2450,17 @@ Enhanced auto-matching with publisher-based disambiguation to improve match accu
 ---
 
 ## Iteration 173 (2026-02-24)
+
 **EPIC 19.1: Year-Aware Matching**
 
 ### Summary
+
 Implemented year-aware auto-matching to prevent series mismatches (e.g., "Deadman (2017)" files going to "Deadman (2006)"). This is the first item in the P1 Critical Auto-Matching Robustness epic.
 
 ### Implementation
 
 **Backend (Core + Infrastructure):**
+
 - Consolidated `AutoMatchSettings` class in `ISettingsService.cs` with year tolerance, confidence threshold, and ambiguity detection settings
 - Updated `DdlImportService.CalculateSeriesMatchScore()` to apply year-based scoring and penalties
 - Updated `DdlImportService.AutoMatchAsync()` to:
@@ -2156,10 +2471,12 @@ Implemented year-aware auto-matching to prevent series mismatches (e.g., "Deadma
 - Added `GetAutoMatchSettingsAsync`/`SetAutoMatchSettingsAsync` to `ISettingsService` and `SettingsService`
 
 **API:**
+
 - Added `GET /api/v1/settings/automatch` endpoint
 - Added `PUT /api/v1/settings/automatch` endpoint with validation
 
 **Frontend:**
+
 - Added comprehensive Auto-Match Settings UI in Import tab
 - Settings include: Year tolerance, reject mismatched years, year penalty, ambiguous series detection, confidence threshold
 - Added warning banner explaining the critical nature of these settings
@@ -2190,11 +2507,13 @@ Implemented year-aware auto-matching to prevent series mismatches (e.g., "Deadma
 | `tests/Shortboxerr.Tests/DdlImportServiceTests.cs` | Added 6 year-aware matching tests |
 
 ### Commits
+
 - `feat(automatch): add year-aware matching logic (EPIC 19.1)`
 - `feat(ui): add auto-match settings UI in Import settings tab`
 - `test(automatch): add year-aware matching tests (EPIC 19.1)`
 
 ### Testing Results
+
 - Backend Build: SUCCESS
 - Frontend Build: SUCCESS
 - Tests: 6 new tests added (DdlImportService compilation OK; GetComicsAdapter tests have pre-existing issues)
@@ -2202,14 +2521,17 @@ Implemented year-aware auto-matching to prevent series mismatches (e.g., "Deadma
 ---
 
 ## Iteration 172 (2026-02-26)
+
 **EPIC 18.4: File Rename Within Series - Enhanced Preview UI**
 
 ### Summary
+
 Enhanced the OrganizeModal with view filtering tabs and file type grouping for better clarity when previewing file renames.
 
 ### Implementation
 
 **Frontend (SeriesDetailPage.tsx - OrganizeModal):**
+
 - Added view filter tabs: "All Changes", "Folder", "Files"
 - Grouped file renames by type: Issues vs Collections/TPBs
 - Added visual badges showing issue numbers (#001, #002, etc.)
@@ -2224,22 +2546,27 @@ Enhanced the OrganizeModal with view filtering tabs and file type grouping for b
 | `ui/src/pages/SeriesDetailPage.tsx` | Enhanced OrganizeModal with filtering and type grouping |
 
 ### Commits
+
 - `feat(ui): enhance file rename preview with filtering and type grouping (EPIC 18.4)`
 
 ### Testing Results
+
 - Frontend TypeScript: SUCCESS (no lint errors)
 
 ---
 
 ## Iteration 171 (2026-02-26)
+
 **EPIC 18.7: UI Indicators - Settings Format Change Warning**
 
 ### Summary
+
 Added a warning banner in the General Settings page that appears when the Series Folder Format is changed, alerting users that existing series may need reorganization.
 
 ### Implementation
 
 **Frontend (SettingsPage.tsx - GeneralSettings):**
+
 - Track original series folder format on initial settings load
 - Detect when saved format differs from original after save completes
 - Show warning banner with:
@@ -2255,43 +2582,52 @@ Added a warning banner in the General Settings page that appears when the Series
 | `ui/src/pages/SettingsPage.tsx` | Added format change tracking and warning banner |
 
 ### Commits
+
 - `feat(ui): add settings format change warning (EPIC 18.7)`
 
 ### Testing Results
+
 - Frontend TypeScript: SUCCESS
 
 ---
 
 ## Iteration 170 (2026-02-26)
+
 **EPIC 18.7: UI Indicators - Series List Path Mismatch**
 
 ### Summary
+
 Added a path mismatch indicator column to the series list that shows which series have folder paths that don't match the configured naming format.
 
 ### Implementation
 
 **Backend (ILibraryOrganizationService.cs, LibraryOrganizationService.cs):**
+
 - Added `GetPathMismatchStatusAsync()` method for efficient bulk path checking
 - Added `PathMismatchInfo` class with `HasMismatch`, `CurrentPath`, and `ExpectedPath` properties
 - Lightweight implementation that doesn't load file details (unlike full preview)
 
 **Backend (SeriesEndpoints.cs):**
+
 - Added `includePathMismatch` query parameter to `GET /api/v1/series`
 - When enabled, fetches path mismatch info and includes in response
 - Path mismatch data computed fresh (not cached) since it depends on settings
 
 **Backend (SeriesDto.cs):**
+
 - Added `PathMismatch` (nullable bool) property
 - Added `ExpectedPath` (nullable string) property
 - Added `FromEntity` overload accepting `PathMismatchInfo`
 
 **Frontend (client.ts):**
+
 - Added `pathMismatch`, `currentPath`, `expectedPath` to `Series` interface
 - Added `pathMismatch`, `expectedPath` to `ApiSeries` interface
 - Added `includePathMismatch` parameter to `getSeries()` method
 - Updated `toSeries()` to map path mismatch fields
 
 **Frontend (SeriesPage.tsx):**
+
 - Added "Path" column header
 - Added path status cell with icons:
   - `FolderX` icon (warning color) when mismatch detected
@@ -2310,29 +2646,35 @@ Added a path mismatch indicator column to the series list that shows which serie
 | `ui/src/pages/SeriesPage.tsx` | Added path column with indicator |
 
 ### Commits
+
 - `feat(ui): add path mismatch indicator to series list (EPIC 18.7)`
 
 ### Testing Results
+
 - Backend build: SUCCESS
 - Frontend TypeScript: SUCCESS
 
 ---
 
 ## Iteration 169 (2026-02-26)
+
 **EPIC 18.5: Bulk Organization Tools - "Organize All" System Task**
 
 ### Summary
+
 Added "Organize All" system task that allows users to preview and execute organization for all series in the library at once.
 
 ### Implementation
 
 **Backend (SystemEndpoints.cs):**
+
 - `GET /api/v1/system/tasks/organize-all/preview` - Returns preview summary for all series
 - `POST /api/v1/system/tasks/organize-all` - Executes organization for all series
 - Summary DTOs: `OrganizeAllPreviewResponse`, `SeriesOrganizePreviewSummary`, `OrganizeAllResultResponse`, `SeriesOrganizeResultSummary`
 - Logs task start/completion with counts
 
 **Frontend (SettingsPage.tsx):**
+
 - Added "System Tasks" tab with Wrench icon
 - `SystemTasksSettings` component with:
   - "Organize All Series" task card
@@ -2345,6 +2687,7 @@ Added "Organize All" system task that allows users to preview and execute organi
   - Success/failure result display
 
 **API Client (client.ts):**
+
 - Added types: `SeriesOrganizePreviewSummary`, `OrganizeAllPreviewResponse`, `SeriesOrganizeResultSummary`, `OrganizeAllResultResponse`
 - Added methods: `getOrganizeAllPreview()`, `executeOrganizeAll()`
 
@@ -2357,23 +2700,28 @@ Added "Organize All" system task that allows users to preview and execute organi
 | `ui/src/pages/SettingsPage.tsx` | Added System Tasks tab and component |
 
 ### Commits
+
 - `feat(tasks): add 'Organize All' system task (EPIC 18.5)`
 
 ### Testing Results
+
 - Backend build: SUCCESS
 - Frontend TypeScript: SUCCESS
 
 ---
 
 ## Iteration 168 (2026-02-26)
+
 **EPIC 14.8: Series Deletion UX Improvements**
 
 ### Summary
+
 Added a confirmation modal for series deletion that shows what will be deleted, including linked annual series that cascade delete. Replaced browser `confirm()` with a proper modal component.
 
 ### Implementation
 
 **Backend Changes:**
+
 - Added `GET /api/v1/series/{id}/delete/preview` endpoint
 - Returns deletion preview with series, issue count, edition count, and linked annuals
 - Updated `DELETE /api/v1/series/{id}` to cascade delete linked annual series
@@ -2381,6 +2729,7 @@ Added a confirmation modal for series deletion that shows what will be deleted, 
 - Added DTOs: `SeriesDeletePreviewDto`, `LinkedSeriesDto`, `SeriesDeleteResultDto`
 
 **Frontend Changes:**
+
 - Added `DeleteSeriesModal` component with:
   - Loading state while fetching preview
   - List of items to be deleted (main series + linked annuals)
@@ -2400,28 +2749,35 @@ Added a confirmation modal for series deletion that shows what will be deleted, 
 | `ui/src/pages/SeriesDetailPage.tsx` | Added DeleteSeriesModal component |
 
 ### Commits
+
 - `feat(series): add deletion confirmation modal with cascade delete`
 
 ### Testing Results
+
 - Backend build: SUCCESS
 - Frontend TypeScript: SUCCESS
 
 ---
 
 ## Iteration 167 (2026-02-26)
+
 **EPIC 11.27: Fix Discovery Cover Endpoint Parameter Naming**
 
 ### Summary
+
 Fixed the misleading parameter naming in the discovery cover endpoints. The endpoint parameter was named `comicVineIssueId` but actually accepts any cache key (Metron ID, DB issue ID, etc.). Renamed to `coverId` with clear documentation.
 
 ### Problem
+
 The `/api/v1/covers/discovery/{id}` endpoint parameter was named `comicVineIssueId`, but the actual usage varied:
+
 - `PullListService` uses Metron issue ID
 - `DiscoveryCoverEnrichmentService` uses DB issue ID
 
 This caused confusion about what ID to use when calling the endpoint.
 
 ### Solution
+
 - Renamed endpoint parameter from `comicVineIssueId` to `coverId`
 - Updated `ICoverService.GetDiscoveryCoverAsync` parameter name
 - Updated `CoverService` implementation
@@ -2436,26 +2792,32 @@ This caused confusion about what ID to use when calling the endpoint.
 | `src/Shortboxerr.Infrastructure/Services/CoverService.cs` | Updated implementation |
 
 ### Commits
+
 - `fix(covers): clarify discovery cover endpoint parameter naming (EPIC 11.27)`
 
 ### Testing Results
+
 - Backend build: SUCCESS
 
 ---
 
 ## Iteration 166 (2026-02-26)
+
 **EPIC 18.3: Library Organization - Bulk Series Organize**
 
 ### Summary
+
 Added "Organize" button to Series page bulk actions toolbar with BulkOrganizeModal for preview and batch execution of file organization across multiple series.
 
 ### Implementation
 
 **UI Components:**
+
 - `BulkOrganizeModal` - Shows bulk preview summary and execution results
 - FolderSync icon button in bulk actions toolbar (appears when series selected)
 
 **Modal Features:**
+
 - Summary stats: series to update, files to rename, total size
 - Per-series change list with folder rename paths
 - Error handling with per-series error display
@@ -2464,36 +2826,44 @@ Added "Organize" button to Series page bulk actions toolbar with BulkOrganizeMod
 ### Files Changed
 
 **Modified Files:**
+
 - `ui/src/pages/SeriesPage.tsx` - Added BulkOrganizeModal and bulk action button
 
 ### Commits
+
 - `feat(ui): add bulk Organize action to Series page (EPIC 18.3)`
 
 ### Testing Results
+
 - Frontend build: SUCCESS
 - Backend build: SUCCESS (unchanged)
 
 ---
 
 ## Iteration 165 (2026-02-26)
+
 **EPIC 18.3: Library Organization - Series Detail Page UI**
 
 ### Summary
+
 Added "Organize Files" button to Series Detail page header with OrganizeModal for preview and execution of file organization.
 
 ### Implementation
 
 **UI Components:**
+
 - `OrganizeModal` - Shows preview of changes before execution
 - FolderSync icon button in Series Detail toolbar
 
 **API Client Methods:**
+
 - `getSeriesOrganizePreview(seriesId)` - Fetch rename preview
 - `executeSeriesOrganize(seriesId)` - Execute organization
 - `getBulkOrganizePreview(seriesIds)` - Batch preview
 - `executeBulkOrganize(seriesIds)` - Batch execute
 
 **Types Added:**
+
 - `SeriesRenamePreview`, `FileRenamePreview`
 - `SeriesRenameResult`
 - `OrganizePreviewResponse`, `OrganizeExecuteResponse`
@@ -2501,13 +2871,16 @@ Added "Organize Files" button to Series Detail page header with OrganizeModal fo
 ### Files Changed
 
 **Modified Files:**
+
 - `ui/src/api/client.ts` - Added organize types and API methods
 - `ui/src/pages/SeriesDetailPage.tsx` - Added OrganizeModal and button
 
 ### Commits
+
 - `feat(ui): add Organize button to Series Detail Page (EPIC 18.3)`
 
 ### Testing Results
+
 - Frontend build: SUCCESS
 - Backend build: SUCCESS
 - LibraryOrganizationService tests: 13 passing
@@ -2515,32 +2888,38 @@ Added "Organize Files" button to Series Detail page header with OrganizeModal fo
 ---
 
 ## Iteration 164 (2026-02-26)
+
 **EPIC 18.1-18.2: Library Organization Service & API**
 
 ### Summary
+
 Implemented library organization/rename feature for Sonarr/Radarr parity. Created `ILibraryOrganizationService` with preview/execute capabilities and RESTful API endpoints for reorganizing existing library files to match current naming format settings.
 
 ### Implementation
 
 **Core Service (`ILibraryOrganizationService`):**
+
 - `GetSeriesRenamePreviewAsync(int seriesId)` - preview single series
 - `GetSeriesRenamePreviewsAsync(int[] seriesIds)` - batch preview (empty array = all series)
 - `ExecuteSeriesRenameAsync(int seriesId)` - execute single series
 - `ExecuteSeriesRenameAsync(int[] seriesIds)` - batch execute
 
 **Models:**
+
 - `SeriesRenamePreview` - current/new path, file count, errors, warnings
 - `FileRenamePreview` - current/new filename, WillRename/WillMove flags
 - `SeriesRenameResult` - execution result with file counts
 - `FileRenameResult` - individual file move result
 
 **API Endpoints:**
+
 - `POST /api/v1/series/organize/preview` - batch preview
 - `POST /api/v1/series/organize/execute` - batch execute
 - `GET /api/v1/series/{id}/organize/preview` - single series preview
 - `POST /api/v1/series/{id}/organize` - single series execute
 
 **Format Token Expansion:**
+
 - Series folder: `{Publisher}`, `{Series Title}`, `{Year}`, `{Status}`
 - Issue file: `{Series Title}`, `{Issue}`, `{Year}`, `{Publisher}`, `{Issue Title}`, `{Quality}`
 - Collection file: `{Series Title}`, `{Edition Type}`, `{Volume}`, `{Year}`, `{Publisher}`
@@ -2548,18 +2927,22 @@ Implemented library organization/rename feature for Sonarr/Radarr parity. Create
 ### Files Changed
 
 **New Files:**
+
 - `src/Shortboxerr.Core/Services/ILibraryOrganizationService.cs` - Interface and models
 - `src/Shortboxerr.Infrastructure/Services/LibraryOrganizationService.cs` - Implementation
 - `tests/Shortboxerr.Tests/LibraryOrganizationServiceTests.cs` - Unit tests
 
 **Modified Files:**
+
 - `src/Shortboxerr.Infrastructure/DependencyInjection.cs` - Service registration
 - `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` - API endpoints
 
 ### Commits
+
 - `feat(organize): add library organization service for Sonarr/Radarr parity (EPIC 18.1-18.2)`
 
 ### Testing Results
+
 - Backend build: SUCCESS
 - Unit tests: 12 tests for LibraryOrganizationService
 - Note: Pre-existing test failures in GetComicsAdapterTests.cs (unrelated)
@@ -2567,9 +2950,11 @@ Implemented library organization/rename feature for Sonarr/Radarr parity. Create
 ---
 
 ## Iteration 163 (2026-02-25)
+
 **EPIC 15.19: Manual Import & Parser Improvements**
 
 ### Summary
+
 Fixed Manual Import UI display issues, improved filename parser to correctly handle DC's Absolute series line and "Issue #X" patterns, and added publisher folder support in series folder format.
 
 ### Problems Addressed
@@ -2587,6 +2972,7 @@ Fixed Manual Import UI display issues, improved filename parser to correctly han
 ### Implementation
 
 **Manual Import Display Fix:**
+
 - Added `SuggestedSeriesTitle` to `StagedItem` model and `StagedItemDto`
 - `StagingService.TryMatchSeriesAsync` now populates series title when matching
 - `StagingService.UpdateMatchAsync` fetches and stores series title
@@ -2594,12 +2980,14 @@ Fixed Manual Import UI display issues, improved filename parser to correctly han
 - Frontend `client.ts` updated to use `suggestedSeriesId`/`suggestedSeriesTitle`
 
 **Parser Improvements:**
+
 - Added regex to detect DC Absolute series line: `^absolute\s+(batman|wonder\s*woman|superman|flash|green\s*lantern|martian\s*manhunter|aquaman|cyborg|power\s*girl)`
 - Skip "absolute" in CollectionIndicators when it's part of series name
 - Added `IssueWordPattern()` regex: `\bIssue\s*#?\s*(\d+(?:\.\d+)?)`
 - Parse "Issue #X" pattern before standard hash pattern
 
 **Publisher Folder Format:**
+
 - `StagingService` now uses `SeriesFolderFormat` setting via `ISettingsService`
 - Added `ExpandSeriesFolderFormat()` to replace tokens: `{Publisher}`, `{Series Title}`, `{Year}`, `{Status}`
 - Default format changed from `{Series Title} ({Year})` to `{Publisher}/{Series Title} ({Year})`
@@ -2609,6 +2997,7 @@ Fixed Manual Import UI display issues, improved filename parser to correctly han
 ### Files Changed
 
 **Modified Files:**
+
 - `src/Shortboxerr.Core/Models/StagedItem.cs` - Added SuggestedSeriesTitle property
 - `src/Shortboxerr.Api/Dtos/ManualImportDto.cs` - Added SuggestedSeriesTitle to DTO
 - `src/Shortboxerr.Infrastructure/Services/StagingService.cs` - Populate series title, folder format expansion, ISettingsService injection
@@ -2618,10 +3007,12 @@ Fixed Manual Import UI display issues, improved filename parser to correctly han
 - `ui/src/api/client.ts` - Use suggestedSeriesId/Title fields
 
 ### Commits
+
 - `fix(manualimport): fix matching display and parser improvements`
 - `feat(import): add publisher folder support in series folder format`
 
 ### Testing Results
+
 - Parser correctly handles "Absolute Wonder Woman #17 (2026).cbz" → series: "Absolute Wonder Woman", issue: 17
 - Parser correctly handles "Absolute Martian Manhunter Issue #9.cbz" → series: "Absolute Martian Manhunter", issue: 9
 - Manual Import shows matched series with title
@@ -2632,17 +3023,21 @@ Fixed Manual Import UI display issues, improved filename parser to correctly han
 ---
 
 ## Iteration 162 (2026-02-25)
+
 **EPIC 14.10: DDL Auto-Import Background Service**
 
 ### Summary
+
 Implemented automatic import processing for DDL downloads to close the workflow gap identified in 14.9.
 
 ### Problem Addressed
+
 When DDL downloads were initiated manually via the UI (GrabDdl endpoint), completed downloads sat in the download folder without automatic import processing. Users had to manually trigger the import.
 
 ### Implementation
 
 **DdlImportBackgroundService:**
+
 - Monitors completed DDL downloads every 30 seconds (configurable)
 - Integrates with `DdlImportService.ProcessDownloadAsync` for import pipeline
 - Tracks import status to avoid reprocessing
@@ -2650,11 +3045,13 @@ When DDL downloads were initiated manually via the UI (GrabDdl endpoint), comple
 - Supports confidence-based auto-approval
 
 **DdlDownloadService Enhancements:**
+
 - Added `GetPendingImportDownloads()` to retrieve successful downloads awaiting import
 - Added `MarkAsImported()` to flag downloads as processed
 - Extended `DdlDownloadHistoryEntry` with `ImportProcessed`, `ImportProcessedAt`, and `Candidate` fields
 
 **Settings (via generic settings API):**
+
 - `ddl_auto_import_enabled` (default: true)
 - `ddl_auto_import_interval_seconds` (default: 30)
 - `ddl_auto_import` (default: true)
@@ -2663,24 +3060,29 @@ When DDL downloads were initiated manually via the UI (GrabDdl endpoint), comple
 ### Files Changed
 
 **New Files:**
+
 - `src/Shortboxerr.Infrastructure/BackgroundServices/DdlImportBackgroundService.cs`
 - `tests/Shortboxerr.Tests/DdlImportBackgroundServiceTests.cs`
 
 **Modified Files:**
+
 - `src/Shortboxerr.Core/Ddl/IDdlDownloadService.cs` - Added import tracking methods and properties
 - `src/Shortboxerr.Infrastructure/Ddl/DdlDownloadService.cs` - Implemented tracking logic
 - `src/Shortboxerr.Infrastructure/DependencyInjection.cs` - Registered background service
 
 ### Commits
+
 - `feat(ddl): add DdlImportBackgroundService for auto-import`
 - `test(ddl): add DdlImportBackgroundService tests`
 
 ---
 
 ## Iteration 161 (2026-02-25)
+
 **EPIC 14.9: Workflow Connectivity Audit + History System Refactoring**
 
 ### Summary
+
 1. Refactored Activity and History sections to follow Sonarr/Radarr patterns
 2. Implemented unified history service for tracking library events
 3. Conducted workflow connectivity audit identifying one significant gap
@@ -2689,12 +3091,14 @@ When DDL downloads were initiated manually via the UI (GrabDdl endpoint), comple
 ### Activity/History Refactoring
 
 **UI Changes:**
+
 - Renamed "Activity" page to "Queue" - shows only active/in-progress downloads
 - Enhanced "History" page to display all event types in unified feed
 - Added relative timestamps with full date/time tooltips
 - Added clear history button and event type filters
 
 **Backend Changes:**
+
 - Created `IHistoryService` interface for centralized event recording
 - Implemented `HistoryService` persisting events to `HistoryEvents` table
 - Added `DownloadHistory` entity for persistent download tracking
@@ -2705,6 +3109,7 @@ When DDL downloads were initiated manually via the UI (GrabDdl endpoint), comple
 ### Workflow Connectivity Audit (14.9)
 
 **Audited Workflows:**
+
 1. **Search → Download** ✅ CONNECTED - AutoSearchService properly integrates DecisionEngine and DdlDownloadService
 2. **Download → Import** ⚠️ GAP FOUND - Manual DDL downloads don't trigger auto-import
 3. **Discovery → Pull List** ✅ CONNECTED - WalkSoftly/ComicVine data flows correctly
@@ -2712,12 +3117,14 @@ When DDL downloads were initiated manually via the UI (GrabDdl endpoint), comple
 5. **NZB/Torrent → Download Client** ✅ CONNECTED - Background services and providers integrated
 
 **Gap Identified:**
+
 - Manual DDL downloads via `GrabDdl` endpoint complete but don't trigger import pipeline
 - Created backlog item 14.10: DDL Auto-Import Background Service
 
 ### Files Changed
 
 **New Files:**
+
 - `src/Shortboxerr.Core/Services/IHistoryService.cs`
 - `src/Shortboxerr.Infrastructure/Services/HistoryService.cs`
 - `src/Shortboxerr.Core/Entities/DownloadHistory.cs`
@@ -2726,6 +3133,7 @@ When DDL downloads were initiated manually via the UI (GrabDdl endpoint), comple
 - `src/Shortboxerr.Infrastructure/Persistence/Migrations/20260225224248_AddDownloadHistory.cs`
 
 **Modified Files:**
+
 - `SeriesEndpoints.cs`, `EditionEndpoints.cs`, `DdlEndpoints.cs` - History event recording
 - `HistoryEndpoints.cs` - Unified history aggregation
 - `ActivityService.cs`, `DdlDownloadService.cs` - Download history persistence
@@ -2733,6 +3141,7 @@ When DDL downloads were initiated manually via the UI (GrabDdl endpoint), comple
 - `ui/src/pages/ActivityPage.tsx`, `HistoryPage.tsx`, `Layout.tsx`, `client.ts` - UI changes
 
 ### Commits
+
 1. `fix(ddl): improve GetComics error page detection and DI`
 2. `feat(history): add DownloadHistory entity for persistent download tracking`
 3. `feat(history): add unified IHistoryService for library event tracking`
@@ -2742,6 +3151,7 @@ When DDL downloads were initiated manually via the UI (GrabDdl endpoint), comple
 7. `feat(ui): simplify Activity to Queue and enhance History page`
 
 ### Build Status
+
 - ✅ Backend builds successfully
 - ✅ Frontend builds successfully
 - ✅ Server running on port 5000
@@ -2749,14 +3159,17 @@ When DDL downloads were initiated manually via the UI (GrabDdl endpoint), comple
 ---
 
 ## Iteration 160 (2026-02-25)
+
 **EPIC 8.6: GetComics Mylar3 Full Parity**
 
 ### Summary
+
 Implemented full Mylar3 behavioral parity for GetComics.org DDL functionality. Analyzed Mylar3's `getcomics.py` script and replicated its session management, anti-bot measures, search logic, link extraction, and post-download processing.
 
 ### What Changed
 
 **New Files Created:**
+
 - `IDdlCookieService.cs` - Interface for persistent cookie management across sessions
 - `DdlCookieService.cs` - JSON file storage with 7-day expiry (like Mylar3's `.gc_cookies.dat`)
 - `GetComicsSettings.cs` - Comprehensive settings model with link priority, quality preference, FlareSolverr config
@@ -2766,11 +3179,13 @@ Implemented full Mylar3 behavioral parity for GetComics.org DDL functionality. A
 - `DdlPackInfo.cs` - Model for storing pack detection details (series, issue range, annuals)
 
 **Modified Files:**
+
 - `DdlReleaseParser.cs` - Added `PackIndicators` array, `DetectPack` method, `YearRangeRegex`
 - `DdlCandidate.cs` - Added `IsPack`, `PackIndicator`, `IncludesAnnuals` to `DdlParsedInfo`
 - `DependencyInjection.cs` - Registered `IDdlCookieService` and `IDdlPostProcessor` in DI container
 
 ### Key Mylar3 Features Implemented
+
 1. **Session/Cookie Persistence** - Cookies saved to disk and reloaded across restarts
 2. **Anti-Bot Headers** - Firefox User-Agent and Referer headers matching Mylar3
 3. **Multiple Search Formats** - 4 query formats with fallback (`"{series} #{issue} ({year})"`, etc.)
@@ -2785,25 +3200,30 @@ Implemented full Mylar3 behavioral parity for GetComics.org DDL functionality. A
 12. **Post-Processing** - Automatic zip extraction with delete-after-extract option
 
 ### Build Status
+
 - ✅ Build succeeded with 0 warnings, 0 errors
 - ✅ All new services registered in DI container
 
 ---
 
 ## Iteration 159 (2026-02-25)
+
 **EPIC 11.21: Upcoming Issues - Display Parity with Regular Issues**
 
 ### Summary
+
 Enhanced upcoming issue display in series detail view to match regular issue metadata display. Upcoming issues now show full information including issue number, title, release timing indicator, and proper list view integration.
 
 ### What Changed
 
 **Series Detail Page - Cover View:**
+
 - Upcoming issues now use backend-provided `releaseTiming` (e.g., "In 3 days", "Tomorrow") for release date display
 - Added fallback `formatDaysUntilRelease()` helper function for frontend calculation
 - Release timing displayed in accent-info color for visual distinction
 
 **Series Detail Page - List View:**
+
 - Implemented inline table rendering to support mixed regular/upcoming issues
 - Upcoming issues display in same columns as regular issues:
   - Issue number (styled consistently)
@@ -2815,30 +3235,37 @@ Enhanced upcoming issue display in series detail view to match regular issue met
 - Selection checkboxes disabled for upcoming issues (can't mark as wanted)
 
 **Helper Functions:**
+
 - Added `formatDaysUntilRelease(releaseDate)` - formats release date as relative time
   - Returns: "Today", "Tomorrow", "In X days", "Next week", or formatted date
 
 ### Files Changed
+
 - `ui/src/pages/SeriesDetailPage.tsx` - Enhanced upcoming issue rendering in both views
 
 ### Tests
+
 - No new tests required (UI-only changes, backend API unchanged)
 
 ### Build Status
+
 - Frontend: ✅ Builds successfully
 - No TypeScript errors
 
 ---
 
 ## Iteration 158 (2026-02-25)
+
 **EPIC 11.27: Pull List Data Flow Refactoring - Phase 2 (Background Upgrade Service)**
 
 ### Summary
+
 Implemented the background service that periodically upgrades interim Metron-enriched issues to authoritative ComicVine data when CV issue IDs become available in WalkSoftly.
 
 ### What Changed
 
 **DiscoveryUpgradeBackgroundService (New):**
+
 - Periodically checks cached discovery weeks for non-finalized issues
 - Re-queries WalkSoftly to detect newly available ComicVine issue IDs
 - For issues with newly discovered CV IDs:
@@ -2848,14 +3275,17 @@ Implemented the background service that periodically upgrades interim Metron-enr
   - Updates cached discovery weeks in database
 
 **PullListSettings Extensions:**
+
 - `DiscoveryUpgradeEnabled` (default: true) - Enable/disable the upgrade service
 - `DiscoveryUpgradeIntervalHours` (default: 4) - Check interval matching Mylar3
 - `DiscoveryUpgradeWeeksAhead` (default: 4) - How many weeks to check for upgrades
 
 **DI Registration:**
+
 - Registered `DiscoveryUpgradeBackgroundService` as singleton hosted service
 
 ### Algorithm
+
 ```
 Every 4 hours:
   For each cached week (current + 3 weeks ahead):
@@ -2871,6 +3301,7 @@ Every 4 hours:
 ```
 
 ### Tests Added
+
 - 11 new unit tests for settings defaults and enrichment state transitions
 - Tests verify:
   - Default values for new PullListSettings properties
@@ -2879,9 +3310,11 @@ Every 4 hours:
   - Non-finalized issue detection by ID and status
 
 ### Commits
+
 1. `feat(pulllist): add background discovery upgrade service (EPIC 11.27 Phase 2)`
 
 ### Next Steps
+
 - [ ] Evaluate 11.26 (local cover caching routing) - may be obviated by this work
 - [ ] Add integration tests for Metron→ComicVine upgrade flow
 - [ ] Consider 11.21 (Upcoming Issues Display Parity) as next priority
@@ -2889,14 +3322,17 @@ Every 4 hours:
 ---
 
 ## Iteration 157 (2026-02-25)
+
 **EPIC 11.27: Pull List Data Flow Refactoring - Phase 1 (Unified Enrichment Strategy)**
 
 ### Summary
+
 Implemented the foundation for the unified enrichment strategy that establishes a clear hierarchy of data sources with well-defined finalization states. This phase focuses on the core data model and ComicVine direct enrichment path.
 
 ### What Changed
 
 **Data Model (IPullListService.cs):**
+
 - Added `EnrichmentStatus` enum: `Pending`, `MetronInterim`, `ComicVineFinalized`
 - Added `DataSource` enum: `WalkSoftly`, `ComicVine`, `Metron`, `LocalLibrary`
 - Extended `DiscoverableIssue` with:
@@ -2906,6 +3342,7 @@ Implemented the foundation for the unified enrichment strategy that establishes 
   - `EnrichedAt` timestamp
 
 **Enrichment Flow (PullListService.cs):**
+
 - New `EnrichWithComicVineIssueDataAsync` method:
   - Fetches full issue data from ComicVine when WalkSoftly provides CV issue ID
   - Updates issue metadata (name, description, dates)
@@ -2923,6 +3360,7 @@ Implemented the foundation for the unified enrichment strategy that establishes 
   - Stores `MetronIssueId` for later upgrade potential
 
 ### Data Flow Summary
+
 ```
 WalkSoftly Release
        │
@@ -2932,16 +3370,19 @@ WalkSoftly Release
 ```
 
 ### Tests Added
+
 - 5 new unit tests for `EnrichmentStatus` and `DataSource` enums
 - Tests verify default values, state transitions, and enum completeness
 - All 10 enrichment-related tests pass
 
 ### Commits
+
 1. `feat(pulllist): add EnrichmentStatus enum and tracking fields`
 2. `feat(pulllist): implement unified enrichment data flow (11.27)`
 3. `test(pulllist): add unit tests for enrichment status tracking`
 
 ### Next Steps (Phase 2)
+
 - [ ] Implement background upgrade service for MetronInterim → ComicVineFinalized transitions
 - [ ] Re-check WalkSoftly for CV issue IDs that become available later
 - [ ] Evaluate if 11.26 (local cover caching routing issue) is still relevant
@@ -2949,12 +3390,15 @@ WalkSoftly Release
 ---
 
 ## Iteration 156 (2026-02-24)
+
 **EPIC 11.25: ID-Less Upcoming Issue Matching for Metron Covers**
 
 ### Summary
+
 Implemented confidence-scored ID-less Metron matching for upcoming issues that do not yet have a ComicVine issue ID from WalkSoftly.
 
 ### What Changed
+
 - Added `MinMatchConfidence` to Metron settings (default 85, clamped 50-100) and exposed it via:
   - `GET /api/v1/settings/metron`
   - `PUT /api/v1/settings/metron`
@@ -2974,14 +3418,17 @@ Implemented confidence-scored ID-less Metron matching for upcoming issues that d
 ---
 
 ## Iteration 155 (2026-02-24)
+
 **EPIC 11.23: Metron Cover Caching Parity + EPIC 11.24: Enrichment Status Tracking**
 
 ### Summary
+
 Implemented unified cover caching for Metron covers and added enrichment status tracking to avoid unnecessary API calls.
 
 ### 11.23 Metron Cover Caching Parity
 
 **New Functionality:**
+
 - Metron covers are now downloaded to local disk cache (same as ComicVine covers)
 - Added `CoverCacheSource` enum to track cover origin (ComicVine, Metron, Placeholder)
 - Added `Source` field to `CoverCacheMetadata` to track which service provided the cover
@@ -2989,6 +3436,7 @@ Implemented unified cover caching for Metron covers and added enrichment status 
 - Added `CoverType.Discovery` for discovery issue covers
 
 **New Methods:**
+
 | Method | Description |
 |--------|-------------|
 | `ICoverService.DownloadExternalCoverAsync()` | Downloads cover with source tracking |
@@ -2997,6 +3445,7 @@ Implemented unified cover caching for Metron covers and added enrichment status 
 ### 11.24 Enrichment Status Tracking
 
 **New Functionality:**
+
 - Added `CoverEnrichmentStatus` enum: None, HasComicVineCover, Enriched, NotFound
 - Added tracking fields to `ComicVineIssue`: EnrichmentStatus, LastEnrichmentAttempt, CoverSource
 - Issues with ComicVine covers are marked `HasComicVineCover` - never sent to Metron
@@ -3004,6 +3453,7 @@ Implemented unified cover caching for Metron covers and added enrichment status 
 - Detailed stats logging: shows skipped counts for each reason
 
 **Enrichment Service Improvements:**
+
 - First pass marks issues with existing ComicVine covers
 - Skips issues based on enrichment status
 - Downloads Metron covers to local cache (not just URLs)
@@ -3012,6 +3462,7 @@ Implemented unified cover caching for Metron covers and added enrichment status 
 ### Files Changed
 
 **New/Modified Core Files:**
+
 | File | Change |
 |------|--------|
 | `ICoverService.cs` | Added `CoverCacheSource` enum, `DownloadExternalCoverAsync`, `GetCachedCoverMetadataAsync` |
@@ -3020,20 +3471,24 @@ Implemented unified cover caching for Metron covers and added enrichment status 
 | `DiscoveryCoverEnrichmentService.cs` | Added status tracking, local caching, detailed logging |
 
 ### Test Results
+
 - 59 CoverService tests passing (5 new tests)
 - Build: SUCCESS (0 warnings, 0 errors)
 
 ---
 
 ## Iteration 154 (2026-02-24)
+
 **EPIC 11.19: Security Audit Completion + EPIC 11.22: Upcoming Cover Enrichment**
 
 ### Summary
+
 Completed security audit for credential handling and enabled Metron cover enrichment for upcoming releases shown on series detail pages.
 
 ### Security Audit (11.19)
 
 **Credential Transmission Audit:**
+
 - ✅ API endpoints use `HasPassword`/`HasApiKey` flags instead of returning plaintext passwords
 - ✅ Metron API uses `HasPassword: true/false` in response (never returns password)
 - ✅ ComicVine API uses `HasApiKey` and `MaskedApiKey` (e.g., "abc1...xyz9")
@@ -3041,12 +3496,14 @@ Completed security audit for credential handling and enabled Metron cover enrich
 - ✅ `NewznabClient` uses `MaskApiKey()` helper when logging URLs
 
 **Frontend Audit:**
+
 - ✅ All password inputs use `type="password"` (9 instances in SettingsPage.tsx)
 - ✅ No credentials stored in `localStorage` or `sessionStorage`
 - ✅ Credentials only exist in React useState during form editing
 - ✅ No `console.log` statements with credential values
 
 **New Documentation:**
+
 | File | Description |
 |------|-------------|
 | `docs/SECURITY.md` | Comprehensive credential handling guidelines for developers |
@@ -3056,18 +3513,21 @@ Completed security audit for credential handling and enabled Metron cover enrich
 **Key Discovery:** The existing `DiscoveryCoverEnrichmentService` already handles Metron cover enrichment for cached discovery data (including upcoming releases). The issue was that `GetSeriesUpcomingReleasesAsync` wasn't using the enriched cover URLs.
 
 **Files Modified:**
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` | Use enriched cover from cached issue if available, fallback to series cover |
 | `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` | Added two new cover enrichment trigger endpoints |
 
 **New API Endpoints:**
+
 | Endpoint | Description |
 |----------|-------------|
 | `POST /api/v1/pulllist/discovery/enrich-covers` | Manually trigger cover enrichment (fetches missing covers from Metron) |
 | `POST /api/v1/pulllist/discovery/refresh-covers` | Check if ComicVine now has covers for issues using Metron fallback |
 
 ### Test Results
+
 - Build: ✅ Success (0 warnings, 0 errors)
 - 207 related tests passing
 - 8 pre-existing failures (EF Core InMemory provider GroupBy limitation)
@@ -3075,14 +3535,17 @@ Completed security audit for credential handling and enabled Metron cover enrich
 ---
 
 ## Iteration 153 (2026-02-24)
+
 **EPIC 11.19: Credential Encryption Implementation**
 
 ### Summary
+
 Implemented AES-256-GCM encryption for sensitive credentials stored in the database. Credentials are now automatically encrypted when saved and decrypted when loaded.
 
 ### Implementation
 
 **New Files:**
+
 | File | Description |
 |------|-------------|
 | `src/Shortboxerr.Core/Services/ICredentialEncryptionService.cs` | Interface + `[SensitiveCredential]` attribute |
@@ -3090,6 +3553,7 @@ Implemented AES-256-GCM encryption for sensitive credentials stored in the datab
 | `tests/Shortboxerr.Tests/CredentialEncryptionServiceTests.cs` | 15 unit tests for encryption service |
 
 **Modified Files:**
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Metron/IMetronClient.cs` | Added `[SensitiveCredential]` to Password property |
@@ -3098,6 +3562,7 @@ Implemented AES-256-GCM encryption for sensitive credentials stored in the datab
 | `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register CredentialEncryptionService |
 
 ### Encryption Details
+
 - **Algorithm**: AES-256-GCM (authenticated encryption)
 - **Key derivation**: PBKDF2 with SHA-256, 100,000 iterations
 - **Key source**: Machine-specific (Linux: /etc/machine-id, macOS: IOPlatformUUID, Windows: MachineGuid)
@@ -3105,26 +3570,31 @@ Implemented AES-256-GCM encryption for sensitive credentials stored in the datab
 - **Backward compatible**: Plaintext values are auto-encrypted on next save
 
 ### Security Features
+
 - Credentials encrypted at rest in SQLite database
 - Unique nonce for each encryption (no deterministic output)
 - Authentication tag prevents tampering
 - Machine-specific keys prevent credential theft via database copy
 
 ### Tests
+
 - 15 new encryption tests passing
 - All existing settings tests passing
 
 ---
 
 ## Iteration 152 (2026-02-24)
+
 **EPIC 11.20: Metron Enable Validation**
 
 ### Summary
+
 Prevent enabling Metron without valid credentials configured. Added UI validation (disable toggle until credentials provided) and backend validation (reject enable request if credentials missing).
 
 ### Implementation
 
 **Files Modified:**
+
 | File | Change |
 |------|--------|
 | `ui/src/pages/SettingsPage.tsx` | Disable enable toggle when credentials not configured, show warning hint |
@@ -3132,16 +3602,19 @@ Prevent enabling Metron without valid credentials configured. Added UI validatio
 | `tests/Shortboxerr.Tests/SettingsEndpointTests.cs` | Added 7 new Metron settings tests |
 
 ### UI Changes
+
 - Enable toggle disabled when username or password not configured
 - Description changes to "Configure username and password first to enable Metron" when disabled
 - Warning badge with AlertCircle icon shows "Credentials required"
 - Allow toggling OFF even without credentials (to disable misconfigured state)
 
 ### Backend Changes
+
 - Credentials are applied before enable validation (allows setting credentials + enable in single request)
 - Returns 400 Bad Request with error message: "Cannot enable Metron without username and password configured"
 
 ### Tests Added
+
 - `GetMetronSettings_ReturnsValidSettings`
 - `UpdateMetronSettings_EnableWithoutCredentials_ReturnsBadRequest`
 - `UpdateMetronSettings_EnableWithCredentials_Succeeds`
@@ -3151,20 +3624,24 @@ Prevent enabling Metron without valid credentials configured. Added UI validatio
 - `TestMetronConnection_WithoutCredentials_ReturnsNotConfigured`
 
 ### Test Results
+
 - 26 SettingsEndpoint tests passing
 - All 7 new Metron tests passing
 
 ---
 
 ## Iteration 151 (2026-02-24)
+
 **EPIC 11.18: Metron Settings UI Refinements**
 
 ### Summary
+
 Renamed "Cover Service" to "Metron" in Settings UI and removed user-configurable rate limiting to prevent exceeding Metron's API limits.
 
 ### Implementation
 
 **Files Modified:**
+
 | File | Change |
 |------|--------|
 | `ui/src/pages/SettingsPage.tsx` | Renamed tab to "Metron", removed rate limit/timeout fields |
@@ -3175,32 +3652,39 @@ Renamed "Cover Service" to "Metron" in Settings UI and removed user-configurable
 ### Changes
 
 **UI Tab:**
+
 - Renamed "Cover Service" → "Metron"
 - Updated all labels/descriptions to reference Metron directly
 
 **Removed Settings:**
+
 - Max Requests Per Minute (hardcoded to 30)
 - Request Timeout (hardcoded to 30s)
 
 **Retained Settings:**
+
 - Enable/disable toggle
 - Username/password fields
 - Cache TTL (user benefit without API risk)
 
 ### Tests
+
 - 25 Metron-related tests passing
 
 ---
 
 ## Iteration 150 (2026-02-24)
+
 **EPIC 11.14: Metron Settings UI + EPIC 11.15: Hide Internal Data Source Names**
 
 ### Summary
+
 Added Settings UI for Metron (backup cover service) and removed internal data source names (WalkSoftly, Metron) from all customer-facing UI.
 
 ### Implementation
 
 **Files Modified:**
+
 | File | Change |
 |------|--------|
 | `ui/src/api/client.ts` | Added Metron settings API types and functions |
@@ -3210,6 +3694,7 @@ Added Settings UI for Metron (backup cover service) and removed internal data so
 | `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` | Updated diagnostic notes to use generic language |
 
 ### Metron Settings UI Features
+
 - Enable/disable toggle for backup cover service
 - Username/password configuration fields
 - "Test Connection" button to verify credentials
@@ -3219,6 +3704,7 @@ Added Settings UI for Metron (backup cover service) and removed internal data so
 - Link to metron.cloud for registration
 
 ### UI Changes for Data Source Hiding
+
 | Location | Before | After |
 |----------|--------|-------|
 | SeriesDetailPage.tsx (upcoming badge) | "from WalkSoftly" | "Upcoming" |
@@ -3226,24 +3712,29 @@ Added Settings UI for Metron (backup cover service) and removed internal data so
 | API descriptions | "WalkSoftly cache" | "release schedule cache" |
 
 ### Notes
+
 - Internal API field names (walkSoftlyVolumeId, etc.) retained for backward compatibility
 - Logging still uses specific service names for debugging
 - Metron.cloud link kept in settings (users need to register there)
 
 ### Tests
+
 - 34 related tests passing
 
 ---
 
 ## Iteration 149 (2026-02-24)
+
 **EPIC 11.14: Metron Integration Implementation**
 
 ### Summary
+
 Implemented Metron as the backup cover source, replacing the fragile LOCG HTML scraping approach. Metron provides an official API with direct ComicVine ID mapping, eliminating fuzzy matching errors.
 
 ### Implementation
 
 **Files Created:**
+
 | File | Description |
 |------|-------------|
 | `src/Shortboxerr.Core/Metron/IMetronClient.cs` | Metron client interface with CV ID lookup |
@@ -3251,6 +3742,7 @@ Implemented Metron as the backup cover source, replacing the fragile LOCG HTML s
 | `tests/Shortboxerr.Tests/MetronClientTests.cs` | 18 comprehensive unit tests |
 
 **Files Modified:**
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Services/ICoverFallbackService.cs` | Added `GetCoverByCvIdAsync`, replaced LOCG enum with Metron |
@@ -3261,6 +3753,7 @@ Implemented Metron as the backup cover source, replacing the fragile LOCG HTML s
 | `tests/Shortboxerr.Tests/DiscoveryCoverEnrichmentServiceTests.cs` | Updated LOCG references to Metron |
 
 **Files Deleted:**
+
 | File | Reason |
 |------|--------|
 | `src/Shortboxerr.Core/LeagueOfComicGeeks/ILeagueOfComicGeeksClient.cs` | LOCG removed |
@@ -3270,6 +3763,7 @@ Implemented Metron as the backup cover source, replacing the fragile LOCG HTML s
 ### Key Changes
 
 **CoverSource Enum:**
+
 ```csharp
 // Before
 LeagueOfComicGeeks = 2,
@@ -3279,11 +3773,13 @@ Metron = 2,
 ```
 
 **CoverFallbackService:**
+
 - Added `GetCoverByCvIdAsync(int comicVineIssueId, ...)` for direct CV ID lookup
 - Metron uses `cv_id` parameter - no fuzzy matching needed!
 - Falls back to search by series name/issue number if CV ID not available
 
 **MetronClient Features:**
+
 - Basic Auth authentication (username:password)
 - Rate limiting (30 requests/minute)
 - 24-hour response caching
@@ -3291,6 +3787,7 @@ Metron = 2,
 - Direct CV ID lookup: `GET /api/issue/?cv_id={cvId}`
 
 ### Test Results
+
 ```
 Passed: 18 MetronClientTests
 Passed: 15 CoverFallbackServiceTests  
@@ -3299,10 +3796,12 @@ Total: 39 tests passing
 ```
 
 ### Commits
+
 1. `feat: replace LOCG with Metron for backup cover source`
 2. `test: add comprehensive Metron client tests`
 
 ### Pending Work
+
 - [ ] Add Metron settings UI (username/password configuration)
 - [ ] Add "Test Connection" button for Metron
 - [ ] Add Metron-specific API endpoints (`/api/v1/settings/metron`)
@@ -3310,9 +3809,11 @@ Total: 39 tests passing
 ---
 
 ## Iteration 148 (2026-02-24)
+
 **EPIC 11.14: Backup Cover Solution Research & Metron Evaluation**
 
 ### Summary
+
 Comprehensive research into backup cover solutions revealed that the current LOCG implementation is fragile and should be replaced with Metron, which has an official API with direct ComicVine ID mapping.
 
 ### Research Findings
@@ -3330,6 +3831,7 @@ The LOCG (League of Comic Geeks) implementation uses unofficial HTML scraping wi
 | GCD | Unofficial | No | Yes | Unknown | Archive only |
 
 **Key Finding - Metron Advantages:**
+
 1. **Official REST API** with OpenAPI documentation at `https://metron.cloud/api/`
 2. **Direct ComicVine ID mapping** via `cv_id` field - eliminates fuzzy matching!
 3. **Cover images included** - `image` field contains direct cover URLs
@@ -3339,25 +3841,30 @@ The LOCG (League of Comic Geeks) implementation uses unofficial HTML scraping wi
 7. **Community-maintained** - not dependent on single corporation
 
 **Metron Key Endpoint:**
+
 ```
 GET /api/issue/?cv_id={comicVineIssueId}
 ```
+
 Returns issue with cover URL directly using our existing ComicVine IDs.
 
 ### Updated Priority Hierarchy
 
 **Old (with LOCG):**
+
 1. ComicVine issue cover
 2. LOCG cover (fuzzy match) ← DEPRECATED
 3. ComicVine volume cover
 
 **New (with Metron):**
+
 1. ComicVine issue cover (primary, source of truth)
 2. **Metron cover via CV ID lookup** (direct mapping!)
 3. Marvel API cover (Marvel-only, optional)
 4. ComicVine volume cover (final fallback)
 
 ### Backlog Updates
+
 - Marked LOCG implementation as **TO BE REMOVED**
 - Added new **EPIC 11.14: Metron Integration** with full implementation tasks
 - Updated priority hierarchy documentation
@@ -3365,6 +3872,7 @@ Returns issue with cover URL directly using our existing ComicVine IDs.
 - Added **EPIC 11.15: Hide Internal Data Source Names from UI**
 
 ### Files Modified
+
 | File | Change |
 |------|--------|
 | `docs/BACKLOG.md` | Added EPIC 11.14 for Metron integration, EPIC 11.15 for data source hiding |
@@ -3374,25 +3882,30 @@ Returns issue with cover URL directly using our existing ComicVine IDs.
 ---
 
 ## Iteration 147 (2026-02-24)
+
 **EPIC 11.10 & 11.13: Ignored Publishers UI + Background Cover Refresh**
 
 ### Summary
+
 1. Added UI for managing ignored publishers in Settings page
 2. Extended cover enrichment service with ComicVine refresh capability
 
 ### Part 1: Ignored Publishers UI (11.10)
+
 | File | Change |
 |------|--------|
 | `ui/src/pages/SettingsPage.tsx` | Added `IgnoredPublishersList` component with add/remove functionality |
 | `ui/src/pages/SettingsPage.tsx` | Added `ignoredPublishers` to default settings objects |
 
 **Features:**
+
 - List display with alternating row colors
 - Wildcard pattern indicator (shows "(wildcard)" for patterns with *)
 - Add via text input or Enter key
 - Help examples showing wildcard usage patterns
 
 ### Part 2: Background Cover Refresh (11.13.4)
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Entities/FallbackCoverEntry.cs` | New entity to track issues with LOCG covers |
@@ -3401,12 +3914,14 @@ Returns issue with cover URL directly using our existing ComicVine IDs.
 | `tests/Shortboxerr.Tests/DiscoveryCoverEnrichmentServiceTests.cs` | 6 new tests |
 
 **How it works:**
+
 1. When LOCG provides a cover during enrichment, the service tracks it in FallbackCoverEntry
 2. Weekly, the service re-queries ComicVine for these tracked issues
 3. If ComicVine now has a cover, the cached data is updated and LOCG cache is cleared
 4. Entries with recent checks (< 7 days) are skipped to avoid redundant API calls
 
 ### Test Results
+
 ```
 Passed: 6 tests in DiscoveryCoverEnrichmentServiceTests
 - RefreshFallbackCovers_UpdatesIssue_WhenComicVineHasCover
@@ -3418,7 +3933,9 @@ Passed: 6 tests in DiscoveryCoverEnrichmentServiceTests
 ```
 
 ### Part 3: Additional Unit Tests (11.13.5)
+
 Added 7 new tests to CoverFallbackServiceTests.cs:
+
 - GetCoverAsync_FallsBackToVolume_WhenLocgReturnsEmpty
 - GetCoverAsync_HandlesNullIssuesList_Gracefully
 - GetCoverAsync_HandlesIssueWithNullCoverUrl
@@ -3428,6 +3945,7 @@ Added 7 new tests to CoverFallbackServiceTests.cs:
 - GetStatsAsync_ReportsCacheHitRatio
 
 ### Part 4: Character/Team Appearances Foundation (#23, EPIC 9)
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/ComicVine/IComicVineClient.cs` | Added ComicVineCharacterRef, ComicVineTeamRef DTOs |
@@ -3436,11 +3954,13 @@ Added 7 new tests to CoverFallbackServiceTests.cs:
 | `src/Shortboxerr.Core/Entities/IssueTeam.cs` | Entity for issue-team relationships |
 
 **Infrastructure ready for:**
+
 - Syncing character/team data from ComicVine API
 - Storing relationships in database (DbSets already configured)
 - API endpoints to expose character/team data
 
 ### Backlog Items Completed
+
 - [x] **11.10**: Settings UI for managing ignored publishers ✅
 - [x] **11.13.4**: Background cover refresh ✅
 - [x] **11.13.5**: Unit tests for cover fallback ✅
@@ -3451,10 +3971,13 @@ Added 7 new tests to CoverFallbackServiceTests.cs:
 ---
 
 ## Iteration 146 (2026-02-24)
+
 **EPIC 11.13: Cover Image Fallback System**
 
 ### Summary
+
 Implemented the complete cover image fallback system including:
+
 1. League of Comic Geeks client for cover image lookup
 2. Cover fallback service that queries sources in priority order
 3. Verified existing settings for upcoming releases (already complete)
@@ -3462,6 +3985,7 @@ Implemented the complete cover image fallback system including:
 ### Part 1: League of Comic Geeks Client
 
 **Architectural Notes:**
+
 - **No official API**: LOCG has no public API; this uses unofficial HTML scraping patterns
 - Internal endpoint: `https://leagueofcomicgeeks.com/comic/get_comics`
 - Response format: JSON with HTML in the `list` field
@@ -3469,6 +3993,7 @@ Implemented the complete cover image fallback system including:
 - Graceful degradation implemented for when site structure changes
 
 **Files Created:**
+
 | File | Purpose |
 |------|---------|
 | `src/Shortboxerr.Core/LeagueOfComicGeeks/ILeagueOfComicGeeksClient.cs` | Interface and DTOs |
@@ -3478,10 +4003,12 @@ Implemented the complete cover image fallback system including:
 ### Part 2: Cover Fallback Service
 
 **Priority Hierarchy:**
+
 1. League of Comic Geeks issue cover (unofficial fallback)
 2. ComicVine volume/series cover (final fallback)
 
 **Files Created:**
+
 | File | Purpose |
 |------|---------|
 | `src/Shortboxerr.Core/Services/ICoverFallbackService.cs` | Interface, CoverSource enum, stats |
@@ -3489,6 +4016,7 @@ Implemented the complete cover image fallback system including:
 | `tests/Shortboxerr.Tests/CoverFallbackServiceTests.cs` | 13 unit tests |
 
 **Key Features:**
+
 - Fuzzy name matching for series (70% similarity threshold)
 - Issue number normalization (handles #5, 5, etc.)
 - Publisher matching for disambiguation
@@ -3496,6 +4024,7 @@ Implemented the complete cover image fallback system including:
 - Statistics tracking (hits/misses per source)
 
 ### Tests Added
+
 | File | Tests |
 |------|-------|
 | LeagueOfComicGeeksClientTests.cs | 14 |
@@ -3505,18 +4034,22 @@ Implemented the complete cover image fallback system including:
 ---
 
 ## Iteration 145 (2026-02-24)
+
 **EPIC 16.3 & 16.4: Background Automation & API Integration Tests**
 
 ### Summary
+
 Completed E2E test coverage for background services and API integration endpoints. Total E2E test count is now 115 tests across 8 test files.
 
 ### Test Files Created
+
 | File | Tests | Coverage |
 |------|-------|----------|
 | `tests/e2e/tests/api-integration.spec.ts` | 26 | Health, ComicVine, series, pull list, settings, logs, indexers, DDL |
 | `tests/e2e/tests/background-services.spec.ts` | 19 | Metadata refresh, discovery, auto-search, health services, calendar, notifications |
 
 ### API Integration Tests (16.4)
+
 - Health endpoint validation
 - System status endpoint
 - ComicVine rate limit tracking
@@ -3533,6 +4066,7 @@ Completed E2E test coverage for background services and API integration endpoint
 - Response headers
 
 ### Background Automation Tests (16.3)
+
 - System status and health
 - Metadata refresh service
 - Discovery refresh service
@@ -3548,15 +4082,19 @@ Completed E2E test coverage for background services and API integration endpoint
 ---
 
 ## Iteration 144 (2026-02-24)
+
 **EPIC 16.2 continued: Issue Management E2E Tests**
 
 ### Summary
+
 Added E2E tests for issue management workflows. Total E2E test count increased to 70 tests.
 
 ### Test File Created
+
 - `tests/e2e/tests/issue-management.spec.ts` (12 tests)
 
 ### Coverage
+
 - Wanted page header and structure
 - View mode toggle
 - Issue display (cards/empty state)
@@ -3572,12 +4110,15 @@ Added E2E tests for issue management workflows. Total E2E test count increased t
 ---
 
 ## Iteration 143 (2026-02-24)
+
 **EPIC 11.13 Backlog Item & Rate Limit Awareness (12.4)**
 
 ### Summary
+
 Created backlog item for cover image fallback implementation based on research from 11.11. Verified rate limit awareness (12.4) was already implemented.
 
 ### Changes
+
 - Added EPIC 11.13 "Cover Image Fallback Implementation" to backlog
   - League of Comic Geeks client integration
   - Marvel API client integration (optional)
@@ -3592,18 +4133,22 @@ Created backlog item for cover image fallback implementation based on research f
 ---
 
 ## Iteration 142 (2026-02-24)
+
 **EPIC 16.5: UI Smoke Tests**
 
 ### Summary
+
 Added comprehensive UI smoke tests for settings pages and error state handling. Total E2E test count is now 58 tests across 5 test files.
 
 ### Test Files Created
+
 | File | Tests | Coverage |
 |------|-------|----------|
 | `tests/e2e/tests/settings.spec.ts` | 9 | Settings page, tabs, forms, toggle interaction, validation |
 | `tests/e2e/tests/error-states.spec.ts` | 13 | 404 handling, empty states, loading, validation, responsive |
 
 ### Settings Tests
+
 - Settings page header and structure
 - Settings tabs or sections presence
 - Form inputs detection
@@ -3615,6 +4160,7 @@ Added comprehensive UI smoke tests for settings pages and error state handling. 
 - Required field indicators
 
 ### Error State Tests
+
 - 404 error handling for non-existent series
 - Invalid route handling
 - Empty states for wanted page
@@ -3629,6 +4175,7 @@ Added comprehensive UI smoke tests for settings pages and error state handling. 
 - Tablet responsive design (768px)
 
 ### Test Distribution
+
 | File | Tests |
 |------|-------|
 | smoke.spec.ts | 10 |
@@ -3641,18 +4188,22 @@ Added comprehensive UI smoke tests for settings pages and error state handling. 
 ---
 
 ## Iteration 141 (2026-02-24)
+
 **EPIC 16.2: User Workflow Tests**
 
 ### Summary
+
 Added comprehensive E2E test coverage for series management and pull list workflows. Total E2E test count is now 36 tests across 3 test files.
 
 ### Test Files Created
+
 | File | Tests | Coverage |
 |------|-------|----------|
 | `tests/e2e/tests/series.spec.ts` | 13 | Series list, search, view toggle, filters, sort, navigation, add flow |
 | `tests/e2e/tests/pulllist.spec.ts` | 13 | Pull list page, week navigation, filtering, issue cards, add flow |
 
 ### Series Management Tests
+
 - Series list display with header and search
 - Search functionality (typing, results update)
 - View toggle controls (cover/list)
@@ -3662,6 +4213,7 @@ Added comprehensive E2E test coverage for series management and pull list workfl
 - Series detail page sections
 
 ### Pull List Tests
+
 - Pull list header and week navigation
 - View mode controls
 - Release count display
@@ -3672,6 +4224,7 @@ Added comprehensive E2E test coverage for series management and pull list workfl
 - Add button for discoverable issues
 
 ### Test Execution
+
 ```bash
 cd tests/e2e
 npm test                          # All 36 tests
@@ -3682,18 +4235,22 @@ npx playwright test pulllist.spec # 13 pull list tests
 ---
 
 ## Iteration 140 (2026-02-24)
+
 **EPIC 16.1: E2E Test Framework Setup**
 
 ### Summary
+
 Set up Playwright E2E test framework with initial smoke tests covering all major pages and navigation flows.
 
 ### Features
+
 - **Playwright Test Project**: `tests/e2e` with TypeScript configuration
 - **Smoke Tests**: 10 tests covering Dashboard, Series, Pull List, Settings, Wanted, Calendar, Activity, Navigation, Theme
 - **Test Fixtures**: Test data helpers for database seeding
 - **Browser**: Chromium with headless mode
 
 ### Test Coverage
+
 | Page | Tests |
 |------|-------|
 | Dashboard | 2 (loads, content) |
@@ -3707,6 +4264,7 @@ Set up Playwright E2E test framework with initial smoke tests covering all major
 | Theme | 1 (attribute check) |
 
 ### Files Created
+
 - `tests/e2e/package.json` - npm package configuration
 - `tests/e2e/tsconfig.json` - TypeScript configuration
 - `tests/e2e/playwright.config.ts` - Playwright configuration
@@ -3714,6 +4272,7 @@ Set up Playwright E2E test framework with initial smoke tests covering all major
 - `tests/e2e/tests/fixtures/test-data.ts` - Test fixtures
 
 ### Commands
+
 ```bash
 cd tests/e2e
 npm test                # Run all tests
@@ -3725,12 +4284,15 @@ npm run test:debug      # Debug mode
 ---
 
 ## Iteration 139 (2026-02-24)
+
 **EPIC 11.12: Show Upcoming Releases on Series View (WalkSoftly Integration)**
 
 ### Summary
+
 Implemented feature to display upcoming releases from WalkSoftly on the series detail page. When WalkSoftly reports an upcoming issue that ComicVine hasn't indexed yet (e.g., Absolute Wonder Woman #17 when only #16 is in ComicVine), the series view now shows this in an "Upcoming" section.
 
 ### Features
+
 - **Backend Service**: `GetSeriesUpcomingReleasesAsync()` in PullListService
   - Queries cached WalkSoftly data for releases matching series title + publisher
   - Filters to only show issues with numbers higher than max local issue
@@ -3745,6 +4307,7 @@ Implemented feature to display upcoming releases from WalkSoftly on the series d
   - Supports both cover and list view modes
 
 ### Bug Fixes (in same session)
+
 - **Duplicate Series Key Error**: Fixed `ToDictionaryAsync` crash when duplicate ComicVineIds exist
   - Changed to use `GroupBy` before `ToDictionary` for defensive coding
 - **Library Matching by Title**: Added title+publisher fallback when WalkSoftly provides incorrect volume IDs
@@ -3753,6 +4316,7 @@ Implemented feature to display upcoming releases from WalkSoftly on the series d
   - Fixed invisible "Add Issue" button on pull list page
 
 ### Files Changed
+
 - `src/Shortboxerr.Core/PullList/IPullListService.cs` - New models (SeriesUpcomingReleasesResult, UpcomingRelease)
 - `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` - GetSeriesUpcomingReleasesAsync implementation
 - `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` - New endpoint
@@ -3762,6 +4326,7 @@ Implemented feature to display upcoming releases from WalkSoftly on the series d
 - `tests/Shortboxerr.Tests/PullListServiceTests.cs` - 6 new unit tests
 
 ### Tests Added
+
 - `GetSeriesUpcomingReleasesAsync_ReturnsEmptyForUnknownSeries`
 - `GetSeriesUpcomingReleasesAsync_ReturnsUpcomingReleasesFromCache`
 - `GetSeriesUpcomingReleasesAsync_ExcludesIssuesAlreadyInLibrary`
@@ -3772,12 +4337,15 @@ Implemented feature to display upcoming releases from WalkSoftly on the series d
 ---
 
 ## Iteration 138 (2026-02-23)
+
 **EPIC 11.10: WalkSoftly Pull List Integration**
 
 ### Summary
+
 Implemented WalkSoftly as the primary data source for weekly comic releases, achieving Mylar3 data source parity. WalkSoftly provides fresher/more complete release data than direct ComicVine queries.
 
 ### Features
+
 - **WalkSoftly Client**: HTTP client for walksoftly.itsaninja.party/newcomics.php
 - **Automatic Fallback**: Falls back to ComicVine if WalkSoftly is unavailable
 - **Publisher Filtering**: Configurable ignored publishers with wildcard support
@@ -3785,6 +4353,7 @@ Implemented WalkSoftly as the primary data source for weekly comic releases, ach
 - **4-hour Cache**: Matches Mylar3's cache TTL for WalkSoftly data
 
 ### Files Changed
+
 - `src/Shortboxerr.Core/WalkSoftly/IWalkSoftlyClient.cs` - Interface and DTOs
 - `src/Shortboxerr.Infrastructure/WalkSoftly/WalkSoftlyClient.cs` - HTTP implementation
 - `src/Shortboxerr.Infrastructure/DependencyInjection.cs` - DI registration
@@ -3795,6 +4364,7 @@ Implemented WalkSoftly as the primary data source for weekly comic releases, ach
 - `tests/Shortboxerr.Tests/PullListConformanceTests.cs` - Mock setup
 
 ### New Settings (PullListSettings)
+
 - `UseWalkSoftly` - Enable/disable WalkSoftly (default: true)
 - `WalkSoftlyFallbackToComicVine` - Enable fallback (default: true)  
 - `WalkSoftlyCacheTtlMinutes` - Cache duration (default: 240)
@@ -3803,12 +4373,15 @@ Implemented WalkSoftly as the primary data source for weekly comic releases, ach
 ---
 
 ## Iteration 137 (2026-02-23)
+
 **EPIC 15.9: Pull List Data Accuracy Investigation**
 
 ### Summary
+
 Completed investigation into why pull list data doesn't match Mylar3 for the same week. Researched Mylar3's data sources, audited our ComicVine integration, and created a debug comparison endpoint.
 
 ### Key Findings
+
 1. **Mylar3 Data Source**: Uses WalkSoftly aggregator (`walksoftly.itsaninja.party/newcomics.php`), NOT direct ComicVine
 2. **WalkSoftly Benefits**: Pre-mapped ComicVine IDs, potentially fresher data, includes publisher info
 3. **ComicVine Delays**: Known issue - new releases often not updated until Thu/Fri/Sun
@@ -3816,11 +4389,13 @@ Completed investigation into why pull list data doesn't match Mylar3 for the sam
 5. **Publisher Filtering**: Mylar3 has configurable "ignored publishers" list
 
 ### Deliverables
+
 - Comprehensive research document: `docs/research/PULL_LIST_DATA_ACCURACY.md`
 - Debug comparison endpoint: `GET /api/v1/pulllist/export/compare/{date}`
 - Documented alternative data sources (LOCG, Publisher RSS, WalkSoftly)
 
 ### API Endpoints Added
+
 - `GET /api/v1/pulllist/export/compare/{date}` - Detailed comparison data showing:
   - Library vs Discovery issue counts
   - ComicVine total issues for week
@@ -3829,11 +4404,13 @@ Completed investigation into why pull list data doesn't match Mylar3 for the sam
   - Sample issues from both sources
 
 ### Files Changed
+
 - `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` - Added comparison endpoint + DTOs
 - `docs/research/PULL_LIST_DATA_ACCURACY.md` - New research document
 - `docs/BACKLOG.md` - Marked EPIC 15.9 as completed
 
 ### Recommendations
+
 1. **Short-term**: Use comparison endpoint to debug specific week discrepancies
 2. **Medium-term**: Consider adding configurable ignored publishers
 3. **Long-term**: Evaluate WalkSoftly integration as alternative data source
@@ -3841,12 +4418,15 @@ Completed investigation into why pull list data doesn't match Mylar3 for the sam
 ---
 
 ## Iteration 136 (2026-02-23)
+
 **Telegram Notification Provider**
 
 ### Summary
+
 Added Telegram as a notification provider, allowing users to receive comic release notifications via Telegram bots. This follows the same pattern as existing providers (Pushover, Pushbullet, Email, Webhook).
 
 ### Features
+
 - **Bot Integration**: Uses Telegram Bot API with bot token authentication
 - **Flexible Targeting**: Send to users, groups, or channels via chat ID
 - **Rich Formatting**: Support for HTML, Markdown, and MarkdownV2 parse modes
@@ -3856,11 +4436,13 @@ Added Telegram as a notification provider, allowing users to receive comic relea
 - **Event Filtering**: Select which notification events trigger Telegram messages
 
 ### Commits
+
 1. `feat(notifications): add Telegram notification provider` - Backend implementation
 2. `feat(ui): add Telegram notification provider settings UI` - Frontend implementation
 3. `test: add unit tests for Telegram notification provider` - 26 unit tests
 
 ### API Endpoints
+
 - `GET /api/v1/notifications/telegram-providers` - List all providers
 - `GET /api/v1/notifications/telegram-providers/{id}` - Get specific provider
 - `POST /api/v1/notifications/telegram-providers` - Add new provider
@@ -3870,6 +4452,7 @@ Added Telegram as a notification provider, allowing users to receive comic relea
 - `POST /api/v1/notifications/telegram-providers/test` - Test unsaved settings
 
 ### Files Changed
+
 - `src/Shortboxerr.Core/Notifications/INotificationProvider.cs` - TelegramProviderSettings
 - `src/Shortboxerr.Infrastructure/Notifications/TelegramNotificationProvider.cs` - New provider
 - `src/Shortboxerr.Infrastructure/DependencyInjection.cs` - DI registration
@@ -3881,40 +4464,49 @@ Added Telegram as a notification provider, allowing users to receive comic relea
 ---
 
 ## Iteration 135 (2026-02-23)
+
 **Code Quality: Compiler Warning Fixes**
 
 ### Summary
+
 Resolved all compiler warnings in the codebase, bringing the build warning count from 24+ to 0. Focused on nullable reference handling, async patterns, and test assertion style.
 
 ### Commits
+
 1. `fix: resolve compiler warnings for nullable references and async patterns` - All warning fixes
 
 ### Warnings Fixed
 
 #### CS8602 - Null Dereference (9 fixes)
+
 - `ReleaseDayBackgroundService.cs` - Settings null-coalescing
 - `AutoSearchBackgroundService.cs` - Settings null-coalescing
 - `ComicVineRefreshBackgroundService.cs` - Settings null-coalescing (2 locations)
 - `AutoSearchService.cs` - Settings null-coalescing (5 locations)
 
 #### CS8604 - Null Reference Argument (4 fixes)
+
 - `SensitiveDataDestructuringPolicy.cs` - Skip null dictionary keys
 - `IndexerHealthService.cs` - Default error message
 - `ReadComicOnlineAdapter.cs` - Default hostname
 
 #### CS8601 - Null Reference Assignment (2 fixes)
+
 - `SabnzbdClient.cs` - Null-forgiving after null check (2 locations)
 
 #### CS1998 - Async Without Await (5 fixes)
+
 - `PullListService.cs` - Return Task.FromResult
 - `CoverService.cs` - Return Task.FromResult
 - `DdlEndToEndIntegrationTests.cs` - Return Task.CompletedTask (2 tests)
 - `ReadComicOnlineAdapterTests.cs` - Return Task.CompletedTask
 
 #### xUnit2010 - Assertion Style (1 fix)
+
 - `TorrentImportServiceTests.cs` - Use Assert.Equal with StringComparer
 
 ### Files Changed
+
 - `src/Shortboxerr.Infrastructure/BackgroundServices/ReleaseDayBackgroundService.cs`
 - `src/Shortboxerr.Infrastructure/BackgroundServices/AutoSearchBackgroundService.cs`
 - `src/Shortboxerr.Infrastructure/BackgroundServices/ComicVineRefreshBackgroundService.cs`
@@ -3932,40 +4524,49 @@ Resolved all compiler warnings in the codebase, bringing the build warning count
 ---
 
 ## Iteration 134 (2026-02-23)
+
 **Download Client Health Status UI**
 
 ### Summary
+
 Added UI to display download client health status in Settings > Download Clients. The backend health service and API endpoints were already implemented; this iteration adds the frontend visualization.
 
 ### Commits
+
 1. `feat(ui): add download client health status display` - Health summary and table columns
 
 ### Deliverables
 
 #### Health Summary Section
+
 - Overall health percentage display with color coding
 - Healthy/Degraded/Offline client counts
 - Average download time (when available)
 - "Check Health" button for manual health checks
 
 #### Download Clients Table Enhancements
+
 - Health status column with color-coded state indicators (Unknown/Healthy/Degraded/Unavailable/Offline)
 - Stats column showing success/failure counts and success rate
 - Auto-refresh every 60 seconds
 
 ### Files Changed
+
 - `ui/src/api/client.ts` - Added health status interfaces and API methods
 - `ui/src/pages/SettingsPage.tsx` - Added health summary section and table columns
 
 ---
 
 ## Iteration 133 (2026-02-17)
+
 **EPIC 11.4: Pushover and Pushbullet Notification Providers**
 
 ### Summary
+
 Added push notification support via Pushover and Pushbullet services, completing the notification provider ecosystem. Both providers include full CRUD APIs, test endpoints, settings UI, and unit tests.
 
 ### Commits
+
 1. `fix(ui): align CoverCacheStats types with backend API` - Fixed Settings page blank render
 2. `feat(notifications): add Pushover and Pushbullet providers` - Backend implementation
 3. `test(notifications): add unit tests for Pushover and Pushbullet providers` - 46 unit tests
@@ -3974,6 +4575,7 @@ Added push notification support via Pushover and Pushbullet services, completing
 ### Deliverables
 
 #### Pushover Provider
+
 - Settings class with API token, user key, devices, priority, sound, retry/expire
 - Provider implementation with validation and send functionality
 - Full CRUD API endpoints (`/api/v1/notifications/pushover-providers`)
@@ -3981,6 +4583,7 @@ Added push notification support via Pushover and Pushbullet services, completing
 - Settings UI with priority selection, device targeting, sound options
 
 #### Pushbullet Provider
+
 - Settings class with access token, device ID, channel tag, email targeting
 - Provider implementation with note/link push types
 - Full CRUD API endpoints (`/api/v1/notifications/pushbullet-providers`)
@@ -3988,10 +4591,12 @@ Added push notification support via Pushover and Pushbullet services, completing
 - Settings UI with targeting options
 
 #### Unit Tests
+
 - 23 tests for Pushover provider (validation, send, test, settings)
 - 23 tests for Pushbullet provider (validation, send, test, settings)
 
 ### Files Changed
+
 - `src/Shortboxerr.Core/Notifications/INotificationProvider.cs` - Added PushoverProviderSettings, PushbulletProviderSettings
 - `src/Shortboxerr.Infrastructure/Notifications/PushoverNotificationProvider.cs` - New provider
 - `src/Shortboxerr.Infrastructure/Notifications/PushbulletNotificationProvider.cs` - New provider
@@ -4005,17 +4610,21 @@ Added push notification support via Pushover and Pushbullet services, completing
 ---
 
 ## Iteration 132 (2026-02-23)
+
 **EPIC 15.15 & 15.16: Download Client Error Log Noise & Graceful Degradation**
 
 ### Summary
+
 Fixed excessive error logging when download clients are unavailable or not configured. Added `IsConfigured` property to download client interfaces and improved background service to skip processing when no clients are configured.
 
 ### Commits
+
 1. `fix(nzb): reduce log noise for unconfigured/unreachable download clients`
 
 ### Deliverables
 
 #### Download Client Improvements
+
 - Added `IsConfigured` property to `INzbDownloadClient` interface
 - Added `IsConfigured` to `SabnzbdSettings` and `NzbgetSettings`
 - Implemented `IsConfigured` in `SabnzbdClient` and `NzbgetClient`
@@ -4023,16 +4632,19 @@ Fixed excessive error logging when download clients are unavailable or not confi
 - Return empty results (not errors) when client not configured
 
 #### Background Service Graceful Degradation
+
 - `NzbImportBackgroundService` checks for configured clients before processing
 - Logs once at INFO level when no clients configured
 - Reduces polling to 5-minute intervals when no clients available
 - Resumes normal polling when client is added
 
 #### Unit Tests
+
 - 12 new tests for `IsConfigured` behavior
 - Tests for empty result when not configured
 
 ### Files Changed
+
 - `src/Shortboxerr.Core/Nzb/INzbDownloadClient.cs` - Added `IsConfigured` to interface
 - `src/Shortboxerr.Core/Nzb/ISabnzbdClient.cs` - Added `IsConfigured` to `SabnzbdSettings`
 - `src/Shortboxerr.Core/Nzb/INzbgetClient.cs` - Added `IsConfigured` to `NzbgetSettings`
@@ -4044,22 +4656,27 @@ Fixed excessive error logging when download clients are unavailable or not confi
 ---
 
 ## Iteration 131 (2026-02-23)
+
 **EPIC 11.7: Email Provider Settings UI**
 
 ### Summary
+
 Added frontend UI for managing email notification providers in the Settings page, completing the email notifications feature started in Iteration 127.
 
 ### Commits
+
 1. `feat(ui): add email provider settings UI`
 
 ### Deliverables
 
 #### TypeScript Types
+
 - `EmailProviderSettings` interface for email provider configuration
 - `EmailProviderRequest` interface for create/update requests
 - `EmailTestResult` interface for test responses
 
 #### API Client Methods
+
 - `getEmailProviders()` - fetch all email providers
 - `getEmailProvider(id)` - fetch single provider
 - `addEmailProvider(provider)` - create new provider
@@ -4069,6 +4686,7 @@ Added frontend UI for managing email notification providers in the Settings page
 - `testEmailProviderSettings(settings)` - test unsaved settings
 
 #### UI Components
+
 - `EmailProvidersSection` - displays list of configured email providers
 - `EmailProviderModal` - add/edit form with SMTP configuration
 - Form fields: name, SMTP server, port, SSL, username, password, sender email/name, recipients, CC, BCC
@@ -4077,77 +4695,93 @@ Added frontend UI for managing email notification providers in the Settings page
 - Event selection for notification triggers
 
 #### Integration
+
 - Added Email Providers section below Webhook Providers in Notifications settings tab
 - Follows same UI patterns as webhook providers for consistency
 - Supports all SMTP configuration options from backend
 
 ### Files Changed
+
 - `ui/src/api/client.ts` - Added email provider types and API methods
 - `ui/src/pages/SettingsPage.tsx` - Added EmailProvidersSection and EmailProviderModal components
 
 ---
 
 ## Iteration 130 (2026-02-23)
+
 **EPIC 15.14: EF Core Query Splitting Performance Warning**
 
 ### Summary
+
 Fixed EF Core performance warning about queries with multiple collection navigations. Added `.AsSplitQuery()` to 4 queries to avoid cartesian explosion when loading nested collections.
 
 ### Commits
+
 1. `perf(ef): add split queries for multi-collection navigations`
 
 ### Deliverables
 
 #### Query Optimization
+
 - Identified 4 queries triggering MultipleCollectionIncludeWarning
 - Added `.AsSplitQuery()` to each to use separate SQL queries instead of joins
 - Prevents N*M row explosion when loading related collections
 
 #### Affected Queries
+
 1. `SeriesEndpoints.GetSeriesById` - Series with Issues, Editions, and LinkedAnnualSeries.Issues
 2. `SeriesEndpoints.GetSeriesAnnuals` - Series with Issues and LinkedAnnualSeries.Issues
 3. `EditionEndpoints.GetEditionDetail` - Edition with Contents, Issue.Series, and Series
 4. `EditionEndpoints.GetEditionContents` - EditionContents with Issue.Series and Series
 
 ### Performance Implications
+
 - Split queries execute multiple SQL statements
 - Avoids cartesian explosion (N series × M issues × K annuals)
 - Trade-off: more database round trips vs. smaller result sets
 - Recommended for large collections like series with many issues
 
 ### Files Changed
+
 - `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` - 2 queries updated
 - `src/Shortboxerr.Api/Endpoints/EditionEndpoints.cs` - 2 queries updated
 
 ---
 
 ## Iteration 129 (2026-02-17)
+
 **EPIC 15.12 & 15.13: Critical Bug Fixes from Log Analysis**
 
 ### Summary
+
 Fixed two critical issues discovered through log analysis:
+
 1. SabnzbdClient DI constructor ambiguity causing NzbImportBackgroundService to fail
 2. User-Agent format causing NZBgeek to reject requests
 
 ### Commits
+
 1. `fix(nzb): resolve SabnzbdClient constructor ambiguity for DI`
 2. `fix(http): simplify User-Agent format for indexer compatibility`
 
 ### Deliverables
 
 #### SabnzbdClient Fix (15.12)
+
 - Added `[ActivatorUtilitiesConstructor]` attribute to primary constructor
 - Tells DI which constructor to use when both match parameters
 - Secondary constructor preserved for unit testing
 - 3 new tests verify DI resolution
 
 #### User-Agent Format Fix (15.13)
+
 - Changed from `Shortboxerr/x.y.z (+https://...)` to `Shortboxerr/x.y.z`
 - Simple format matches Sonarr/Radarr pattern for maximum compatibility
 - Added `ExtendedUserAgent` property for APIs accepting longer format
 - 10 tests verify format correctness
 
 ### Files Changed
+
 - `src/Shortboxerr.Infrastructure/Nzb/SabnzbdClient.cs` - Added ActivatorUtilitiesConstructor
 - `src/Shortboxerr.Infrastructure/Http/HttpClientDefaults.cs` - Simplified UserAgent, added ExtendedUserAgent
 - `tests/Shortboxerr.Tests/SabnzbdClientDependencyInjectionTests.cs` - 3 new DI tests
@@ -4156,35 +4790,42 @@ Fixed two critical issues discovered through log analysis:
 ---
 
 ## Iteration 128 (2026-02-17)
+
 **EPIC 15.11: Default User-Agent Header for HTTP Requests**
 
 ### Summary
+
 Fixed missing User-Agent headers that were causing errors from external sites. All HttpClient instances now automatically include a proper User-Agent header identifying the application.
 
 ### Commits
+
 1. `fix(http): add default User-Agent header to all HttpClient instances`
 
 ### Deliverables
 
 #### HttpClientDefaults Class
+
 - New static class in `Shortboxerr.Infrastructure.Http` namespace
 - Provides centralized default User-Agent configuration
-- Format: "Shortboxerr/x.y.z (+https://github.com/shortboxerr/shortboxerr)"
+- Format: "Shortboxerr/x.y.z (+<https://github.com/shortboxerr/shortboxerr>)"
 - Includes version from assembly metadata
 - Also defines default timeout constants
 
 #### HttpClient Configuration
+
 - Uses `ConfigureAll<HttpClientFactoryOptions>` to apply User-Agent to all clients
 - Automatically applied to all named and typed HttpClients
 - Only sets User-Agent if not already present (allows overrides)
 - Applied to: RssFeedService, ComicVineClient, NewznabClient, SabnzbdClient, CoverDownload, WebhookNotificationProvider
 
 #### Unit Tests
+
 - 9 tests covering User-Agent format, content, and application
 - Tests verify both default and named HttpClients receive header
 - Tests verify expected format matches specification
 
 ### Files Changed
+
 - `src/Shortboxerr.Infrastructure/Http/HttpClientDefaults.cs` - New defaults class
 - `src/Shortboxerr.Infrastructure/DependencyInjection.cs` - Configure all HttpClients
 - `tests/Shortboxerr.Tests/HttpClientDefaultsTests.cs` - 9 unit tests
@@ -4192,17 +4833,21 @@ Fixed missing User-Agent headers that were causing errors from external sites. A
 ---
 
 ## Iteration 127 (2026-02-17)
+
 **EPIC 11.4: Email Notifications (SMTP)**
 
 ### Summary
+
 Implemented email notification support via SMTP. Users can now configure email notifications alongside webhooks to receive alerts for new releases, downloads, and other events.
 
 ### Commits
+
 1. `feat(notifications): add email notification provider with SMTP support`
 
 ### Deliverables
 
 #### EmailNotificationProvider
+
 - Implements `INotificationProvider` interface
 - Sends emails via SMTP with configurable server, port, SSL
 - Supports authentication (username/password)
@@ -4210,6 +4855,7 @@ Implemented email notification support via SMTP. Users can now configure email n
 - Plain text fallback for compatibility
 
 #### EmailProviderSettings
+
 - SMTP server configuration (host, port, SSL)
 - Sender email and display name
 - Multiple recipients (To, CC, BCC) comma-separated
@@ -4217,6 +4863,7 @@ Implemented email notification support via SMTP. Users can now configure email n
 - HTML/plain text toggle
 
 #### API Endpoints
+
 - `GET /api/v1/notifications/email-providers` - List all email providers
 - `GET /api/v1/notifications/email-providers/{id}` - Get specific provider
 - `POST /api/v1/notifications/email-providers` - Create new provider
@@ -4226,6 +4873,7 @@ Implemented email notification support via SMTP. Users can now configure email n
 - `POST /api/v1/notifications/email-providers/test` - Test settings without saving
 
 ### Files Changed
+
 - `src/Shortboxerr.Core/Notifications/INotificationProvider.cs` - Added EmailProviderSettings class
 - `src/Shortboxerr.Infrastructure/Notifications/EmailNotificationProvider.cs` - New email provider
 - `src/Shortboxerr.Infrastructure/DependencyInjection.cs` - Registered provider
@@ -4234,17 +4882,21 @@ Implemented email notification support via SMTP. Users can now configure email n
 ---
 
 ## Iteration 126 (2026-02-17)
+
 **EPIC 13.1: Compressed Archive of Rotated Logs**
 
 ### Summary
+
 Implemented automatic compression of old log files to save disk space. A background service periodically scans for rotated log files and compresses them using GZip. Users can configure when compression occurs and trigger manual compression via the Settings UI.
 
 ### Commits
+
 1. `feat(logging): add compressed archive for rotated logs`
 
 ### Deliverables
 
 #### Background Service
+
 - `LogCompressionBackgroundService` runs every 6 hours
 - Scans log directory for `.log` and `.txt` files
 - Skips current log file (`shortboxerr.log`)
@@ -4253,14 +4905,17 @@ Implemented automatic compression of old log files to save disk space. A backgro
 - GZip compression with `.gz` extension
 
 #### Settings
+
 - `CompressOldLogs` (bool, default: true) - Enable/disable auto-compression
 - `CompressLogsOlderThanDays` (int, default: 1) - Age threshold for compression
 
 #### API Endpoints
+
 - `POST /api/v1/settings/logging/compress` - Trigger manual compression
 - Returns: `{ filesCompressed: number, bytesSaved: number }`
 
 #### Frontend Integration
+
 - Added "Log Compression" section to Settings page
 - Enable/disable toggle for auto-compression
 - Configurable days threshold
@@ -4268,6 +4923,7 @@ Implemented automatic compression of old log files to save disk space. A backgro
 - Success message showing files compressed and bytes saved
 
 ### Files Changed
+
 - `src/Shortboxerr.Infrastructure/BackgroundServices/LogCompressionBackgroundService.cs` - New background service
 - `src/Shortboxerr.Infrastructure/DependencyInjection.cs` - Registered service
 - `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` - Added endpoint and settings
@@ -4278,17 +4934,21 @@ Implemented automatic compression of old log files to save disk space. A backgro
 ---
 
 ## Iteration 125 (2026-02-17)
+
 **EPIC 9.13: Cache Statistics, Warming, and Efficient Revalidation**
 
 ### Summary
+
 Implemented comprehensive cache enhancements including: (1) access statistics tracking with hit/miss ratios, (2) cache warming for pre-fetching covers, and (3) efficient revalidation using HTTP ETag/Last-Modified headers. The cache now stores metadata for each cover and uses conditional GET requests to avoid re-downloading unchanged covers.
 
 ### Commits
+
 1. `feat(cache): add cover cache statistics, warming, and revalidation`
 
 ### Deliverables
 
 #### Cache Statistics Tracking
+
 - Added `CoverCacheAccessStats` model to `ICoverService.cs`
 - Thread-safe counters using `Interlocked` operations
 - Track hits, misses, fallbacks, placeholders
@@ -4296,6 +4956,7 @@ Implemented comprehensive cache enhancements including: (1) access statistics tr
 - Reset statistics functionality
 
 #### Cache Warming
+
 - `WarmSeriesCacheAsync` - Warm cache for a specific series
 - `WarmCacheAsync` - Warm cache for multiple series
 - `GetWarmingStatus` - Get progress of ongoing warming operation
@@ -4304,6 +4965,7 @@ Implemented comprehensive cache enhancements including: (1) access statistics tr
 - Progress tracking with estimated time remaining
 
 #### Efficient Revalidation
+
 - `CoverCacheMetadata` model stores ETag, Last-Modified, validation timestamp
 - Metadata saved as `.meta.json` alongside each cached cover
 - Conditional GET requests with `If-None-Match` and `If-Modified-Since` headers
@@ -4312,6 +4974,7 @@ Implemented comprehensive cache enhancements including: (1) access statistics tr
 - Default: Check every 168 hours (7 days)
 
 #### API Endpoints
+
 - `GET /api/v1/covers/cache/stats/detailed` - Returns detailed stats including access stats
 - `POST /api/v1/covers/cache/stats/reset` - Resets access statistics counters
 - `POST /api/v1/covers/warm/series/{seriesId}` - Warm cache for a series
@@ -4319,17 +4982,20 @@ Implemented comprehensive cache enhancements including: (1) access statistics tr
 - `GET /api/v1/covers/warm/status` - Get warming operation status
 
 #### Frontend Display
+
 - Added "Cache Performance" section with hit/miss stats
 - Added "Cache Warming" section with settings
 - Added "Revalidation" section with enable toggle and interval setting
 
 #### Issue Metadata Editing (EPIC 9.11)
+
 - GET /api/v1/issues/{issueId} - Get issue details
 - PUT /api/v1/issues/{issueId} - Update issue metadata
 - Editable fields: issueNumber, issueNumberText, title, releaseDate, storeDate, overview, monitored, status, isAnnual, isSpecial, specialType, coverImageUrl
 - Frontend API client methods: `api.getIssue()`, `api.updateIssue()`
 
 ### Files Changed
+
 - `src/Shortboxerr.Core/Services/ICoverService.cs` - Added models and interface methods
 - `src/Shortboxerr.Infrastructure/Services/CoverService.cs` - Implemented all logic
 - `src/Shortboxerr.Api/Endpoints/CoverEndpoints.cs` - Added warming endpoints
@@ -4341,17 +5007,21 @@ Implemented comprehensive cache enhancements including: (1) access statistics tr
 ---
 
 ## Iteration 124 (2026-02-17)
+
 **EPIC 15.3: Calendar View Enhancement**
 
 ### Summary
+
 Created a new dedicated Calendar page that provides a monthly grid view of comic releases. This complements the existing Pull List page by offering a visual calendar perspective for tracking release dates.
 
 ### Commits
+
 1. `feat(ui): add calendar page with monthly release view`
 
 ### Deliverables
 
 #### New CalendarPage Component
+
 - Monthly calendar grid showing releases per day
 - Month navigation (previous/next/today)
 - Click on day to see detailed release list
@@ -4360,89 +5030,109 @@ Created a new dedicated Calendar page that provides a monthly grid view of comic
 - Issue count and status dots per day
 
 #### Alternative Agenda View
+
 - List-based view grouped by date
 - Shows all issues with covers, series, status
 - Links to series detail pages
 
 #### Navigation Integration
+
 - Added "Calendar" to sidebar navigation (CalendarDays icon)
 - Route: `/calendar`
 
 #### Responsive Design
+
 - Desktop: Full calendar grid with detail panel
 - Tablet: Stacked layout
 - Mobile: Compact calendar cells with hidden dots
 
 ### Files Changed
+
 - `ui/src/pages/CalendarPage.tsx` - New calendar page component
 - `ui/src/App.tsx` - Added route and import
 - `ui/src/components/Layout.tsx` - Added navigation item
 - `ui/src/App.css` - Added calendar styles
 
 ### API Used
+
 - `GET /api/v1/pulllist/calendar` - Fetches ReleaseCalendar data
 
 ---
 
 ## Iteration 123 (2026-02-17)
+
 **EPIC 9: Per-Issue Search on Wanted Page**
 
 ### Summary
+
 Added per-issue search button on the Wanted page issues table. Each wanted issue now has a search button that triggers individual auto-search.
 
 ### Commits
+
 1. `feat(ui): add per-issue search button on wanted page`
 
 ### Deliverables
 
 #### WantedPage
+
 - Added searchIssue mutation for individual issue search
 - Per-row search button for issues (shows for issues tab only)
 - Spinner during individual search
 - Toast notifications for search results
 
 ### Files Changed
+
 - `ui/src/pages/WantedPage.tsx` - Added per-issue search
 
 ---
 
 ## Iteration 122 (2026-02-17)
+
 **EPIC 9: Wanted Page Search All**
 
 ### Summary
+
 Wired up the existing "Search All" button on the Wanted page to trigger a global search for all wanted issues. Added API client method for the trigger endpoint.
 
 ### Commits
+
 1. `feat(ui): wire up search all button on wanted page`
 
 ### Deliverables
 
 #### API Client
+
 - Added `searchAllWanted()` method calling `/api/v1/search/auto/trigger`
 
 #### Wanted Page
+
 - Wired up Search All button to call searchAllWanted mutation
 - Shows spinner during search
 - Toast notifications for results
 
 ### Files Changed
+
 - `ui/src/api/client.ts` - Added searchAllWanted method
 - `ui/src/pages/WantedPage.tsx` - Added mutation and wired button
 
 ---
 
 ## Iteration 121 (2026-02-17)
+
 **EPIC 9: Search All Wanted Button**
 
 ### Summary
+
 Added a "Search All Wanted" button to the series detail page header toolbar. This allows users to trigger a search for all wanted issues in a series with a single click.
 
 ### Commits
+
 1. `feat(ui): add search all wanted button to series header`
 
 ### Deliverables
 
 #### Series Header Toolbar
+
 - Added Search All Wanted button (Search icon)
 - Shows spinner during search
 - Displays toast notifications with results:
@@ -4451,52 +5141,64 @@ Added a "Search All Wanted" button to the series detail page header toolbar. Thi
   - Info: "No wanted issues to search"
 
 ### Files Changed
+
 - `ui/src/pages/SeriesDetailPage.tsx` - Added searchAllWanted mutation and header button
 
 ---
 
 ## Iteration 120 (2026-02-17)
+
 **EPIC 9: Issue Search Button - List View**
 
 ### Summary
+
 Extended the Search button feature to the list view. Iteration 119 only added search to cover cards; this iteration completes the feature by adding it to the list view as well.
 
 ### Commits
+
 1. `feat(ui): add search button to issue list view`
 
 ### Deliverables
 
 #### IssueListView Component Updates
+
 - Added `onSearch` and `searchingIssueId` props
 - Passes search handler to IssueListRow
 
 #### IssueListRow Component Updates
+
 - Added `onSearch` and `isSearching` props
 - Search button shows for wanted/missing issues
 - Spinner while search is in progress
 
 ### Files Changed
+
 - `ui/src/pages/SeriesDetailPage.tsx` - Updated IssueListView and IssueListRow
 
 ---
 
 ## Iteration 119 (2026-02-17)
+
 **EPIC 9: Issue Search Button**
 
 ### Summary
+
 Added a Search button to issue cover cards for wanted/missing issues. When clicked, triggers the auto-search API to search for and potentially download the specific issue. Shows toast notification with search result.
 
 ### Commits
+
 1. `feat(ui): add search button to issue cover cards`
 
 ### Deliverables
 
 #### API Client (client.ts)
+
 - `searchIssue(issueId)` - Search for a specific issue
 - `searchSeriesWanted(seriesId)` - Search for all wanted issues in a series
 - `AutoSearchResult` and `AutoSearchBatchResult` types
 
 #### Issue Cover Cards (SeriesDetailPage.tsx)
+
 - Search button visible on wanted/missing issues
 - Shows spinner while search is in progress
 - Toast notification with search results:
@@ -4505,6 +5207,7 @@ Added a Search button to issue cover cards for wanted/missing issues. When click
   - Error: "Search failed"
 
 ### Files Changed
+
 - `ui/src/api/client.ts` - Added search API methods and types
 - `ui/src/pages/SeriesDetailPage.tsx` - Added search button to IssueCoverCard
 - `docs/BACKLOG.md` - Marked search button as completed
@@ -4512,17 +5215,21 @@ Added a Search button to issue cover cards for wanted/missing issues. When click
 ---
 
 ## Iteration 118 (2026-02-17)
+
 **EPIC 15: Toast Notification System**
 
 ### Summary
+
 Implemented a global toast notification system and integrated it with issue status changes, metadata refresh, and series deletion. This completes the deferred "Toast/notification confirming change" item from EPIC 15.
 
 ### Commits
+
 1. `feat(ui): add toast notification system for status changes`
 
 ### Deliverables
 
 #### Toast Component (ui/src/components/Toast.tsx)
+
 - `ToastProvider` context for global toast management
 - `useToast` hook with convenience methods: `success()`, `error()`, `warning()`, `info()`
 - Auto-dismissing toasts with configurable duration (default: 3 seconds)
@@ -4532,12 +5239,14 @@ Implemented a global toast notification system and integrated it with issue stat
 - Stacked toast display in bottom-right corner
 
 #### Integration Points
+
 - **Issue status changes**: Shows success/error toast when marking issues as Wanted/Skipped
 - **Metadata refresh**: Shows toast on refresh complete or error
 - **Series deletion**: Shows toast before navigation
 - **Bulk operations**: Shows count of affected issues in toast message
 
 ### Files Changed
+
 - `ui/src/components/Toast.tsx` - New toast notification component
 - `ui/src/App.tsx` - Added ToastProvider wrapper
 - `ui/src/pages/SeriesDetailPage.tsx` - Integrated toasts with mutations
@@ -4546,28 +5255,34 @@ Implemented a global toast notification system and integrated it with issue stat
 ---
 
 ## Iteration 117 (2026-02-17)
+
 **EPIC 9.13: Cover Cache Settings UI**
 
 ### Summary
+
 Implemented the Settings UI for cover cache configuration (previously deferred from EPIC 9.13). Added API endpoints and frontend UI to manage cover cache size, cleanup intervals, and retention policies.
 
 ### Commits
+
 1. `feat(settings): add cover cache settings API and UI`
 
 ### Deliverables
 
 #### Backend API (SettingsEndpoints.cs)
+
 - `GET /api/v1/settings/covers` - Get cover cache settings
 - `PUT /api/v1/settings/covers` - Update cover cache settings
 - Validation: max cache size (10-10240 MB), cleanup percent (50-95%), interval (0-168 hours)
 
 #### Frontend API Client (client.ts)
+
 - `getCoverCacheSettings()` - Fetch current settings
 - `updateCoverCacheSettings()` - Save settings
 - `getCoverCacheStats()` - Get cache statistics
 - `triggerCoverCacheCleanup()` - Manual cleanup trigger
 
 #### Settings UI (SettingsPage.tsx)
+
 - New "Cover Cache" section in General Settings tab
 - Cache statistics display: total size, file count, usage percentage
 - Configurable settings:
@@ -4580,6 +5295,7 @@ Implemented the Settings UI for cover cache configuration (previously deferred f
 - "Run Cleanup Now" button for manual cache management
 
 ### Files Changed
+
 - `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` - Added cover settings endpoints
 - `ui/src/api/client.ts` - Added cover cache API types and methods
 - `ui/src/pages/SettingsPage.tsx` - Added CoverCacheSettingsSection component
@@ -4588,20 +5304,24 @@ Implemented the Settings UI for cover cache configuration (previously deferred f
 ---
 
 ## Iteration 116 (2026-02-17)
+
 **EPIC 9: ComicVine Integration - UI Completion & Backlog Cleanup**
 
 ### Summary
+
 Completed the remaining deferred UI items from EPIC 9.9 (Match to ComicVine and Refresh Metadata buttons) and fixed backlog inconsistencies where items were marked deferred but had actually been completed in later iterations (NZBGet support from EPIC 14.2/14.3).
 
 ### Commits
+
 1. `chore(backlog): fix NZBGet and download client inconsistencies`
 2. `feat(ui): add Match to ComicVine button and modal for unmatched series`
 
 ### Deliverables
 
 #### UI Enhancements (SeriesDetailPage.tsx)
+
 - **Match to ComicVine Button**: Shows on series detail header when series is not matched to ComicVine
-- **Match to ComicVine Modal**: 
+- **Match to ComicVine Modal**:
   - Pre-filled with series title
   - Searches ComicVine volumes with debounce
   - Displays results sorted by popularity (issue count)
@@ -4612,17 +5332,20 @@ Completed the remaining deferred UI items from EPIC 9.9 (Match to ComicVine and 
 - **Refresh Metadata Button**: Already existed (was incorrectly marked as deferred)
 
 #### API Client Updates (client.ts)
+
 - `matchSeriesToComicVine(seriesId, volumeId)` - Match existing series to ComicVine volume
 - `autoMatchSeries(seriesId)` - Auto-match using confidence scoring
 - `unmatchSeriesFromComicVine(seriesId)` - Remove ComicVine match from series
 
 #### Backlog Cleanup
+
 - EPIC 10.5: Updated NZBGet download client configuration to show ✅ (implemented in EPIC 14.2)
 - EPIC 10.6: Updated NZBGet configuration panel to show ✅ (implemented in EPIC 14.2)
 - EPIC 10.6: Updated unified download client modal to show all implementations ✅ (SABnzbd, NZBGet, qBittorrent, Transmission, Deluge)
 - EPIC 9.9: Marked "Match to ComicVine" and "Refresh Metadata" as completed
 
 ### Files Changed
+
 - `ui/src/pages/SeriesDetailPage.tsx` - Added MatchToComicVineModal component
 - `ui/src/api/client.ts` - Added match/unmatch API methods
 - `docs/BACKLOG.md` - Fixed inconsistencies, marked items complete
@@ -4630,17 +5353,21 @@ Completed the remaining deferred UI items from EPIC 9.9 (Match to ComicVine and 
 ---
 
 ## Iteration 115 (2026-02-17)
+
 **EPIC 12: ComicVine API Optimization - Request Batching**
 
 ### Summary
+
 Implemented request batching and deduplication for ComicVine API calls to reduce API usage and improve performance. The batcher combines multiple issue/volume lookups into single API requests using ComicVine's ID filter syntax and deduplicates concurrent identical requests.
 
 ### Commits
+
 1. `feat(comicvine): add request batching and deduplication service`
 
 ### Deliverables
 
 #### IComicVineRequestBatcher Interface
+
 - `GetIssuesBatchAsync` - Fetch multiple issues in single batched request
 - `GetIssueDeduplicatedAsync` - Single issue fetch with deduplication
 - `GetVolumesBatchAsync` - Fetch multiple volumes in batched request
@@ -4649,6 +5376,7 @@ Implemented request batching and deduplication for ComicVine API calls to reduce
 - `ResetStats` - Clear statistics counters
 
 #### ComicVineRequestBatcher Implementation
+
 - In-flight request tracking using `ConcurrentDictionary<string, Task<object?>>`
 - Automatic deduplication of concurrent identical requests
 - Small batch optimization (<=3 items use individual cached lookups)
@@ -4657,16 +5385,19 @@ Implemented request batching and deduplication for ComicVine API calls to reduce
 - Thread-safe statistics tracking via `Interlocked` operations
 
 #### Batch Methods Added to IComicVineClient
+
 - `GetIssuesByIdsAsync(IEnumerable<int> issueIds)` - Batch issue lookup
 - `GetVolumesByIdsAsync(IEnumerable<int> volumeIds)` - Batch volume lookup
 
 #### ComicVineClient Batch Implementation
+
 - Cache-first approach: check cache, only fetch uncached items
 - Uses ComicVine filter syntax: `filter=id:123|456|789`
 - Automatic caching of fetched results
 - Graceful degradation on rate limit (returns cached results)
 
 #### Statistics Model (ComicVineBatchingStats)
+
 - `TotalRequests` - Total item requests received
 - `ActualApiCalls` - Actual API calls made
 - `DeduplicatedRequests` - Requests served from deduplication
@@ -4678,6 +5409,7 @@ Implemented request batching and deduplication for ComicVine API calls to reduce
 - `EfficiencyRate` - Overall efficiency percentage
 
 ### Unit Tests (28 tests)
+
 - Statistics calculations (8 tests)
 - Interface method verification (8 tests)
 - Empty batch handling (2 tests)
@@ -4689,6 +5421,7 @@ Implemented request batching and deduplication for ComicVine API calls to reduce
 - Mock client integration (3 tests)
 
 ### Files Changed
+
 - `src/Shortboxerr.Core/ComicVine/IComicVineClient.cs` (modified)
 - `src/Shortboxerr.Core/ComicVine/IComicVineRequestBatcher.cs` (new)
 - `src/Shortboxerr.Infrastructure/ComicVine/ComicVineClient.cs` (modified)
@@ -4698,17 +5431,21 @@ Implemented request batching and deduplication for ComicVine API calls to reduce
 ---
 
 ## Iteration 114 (2026-02-23)
+
 **EPIC 8: Cloudflare Challenge Handling**
 
 ### Summary
+
 Added Cloudflare bypass service using FlareSolverr integration. FlareSolverr is a proxy server that solves Cloudflare's JavaScript challenges using a real browser (Chromium), making it possible to access protected sites.
 
 ### Commits
+
 1. `feat(ddl): add Cloudflare bypass service with FlareSolverr integration`
 
 ### Deliverables
 
 #### ICloudflareBypassService Interface
+
 - `TestConnectionAsync` - Verify FlareSolverr is available
 - `BypassAsync` - Solve Cloudflare challenge and get session cookies
 - `GetCachedSessionAsync` - Retrieve cached session for a domain
@@ -4716,6 +5453,7 @@ Added Cloudflare bypass service using FlareSolverr integration. FlareSolverr is 
 - `GetSettingsAsync`/`SaveSettingsAsync` - Manage configuration
 
 #### FlareSolverrService Implementation
+
 - REST API integration with FlareSolverr `/v1` endpoint
 - Session cookie caching with configurable TTL
 - Automatic retry with exponential backoff (configurable)
@@ -4724,6 +5462,7 @@ Added Cloudflare bypass service using FlareSolverr integration. FlareSolverr is 
 - Detailed error classification (11 failure types)
 
 #### Models
+
 - `CloudflareBypassResult` - Result with cookies, user-agent, HTML content
 - `CloudflareCookieSession` - Cached session with cf_clearance tracking
 - `CloudflareBypassOptions` - Request options (timeout, method, headers)
@@ -4732,19 +5471,22 @@ Added Cloudflare bypass service using FlareSolverr integration. FlareSolverr is 
 - `CloudflareBypassFailureReason` enum
 
 #### Settings
+
 - `Enabled` - Toggle bypass functionality (default: false)
-- `ServerUrl` - FlareSolverr URL (default: http://localhost:8191)
+- `ServerUrl` - FlareSolverr URL (default: <http://localhost:8191>)
 - `DefaultTimeoutSeconds` - Challenge solving timeout (default: 60s)
 - `SessionCacheMinutes` - Cookie cache duration (default: 120 min)
 - `MaxConcurrentSessions` - Browser instance limit (default: 2)
 - `AutoRetry`/`MaxRetries` - Retry configuration
 
 #### FlareSolverr API Commands
+
 - `sessions.list` - Test connectivity
 - `request.get` - GET request with challenge solving
 - `request.post` - POST request with challenge solving
 
 ### Unit Tests (32 tests)
+
 - Settings defaults and customization: 2 tests
 - Options defaults and customization: 2 tests
 - Cookie session handling: 5 tests
@@ -4754,11 +5496,13 @@ Added Cloudflare bypass service using FlareSolverr integration. FlareSolverr is 
 - Service behavior: 7 tests
 
 ### Files Changed
+
 - `src/Shortboxerr.Core/Ddl/ICloudflareBypassService.cs` (new)
 - `src/Shortboxerr.Infrastructure/Ddl/FlareSolverrService.cs` (new)
 - `tests/Shortboxerr.Tests/CloudflareBypassServiceTests.cs` (new)
 
 ### Usage Notes
+
 - FlareSolverr requires Docker or direct installation
 - Each browser instance uses 100-200MB RAM
 - Cannot solve CAPTCHA challenges (will timeout)
@@ -4767,17 +5511,21 @@ Added Cloudflare bypass service using FlareSolverr integration. FlareSolverr is 
 ---
 
 ## Iteration 113 (2026-02-23)
+
 **EPIC 8: Mega.nz Resolver with Encryption Support**
 
 ### Summary
+
 Added Mega.nz file host resolver that handles Mega's client-side encryption scheme. Files on Mega are encrypted with AES-128, and the decryption key is embedded in the URL fragment.
 
 ### Commits
+
 1. `feat(ddl): add Mega.nz resolver with encryption support`
 
 ### Deliverables
 
 #### MegaResolver
+
 - **Domains**: mega.nz, mega.co.nz
 - **Priority**: 1 (highest - Mega is reliable and fast)
 - **URL Formats Supported**:
@@ -4785,26 +5533,31 @@ Added Mega.nz file host resolver that handles Mega's client-side encryption sche
   - Old: `mega.nz/#!fileId!key`
 
 #### Encryption Implementation
+
 - Extract 32-byte key from URL fragment (URL-safe Base64)
 - Derive 16-byte AES key by XORing the two halves
 - Decrypt file attributes using AES-128-CBC with zero IV
 - Parse decrypted JSON for filename (`n`) and fingerprint (`c`)
 
 #### API Integration
+
 - POST to `https://g.api.mega.co.nz/cs` with file request
 - Handle error codes (negative integers = errors)
 - Extract download URL (`g`), file size (`s`), and encrypted attributes (`at`)
 
 #### Base64 Handling
+
 - Mega uses URL-safe Base64 without padding
 - Replace `-` with `+`, `_` with `/`
 - Add padding as needed for standard Base64 decode
 
 #### Rate Limiting
+
 - Detect HTTP 429 responses
 - Return `RateLimited` failure reason with user message
 
 ### Unit Tests (58 tests)
+
 - Basic properties: 5 tests
 - CanResolve patterns: 8 tests  
 - URL parsing (new/old formats): 6 tests
@@ -4820,11 +5573,13 @@ Added Mega.nz file host resolver that handles Mega's client-side encryption sche
 - RequiredHeaders: 1 test
 
 ### Files Changed
+
 - `src/Shortboxerr.Infrastructure/Ddl/Resolvers/MegaResolver.cs` (new)
 - `src/Shortboxerr.Infrastructure/Ddl/Resolvers/DownloadHostResolverFactory.cs` (modified)
 - `tests/Shortboxerr.Tests/MegaResolverTests.cs` (new)
 
 ### Notes
+
 - Folder links are detected but not fully supported (deferred)
 - Encryption key stored in `RequiredHeaders["X-Mega-Key"]` for downstream use
 - The download URL returns encrypted content; client must decrypt with key
@@ -4832,17 +5587,21 @@ Added Mega.nz file host resolver that handles Mega's client-side encryption sche
 ---
 
 ## Iteration 112 (2026-02-23)
+
 **EPIC 8: Rapidgator & Uploaded.net Premium Host Resolvers**
 
 ### Summary
+
 Added premium file host resolvers for Rapidgator and Uploaded.net, supporting both premium API authentication and free tier metadata extraction.
 
 ### Commits
+
 1. `feat(ddl): add Rapidgator and Uploaded.net host resolvers`
 
 ### Deliverables
 
 #### RapidgatorResolver
+
 - Supports domains: rapidgator.net, rapidgator.asia, rg.to
 - Premium API authentication via:
   - API key (direct token)
@@ -4853,6 +5612,7 @@ Added premium file host resolvers for Rapidgator and Uploaded.net, supporting bo
 - URL expiry tracking (24 hours for premium links)
 
 #### UploadedResolver  
+
 - Supports domains: uploaded.net, uploaded.to, ul.to
 - Premium API authentication via:
   - API key
@@ -4863,10 +5623,12 @@ Added premium file host resolvers for Rapidgator and Uploaded.net, supporting bo
 - URL expiry tracking (12 hours for premium links)
 
 #### Factory Registration
+
 - Both resolvers registered in DownloadHostResolverFactory
 - Priority 15 for Rapidgator, 16 for Uploaded (lower priority due to premium requirement)
 
 #### Parsing Capabilities
+
 - File ID extraction from various URL formats
 - Session/auth token extraction (JSON, CSV, key-value)
 - File info parsing (name, size)
@@ -4874,6 +5636,7 @@ Added premium file host resolvers for Rapidgator and Uploaded.net, supporting bo
 - HTML page parsing for metadata (filename, filesize patterns)
 
 ### Unit Tests (79 tests)
+
 - RapidgatorResolver tests (25):
   - Host ID, display name, supported hosts validation
   - URL pattern matching with multiple domains
@@ -4903,6 +5666,7 @@ Added premium file host resolvers for Rapidgator and Uploaded.net, supporting bo
   - Result object construction
 
 ### Files Changed
+
 - `src/Shortboxerr.Infrastructure/Ddl/Resolvers/RapidgatorResolver.cs` (new)
 - `src/Shortboxerr.Infrastructure/Ddl/Resolvers/UploadedResolver.cs` (new)
 - `src/Shortboxerr.Infrastructure/Ddl/Resolvers/DownloadHostResolverFactory.cs` (modified)
@@ -4911,17 +5675,21 @@ Added premium file host resolvers for Rapidgator and Uploaded.net, supporting bo
 ---
 
 ## Iteration 111 (2026-02-17)
+
 **EPIC 8: Host Reliability Tracking per DDL Site**
 
 ### Summary
+
 Added host reliability tracking service for measuring and analyzing download host performance over time. Provides data for intelligent host selection and priority ordering.
 
 ### Commits
+
 1. `feat(ddl): add host reliability tracking service`
 
 ### Deliverables
 
 #### IHostReliabilityService Interface
+
 - `RecordSuccessAsync` - Record successful download with bytes and duration
 - `RecordFailureAsync` - Record failed download with reason
 - `GetHostStatsAsync` - Get stats for a host (global or per-site)
@@ -4936,6 +5704,7 @@ Added host reliability tracking service for measuring and analyzing download hos
 - `PurgeOldStatsAsync` - Remove old records beyond retention period
 
 #### Models
+
 - `HostReliabilityStats` - Per-host statistics (successes, failures, speed, score)
 - `HostReliabilityRanking` - Host ranking with trend indicator
 - `HostReliabilitySummary` - Aggregate statistics across all hosts
@@ -4944,7 +5713,9 @@ Added host reliability tracking service for measuring and analyzing download hos
 - `ReliabilityTrend` enum - Unknown, Improving, Stable, Declining
 
 #### Reliability Score Calculation
+
 Weighted combination of:
+
 - Success rate (default: 60%)
 - Download speed (default: 30%)
 - Recency (default: 10%)
@@ -4952,6 +5723,7 @@ Weighted combination of:
 Minimum 5 attempts required for scoring.
 
 #### Settings
+
 - `TrackingEnabled` - Toggle tracking (default: true)
 - `RetentionPeriod` - How long to keep stats (default: 30 days)
 - `MinAttemptsForScore` - Minimum samples for scoring (default: 5)
@@ -4961,6 +5733,7 @@ Minimum 5 attempts required for scoring.
 - `TrendChangeThreshold` - Percentage change for trend detection (default: 10%)
 
 #### Unit Tests (35 tests)
+
 - RecordSuccessAsync tests (3 tests)
 - RecordFailureAsync tests (2 tests)
 - GetHostStatsAsync tests (4 tests)
@@ -4981,6 +5754,7 @@ Minimum 5 attempts required for scoring.
 - Display name tests (2 tests)
 
 ### Files Changed
+
 - `src/Shortboxerr.Core/Ddl/IHostReliabilityService.cs` (new)
 - `src/Shortboxerr.Infrastructure/Ddl/HostReliabilityService.cs` (new)
 - `tests/Shortboxerr.Tests/HostReliabilityServiceTests.cs` (new)
@@ -4988,29 +5762,35 @@ Minimum 5 attempts required for scoring.
 ---
 
 ## Iteration 110 (2026-02-17)
+
 **EPIC 10: Mylar3 NZB Settings Import**
 
 ### Summary
+
 Added Mylar3 config.ini importer for migrating NZB indexer and download client settings from existing Mylar3 installations.
 
 ### Commits
+
 1. `feat(import): add Mylar3 config.ini importer`
 
 ### Deliverables
 
 #### IMylar3ConfigImporter Interface
+
 - `ParseConfigAsync` - Parse config from file path
 - `ParseConfigContentAsync` - Parse config from string content
 - `ImportAsync` - Import parsed settings into Shortboxerr
 - `ValidateAsync` - Validate settings without importing
 
 #### Configuration Models
+
 - `Mylar3NewznabConfig` - Indexer configuration (name, host, apikey, uid, categories, enabled)
 - `Mylar3SabnzbdConfig` - SABnzbd settings (host, port, apikey, category, ssl, priority)
 - `Mylar3NzbgetConfig` - NZBGet settings (host, port, username, password, category, ssl)
 - `Mylar3GeneralConfig` - General settings (comic_location, download_dir, preferred client)
 
 #### Import Options
+
 - `ImportIndexers` - Toggle indexer import (default: true)
 - `ImportSabnzbd` - Toggle SABnzbd import (default: true)
 - `ImportNzbget` - Toggle NZBGet import (default: true)
@@ -5019,6 +5799,7 @@ Added Mylar3 config.ini importer for migrating NZB indexer and download client s
 - `TestConnections` - Test after import (default: true)
 
 #### Validation Report
+
 - `IsValid` - Overall validation status
 - `Errors` - Blocking issues (missing host/apikey)
 - `Warnings` - Non-blocking issues (invalid URL format)
@@ -5026,6 +5807,7 @@ Added Mylar3 config.ini importer for migrating NZB indexer and download client s
 - `Summary` - Import summary (total/enabled indexers, clients found)
 
 #### INI Parsing Features
+
 - Section headers `[SectionName]`
 - Key=Value pairs with optional quotes
 - Comment lines (# and ;)
@@ -5036,6 +5818,7 @@ Added Mylar3 config.ini importer for migrating NZB indexer and download client s
   - `extra_newznabs` tuple format in `[General]`
 
 #### Unit Tests (34 tests)
+
 - Parse tests (4 tests)
 - Indexer parsing tests (3 tests)
 - SABnzbd parsing tests (3 tests)
@@ -5047,6 +5830,7 @@ Added Mylar3 config.ini importer for migrating NZB indexer and download client s
 - Options/enum tests (3 tests)
 
 ### Files Changed
+
 - `src/Shortboxerr.Core/Import/IMylar3ConfigImporter.cs` (new)
 - `src/Shortboxerr.Infrastructure/Import/Mylar3ConfigImporter.cs` (new)
 - `tests/Shortboxerr.Tests/Mylar3ConfigImporterTests.cs` (new)
@@ -5054,17 +5838,21 @@ Added Mylar3 config.ini importer for migrating NZB indexer and download client s
 ---
 
 ## Iteration 109 (2026-02-17)
+
 **EPIC 14.3: Torrent → Import Handoff**
 
 ### Summary
+
 Added torrent import handoff service for post-download processing. Detects completed torrents, handles file transfer (hardlink/copy/move), respects seeding requirements, and optionally removes torrents after successful import.
 
 ### Commits
+
 1. `feat(torrent): add torrent import handoff service`
 
 ### Deliverables
 
 #### ITorrentImportService Interface
+
 - `ProcessCompletedTorrentsAsync` - Scan all clients for completed torrents
 - `ProcessTorrentAsync` - Process a specific torrent by hash
 - `CheckTorrentReadyAsync` - Check seeding requirements
@@ -5073,6 +5861,7 @@ Added torrent import handoff service for post-download processing. Detects compl
 - `GetSettingsAsync`/`SaveSettingsAsync` - Settings persistence
 
 #### TorrentImportSettings
+
 - `AutoImportEnabled` - Toggle automatic processing (default: true)
 - `TransferMode` - Copy, HardLink, or Move (default: HardLink)
 - `RemoveAfterImport` - Delete torrent after import (default: false)
@@ -5088,15 +5877,18 @@ Added torrent import handoff service for post-download processing. Detects compl
 - `PreserveFolderStructure` - Keep torrent folder layout (default: false)
 
 #### FileTransferMode Enum
+
 - `Copy` (0) - Safest, uses more disk space
 - `HardLink` (1) - Efficient, same filesystem only
 - `Move` (2) - Removes from download location
 
 #### TorrentImportResult
+
 - Factory methods: `Imported()`, `Skipped()`, `Failed()`
 - Tracks: Hash, Name, ClientType, Success, Status, FilesImported, BytesImported, TorrentRemoved
 
 #### TorrentImportStatus Enum
+
 - `Imported` - Successfully imported
 - `NotCompleted` - Still downloading
 - `SeedingRatioNotMet` - Below minimum ratio
@@ -5107,14 +5899,17 @@ Added torrent import handoff service for post-download processing. Detects compl
 - `Failed` - Import error
 
 #### TorrentReadyResult
+
 - Factory methods: `Ready()`, `NotReady()`
 - Includes current/required ratio and time info
 
 #### TorrentFileImportResult
+
 - Factory methods: `Succeeded()`, `NoFiles()`, `Error()`
 - Tracks files imported, bytes transferred, hardlink usage
 
 #### TorrentImportService Implementation
+
 - Scans all configured torrent clients
 - Filters by category if specified
 - Checks completion status and seeding requirements
@@ -5126,6 +5921,7 @@ Added torrent import handoff service for post-download processing. Detects compl
 - Removes torrent after successful import if configured
 
 #### Unit Tests (39 tests)
+
 - TorrentImportSettings tests (3 tests)
 - FileTransferMode tests (3 tests)
 - TorrentImportResult tests (4 tests)
@@ -5140,6 +5936,7 @@ Added torrent import handoff service for post-download processing. Detects compl
 - Theory tests for file extensions (7 parameterized)
 
 ### Files Changed
+
 - `src/Shortboxerr.Core/Torrent/ITorrentImportService.cs` (new)
 - `src/Shortboxerr.Infrastructure/Torrent/TorrentImportService.cs` (new)
 - `tests/Shortboxerr.Tests/TorrentImportServiceTests.cs` (new)
@@ -5147,17 +5944,21 @@ Added torrent import handoff service for post-download processing. Detects compl
 ---
 
 ## Iteration 108 (2026-02-17)
+
 **EPIC 14.3: Deluge Integration**
 
 ### Summary
+
 Added Deluge torrent client support as the third torrent client after qBittorrent and Transmission. Deluge uses a JSON-RPC Web UI API with password-based authentication, following the Sonarr/Radarr client patterns.
 
 ### Commits
+
 1. `feat(torrent): add Deluge client integration`
 
 ### Deliverables
 
 #### IDelugeClient Interface
+
 - Extends `ITorrentClient` with Deluge-specific operations
 - Version retrieval (daemon and libtorrent)
 - Session status (download/upload rates, torrent counts)
@@ -5167,6 +5968,7 @@ Added Deluge torrent client support as the third torrent client after qBittorren
 - Configuration retrieval
 
 #### DelugeSettings
+
 - `Host` - Hostname or IP address
 - `Port` - Web UI port (default: 8112)
 - `Password` - Authentication password (default: "deluge")
@@ -5179,6 +5981,7 @@ Added Deluge torrent client support as the third torrent client after qBittorren
 - `BaseUrl`/`JsonRpcUrl` - Computed URL properties
 
 #### DelugeClient Implementation
+
 - JSON-RPC over HTTP POST to `/json`
 - Password authentication via `auth.login` method
 - Request ID tracking for JSON-RPC calls
@@ -5201,7 +6004,9 @@ Added Deluge torrent client support as the third torrent client after qBittorren
   - `GetConfigAsync`
 
 #### State Mapping
+
 Deluge states mapped to `TorrentState`:
+
 - "downloading" → `Downloading`
 - "seeding" → `Seeding`
 - "paused" → `Paused`
@@ -5212,15 +6017,18 @@ Deluge states mapped to `TorrentState`:
 - "allocating" → `Queued`
 
 #### Models
+
 - `DelugeSessionStatus` - Download/upload rates, torrent counts, DHT info
 - `DelugeTorrentOptions` - Per-torrent speed limits, ratio, move settings
 - `DelugeConfig` - Daemon configuration (download location, limits, DHT)
 
 #### Exceptions
+
 - `DelugeAuthenticationException` - Invalid password or session expired
 - `DelugeRpcException` - JSON-RPC method errors with error code
 
 #### Unit Tests (29 tests)
+
 - DelugeSettings tests (10 tests)
   - Default port, custom port, URL formats
   - Default password, timeout, SSL, add paused
@@ -5236,6 +6044,7 @@ Deluge states mapped to `TorrentState`:
 - Move completed settings tests (2 tests)
 
 ### Files Changed
+
 - `src/Shortboxerr.Core/Torrent/IDelugeClient.cs` (new)
 - `src/Shortboxerr.Infrastructure/Torrent/DelugeClient.cs` (new)
 - `tests/Shortboxerr.Tests/DelugeClientTests.cs` (new)
@@ -5243,17 +6052,21 @@ Deluge states mapped to `TorrentState`:
 ---
 
 ## Iteration 107 (2026-02-17)
+
 **EPIC 14.3: Transmission Integration**
 
 ### Summary
+
 Added Transmission torrent client support as an alternative to qBittorrent. Transmission uses a JSON-RPC API with session ID for CSRF protection, following the Sonarr/Radarr client patterns.
 
 ### Commits
+
 1. `feat(torrent): add Transmission client integration`
 
 ### Deliverables
 
 #### ITransmissionClient Interface
+
 - Extends `ITorrentClient` with Transmission-specific operations
 - Session info retrieval (version, config, speed limits)
 - Session statistics (active/paused torrents, speeds)
@@ -5264,6 +6077,7 @@ Added Transmission torrent client support as an alternative to qBittorrent. Tran
 - Get free space for a path
 
 #### TransmissionSettings
+
 - `Host` - Hostname or IP address
 - `Port` - RPC port (default: 9091)
 - `Username`/`Password` - HTTP Basic Auth credentials
@@ -5275,6 +6089,7 @@ Added Transmission torrent client support as an alternative to qBittorrent. Tran
 - `RpcUrl` - Computed full URL property
 
 #### TransmissionClient Implementation
+
 - JSON-RPC over HTTP POST to `/transmission/rpc`
 - Session ID handling via `X-Transmission-Session-Id` header
 - Auto-retry on 409 Conflict (session ID expired)
@@ -5295,7 +6110,9 @@ Added Transmission torrent client support as an alternative to qBittorrent. Tran
   - `GetFreeSpaceAsync`
 
 #### State Mapping
+
 Transmission status values mapped to `TorrentState`:
+
 - 0 (stopped) → `Paused`
 - 1 (check pending) → `Queued`
 - 2 (checking) → `Checking`
@@ -5305,11 +6122,13 @@ Transmission status values mapped to `TorrentState`:
 - 6 (seeding) → `Seeding`
 
 #### Models
+
 - `TransmissionSessionInfo` - Version, RPC version, download dir, speed limits
 - `TransmissionSessionStats` - Torrent counts, speeds, cumulative stats
 - `TransmissionCumulativeStats` - Downloaded/uploaded bytes, files added
 
 #### Unit Tests (21 tests)
+
 - TransmissionSettings tests (9 tests)
   - Default port, custom port, SSL URL
   - Custom RPC path, timeout, add paused defaults
@@ -5322,6 +6141,7 @@ Transmission status values mapped to `TorrentState`:
 - Default values tests (2 tests)
 
 ### Files Changed
+
 - `src/Shortboxerr.Core/Torrent/ITransmissionClient.cs` (new)
 - `src/Shortboxerr.Infrastructure/Torrent/TransmissionClient.cs` (new)
 - `tests/Shortboxerr.Tests/TransmissionClientTests.cs` (new)
@@ -5329,25 +6149,31 @@ Transmission status values mapped to `TorrentState`:
 ---
 
 ## Iteration 106 (2026-02-17)
+
 **EPIC 10: NZBHydra2 Aggregator Support**
 
 ### Summary
+
 Added NZBHydra2 support to the NZB indexer infrastructure. NZBHydra2 is a meta-indexer that aggregates searches across multiple backend NZB indexers, providing a single endpoint for Shortboxerr to query.
 
 ### Commits
+
 1. `feat(nzb): add NZBHydra2 aggregator support`
 
 ### Deliverables
 
 #### NewznabIndexer Extensions
+
 - `IsHydra` - Whether this indexer is an NZBHydra2 aggregator
 - `IndexerType` - Enum value (Standard or NzbHydra2)
 
 #### NewznabIndexerType Enum
+
 - `Standard` - Regular Newznab indexer (NZBgeek, DrunkenSlug, etc.)
 - `NzbHydra2` - NZBHydra2 aggregator instance
 
 #### NewznabRelease Hydra Properties
+
 - `IsFromHydra` - Whether result came from NZBHydra2
 - `HydraIndexerName` - Backend indexer name
 - `HydraIndexerId` - Backend indexer ID
@@ -5356,21 +6182,25 @@ Added NZBHydra2 support to the NZB indexer infrastructure. NZBHydra2 is a meta-i
 - `HydraIndexerHost` - Backend indexer hostname
 
 #### NZBHydra2 Detection
+
 - `NewznabClient.IsNzbHydra2(caps)` - Detects NZBHydra2 from capabilities
 - Checks server title, version, strapline for "nzbhydra" or "hydra2"
 - Auto-sets `IsHydra` flag on test connection
 
 #### Preset Helpers
+
 - `NzbIndexerPresets.CreateNzbHydra2(url, apiKey, name)` - Creates Hydra config
 - `NzbIndexerPresets.GetPresetsByType()` - Groups presets by indexer type
 
 #### Hydra Attribute Parsing
+
 - Parses `hydraIndexerName`, `hydraIndexerId`, `hydraIndexerGuid`
 - Parses `hydraIndexerHost`, `hydraIndexerScore`
 - Supports both camelCase and snake_case variants
 - Supports dedicated hydra XML namespace attributes
 
 #### Unit Tests (24 tests)
+
 - NewznabIndexer configuration tests
 - NzbIndexerPresets tests (standard + Hydra)
 - NewznabRelease Hydra properties tests
@@ -5379,6 +6209,7 @@ Added NZBHydra2 support to the NZB indexer infrastructure. NZBHydra2 is a meta-i
 - IndexerType enum tests
 
 ### Files Changed
+
 - `src/Shortboxerr.Core/Nzb/INewznabClient.cs` (interface + models)
 - `src/Shortboxerr.Core/Nzb/INzbIndexerProvider.cs` (presets)
 - `src/Shortboxerr.Infrastructure/Nzb/NewznabClient.cs` (implementation)
@@ -5387,28 +6218,34 @@ Added NZBHydra2 support to the NZB indexer infrastructure. NZBHydra2 is a meta-i
 ---
 
 ## Iteration 105 (2026-02-17)
+
 **EPIC 9: Cover Cache Size Limits & LRU Eviction**
 
 ### Summary
+
 Implemented cover cache management with configurable size limits and automatic cleanup. Prevents unbounded disk usage while maintaining frequently accessed covers.
 
 ### Commits
+
 1. `feat(covers): add cache size limits and LRU eviction`
 
 ### Deliverables
 
 #### CoverSettings Extensions
+
 - `MaxCacheSizeBytes` - Maximum cache size (default: 500MB)
 - `CleanupTargetPercent` - Target size after cleanup (default: 80%)
 - `CleanupIntervalHours` - Background cleanup interval (default: 24h)
 - `AutoCleanupEnabled` - Auto-cleanup after downloads (default: true)
 
 #### ICoverService Extensions
+
 - `GetDetailedCacheStatsAsync()` - Detailed stats with size breakdown
 - `CleanupCacheAsync()` - Combined retention + LRU cleanup
 - `EnforceCacheLimitAsync()` - LRU eviction only
 
 #### DetailedCoverCacheStats Model
+
 - Inherits from `CoverCacheStats`
 - `BySize` - Breakdown by cover size (thumb/small/medium/large)
 - `MaxCacheSizeBytes`, `UsagePercent`, `IsOverLimit`, `BytesOverLimit`
@@ -5416,27 +6253,32 @@ Implemented cover cache management with configurable size limits and automatic c
 - `LastCleanupAt`, `LastCleanupEvictedCount`
 
 #### CoverCleanupResult Model
+
 - `EvictedByLru`, `EvictedByRetention`, `TotalEvicted`
 - `BytesFreed`, `SizeBefore`, `SizeAfter`
 - `Duration`, `CleanedAt`
 
 #### LRU Eviction Implementation
+
 - Track last access time via `File.SetLastAccessTimeUtc()`
 - Touch files on cache hits
 - Evict least recently used when over limit
 - Evict until reaching target percentage
 
 #### Background Service
+
 - `CoverCacheCleanupBackgroundService`
 - Runs every hour, checks if cleanup interval elapsed
 - Combines retention policy + LRU eviction
 - Configurable via `CleanupIntervalHours`
 
 #### API Endpoints (2 new)
+
 - `GET /api/v1/covers/cache/stats/detailed` - Detailed cache stats
 - `POST /api/v1/covers/cleanup` - Trigger manual cleanup
 
 #### Unit Tests (21 tests)
+
 - Settings defaults tests
 - Detailed stats calculation tests
 - LRU eviction tests
@@ -5445,6 +6287,7 @@ Implemented cover cache management with configurable size limits and automatic c
 - Result model tests
 
 ### Files Changed
+
 - `src/Shortboxerr.Core/Services/ICoverService.cs` (interface + models)
 - `src/Shortboxerr.Infrastructure/Services/CoverService.cs` (implementation)
 - `src/Shortboxerr.Infrastructure/BackgroundServices/CoverCacheCleanupBackgroundService.cs` (new)
@@ -5455,20 +6298,25 @@ Implemented cover cache management with configurable size limits and automatic c
 ---
 
 ## Iteration 104 (2026-02-17)
+
 **EPIC 11: Publisher Filter Dropdown for Discovery**
 
 ### Summary
+
 Implemented backend support for the publisher filter dropdown in the discovery/release list. The endpoint retrieves available publishers from cached discovery data, enabling the UI to populate a filter dropdown.
 
 ### Commits
+
 1. `feat(pulllist): add publisher filter dropdown endpoint for discovery`
 
 ### Deliverables
 
 #### IPullListService Extension
+
 - `GetDiscoveryPublishersAsync(weekOf, includeComicVineLookup)` - Get publishers for filter dropdown
 
 #### DiscoveryPublishersResult & DiscoveryPublisher Models
+
 - `LibraryPublishers` - Publishers from local library series with releases this week
 - `ComicVinePublishers` - Publishers from ComicVine for unmatched volumes (optional)
 - `AllPublishers` - Merged and deduplicated list sorted alphabetically
@@ -5476,6 +6324,7 @@ Implemented backend support for the publisher filter dropdown in the discovery/r
 - Per-publisher stats: `Name`, `IssueCount`, `SeriesCount`, `HasLibrarySeries`
 
 #### Implementation Details
+
 - Leverages existing discovery cache (memory → database → ComicVine)
 - Groups issues by volume to count series/issues per publisher
 - Matches local series by ComicVine volume ID to get publisher info
@@ -5484,11 +6333,13 @@ Implemented backend support for the publisher filter dropdown in the discovery/r
 - Alphabetical sorting of results
 
 #### API Endpoint
+
 - `GET /api/v1/pulllist/discover/publishers` - Get publishers for filter
   - Query params: `weekOf` (optional, default today), `includeComicVineLookup` (optional, default false)
   - Returns: `DiscoveryPublishersResult` with publisher lists and stats
 
 #### Unit Tests (7 tests)
+
 - GetDiscoveryPublishersAsync_ReturnsLibraryPublishers
 - GetDiscoveryPublishersAsync_WithoutComicVineLookup_ReturnsOnlyLibraryPublishers
 - GetDiscoveryPublishersAsync_WithComicVineLookup_FetchesUnmatchedPublishers
@@ -5498,6 +6349,7 @@ Implemented backend support for the publisher filter dropdown in the discovery/r
 - GetDiscoveryPublishersAsync_UsesCorrectWeekBoundaries
 
 ### Files Changed
+
 - `src/Shortboxerr.Core/PullList/IPullListService.cs` (interface + models)
 - `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` (implementation)
 - `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` (endpoint)
@@ -5506,23 +6358,28 @@ Implemented backend support for the publisher filter dropdown in the discovery/r
 ---
 
 ## Iteration 103 (2026-02-19)
+
 **EPIC 11: First-Time User Experience (Setup Status Backend)**
 
 ### Summary
+
 Implemented backend support for first-time user onboarding. The SetupStatusService tracks completion of essential setup steps and provides API endpoints for the frontend to show guided onboarding.
 
 ### Commits
+
 1. `feat(setup): add setup status service for first-time user onboarding`
 
 ### Deliverables
 
 #### ISetupStatusService - Core Service Interface
+
 - `GetStatusAsync()` - Get full setup status with all steps
 - `DismissOnboardingAsync()` - Dismiss onboarding wizard (skip)
 - `ResetOnboardingAsync()` - Reset dismissal to show wizard again
 - `CompleteStepAsync(step)` - Manually mark step as complete
 
 #### SetupStatusService Implementation
+
 - 5 setup steps tracked:
   1. **ConfigureComicVine** (required) - ComicVine API key for metadata
   2. **ConfigureRootFolder** (required) - Comic library root path
@@ -5536,6 +6393,7 @@ Implemented backend support for first-time user onboarding. The SetupStatusServi
 - Dismissable onboarding with reset option
 
 #### API Endpoints (5 endpoints)
+
 - `GET /api/v1/setup/status` - Full setup status with all steps
 - `GET /api/v1/setup/should-onboard` - Quick check if wizard should show
 - `POST /api/v1/setup/dismiss` - Dismiss onboarding wizard
@@ -5543,6 +6401,7 @@ Implemented backend support for first-time user onboarding. The SetupStatusServi
 - `POST /api/v1/setup/steps/{step}/complete` - Manual completion
 
 #### Unit Tests (28 tests)
+
 - GetStatusAsync_NothingConfigured_ReturnsIncomplete
 - GetStatusAsync_ReturnsAllSteps
 - GetStatusAsync_StepsInCorrectOrder
@@ -5573,6 +6432,7 @@ Implemented backend support for first-time user onboarding. The SetupStatusServi
 - GetStatusAsync_AllStepsHaveSettingsPaths
 
 ### Files Changed
+
 - src/Shortboxerr.Core/Services/ISetupStatusService.cs (new)
 - src/Shortboxerr.Infrastructure/Services/SetupStatusService.cs (new)
 - src/Shortboxerr.Infrastructure/DependencyInjection.cs (modified)
@@ -5585,17 +6445,21 @@ Implemented backend support for first-time user onboarding. The SetupStatusServi
 ---
 
 ## Iteration 102 (2026-02-19)
+
 **EPIC 9: Variant Cover Detection (ComicVine Integration)**
 
 ### Summary
+
 Implemented automatic detection and management of variant covers for comic issues using ComicVine's associated_images field. The system detects common variant types (incentive ratios, exclusive editions, virgin covers, etc.) and allows users to select their preferred cover for display.
 
 ### Commits
+
 1. `feat(comicvine): add variant cover detection and management`
 
 ### Deliverables
 
 #### IVariantCoverService - Core Service Interface
+
 - `GetVariantCoversAsync(issueId)` - Get all variant covers for an issue
 - `FetchVariantCoversAsync(issueId)` - Fetch variants from ComicVine
 - `FetchSeriesVariantCoversAsync(seriesId)` - Fetch for all issues in series
@@ -5605,6 +6469,7 @@ Implemented automatic detection and management of variant covers for comic issue
 - `GetSeriesStatsAsync(seriesId)` - Get variant statistics for series
 
 #### VariantCoverService Implementation
+
 - Pattern-based variant detection with confidence scoring
 - Support for 40+ variant type patterns:
   - Incentive ratios: 1:10, 1:25, 1:50, 1:100, 1:200
@@ -5618,12 +6483,14 @@ Implemented automatic detection and management of variant covers for comic issue
 - Tracks preferred cover per issue
 
 #### ComicVine Integration
+
 - Added associated_images field to ComicVineApiIssue
 - Added ComicVineAssociatedImage model
 - Extended ComicVineIssue with AssociatedImages property
 - Variant detection in ComicVineClient mapping
 
 #### Database Entity & Migration
+
 - VariantCoverEntity with IssueId FK
 - Properties: ComicVineImageId, ImageUrl, Caption, ImageTags, VariantType
 - Flags: IsPrimaryCover, IsPreferred
@@ -5631,6 +6498,7 @@ Implemented automatic detection and management of variant covers for comic issue
 - Migration: AddVariantCovers
 
 #### API Endpoints (7 endpoints)
+
 - `GET /api/v1/variants/issues/{id}` - Get variant covers for issue
 - `POST /api/v1/variants/issues/{id}/fetch` - Fetch from ComicVine
 - `POST /api/v1/variants/series/{id}/fetch` - Fetch for all issues
@@ -5640,6 +6508,7 @@ Implemented automatic detection and management of variant covers for comic issue
 - `POST /api/v1/variants/detect` - Detection utility endpoint
 
 #### Unit Tests (42 tests)
+
 - DetectVariant_RecognizesVariantPatterns (16 test cases)
 - DetectVariant_DoesNotMismatchNonVariants (7 test cases)
 - DetectVariant_CombinesMultipleSources
@@ -5663,6 +6532,7 @@ Implemented automatic detection and management of variant covers for comic issue
 - FetchSeriesVariantCoversAsync_ProcessesAllIssues
 
 ### Files Changed
+
 - src/Shortboxerr.Core/ComicVine/IComicVineClient.cs (modified)
 - src/Shortboxerr.Core/ComicVine/IVariantCoverService.cs (new)
 - src/Shortboxerr.Core/Entities/Issue.cs (modified)
@@ -5681,17 +6551,21 @@ Implemented automatic detection and management of variant covers for comic issue
 ---
 
 ## Iteration 101 (2026-02-19)
+
 **EPIC 8: Host Blacklisting for Download Hosts**
 
 ### Summary
+
 Implemented temporary blacklisting for download hosts that consistently fail. Hosts are automatically blacklisted after reaching a configurable failure threshold, with escalating durations for repeat offenders.
 
 ### Commits
+
 1. `feat: add host blacklisting service (EPIC 8)`
 
 ### Deliverables
 
 #### IHostBlacklistService - Core Service Interface
+
 - `IsBlacklisted(hostId)` - Check if host is blacklisted
 - `IsUrlBlacklisted(url)` - Check if URL's host is blacklisted
 - `Blacklist(hostId, reason, duration?)` - Manually blacklist a host
@@ -5708,6 +6582,7 @@ Implemented temporary blacklisting for download hosts that consistently fail. Ho
 - `PurgeExpiredEntries()` - Remove expired blacklist entries
 
 #### HostBlacklistService Implementation
+
 - Thread-safe with ConcurrentDictionary for blacklist and stats
 - Automatic blacklisting after configurable threshold (default: 3 failures)
 - Escalating durations for repeat offenders (configurable multiplier)
@@ -5717,11 +6592,13 @@ Implemented temporary blacklisting for download hosts that consistently fail. Ho
 - URL-to-host extraction with resolver factory integration
 
 #### DdlDownloadService Integration
+
 - Filter out blacklisted hosts from download link list
 - Record success/failure for blacklist tracking
 - Map DdlDownloadFailureReason to HostResolverFailureReason
 
 #### API Endpoints (11 endpoints)
+
 - `GET /api/v1/ddl/hosts/blacklist` - Get all blacklisted hosts
 - `GET /api/v1/ddl/hosts/blacklist/{hostId}` - Get specific entry
 - `POST /api/v1/ddl/hosts/blacklist/{hostId}` - Manually blacklist host
@@ -5736,6 +6613,7 @@ Implemented temporary blacklisting for download hosts that consistently fail. Ho
 - `GET /api/v1/ddl/hosts/blacklist/check/{hostId}` - Check if host is blacklisted
 
 #### Unit Tests (32 tests)
+
 - IsBlacklisted_NewHost_ReturnsFalse
 - IsBlacklisted_BlacklistedHost_ReturnsTrue
 - IsBlacklisted_ExpiredEntry_ReturnsFalse
@@ -5770,6 +6648,7 @@ Implemented temporary blacklisting for download hosts that consistently fail. Ho
 - HostFailureStats_IncludesBlacklistStatus
 
 ### Files Changed
+
 - `src/Shortboxerr.Core/Ddl/IHostBlacklistService.cs` (new)
 - `src/Shortboxerr.Infrastructure/Ddl/HostBlacklistService.cs` (new)
 - `src/Shortboxerr.Infrastructure/Ddl/DdlDownloadService.cs` (modified)
@@ -5780,6 +6659,7 @@ Implemented temporary blacklisting for download hosts that consistently fail. Ho
 - `tests/Shortboxerr.Tests/DdlEndToEndIntegrationTests.cs` (modified)
 
 ### Test Coverage
+
 - Tests before: 1721
 - Tests after: 1753
 - New tests: 32
@@ -5787,12 +6667,15 @@ Implemented temporary blacklisting for download hosts that consistently fail. Ho
 ---
 
 ## Iteration 100 (2026-02-18)
+
 **EPIC 10: Indexer Health Monitoring & Download Client Failover**
 
 ### Summary
+
 Implemented health monitoring for both NZB indexers and download clients, with automatic failover support. These features enable the system to track provider health, detect failures, handle rate limiting, and automatically route requests to healthy providers.
 
 ### Commits
+
 1. `feat: implement indexer health monitoring (EPIC 10)`
 2. `feat: implement download client health and failover (EPIC 10)`
 
@@ -5801,6 +6684,7 @@ Implemented health monitoring for both NZB indexers and download clients, with a
 #### Indexer Health Monitoring
 
 ##### IIndexerHealthService - Core Service Interface
+
 - `GetHealthAsync(indexerId)` - Get health status for specific indexer
 - `GetAllHealthAsync()` - Get health status for all indexers
 - `RecordSuccessAsync(indexerId, responseTime)` - Record successful request
@@ -5813,11 +6697,13 @@ Implemented health monitoring for both NZB indexers and download clients, with a
 - `GetHealthSummaryAsync()` - Get aggregated health summary
 
 ##### IndexerHealthBackgroundService
+
 - Runs health checks every 15 minutes
 - Logs unhealthy indexers and warning details
 - Provides manual trigger capability
 
 ##### API Endpoints (Indexer Health)
+
 - `GET /api/v1/indexers/health` - Get all indexer health
 - `GET /api/v1/indexers/health/summary` - Get aggregated summary
 - `GET /api/v1/indexers/health/{id}` - Get specific indexer health
@@ -5827,6 +6713,7 @@ Implemented health monitoring for both NZB indexers and download clients, with a
 - `GET /api/v1/indexers/health/healthy` - Get healthy indexers list
 
 ##### Unit Tests (22 tests)
+
 - GetHealthAsync returns status for existing indexer
 - GetHealthAsync throws for nonexistent indexer
 - RecordSuccessAsync updates health status
@@ -5850,6 +6737,7 @@ Implemented health monitoring for both NZB indexers and download clients, with a
 #### Download Client Health & Failover
 
 ##### IDownloadClientHealthService - Core Service Interface
+
 - `GetHealthAsync(providerId)` - Get health status for specific client
 - `GetAllHealthAsync()` - Get health status for all clients
 - `RecordSuccessAsync(providerId, duration)` - Record successful download
@@ -5863,6 +6751,7 @@ Implemented health monitoring for both NZB indexers and download clients, with a
 - `DownloadWithFailoverAsync(candidate, type?)` - Download with automatic failover
 
 ##### API Endpoints (Download Client Health)
+
 - `GET /api/v1/downloadclients/health` - Get all client health
 - `GET /api/v1/downloadclients/health/summary` - Get aggregated summary
 - `GET /api/v1/downloadclients/health/{id}` - Get specific client health
@@ -5872,6 +6761,7 @@ Implemented health monitoring for both NZB indexers and download clients, with a
 - `GET /api/v1/downloadclients/health/healthy` - Get healthy clients list
 
 ##### Unit Tests (20 tests)
+
 - GetHealthAsync returns status for existing client
 - GetHealthAsync throws for nonexistent client
 - RecordSuccessAsync updates health status
@@ -5893,13 +6783,15 @@ Implemented health monitoring for both NZB indexers and download clients, with a
 - DownloadWithFailoverAsync all clients fail
 
 ### Settings Integration
+
 - Uses existing SearchSettings for auto-search configuration
-- Health state thresholds: 
+- Health state thresholds:
   - Degraded: >5s response (indexer), >300s download (client)
   - Offline: 5+ consecutive failures (indexer), 3+ failures (client)
   - Rate limit: 15 minute backoff
 
 ### Files Changed
+
 - `src/Shortboxerr.Core/Nzb/IIndexerHealthService.cs` (new)
 - `src/Shortboxerr.Infrastructure/Nzb/IndexerHealthService.cs` (new)
 - `src/Shortboxerr.Infrastructure/BackgroundServices/IndexerHealthBackgroundService.cs` (new)
@@ -5915,17 +6807,21 @@ Implemented health monitoring for both NZB indexers and download clients, with a
 ---
 
 ## Iteration 099 (2026-02-18)
+
 **EPIC 11.3: Auto-Search on Release**
 
 ### Summary
+
 Implemented automatic searching for wanted issues. This feature triggers searches when issues are added to the wanted list and periodically re-searches stale issues.
 
 ### Commits
+
 1. `feat: implement auto-search on release (EPIC 11.3)`
 
 ### Deliverables
 
 #### IAutoSearchService - Core Service Interface
+
 - `SearchIssueAsync(issueId)` - Search for a specific issue
 - `SearchSeriesWantedAsync(seriesId)` - Search all wanted issues in a series
 - `SearchAllWantedAsync(maxIssues?)` - Search all wanted issues in library
@@ -5934,18 +6830,21 @@ Implemented automatic searching for wanted issues. This feature triggers searche
 - `GetHistoryAsync(limit)` - Get recent search history
 
 #### AutoSearchBackgroundService
+
 - Runs periodically based on `AutoSearchIntervalHours` setting (default: 24 hours)
 - Checks every 15 minutes if a search run is due
 - Respects `AutoSearchEnabled` setting
 - Sends notifications when issues are found
 
 #### Issue Entity Updates
+
 - Added `LastSearchedAt` (DateTime?) - When issue was last searched
 - Added `SearchAttempts` (int) - Number of search attempts
 - Added `LastSearchError` (string?) - Last error message
 - Database migration created
 
 #### API Endpoints
+
 - `GET /api/v1/search/auto/status` - Get auto-search status
 - `GET /api/v1/search/auto/searchable` - Get issues available for searching
 - `GET /api/v1/search/auto/history` - Get recent search history
@@ -5954,6 +6853,7 @@ Implemented automatic searching for wanted issues. This feature triggers searche
 - `POST /api/v1/search/auto/series/{id}` - Search wanted issues in series
 
 #### Unit Tests (8 tests)
+
 - SearchIssueAsync_WhenIssueNotFound_ReturnsFailedResult
 - SearchIssueAsync_WhenCandidatesFound_ReturnsSuccessResult
 - SearchIssueAsync_WhenNoCandidatesFound_ReturnsNotFoundResult
@@ -5964,13 +6864,16 @@ Implemented automatic searching for wanted issues. This feature triggers searche
 - SearchAllWantedAsync_SearchesMultipleIssues
 
 ### Settings Integration
+
 Uses existing `SearchSettings`:
+
 - `AutoSearchEnabled` - Enable/disable automatic searching
 - `AutoSearchIntervalHours` - Hours between auto-search runs
 - `StaleSearchThresholdDays` - Re-search after this many days
 - `SearchDelaySeconds` - Delay between individual searches
 
 ### Files Changed
+
 - `src/Shortboxerr.Core/Entities/Issue.cs` - Added search tracking fields
 - `src/Shortboxerr.Core/Search/IAutoSearchService.cs` - New interface
 - `src/Shortboxerr.Infrastructure/Search/AutoSearchService.cs` - New service
@@ -5983,13 +6886,17 @@ Uses existing `SearchSettings`:
 ---
 
 ## Iteration 098 (2026-02-17)
+
 **EPIC 15: P3 Feature Parity - Verification & Documentation**
 
 ### Summary
+
 Verified that EPIC 15.3 (Forthcoming Releases View) was already fully implemented in prior iterations. Updated documentation to reflect completion status.
 
 ### Findings
+
 The following features were already implemented:
+
 - **GET /api/v1/pulllist/upcoming** - Returns upcoming weeks with releases
 - **Pull List UI** - "Upcoming (4 weeks)" view mode, week navigation arrows
 - **Week sections** - Shows release day, issue count, wanted/owned stats
@@ -5998,18 +6905,22 @@ The following features were already implemented:
 - **Tests** - PullListServiceTests covers GetUpcomingReleasesAsync
 
 ### Bug Fix: Test Updates for JsonStringEnumConverter
+
 - Fixed `PullListCacheTierTests.cs` assertions that expected integer enum values
 - Tests now check for string enum values ("Active", "Historical") due to Iteration 097's `JsonStringEnumConverter`
 
 ### Documentation Updates
+
 - Marked 15.3 Forthcoming Releases View as COMPLETED in BACKLOG.md
 - Updated P3 priority section to show completion status
 - Calendar view enhancement deferred as separate page feature
 
 ### Pre-existing Test Failures
+
 Identified 4 pre-existing DDL search test failures unrelated to this iteration (filtering logic issues).
 
 ### EPIC 15 Status
+
 - **P1 - Critical (Data Accuracy)**: ✅ COMPLETED
 - **P2 - High (Usability)**: ✅ COMPLETED
 - **P3 - Medium (Feature Parity)**: ✅ COMPLETED
@@ -6018,21 +6929,25 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 ---
 
 ## Iteration 097 (2026-02-17)
+
 **EPIC 15: UI Bug Fixes - P2 Usability Items + Issue Status Fix**
 
 ### Commits
+
 1. `feat: add ComicVine links to issues and improve button visibility`
 2. `fix: issue status toggle and enforce Mylar3 status rules`
 
 ### Deliverables
 
 #### 15.5 Click Issue to Open ComicVine - IMPLEMENTED
+
 - Added ComicVine link button to issue cover card hover overlay
 - Added ComicVine link to issue title in list view (with external link icon on hover)
 - Links open in new tab with proper security attributes (noopener, noreferrer)
 - Visual feedback: link styled distinctively, icon appears on hover
 
 #### 15.4 Issue Overlay Button Visibility - IMPROVED
+
 - Updated button styling to use solid white background instead of semi-transparent
 - Added subtle border and shadow for better visibility against any cover image
 - Added hover scale effect for better interactivity feedback
@@ -6040,11 +6955,14 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - Works consistently on both light and dark themes
 
 #### 15.7 Issue Status Toggle - FIXED + MYLAR3 PARITY
+
 **Bug Found:** Status toggle wasn't working due to:
+
 1. JSON enum serialization expecting numeric values but UI sending strings
 2. Caching issue - series issues cache not being invalidated on status change
 
 **Fix Applied:**
+
 - Added `JsonStringEnumConverter` to accept string enum values in API
 - Fixed cache invalidation to include series cache
 - Implemented TRUE Mylar3-compatible status rules:
@@ -6056,6 +6974,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - Button tooltip changes contextually: "Re-search" for owned issues, "Mark as Wanted" for others
 
 ### Files Changed
+
 - `ui/src/pages/SeriesDetailPage.tsx` (ComicVine links + removed Owned button)
 - `ui/src/App.css` (Improved button visibility, added link styles)
 - `src/Shortboxerr.Api/Program.cs` (Added JsonStringEnumConverter)
@@ -6064,14 +6983,17 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 ---
 
 ## Iteration 096 (2026-02-17)
+
 **EPIC 15: UI Bug Fixes - P1 Critical Items**
 
 ### Commits
+
 1. `feat: add wanted API endpoints and fix dashboard statistics`
 
 ### Deliverables
 
 #### 15.6 Wanted View Empty State - FIXED
+
 - Created `/api/v1/wanted/issues` - Paginated wanted issues with search/sort
 - Created `/api/v1/wanted/collections` - Monitored editions without files
 - Created `/api/v1/wanted/count` - Count endpoint for dashboard
@@ -6079,6 +7001,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - SQLite-compatible sorting (decimal IssueNumber sorted in memory)
 
 #### 15.1 Dashboard Statistics Accuracy - FIXED
+
 - Updated `/api/v1/system/status` to include real statistics:
   - `SeriesCount` - Actual series count from database
   - `IssuesCount` - Actual issues count from database
@@ -6090,6 +7013,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
   - `QueuedDownloads` - Placeholder (0) for future queue implementation
 
 #### 15.2 "This Week" Section Accuracy - FIXED
+
 - Fixed `BuildIssueQuery` to default `MonitoredOnly = true` when no filter
 - Ensures consistency between:
   - `GetStatsAsync.ReleasingThisWeek` (counts monitored only)
@@ -6097,6 +7021,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - Dashboard "This Week" now matches Pull List page data
 
 ### API Endpoints (3 new)
+
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/v1/wanted/issues` | GET | Paginated wanted issues |
@@ -6104,12 +7029,14 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 | `/api/v1/wanted/count` | GET | Issues + Collections counts |
 
 ### Unit Tests
+
 | Category | Count | Description |
 |----------|-------|-------------|
 | WantedEndpoints | 10 | Issues, collections, count endpoints |
 | SystemEndpoints | 1 | New statistics fields |
 
 ### Files Changed
+
 - `src/Shortboxerr.Api/Endpoints/WantedEndpoints.cs` (NEW)
 - `src/Shortboxerr.Api/Endpoints/SystemEndpoints.cs` (Updated for stats)
 - `src/Shortboxerr.Api/Program.cs` (Register endpoints)
@@ -6121,15 +7048,18 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 ---
 
 ## Iteration 095 (2026-02-17)
+
 **DDL Site Availability Health Checks (EPIC 8 - P1 Item)**
 
 ### Commits
+
 1. `feat: add DDL site health monitoring service`
 2. `test: add unit tests for SiteHealthService (53 tests)`
 
 ### Deliverables
 
 #### Health Service Interface (ISiteHealthService)
+
 - ✅ `GetAllHealthStatusesAsync` - Get health for all sites
 - ✅ `GetHealthStatusAsync` - Get health for specific site
 - ✅ `CheckSiteHealthAsync` - Manual health check
@@ -6141,6 +7071,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - ✅ `GetSettings/UpdateSettings` - Manage health monitoring config
 
 #### Health Models
+
 - ✅ `SiteHealthStatus` - Current health state with metrics
 - ✅ `SiteHealthState` enum (Unknown, Healthy, Degraded, Unhealthy, Disabled)
 - ✅ `SiteHealthCheckResult` - Individual check result
@@ -6149,6 +7080,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - ✅ `SiteHealthSettings` - Configuration for monitoring
 
 #### SiteHealthService Implementation
+
 - ✅ Periodic health checks via IHostedService
 - ✅ Configurable check interval (default: 30 minutes)
 - ✅ Consecutive failure tracking
@@ -6161,6 +7093,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - ✅ Re-enable functionality for auto-disabled sites
 
 #### API Endpoints (10 endpoints)
+
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/v1/ddl/health` | GET | All site health statuses |
@@ -6174,6 +7107,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 | `/api/v1/ddl/health/settings` | PUT | Update settings |
 
 #### Unit Tests (53 tests)
+
 | Category | Count | Description |
 |----------|-------|-------------|
 | GetAllHealthStatuses | 3 | All sites, initial state, display names |
@@ -6204,14 +7138,17 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 ---
 
 ## Iteration 094 (2026-02-10)
+
 **RAR/7z Archive Unpacking Support (EPIC 10 - P1 Item)**
 
 ### Commits
+
 1. `feat: add RAR/7z archive extraction support (37 tests)`
 
 ### Deliverables
 
 #### Archive Extraction Service
+
 - ✅ `IArchiveExtractor` interface with methods:
   - `ExtractAsync` - Extract to specified directory
   - `ExtractToSiblingDirectoryAsync` - Extract to adjacent folder
@@ -6227,6 +7164,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - ✅ `ArchiveType` enum (Unknown, Zip, Rar, SevenZip, Tar, GZip, BZip2)
 
 #### Implementation (SharpCompress)
+
 - ✅ Added SharpCompress 0.36.0 NuGet package
 - ✅ Support for ZIP/CBZ (PK magic bytes)
 - ✅ Support for RAR/CBR (Rar! magic bytes)
@@ -6237,12 +7175,14 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - ✅ Password-protected archive detection
 
 #### NzbImportService Updates
+
 - ✅ Integrated `IArchiveExtractor` into NZB import pipeline
 - ✅ Logs archive type and extraction duration
 - ✅ Handles password-protected archives gracefully
 - ✅ Registered in DI container
 
 #### Unit Tests (37 tests)
+
 | Category | Count | Description |
 |----------|-------|-------------|
 | Extension Detection | 10 | ZIP, CBZ, RAR, CBR, 7z, TAR, GZ, unsupported |
@@ -6268,14 +7208,17 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 ---
 
 ## Iteration 093 (2026-02-10)
+
 **Series List Filtering and Sorting (EPIC 11 - P1 Item)**
 
 ### Commits
+
 1. `feat: add series list filtering and sorting (18 tests)`
 
 ### Deliverables
 
 #### API Enhancements
+
 - ✅ Status filter parameter (`status=Continuing|Ended|Hiatus`)
 - ✅ Publisher filter parameter (case-insensitive partial match)
 - ✅ Monitored filter parameter (`monitored=true|false`)
@@ -6288,6 +7231,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
   - Total series count
 
 #### Frontend Updates
+
 - ✅ Filter toggle button with active filter badge
 - ✅ Collapsible filter panel with status and publisher dropdowns
 - ✅ Sort dropdown with ascending/descending toggle
@@ -6296,6 +7240,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - ✅ Query invalidation on filter/sort change
 
 #### Unit Tests (18 tests)
+
 | Category | Count | Description |
 |----------|-------|-------------|
 | Status Filter | 3 | Continuing, Ended, Hiatus |
@@ -6319,20 +7264,24 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 ---
 
 ## Iteration 092 (2026-02-10)
+
 **Deferred Items Audit + Activity Integration (EPIC 14.1, 10)**
 
 ### Commits
+
 1. `feat: complete deferred items audit and add activity service (24 tests)`
 
 ### Deliverables
 
 #### Deferred Items Audit (EPIC 14.1)
+
 - ✅ Audited all 28 deferred items across EPICs 4, 8, 10, 11, 14
 - ✅ Categorized by effort (S/M/L) and impact (H/M/L)
 - ✅ Created prioritized list (P1 through P5)
 - ✅ Documented blockers and dependencies
 
 **Audit Summary Table:**
+
 | Priority | Count | Description |
 |----------|-------|-------------|
 | P1 | 4 | High value, low effort - recommended next |
@@ -6342,6 +7291,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 | P5 | 8 | Low priority or deferred |
 
 #### Activity Integration (EPIC 10 - P1 Item)
+
 - ✅ `IActivityService` interface for download activity tracking
 - ✅ `ActivityService` implementation aggregating from all providers
 - ✅ `DownloadActivity` unified model for DDL, NZB, and Torrent downloads
@@ -6359,6 +7309,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
   - DELETE `/history/completed` - Clear completed
 
 #### Unit Tests (24 tests)
+
 | Category | Count | Description |
 |----------|-------|-------------|
 | GetActiveDownloads | 4 | No providers, single, multiple, error handling |
@@ -6385,14 +7336,17 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 ---
 
 ## Iteration 091 (2026-02-10)
+
 **Search Result Scoring with Mylar3 Parity (EPIC 14.6)**
 
 ### Commits
+
 1. `feat: add search result scoring with Mylar3 parity (59 tests)`
 
 ### Deliverables
 
 #### Search Result Scorer
+
 - ✅ `ISearchResultScorer` interface - Scores and ranks search candidates
 - ✅ `SearchResultScorer` implementation - Full Mylar3-style scoring
 - ✅ `ScoredCandidate` - Candidate with score breakdown
@@ -6400,6 +7354,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - ✅ `SearchContext` - Target series/issue/year for matching
 
 #### Scoring Factors
+
 | Factor | Weight | Description |
 |--------|--------|-------------|
 | Quality | 100 | Digital > Webrip > Scan |
@@ -6415,12 +7370,14 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 | Blacklist Penalty | -50 each | "sample", "watermark", etc. |
 
 #### Configuration Classes
+
 - ✅ `ScoringWeights` - Configurable weights for all factors
 - ✅ `TrustedReleaseGroups` - Trusted groups list (Minutemen, DCP, Empire, etc.)
 - ✅ `ExpectedSizeRanges` - Min/max/ideal sizes for singles and packs
 - ✅ Extended `SearchSettings` with scoring configuration
 
 #### Key Features
+
 - Quality detection from title (digital, webrip, scan markers)
 - Release group extraction from various title formats
 - Series title normalization (removes articles, special chars)
@@ -6430,6 +7387,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - Penalties can reduce score below positive points
 
 #### Unit Tests (59 tests)
+
 | Category | Count | Description |
 |----------|-------|-------------|
 | Quality Scoring | 5 | Digital/Webrip/Scan detection, preferences |
@@ -6460,14 +7418,17 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 ---
 
 ## Iteration 090 (2026-02-10)
+
 **qBittorrent Torrent Client Integration (EPIC 14.3)**
 
 ### Commits
+
 1. `feat: add qBittorrent torrent client integration (69 tests)`
 
 ### Deliverables
 
 #### Torrent Client Abstraction
+
 - ✅ `ITorrentClient` interface - Common interface for all torrent clients
 - ✅ `IQBittorrentClient` interface - qBittorrent-specific extensions
 - ✅ `TorrentClientType` enum - QBittorrent, Transmission, Deluge, RTorrent
@@ -6477,6 +7438,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - ✅ `TorrentDiskSpace` - Free/total bytes, IsLow flag
 
 #### qBittorrent Client Implementation
+
 - ✅ `QBittorrentClient` - Full Web API v2 implementation
 - ✅ Session-based authentication with cookie management
 - ✅ Add torrents by magnet, URL, or file content
@@ -6487,6 +7449,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - ✅ Transfer info and disk space monitoring
 
 #### qBittorrent Provider
+
 - ✅ `QBittorrentDownloadProvider` implementing `IDownloadProvider`
 - ✅ `QBittorrentDownloadProviderFactory` for provider creation
 - ✅ Settings parsing from JSON and legacy BaseUrl formats
@@ -6494,11 +7457,13 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - ✅ Download, status, cancel, and list operations
 
 #### Provider Registration
+
 - ✅ qBittorrent registered in `ProviderFactory`
 - ✅ Full settings schema with all configuration options
 - ✅ Category: DownloadClient, Type: Torrent
 
 #### Unit Tests (69 tests)
+
 | Category | Count | Description |
 |----------|-------|-------------|
 | TestConnection | 3 | Valid, HTTP error, auth failure |
@@ -6527,18 +7492,22 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 ---
 
 ## Iteration 089 (2026-02-10)
+
 **NZBGet Integration Unit Tests (EPIC 14.2)**
 
 ### Commits
+
 1. `feat: add comprehensive NZBGet client unit tests (75 tests)`
 
 ### Deliverables
 
 #### NZBGet Unit Tests
+
 - ✅ 75 unit tests in `tests/Shortboxerr.Tests/NzbgetClientTests.cs`
 - ✅ Matches and exceeds SABnzbd test coverage (24 tests)
 
 #### Test Categories
+
 | Category | Test Count | Description |
 |----------|------------|-------------|
 | TestConnection | 4 | Valid response, HTTP error, RPC error, invalid JSON |
@@ -6555,6 +7524,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 | Priority Enum | 6 | All priority values (-100, -50, 0, 50, 100, 900) |
 
 #### Status Mapping Coverage
+
 | NZBGet Status | Maps To |
 |---------------|---------|
 | QUEUED | Queued |
@@ -6587,6 +7557,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 | `docs/BACKLOG.md` | Mark EPIC 14.2 as completed |
 
 ### Notes
+
 - NZBGet client implementation was already complete from previous iteration
 - Provider registration in ProviderFactory was already in place
 - This iteration adds the missing unit test coverage
@@ -6595,14 +7566,17 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 ---
 
 ## Iteration 088 (2026-02-10)
+
 **Mylar3 Search Settings Parity (EPIC 14.6)**
 
 ### Commits
+
 1. `feat: add search settings with Mylar3 parity`
 
 ### Deliverables
 
 #### SearchSettings Entity
+
 - ✅ `SearchSettings.cs` - Comprehensive settings class with all Mylar3 options
 - ✅ Search behavior: delay, pack preference, tier cutoff, max results
 - ✅ Quality preferences: preferred quality enum, format ordering, CBZ-only
@@ -6612,12 +7586,14 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - ✅ Automation: auto-search, intervals, thresholds
 
 #### SearchSettingsService
+
 - ✅ `ISearchSettingsService` interface
 - ✅ `SearchSettingsService` implementation with caching
 - ✅ Settings persistence via ISettingsService
 - ✅ Comprehensive validation
 
 #### API Endpoints
+
 - ✅ `GET /api/v1/settings/search` - Get current settings
 - ✅ `PUT /api/v1/settings/search` - Update settings
 - ✅ `POST /api/v1/settings/search/reset` - Reset to defaults
@@ -6625,6 +7601,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - ✅ `GET /api/v1/settings/search/defaults` - Get defaults
 
 #### Settings UI
+
 - ✅ New "Search" tab in Settings page
 - ✅ Provider Toggles section
 - ✅ Search Behavior section
@@ -6635,6 +7612,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - ✅ Save/Reset to Defaults buttons
 
 #### Unit Tests (20 tests)
+
 - `GetSettingsAsync_ReturnsDefaultsWhenNoSettingsStored`
 - `GetSettingsAsync_ReturnsStoredSettings`
 - `GetSettingsAsync_CachesResult`
@@ -6673,15 +7651,18 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 ---
 
 ## Iteration 087 (2026-02-10)
+
 **ReadComicOnline Production Enable & DDL Site Management (EPIC 14.5)**
 
 ### Commits
+
 1. `feat: add GetPublisherAsync and GetPublisherRssFeedAsync to GetComicsAdapter`
 2. `feat: enable GetComics and ReadComicOnline by default, add DDL site management`
 
 ### Deliverables
 
 #### DDL Site Management API
+
 - ✅ `GET /api/v1/ddl/sites` - List all sites with status
 - ✅ `GET /api/v1/ddl/sites/enabled` - List enabled sites
 - ✅ `POST /api/v1/ddl/sites/{siteType}/enable` - Enable a site
@@ -6690,6 +7671,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - ✅ `PUT /api/v1/ddl/sites/enabled` - Set enabled sites (bulk)
 
 #### DdlSiteAdapterFactory Enhancements
+
 - ✅ `IsSiteEnabled(siteType)` - Check if site is enabled
 - ✅ `GetSiteStatuses()` - Get all sites with runtime status
 - ✅ `SetEnabledSites(siteTypes)` - Replace enabled set
@@ -6697,12 +7679,14 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - ✅ Environment variable `SHORTBOXERR_ENABLE_MOCK_DDL` for testing
 
 #### GetComicsAdapter Publisher Methods
+
 - ✅ `GetPublisherAsync(publisher, limit)` - Get by publisher (HTML)
 - ✅ `GetPublisherRssFeedAsync(publisher, limit)` - Get by publisher (RSS)
 - ✅ Publisher name mapping (DC, Marvel, BOOM! Studios, etc.)
 - ✅ 4 new unit tests
 
 #### DDL Settings UI
+
 - ✅ Dynamic DDL Sites section in Settings > Indexers
 - ✅ Cards showing site info, priority, rate limits
 - ✅ Enable/Disable toggle per site
@@ -6710,7 +7694,9 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - ✅ Site count summary
 
 #### Unit Tests (17 new tests total)
+
 **DdlSiteManagementTests.cs (13 tests)**
+
 - `Factory_RegistersBuiltInAdapters`
 - `Factory_EnablesGetComicsAndReadComicOnlineByDefault`
 - `Factory_MockDdlNotEnabledByDefault`
@@ -6726,6 +7712,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - `Adapter_ReadComicOnline_HasRestrictiveRateLimit`
 
 **GetComicsAdapterTests.cs (4 new tests)**
+
 - `GetPublisherRssFeedAsync_WithMockRssService_ReturnsCandidates`
 - `GetPublisherRssFeedAsync_MapsPublisherNames`
 - `GetPublisherAsync_MapsPublisherNamesToCategories`
@@ -6764,20 +7751,24 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 ---
 
 ## Iteration 086 (2026-02-10)
+
 **ReadComicOnline RSS Feed Support (EPIC 14.5)**
 
 ### Commits
+
 1. `feat: add RSS feed support to ReadComicOnlineAdapter`
 
 ### Deliverables
 
 #### ReadComicOnlineAdapter RSS Methods
+
 - ✅ `GetRssFeedAsync(int limit)` - Main RSS feed with fallback
 - ✅ `GetCategoryRssFeedAsync(string category, int limit)` - Category RSS feeds
 - ✅ `GetPublisherRssFeedAsync(string publisher, int limit)` - Publisher RSS feeds
 - ✅ `CreateCandidateFromRssItem(RssFeedItem item)` - Helper method
 
 #### Features
+
 - Tries multiple RSS feed URL patterns (common paths)
 - Gracefully falls back to HTML scraping if RSS unavailable
 - Includes RSS categories as tags on candidates
@@ -6785,6 +7776,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - Respects rate limits via existing adapter infrastructure
 
 #### Unit Tests (8 new tests)
+
 - `GetRssFeedAsync_WithMockRssService_ReturnsCandidates`
 - `GetRssFeedAsync_WhenRssNotAvailable_FallsBackToHtmlScraping`
 - `GetCategoryRssFeedAsync_WithMockRssService_ReturnsCandidatesWithCategoryTag`
@@ -6821,14 +7813,17 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 ---
 
 ## Iteration 085 (2026-02-09)
+
 **Theme Accessibility & Color Scheme Audit (EPIC 14.4)**
 
 ### Commits
+
 1. `feat: implement theme accessibility improvements (EPIC 14.4)`
 
 ### Deliverables
 
 #### CSS Theme System (`App.css`)
+
 - ✅ Complete dark theme with verified contrast ratios
 - ✅ Complete light theme with all CSS variables
 - ✅ CSS-based theme switching via `[data-theme="light"]` selector
@@ -6838,11 +7833,13 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - ✅ Added new variables: `--bg-selected`, `--text-inverse`, `--border-focus`
 
 #### Theme Provider (`App.tsx`)
+
 - ✅ Simplified theme application using CSS data-theme attribute
 - ✅ Removed inline style property overrides
 - ✅ Clean separation of concerns (CSS handles variables, JS handles toggle)
 
 #### Documentation (`ui/src/THEME.md`)
+
 - ✅ Full color palette documentation for both themes
 - ✅ Contrast ratios for all text/background combinations
 - ✅ WCAG 2.1 Level AA compliance notes
@@ -6850,6 +7847,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - ✅ Testing instructions
 
 #### Bug Fixes
+
 - ✅ Fixed `Series` type export for ManualImportPage
 - ✅ Fixed TypeScript type-only import for verbatimModuleSyntax
 
@@ -6879,30 +7877,36 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 | `SELF_CHECK.md` | Updated |
 
 ### EPIC Status
+
 **EPIC 14.4 Theme Accessibility: COMPLETE** ✅
 
 ---
 
 ## Iteration 084 (2026-02-09)
+
 **Manual Import Edit Match & Reject Functionality (EPIC 5)**
 
 ### Commits
+
 1. `feat: implement Manual Import edit match and reject functionality (EPIC 5)`
 
 ### Deliverables
 
 #### Backend API Enhancements (`ManualImportEndpoints.cs`)
+
 - ✅ `GET /api/v1/manualimport/staged` - Alias endpoint for UI compatibility
 - ✅ `POST /api/v1/manualimport/import` - Bulk import multiple files
 - ✅ `POST /api/v1/manualimport/reject` - Reject file with optional reason
 - ✅ `POST /api/v1/manualimport/update-match` - Update series/issue/edition match
 
 #### Staging Service (`StagingService.cs`)
+
 - ✅ `UpdateMatchAsync` - In-memory cache for manual match overrides
 - ✅ Match overrides applied during staging scan
 - ✅ Overrides cleared when file is rejected/imported
 
 #### UI Enhancements (`ManualImportPage.tsx`)
+
 - ✅ **Edit Match Modal**
   - Series search with debounced queries
   - Displays publisher, year, issue count
@@ -6914,15 +7918,18 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
   - File moved to failed folder
 
 #### API Client (`client.ts`)
+
 - ✅ `rejectStagedFile(path, reason?)` - Reject a staged file
 - ✅ `updateStagedMatch(path, seriesId, issueId, editionId)` - Update match
 
 ### Test Count
+
 - Previous: 1262 tests
 - Added: 8 tests
 - Total: 1270 tests
 
 ### Test Categories (8 tests)
+
 | Category | Tests |
 |----------|-------|
 | Bulk import | 2 |
@@ -6945,7 +7952,9 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 | `WORKLOG.md` | Updated |
 
 ### EPIC 5 Status
+
 With this iteration, **EPIC 5 Manual Import** is now **COMPLETE**:
+
 - ✅ Staging folder scanning
 - ✅ Filename parsing
 - ✅ Auto-matching to series
@@ -6958,14 +7967,17 @@ With this iteration, **EPIC 5 Manual Import** is now **COMPLETE**:
 ---
 
 ## Iteration 083 (2026-02-09)
+
 **Correlation ID for Request Tracing (EPIC 13.1)**
 
 ### Commits
+
 1. `feat: implement correlation ID for request tracing (EPIC 13.1)`
 
 ### Deliverables
 
 #### CorrelationIdMiddleware (`Middleware/CorrelationIdMiddleware.cs`)
+
 - ✅ Reads `X-Correlation-ID` header from incoming requests
 - ✅ Falls back to `X-Request-ID` header if not present
 - ✅ Generates unique ID if no header: `yyyyMMddHHmmss-random8`
@@ -6973,11 +7985,13 @@ With this iteration, **EPIC 5 Manual Import** is now **COMPLETE**:
 - ✅ Adds correlation ID to response headers
 
 #### CorrelationIdEnricher (`Logging/CorrelationIdEnricher.cs`)
+
 - ✅ Serilog enricher reads from `HttpContext.TraceIdentifier`
 - ✅ Adds `CorrelationId` property to all log events
 - ✅ Uses `-` placeholder when no HTTP context available
 
 #### Output Templates Updated
+
 | Template | Now Includes CorrelationId |
 |----------|---------------------------|
 | `DefaultOutputTemplate` | No (opt-in) |
@@ -6986,15 +8000,18 @@ With this iteration, **EPIC 5 Manual Import** is now **COMPLETE**:
 | `JsonOutputTemplate` | ✅ |
 
 #### Configuration
+
 - `SHORTBOXERR_LOG_TEMPLATE=correlation` enables correlation ID in logs
 - Format: `[timestamp] [level] [correlationId] [source] message`
 
 ### Test Count
+
 - Previous: 1245 tests
 - Added: 17 tests
 - Total: 1262 tests
 
 ### Test Categories (17 tests)
+
 | Category | Tests |
 |----------|-------|
 | Middleware header precedence | 4 |
@@ -7018,7 +8035,9 @@ With this iteration, **EPIC 5 Manual Import** is now **COMPLETE**:
 | `SELF_CHECK.md` | Updated |
 
 ### EPIC 13.1 Status
+
 With this iteration, **EPIC 13.1 File-Based Logging** is now **COMPLETE**:
+
 - ✅ Sensitive data protection
 - ✅ Log file configuration
 - ✅ Log rotation
@@ -7031,14 +8050,17 @@ With this iteration, **EPIC 13.1 File-Based Logging** is now **COMPLETE**:
 ---
 
 ## Iteration 082 (2026-02-09)
+
 **Human-Readable Log Formatting (EPIC 13.1)**
 
 ### Commits
+
 1. `feat: implement human-readable log formatting (EPIC 13.1)`
 
 ### Deliverables
 
 #### ShortSourceContextEnricher (`ShortSourceContextEnricher.cs`)
+
 - ✅ Extracts class name from fully-qualified namespace
   - `Shortboxerr.Infrastructure.ComicVine.ComicVineClient` → `ComicVineClient`
 - ✅ Handles generic types (removes backtick suffix)
@@ -7048,6 +8070,7 @@ With this iteration, **EPIC 13.1 File-Based Logging** is now **COMPLETE**:
 - ✅ Handles edge cases: null, empty, whitespace, trailing dot
 
 #### Output Template Presets (`SerilogConfiguration.cs`)
+
 | Preset | Template | Use Case |
 |--------|----------|----------|
 | `default` | `[{Timestamp}] [{Level:u3}] [{ShortSourceContext}] {Message}` | Human reading |
@@ -7056,20 +8079,24 @@ With this iteration, **EPIC 13.1 File-Based Logging** is now **COMPLETE**:
 | `json` | JSON structure | Log aggregation |
 
 #### Environment Variable Configuration
+
 - `SHORTBOXERR_LOG_TEMPLATE` - Accepts preset name or custom template
 - Case-insensitive preset matching
 - Custom templates passed through as-is
 
 #### Console Enhancements
+
 - ✅ AnsiConsoleTheme.Code for enhanced color contrast
 - ✅ Fixed-width level indicators: `[VRB]`, `[DBG]`, `[INF]`, `[WRN]`, `[ERR]`, `[FTL]`
 
 ### Test Count
+
 - Previous: 1207 tests
 - Added: 38 tests
 - Total: 1245 tests
 
 ### Test Categories (38 tests)
+
 | Category | Tests |
 |----------|-------|
 | ExtractShortName edge cases | 10 |
@@ -7094,18 +8121,22 @@ With this iteration, **EPIC 13.1 File-Based Logging** is now **COMPLETE**:
 ---
 
 ## Iteration 081 (2026-02-09)
+
 **Sensitive Data Masking Tests (EPIC 13.1)**
 
 ### Commits
+
 1. `test: add comprehensive sensitive data masking unit tests`
 
 ### Deliverables
 
 #### Test Coverage (`SensitiveDataMaskingTests.cs`)
+
 - ✅ **22 new tests** (35 total in file, expanded from 13)
 - ✅ Expanded from basic query param masking to full coverage
 
 #### SensitiveDataDestructuringPolicy Tests (14 tests)
+
 - ✅ Masks API keys in dictionaries
 - ✅ Masks passwords in dictionaries
 - ✅ Masks tokens (access_token, refresh_token) in dictionaries
@@ -7120,11 +8151,13 @@ With this iteration, **EPIC 13.1 File-Based Logging** is now **COMPLETE**:
 - ✅ Masks case-insensitively (APIKEY, ApiKey, apikey)
 
 #### SensitiveDataEnricher Tests (3 tests)
+
 - ✅ Adds SensitiveFieldsMasked property when sensitive fields present
 - ✅ Does not add property when no sensitive fields
 - ✅ Counts multiple sensitive fields correctly
 
 #### End-to-End Log Output Tests (7 tests)
+
 - ✅ API keys do not appear in log output
 - ✅ Passwords do not appear in log output
 - ✅ Connection string credentials do not appear
@@ -7134,11 +8167,13 @@ With this iteration, **EPIC 13.1 File-Based Logging** is now **COMPLETE**:
 - ✅ Newznab API keys do not appear
 
 #### Test Infrastructure
+
 - ✅ Custom `TestSink` for capturing log events in memory
 - ✅ `TestPropertyValueFactory` for unit testing destructuring policy
 - ✅ `TestPropertyFactory` for unit testing enricher
 
 ### Test Count
+
 - Previous: 1185 tests
 - Added: 22 tests
 - Total: 1207 tests
@@ -7153,7 +8188,9 @@ With this iteration, **EPIC 13.1 File-Based Logging** is now **COMPLETE**:
 | `docs/SELF_CHECK.md` | Updated - add iteration 081 |
 
 ### Security Verification
+
 These tests verify the critical security requirement from EPIC 13.1:
+
 - **API keys** (ComicVine, indexers, download clients) - VERIFIED MASKED
 - **Passwords** and authentication tokens - VERIFIED MASKED
 - **Connection strings** - VERIFIED MASKED
@@ -7162,14 +8199,17 @@ These tests verify the critical security requirement from EPIC 13.1:
 ---
 
 ## Iteration 080 (2026-02-09)
+
 **Download Settings Scoping by Client Type**
 
 ### Commits
+
 1. `feat: scope download settings to DDL clients only with UI clarification`
 
 ### Deliverables
 
 #### UI Changes (`SettingsPage.tsx`)
+
 - ✅ Renamed "Download Settings" section to "DDL Download Settings"
 - ✅ Added explanatory note box clarifying scope:
   - Settings only apply to DDL sources (GetComics, ReadComicOnline)
@@ -7182,12 +8222,14 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ Added note about Usenet retry behavior (may need re-search)
 
 #### Backend Documentation (`IHttpDownloadClient.cs`)
+
 - ✅ Updated `HttpDownloadClientSettings` XML documentation:
   - `MaxConcurrentDownloads`: Clarified DDL-only scope
   - `TimeoutSeconds`: Clarified DDL-only scope
   - `MaxRetries`: Clarified DDL-only scope, noted Usenet difference
 
 #### Scope Clarification
+
 | Setting | DDL | Usenet | Torrent |
 |---------|-----|--------|---------|
 | Max Concurrent | ✅ Applies | ❌ Client manages | ❌ Client manages |
@@ -7195,6 +8237,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 | Auto Retry | ✅ Network retry | ⚠️ May need re-search | ❌ Client manages |
 
 ### Test Count
+
 - No new tests required (documentation/UI only change)
 - Total: 1185 tests (unchanged)
 
@@ -7211,14 +8254,17 @@ These tests verify the critical security requirement from EPIC 13.1:
 ---
 
 ## Iteration 079 (2026-02-09)
+
 **ReadComicOnline DDL Adapter**
 
 ### Commits
+
 1. `feat: add ReadComicOnline DDL site adapter with homepage detection`
 
 ### Deliverables
 
 #### ReadComicOnlineAdapter Implementation
+
 - ✅ `ReadComicOnlineAdapter` class extending `BaseDdlSiteAdapter`:
   - Dynamic homepage detection (`DetectHomepageAsync`) for multi-domain support
   - Known domains: li, to, org, cc (site frequently changes)
@@ -7232,20 +8278,24 @@ These tests verify the critical security requirement from EPIC 13.1:
   - Rate limit: 5 requests/minute (more restrictive than GetComics)
 
 #### Supported Publishers
+
 - DC Comics, Marvel Comics, Image Comics, Dark Horse
 - IDW Publishing, BOOM! Studios, Dynamite Entertainment
 - Valiant, Vertigo
 
 #### Supported Genres
+
 - Action, Adventure, Comedy, Crime, Drama
 - Fantasy, Horror, Mystery, Romance
 - Sci-Fi, Superhero, Thriller
 
 #### Factory Registration
+
 - ✅ Registered in `DdlSiteAdapterFactory.RegisterBuiltInAdapters()`
 - ✅ SiteType: "ReadComicOnline"
 
 #### Unit Tests (25 new tests)
+
 - ✅ Adapter properties tests (5)
 - ✅ ParseSearchPage tests (9)
 - ✅ ParseDownloadLinks tests (5)
@@ -7254,6 +8304,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ Integration-style tests (2)
 
 ### Test Count
+
 - Previous: 1160 tests
 - Added: 25 tests
 - Total: 1185 tests
@@ -7272,14 +8323,17 @@ These tests verify the critical security requirement from EPIC 13.1:
 ---
 
 ## Iteration 078 (2026-02-09)
+
 **Download Client Host/Port Split & Test-Save Integration**
 
 ### Commits
+
 1. `feat: split host/port fields in download client UI with auto-save on test`
 
 ### Deliverables
 
 #### Backend Changes
+
 - ✅ `SabnzbdSettings` class updated:
   - New `Port` property (nullable int)
   - `EffectivePort` computed property (returns Port ?? (UseSsl ? 443 : 80))
@@ -7288,11 +8342,12 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ `SabnzbdClient.BuildApiUrl()` now uses `SabnzbdSettings.BaseUrl`
 - ✅ `SabnzbdDownloadProvider.ParseSettings()` updated:
   - New `ParseHostString()` helper for legacy format migration
-  - Handles legacy formats: full URL (http://host:port), host:port, plain host
+  - Handles legacy formats: full URL (<http://host:port>), host:port, plain host
   - Extracts protocol → UseSsl, port from URL, returns clean host
 - ✅ `SabnzbdSettingsJson` class updated with optional `Port` property
 
 #### Frontend Changes
+
 - ✅ Separate Host and Port input fields for SABnzbd
 - ✅ Port field shows placeholder based on SSL toggle (80 or 443)
 - ✅ HTML5 validation for port range (1-65535)
@@ -7305,27 +8360,29 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ `getSettingsJson()` constructs settings with host/port/useSsl/category
 
 #### Unit Tests (21 new tests)
+
 - ✅ `SabnzbdSettingsTests` class (10 tests):
   - EffectivePort with no port → 80
   - EffectivePort with no port + SSL → 443
   - EffectivePort with custom port → custom
-  - BaseUrl without port → http://host
-  - BaseUrl with port 80 → http://host (no port in URL)
-  - BaseUrl with custom port → http://host:port
-  - BaseUrl with SSL + no port → https://host
-  - BaseUrl with SSL + port 443 → https://host (no port in URL)
-  - BaseUrl with SSL + custom port → https://host:port
+  - BaseUrl without port → <http://host>
+  - BaseUrl with port 80 → <http://host> (no port in URL)
+  - BaseUrl with custom port → <http://host:port>
+  - BaseUrl with SSL + no port → <https://host>
+  - BaseUrl with SSL + port 443 → <https://host> (no port in URL)
+  - BaseUrl with SSL + custom port → <https://host:port>
   - BaseUrl with IP address and domain names
 - ✅ `SabnzbdDownloadProviderTests` new tests (11 tests):
   - Separate host and port parsing
   - Host only (uses default port)
   - SSL enabled (uses port 443 default)
   - SSL + custom port
-  - Legacy full URL format (http://host:port)
+  - Legacy full URL format (<http://host:port>)
   - Legacy HTTPS URL format
   - Legacy host:port format without protocol
 
 ### Test Count
+
 - Previous: 1140 tests
 - Added: 20 tests
 - Total: 1160 tests
@@ -7346,14 +8403,17 @@ These tests verify the critical security requirement from EPIC 13.1:
 ---
 
 ## Iteration 077 (2026-02-09)
+
 **1fichier & Zippyshare Resolvers**
 
 ### Commits
+
 1. `feat: add 1fichier and Zippyshare download host resolvers`
 
 ### Deliverables
 
 #### 1fichier Resolver
+
 - ✅ `OneFichierResolver` implementation:
   - Supports 1fichier.com, 1fichier.fr, 1fichier.info domains
   - CDN URL extraction (cz, fr, cf domains)
@@ -7365,6 +8425,7 @@ These tests verify the critical security requirement from EPIC 13.1:
   - Priority 6 (after Dropbox, before defunct hosts)
 
 #### Zippyshare Resolver (Defunct Service)
+
 - ✅ `ZippyshareResolver` implementation:
   - Gracefully detects defunct Zippyshare links
   - Supports all known server subdomains (www1-www20)
@@ -7374,11 +8435,13 @@ These tests verify the critical security requirement from EPIC 13.1:
   - Priority 99 (lowest priority)
 
 #### Factory Registration
+
 - ✅ Both resolvers registered in `DownloadHostResolverFactory`
 - ✅ Factory's `GetAvailableResolvers()` correctly excludes Zippyshare
 - ✅ Factory's `GetAllResolvers()` includes both for visibility
 
 #### Unit Tests (40 new tests)
+
 - ✅ 1fichier tests (20 tests):
   - URL pattern matching for all domains
   - Wait time extraction (span and counter variable)
@@ -7401,6 +8464,7 @@ These tests verify the critical security requirement from EPIC 13.1:
   - GetHostInfos shows correct availability
 
 ### Test Count
+
 - Previous: 1100 tests
 - Added: 40 resolver tests
 - Total: 1140 tests
@@ -7420,14 +8484,17 @@ These tests verify the critical security requirement from EPIC 13.1:
 ---
 
 ## Iteration 076 (2026-02-09)
+
 **DDL End-to-End Integration Tests**
 
 ### Commits
+
 1. `test: add DDL end-to-end integration tests with cached responses`
 
 ### Deliverables
 
 #### Cached Response Fixtures
+
 - ✅ `getcomics_search_batman.html` - Mock search results page
 - ✅ `getcomics_release_batman001.html` - Mock release detail page
 - ✅ `getcomics_rss_feed.xml` - Mock RSS feed with multiple publishers
@@ -7435,6 +8502,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ `mediafire_file_xyz789.html` - Mock MediaFire download page
 
 #### Integration Test Suite (27 tests)
+
 - ✅ **Search Flow Tests**:
   - Parser handles various release title formats
   - Filter settings apply correctly to candidates
@@ -7468,11 +8536,13 @@ These tests verify the critical security requirement from EPIC 13.1:
   - Filter handles all filter types
 
 #### Test Infrastructure
+
 - ✅ Updated `.csproj` to copy HTML/XML fixtures to output
 - ✅ Improved HTTP mock setup using callback approach
 - ✅ Helper methods for creating test candidates
 
 ### Test Count
+
 - Previous: 1073 tests
 - Added: 27 DDL integration tests
 - Total: 1100 tests
@@ -7493,14 +8563,17 @@ These tests verify the critical security requirement from EPIC 13.1:
 ---
 
 ## Iteration 075 (2026-02-09)
+
 **GetComics RSS Feed & Category Support**
 
 ### Commits
+
 1. `feat: add RSS feed and category browsing to GetComicsAdapter`
 
 ### Deliverables
 
 #### RSS Feed Service
+
 - ✅ `IRssFeedService` interface for fetching and parsing RSS feeds
 - ✅ `RssFeedService` implementation:
   - RSS 2.0 format parsing with full metadata extraction
@@ -7511,12 +8584,14 @@ These tests verify the critical security requirement from EPIC 13.1:
   - Error handling with detailed result messages
 
 #### RSS Feed Models
+
 - ✅ `RssFeedResult` for feed fetch/parse results
 - ✅ `RssFeedItem` for individual feed entries
 - ✅ `DdlCategories` constants for known publisher categories
 - ✅ Display name mapping for categories
 
 #### GetComicsAdapter Enhancements
+
 - ✅ `GetRssFeedAsync()` - Fetch latest releases from main RSS feed
 - ✅ `GetCategoryAsync()` - Browse releases by publisher category
 - ✅ `GetCategoryRssFeedAsync()` - Fetch category-specific RSS feeds
@@ -7525,12 +8600,15 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ Publication date preservation from RSS feed
 
 #### DdlCandidate Enhancement
+
 - ✅ Added `Description` property for RSS item summaries
 
 #### DI Registration
+
 - ✅ `IRssFeedService` registered with HttpClient factory
 
 #### Tests
+
 - ✅ 31 new unit tests:
   - `RssFeedServiceTests` (17 tests) - RSS 2.0 and Atom parsing
   - `DdlCategoriesTests` (3 tests) - Category display names
@@ -7552,14 +8630,17 @@ These tests verify the critical security requirement from EPIC 13.1:
 ---
 
 ## Iteration 074 (2026-02-09)
+
 **EPIC 10.4: NZB → Import Handoff**
 
 ### Commits
+
 1. `feat: implement NZB import service for completed downloads`
 
 ### Deliverables
 
 #### NZB Import Service
+
 - ✅ `INzbImportService` interface for handling completed NZB downloads
 - ✅ `NzbImportService` implementation:
   - Monitor SABnzbd history for completed downloads
@@ -7574,6 +8655,7 @@ These tests verify the critical security requirement from EPIC 13.1:
   - Track processed downloads to prevent reprocessing
 
 #### NZB Import Models
+
 - ✅ `NzbCompletedDownload` for representing completed downloads
 - ✅ `NzbImportOptions` with configurable settings:
   - Auto-import toggle and confidence threshold
@@ -7585,6 +8667,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ `NzbImportState` enum for tracking import progress
 
 #### Background Service
+
 - ✅ `NzbImportBackgroundService` hosted service:
   - Polls SABnzbd at configurable intervals
   - Reads settings for enable/disable and interval
@@ -7592,10 +8675,12 @@ These tests verify the critical security requirement from EPIC 13.1:
   - Category filtering support
 
 #### DI Registration
+
 - ✅ `INzbImportService` registered as scoped service
 - ✅ `NzbImportBackgroundService` registered as hosted service
 
 #### Tests
+
 - ✅ 19 new unit tests in `NzbImportServiceTests`:
   - GetCompletedDownloads filtering tests
   - ProcessCompletedDownload file finding tests
@@ -7619,15 +8704,18 @@ These tests verify the critical security requirement from EPIC 13.1:
 ---
 
 ## Iteration 073 (2026-02-09)
+
 **EPIC 10.3: NZB Candidate Processing**
 
 ### Commits
+
 1. `fix: update provider health status after successful test`
 2. `feat: add NZB release parser and filter service`
 
 ### Deliverables
 
 #### NZB Release Parser
+
 - ✅ `INzbReleaseParser` interface for release name parsing
 - ✅ `NzbReleaseParser` implementation with scene naming support:
   - Series, issue, volume, year extraction
@@ -7641,6 +8729,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ `CalculateQualityScore()` for ranking releases
 
 #### NZB Candidate Model
+
 - ✅ `NzbCandidate` class with NZB-specific fields:
   - Indexer name/ID and priority
   - NZB URL and info URL
@@ -7651,6 +8740,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ `ToCandidate()` for DecisionEngine integration
 
 #### NZB Filter Service
+
 - ✅ `NzbFilterSettings` with comprehensive options:
   - Age limits (min/max days)
   - Size limits (min/max bytes with MB convenience)
@@ -7669,6 +8759,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ `NzbRejectionReason` enum for categorized rejections
 
 #### Tests
+
 - ✅ 84 new unit tests:
   - `NzbReleaseParserTests` (46 tests)
   - `NzbFilterServiceTests` (38 tests)
@@ -7689,6 +8780,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 | `tests/Shortboxerr.Tests/NzbFilterServiceTests.cs` | New (38 tests) |
 
 ### Test Results
+
 - All 1023 tests passing (914 + 109 new) [Note: 25 from previous iteration]
 - Frontend build: ✅
 - Backend build: ✅
@@ -7696,9 +8788,11 @@ These tests verify the critical security requirement from EPIC 13.1:
 ---
 
 ## Iteration 072 (2026-02-09)
+
 **EPIC 10.6: Unified Download Client Modal**
 
 ### Commits
+
 1. `feat: add SABnzbd as unified download client provider`
 2. `feat(ui): unified download client modal with SABnzbd support`
 3. `test: add SabnzbdDownloadProvider unit tests`
@@ -7706,12 +8800,14 @@ These tests verify the critical security requirement from EPIC 13.1:
 ### Deliverables
 
 #### Backend - SabnzbdDownloadProvider
+
 - ✅ Created `SabnzbdDownloadProvider` implementing `IDownloadProvider`
 - ✅ Registered SABnzbd in `ProviderFactory` with settings schema
 - ✅ Provider wraps existing `ISabnzbdClient` for operations
 - ✅ Supports TestAsync, DownloadAsync, GetStatusAsync, CancelAsync, GetActiveDownloadsAsync
 
 #### Frontend - Unified Modal
+
 - ✅ Updated `ProviderModal` to detect SABnzbd implementation
 - ✅ Added SABnzbd-specific fields: Category, Use SSL
 - ✅ Dynamic form field switching based on implementation type
@@ -7719,6 +8815,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ SABnzbd now managed through "Add Download Client" button
 
 #### Tests
+
 - ✅ 21 unit tests for `SabnzbdDownloadProvider`
 - ✅ Tests cover properties, connection, health, download, status, cancel
 - ✅ Tests cover settings parsing with valid/empty/invalid JSON
@@ -7733,6 +8830,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 | `tests/Shortboxerr.Tests/SabnzbdDownloadProviderTests.cs` | New - 21 tests |
 
 ### Test Results
+
 - All 914 tests passing (893 + 21 new)
 - Frontend build: ✅
 - Backend build: ✅
@@ -7740,14 +8838,17 @@ These tests verify the critical security requirement from EPIC 13.1:
 ---
 
 ## Iteration 071 (2026-02-09)
+
 **EPIC 10.6: NZB Settings UI**
 
 ### Commits
+
 1. `feat: implement NZB settings UI (EPIC 10.6)`
 
 ### Deliverables
 
 #### NZB Indexers UI
+
 - ✅ NZB Indexers section in Settings
 - ✅ Indexer list with status, URL, priority
 - ✅ Add indexer modal with preset selection
@@ -7756,6 +8857,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ Edit and delete functionality
 
 #### Download Client UI
+
 - ✅ SABnzbd configuration panel
 - ✅ Host, API key, category, SSL settings
 - ✅ Connection test with version display
@@ -7769,6 +8871,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 | `ui/src/api/client.ts` | Added NZB types and API methods |
 
 ### Test Results
+
 - All 893 tests passing
 - Frontend build: ✅
 - Backend build: ✅
@@ -7776,14 +8879,17 @@ These tests verify the critical security requirement from EPIC 13.1:
 ---
 
 ## Iteration 070 (2026-02-09)
+
 **EPIC 10.5: NZB Configuration & Settings API**
 
 ### Commits
+
 1. `feat: implement NZB settings API endpoints (EPIC 10.5)`
 
 ### Deliverables
 
 #### NZB Indexer Endpoints
+
 - ✅ `GET /api/v1/nzb/indexers` - List all indexers
 - ✅ `GET /api/v1/nzb/indexers/{id}` - Get indexer by ID
 - ✅ `POST /api/v1/nzb/indexers` - Add new indexer
@@ -7794,11 +8900,13 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ `GET /api/v1/nzb/indexers/presets` - Get preset indexers
 
 #### Download Client Endpoints
+
 - ✅ `GET /api/v1/nzb/download-client` - Get settings
 - ✅ `PUT /api/v1/nzb/download-client` - Update settings
 - ✅ `POST /api/v1/nzb/download-client/test` - Test connection
 
 #### Search Endpoint
+
 - ✅ `GET /api/v1/nzb/search` - Aggregated search
 
 ### Files Changed
@@ -7810,20 +8918,24 @@ These tests verify the critical security requirement from EPIC 13.1:
 | `tests/Shortboxerr.Tests/NzbEndpointsTests.cs` | 17 unit tests |
 
 ### Test Results
+
 - All 893 tests passing (+17 new)
 - Build: ✅ No errors
 
 ---
 
 ## Iteration 069 (2026-02-09)
+
 **EPIC 10.2: NZB Download Client Integration - SABnzbd**
 
 ### Commits
+
 1. `feat: implement SABnzbd download client (EPIC 10.2)`
 
 ### Deliverables
 
 #### INzbDownloadClient Interface
+
 - ✅ Common abstraction for NZB download clients
 - ✅ `AddNzbAsync` - Queue NZB by content
 - ✅ `AddNzbUrlAsync` - Queue NZB by URL
@@ -7833,6 +8945,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ `GetDiskSpaceAsync` - Monitor storage
 
 #### ISabnzbdClient Interface
+
 - ✅ SABnzbd-specific extensions
 - ✅ `GetCategoriesAsync` / `GetScriptsAsync` - Configuration
 - ✅ `PauseQueueAsync` / `ResumeQueueAsync` - Queue control
@@ -7840,6 +8953,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ `GetServerStatsAsync` - Statistics
 
 #### SabnzbdClient Implementation
+
 - ✅ Full SABnzbd JSON API support
 - ✅ Multipart file upload for NZB content
 - ✅ Category and priority assignment
@@ -7857,20 +8971,24 @@ These tests verify the critical security requirement from EPIC 13.1:
 | `tests/Shortboxerr.Tests/SabnzbdClientTests.cs` | 21 unit tests |
 
 ### Test Results
+
 - All 876 tests passing (+21 new)
 - Build: ✅ No errors
 
 ---
 
 ## Iteration 068 (2026-02-09)
+
 **EPIC 10.1: NZB Indexer Integration - Newznab API Client**
 
 ### Commits
+
 1. `feat: implement Newznab API client for NZB indexers (EPIC 10.1)`
 
 ### Deliverables
 
 #### Newznab API Client
+
 - ✅ `INewznabClient` interface for NZB indexer communication
 - ✅ `NewznabClient` implementation with full API support
 - ✅ Search, capabilities, connection test, NZB download
@@ -7879,6 +8997,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ API key masking in logs
 
 #### NZB Indexer Provider
+
 - ✅ `INzbIndexerProvider` interface for indexer management
 - ✅ `NzbIndexerProvider` implementation
 - ✅ CRUD operations for indexer configuration
@@ -7887,6 +9006,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ Parallel indexer querying
 
 #### Indexer Presets
+
 - ✅ `NzbIndexerPresets` with pre-configured popular indexers
 - ✅ NZBgeek, DrunkenSlug, NZBFinder, NZBPlanet, ABnzb, altHUB
 - ✅ Comic category IDs (7030, 7000)
@@ -7904,20 +9024,24 @@ These tests verify the critical security requirement from EPIC 13.1:
 | `tests/Shortboxerr.Tests/NzbIndexerProviderTests.cs` | 18 unit tests |
 
 ### Test Results
+
 - All 855 tests passing (+35 new)
 - Build: ✅ No errors
 
 ---
 
 ## Iteration 067 (2026-02-09)
+
 **EPIC 8.4: DDL Site Rate Limiting**
 
 ### Commits
+
 1. `feat: implement DDL rate limiter service (EPIC 8.4)`
 
 ### Deliverables
 
 #### Rate Limiter Service
+
 - ✅ `IDdlRateLimiter` interface for per-site rate limiting
 - ✅ `DdlRateLimiter` token-bucket implementation
 - ✅ Blocking acquisition (`AcquireAsync`) with automatic wait
@@ -7938,15 +9062,18 @@ These tests verify the critical security requirement from EPIC 13.1:
 | `tests/Shortboxerr.Tests/DdlRateLimiterTests.cs` | 21 unit tests |
 
 ### Test Results
+
 - All 820 tests passing (799 existing + 21 new)
 - Build: ✅ No errors
 
 ---
 
 ## Iteration 066 (2026-02-06)
+
 **EPIC 8.2 & 8.3: Download Host Resolvers & Integration - Completed**
 
 ### Commits
+
 1. `feat: implement download host resolvers for DDL sites (EPIC 8.2)`
 2. `chore: update backlog and worklog for download host resolvers (EPIC 8.2)`
 3. `feat: integrate host resolvers into DdlDownloadService (EPIC 8.3)`
@@ -7956,6 +9083,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 ### Deliverables
 
 #### Infrastructure (Core)
+
 - ✅ `IDownloadHostResolver` interface for host-specific URL resolution
 - ✅ `IDownloadHostResolverFactory` factory interface
 - ✅ `HostResolverResult` and `HostVerifyResult` record types with metadata
@@ -7963,6 +9091,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ `LinkResolutionFailed` failure reason added to `DdlDownloadFailureReason`
 
 #### Resolvers Implemented (Infrastructure)
+
 - ✅ `BaseHostResolver` - Common functionality for all resolvers
 - ✅ `DirectDownloadResolver` (Priority 0) - Direct HTTP download links
 - ✅ `MediaFireResolver` (Priority 2) - HTML parsing for mediafire.com
@@ -7971,6 +9100,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ `DropboxResolver` (Priority 5) - URL conversion (dl=0 to dl=1)
 
 #### Factory & Integration
+
 - ✅ `DownloadHostResolverFactory` - Registers and manages resolvers
 - ✅ Priority-based resolver selection (6 resolvers registered)
 - ✅ Extensible via `RegisterResolver()` method
@@ -7999,25 +9129,30 @@ These tests verify the critical security requirement from EPIC 13.1:
 | `docs/BACKLOG.md` | Mark EPIC 8.2.1-6, 8.3, 8.5 complete |
 
 ### Test Results
+
 - All 799 tests passing (739 existing + 60 new)
 - Build: ✅ No errors
 
 ### Remaining Work for EPIC 8.2
+
 - [ ] Mega.nz Resolver (requires encryption handling - deferred)
 - [ ] 1fichier Resolver (deferred)
 
 ---
 
 ## Iteration 065 (2026-02-05)
+
 **EPIC 8.1.1: GetComics.org Adapter - Started**
 
 ### Commits
+
 1. `chore: mark EPIC 13.1 Log file configuration as complete`
 2. `feat: implement GetComicsAdapter for DDL site scraping (EPIC 8.1.1)`
 
 ### Deliverables
 
 #### GetComicsAdapter Implementation
+
 - ✅ HTML parsing for search results (post-title and entry-title formats)
 - ✅ Download link extraction from release pages
 - ✅ Support for multiple file hosts: Mega, MediaFire, Pixeldrain, Google Drive, Dropbox, 1fichier
@@ -8026,6 +9161,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ Release metadata parsing (series, issue, year, publisher)
 
 #### Infrastructure
+
 - ✅ Registered GetComicsAdapter in DdlSiteAdapterFactory
 - ✅ Added InternalsVisibleTo for test access
 - ✅ Conservative rate limiting (10 requests/minute)
@@ -8041,10 +9177,12 @@ These tests verify the critical security requirement from EPIC 13.1:
 | `docs/BACKLOG.md` | Mark EPIC 13.1 Log file configuration complete |
 
 ### Test Results
+
 - All 25 new GetComicsAdapter tests passing
 - Build: ✅ No errors
 
 ### Remaining Work for EPIC 8.1.1
+
 - [ ] Pagination handling for search results
 - [ ] RSS feed polling integration
 - [ ] Category browsing
@@ -8052,13 +9190,17 @@ These tests verify the critical security requirement from EPIC 13.1:
 ---
 
 ## Iteration 064 (2026-02-05)
+
 **Chore: Remove Adjacent Week Prefetching**
 
 ### Commits
+
 1. `chore: remove adjacent week prefetching (replaced by startup cache population)`
 
 ### Rationale
+
 The `PrefetchAdjacentWeeksAsync` feature was causing `ObjectDisposedException` errors in logs due to fire-and-forget background tasks outliving the scoped DbContext. With the implementation of:
+
 - Database-backed cache persistence (`CachedDiscoveryWeeks` table)
 - Background service that pre-populates cache on startup
 - Intelligent cache tiering with appropriate TTLs
@@ -8075,26 +9217,31 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `tests/Shortboxerr.Tests/PullListServiceTests.cs` | Remove 3 prefetch-related tests |
 
 ### Test Results
+
 - Build: ✅ No errors
 - All remaining tests passing
 
 ---
 
 ## Iteration 063 (2026-02-04)
+
 **EPIC 12.5: Intelligent Pull List Cache Lifecycle - COMPLETED**
 
 ### Commits
+
 1. `feat: implement intelligent cache tier for pull list (EPIC 12.5)`
 
 ### Deliverables
 
 #### Cache Tier System
+
 - ✅ `CacheTier` enum (Active, Historical)
 - ✅ `PullListCacheMetadata` class with tier tracking
 - ✅ Automatic tier detection based on release day + buffer period
 - ✅ Tier-appropriate TTLs (Active: 30 min, Historical: 7 days)
 
 #### New Settings in PullListSettings
+
 - ✅ `CacheBufferDays` (default: 2) - days after release day to stay "active"
 - ✅ `HistoricalCacheTtlDays` (default: 7) - TTL for historical weeks
 - ✅ `HistoricalRefreshEnabled` (default: false) - optional historical refresh
@@ -8102,11 +9249,13 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ `ActiveCacheTtlMinutes` (default: 30) - TTL for active weeks
 
 #### API Response Enhancements
+
 - ✅ `WeeklyPullList.CacheMetadata` property
 - ✅ `WeeklyDiscoveryList.CacheMetadata` property
 - ✅ Cache metadata includes: LastRefreshed, ExpiresAt, NextScheduledRefresh, Tier, ReleaseDay, TransitionDate, FromCache
 
 #### Background Service Updates
+
 - ✅ `ComicVineRefreshBackgroundService` uses intelligent cache tiers
 - ✅ Active weeks always refresh on schedule
 - ✅ Historical weeks optionally refresh based on settings
@@ -8122,26 +9271,31 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `tests/Shortboxerr.Tests/PullListCacheTierTests.cs` | New test file for cache tier functionality |
 
 ### Test Results
+
 - All 5 new cache tier tests passing
 - All existing tests passing
 
 ---
 
 ## Iteration 062 (2026-02-04)
+
 **EPIC 13.5: Log Settings UI - COMPLETED**
 
 ### Commits
+
 1. `feat: add log settings UI (EPIC 13.5)`
 
 ### Deliverables
 
 #### Backend API
+
 - ✅ GET /api/v1/settings/logging - retrieve logging settings
 - ✅ PUT /api/v1/settings/logging - update logging settings
 - ✅ LoggingSettings DTO with all configuration options
 - ✅ Validation for log levels, file sizes, retention days
 
 #### Frontend UI
+
 - ✅ LoggingSettingsSection component
 - ✅ Log level dropdown (Verbose → Fatal)
 - ✅ Max file size setting (1-100 MB)
@@ -8160,36 +9314,43 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `ui/src/pages/SettingsPage.tsx` | Add LoggingSettingsSection component |
 
 ### Test Results
+
 - Backend: 712 tests passing
 - Frontend: Build successful
 
 ---
 
 ## Iteration 061 (2026-02-04)
+
 **EPIC 13.4: Health Check Logging - COMPLETED**
 
 ### Commits
+
 1. `feat: add health check logging (EPIC 13.4)`
 
 ### Deliverables
 
 #### HealthCheckBackgroundService
+
 - ✅ Periodic health checks (configurable interval, default 5 min)
 - ✅ Health summary logging (healthy/degraded/unhealthy counts)
 - ✅ Individual check result logging with appropriate log level
 - ✅ Error recovery tracking for consecutive failures
 
 #### Database Connectivity Check
+
 - ✅ Test database connection
 - ✅ Execute simple query (series count)
 - ✅ Report connection status with details
 
 #### ComicVine API Check
+
 - ✅ Test API connection using TestConnectionAsync
 - ✅ Report latency information
 - ✅ Handle missing client configuration
 
 #### Disk Space Check
+
 - ✅ Check available space on data directory drive
 - ✅ Configurable warning threshold (default 1GB)
 - ✅ Report space as GB and percentage used
@@ -8203,19 +9364,23 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register service |
 
 ### Test Results
+
 - Backend: 712 tests passing
 
 ---
 
 ## Iteration 060 (2026-02-04)
+
 **EPIC 13.3: Log Viewer UI - COMPLETED**
 
 ### Commits
+
 1. `feat: add log viewer UI (EPIC 13.3)`
 
 ### Deliverables
 
 #### Backend API
+
 - ✅ GET /api/v1/system/logs/{filename} - read log file with filtering
 - ✅ GET /api/v1/system/logs/recent - recent logs with auto-refresh
 - ✅ DELETE /api/v1/system/logs/{filename} - delete log file
@@ -8224,6 +9389,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Text search within logs
 
 #### Frontend UI
+
 - ✅ LogsPage component at /logs route
 - ✅ Navigation item in System section
 - ✅ File selector with Recent Logs (Live)
@@ -8246,32 +9412,38 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `ui/src/App.tsx` | Add /logs route |
 
 ### Test Results
+
 - Backend: 712 tests passing
 - Frontend: Build successful
 
 ---
 
 ## Iteration 059 (2026-02-04)
+
 **EPIC 13.2: Background Service Logging - COMPLETED**
 
 ### Commits
+
 1. `feat: add background service logging (EPIC 13.2)`
 
 ### Deliverables
 
 #### Scheduled Task Logging
+
 - ✅ Service start with check interval
 - ✅ Initial delay logging before first check
 - ✅ Each task execution start logged
 - ✅ Next check interval timing
 
 #### Error Recovery Logging
+
 - ✅ Consecutive error tracking
 - ✅ Error attempt number logged
 - ✅ Warning after 3+ consecutive errors
 - ✅ Error count reset on success
 
 #### Applied To All Services
+
 - ✅ MetadataRefreshBackgroundService
 - ✅ ComicVineRefreshBackgroundService
 - ✅ ReleaseDayBackgroundService
@@ -8285,40 +9457,48 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `src/Shortboxerr.Infrastructure/BackgroundServices/ReleaseDayBackgroundService.cs` | Enhanced logging |
 
 ### Test Results
+
 - Backend: 712 tests passing
 
 ---
 
 ## Iteration 058 (2026-02-04)
+
 **EPIC 13.2: Import Pipeline Logging - COMPLETED**
 
 ### Commits
+
 1. `feat: add import pipeline logging (EPIC 13.2)`
 
 ### Deliverables
 
 #### File Detection
+
 - ✅ Staging folder scan with file count
 - ✅ Per-file detection with name and size
 - ✅ Format validation logging
 
 #### Parsing Results
+
 - ✅ Series, issue, year parsed from filename
 - ✅ Confidence percentage
 - ✅ Collection vs single detection
 
 #### Match Decisions
+
 - ✅ Series match attempts (exact vs partial)
 - ✅ Match found with series ID and title
 - ✅ Confidence adjustments logged
 
 #### Import Events
+
 - ✅ Import initiated with target IDs
 - ✅ Import blocked with reason
 - ✅ Import success with size and format
 - ✅ Import failed with error details
 
 #### Duplicate Detection
+
 - ✅ Existing file at destination logged
 - ✅ Rejection reasons logged
 
@@ -8329,19 +9509,23 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `src/Shortboxerr.Infrastructure/Services/StagingService.cs` | Add comprehensive pipeline logging |
 
 ### Test Results
+
 - Backend: 712 tests passing
 
 ---
 
 ## Iteration 057 (2026-02-04)
+
 **EPIC 13.2: Download Client Logging - COMPLETED**
 
 ### Commits
+
 1. `feat: add download client logging (EPIC 13.2)`
 
 ### Deliverables
 
 #### Download Events
+
 - ✅ Download initiated with title and source
 - ✅ Download completed with size and duration
 - ✅ Download failed with reason and error message
@@ -8349,10 +9533,12 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Alternate link fallback logging
 
 #### Candidate Logging
+
 - ✅ Link count and selection
 - ✅ Link type and priority selection
 
 #### Import Pipeline Logging
+
 - ✅ Processing started
 - ✅ Auto-match candidate info
 - ✅ Normalized title for matching
@@ -8365,33 +9551,40 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `src/Shortboxerr.Infrastructure/Ddl/DdlImportService.cs` | Add import pipeline logging |
 
 ### Test Results
+
 - Backend: 712 tests passing
 
 ---
 
 ## Iteration 056 (2026-02-04)
+
 **EPIC 13.2: ComicVine API Logging - COMPLETED**
 
 ### Commits
+
 1. `feat: add ComicVine API logging (EPIC 13.2)`
 
 ### Deliverables
 
 #### API Call Logging
+
 - ✅ All ComicVine API calls logged with masked endpoint
 - ✅ api_key parameter replaced with "***" in logs
 - ✅ Response times in milliseconds
 
 #### Rate Limiting Logging
+
 - ✅ Warning when approaching limit (80% threshold)
 - ✅ Warning when rate limit reached with wait time
 - ✅ Info when rate limit wait completed
 
 #### Cache Logging
+
 - ✅ Debug logs for cache HIT/MISS on all operations
 - ✅ Cache key included for troubleshooting
 
 #### Error Logging
+
 - ✅ HTTP request failures with details
 - ✅ Request timeouts with elapsed time
 - ✅ Invalid API key detection
@@ -8404,19 +9597,23 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `src/Shortboxerr.Infrastructure/ComicVine/ComicVineClient.cs` | Add comprehensive logging |
 
 ### Test Results
+
 - Backend: 712 tests passing
 
 ---
 
 ## Iteration 055 (2026-02-04)
+
 **EPIC 13.2: API Request Logging - COMPLETED**
 
 ### Commits
+
 1. `feat: add HTTP request logging with sensitive data masking (EPIC 13.2)`
 
 ### Deliverables
 
 #### HTTP Request Logging
+
 - ✅ UseSerilogRequestLogging middleware
 - ✅ Custom message template with method, path, status, duration
 - ✅ Configurable log levels per request type
@@ -8424,12 +9621,14 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Slow requests (>3s) and errors at Warning/Error level
 
 #### Sensitive Data Masking
+
 - ✅ MaskSensitiveQueryParams helper method
 - ✅ Masks: apikey, api_key, token, password, secret, key, credential, authorization
 - ✅ Case-insensitive matching
 - ✅ 13 unit tests for masking behavior
 
 #### Log Enrichment
+
 - ✅ Request host
 - ✅ User-agent
 - ✅ Remote IP address
@@ -8444,19 +9643,23 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `tests/Shortboxerr.Tests/SensitiveDataMaskingTests.cs` | New test file |
 
 ### Test Results
+
 - Backend: 712 tests passing (+13 new)
 
 ---
 
 ## Iteration 054 (2026-02-04)
+
 **EPIC 13.2: Application Lifecycle Logging - COMPLETED**
 
 ### Commits
+
 1. `feat: add application lifecycle logging (EPIC 13.2)`
 
 ### Deliverables
 
 #### Startup Logging
+
 - ✅ Startup banner with app name
 - ✅ Version information (0.1.0)
 - ✅ Runtime (.NET version)
@@ -8465,23 +9668,28 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Log directory and level
 
 #### Configuration Logging
+
 - ✅ Configuration sources loaded (debug level)
 - ✅ Database connection path
 
 #### Database Migration Logging
+
 - ✅ Pending migrations count and names
 - ✅ Applied migrations count
 - ✅ Database ready confirmation
 
 #### Application Lifetime Events
+
 - ✅ ApplicationStarted event
 - ✅ ApplicationStopping event
 - ✅ ApplicationStopped event
 
 #### Background Services
+
 - ✅ Already had start/stop logging in place
 
 ### Test Fix
+
 - ✅ Fixed CustomWebApplicationFactory to remove hosted services
 - ✅ Tests now run faster without background service delays
 
@@ -8493,19 +9701,23 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `tests/Shortboxerr.Tests/CustomWebApplicationFactory.cs` | Remove hosted services for testing |
 
 ### Test Results
+
 - Backend: 699 tests passing
 
 ---
 
 ## Iteration 053 (2026-02-04)
+
 **EPIC 13.4: Debug Mode - SQL Query Logging - COMPLETED**
 
 ### Commits
+
 1. `feat: enable EF Core SQL query logging in debug mode (EPIC 13.4)`
 
 ### Deliverables
 
 #### Debug Mode Features (Complete)
+
 - ✅ `--debug` or `-d` command-line flag
 - ✅ `SHORTBOXERR_DEBUG=true` environment variable
 - ✅ Log level set to Debug when active
@@ -8514,6 +9726,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ EnableDetailedErrors for better error context
 
 #### Infrastructure Changes
+
 - ✅ `AddInfrastructure` now accepts `enableDebugMode` parameter
 - ✅ DbContext configured conditionally based on debug mode
 
@@ -8525,25 +9738,30 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `src/Shortboxerr.Api/Program.cs` | Pass debug mode flag to infrastructure |
 
 ### Test Results
+
 - Backend: 699 tests passing
 
 ---
 
 ## Iteration 052 (2026-02-04)
+
 **EPIC 13.4: Diagnostic Tools - System Information Endpoint - COMPLETED**
 
 ### Commits
+
 1. `feat: add system info diagnostic endpoint (EPIC 13.4)`
 2. `test: add SystemEndpointsTests (8 tests) for EPIC 13.4`
 
 ### Deliverables
 
 #### API Endpoints
+
 - ✅ `GET /api/v1/system/info` - Comprehensive diagnostic information
 - ✅ `GET /api/v1/system/status` - Quick health status summary
 - ✅ `GET /api/v1/system/logs` - List of log files
 
 #### System Info Response
+
 - ✅ App name, version, branch
 - ✅ .NET runtime version and identifier
 - ✅ OS description and architecture
@@ -8554,6 +9772,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Disk space info (Total, Free, Used, Percent)
 
 #### Unit Tests
+
 - ✅ 8 tests for SystemEndpoints
 - ✅ Tests cover: info endpoint, status endpoint, logs endpoint
 - ✅ Tests verify: required fields, memory info, uptime validity
@@ -8567,19 +9786,23 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `tests/Shortboxerr.Tests/SystemEndpointsTests.cs` | 8 new tests |
 
 ### Test Results
+
 - Backend: 699 tests passing (8 new)
 
 ---
 
 ## Iteration 051 (2026-02-04)
+
 **EPIC 13.1: File-Based Logging - Serilog Integration - PARTIAL**
 
 ### Commits
+
 1. `feat: add Serilog integration with sensitive data protection (EPIC 13.1)`
 
 ### Deliverables
 
 #### Serilog Integration
+
 - ✅ Added Serilog packages (Serilog.AspNetCore, Serilog.Sinks.File, Serilog.Sinks.Async, Serilog.Enrichers.Environment)
 - ✅ Configured Serilog in Program.cs with file and console sinks
 - ✅ Log files written to `{LocalApplicationData}/shortboxerr/logs/shortboxerr.log`
@@ -8589,6 +9812,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Async file writing for performance
 
 #### Sensitive Data Protection (CRITICAL SECURITY)
+
 - ✅ `SensitiveDataDestructuringPolicy` - Masks sensitive fields in logged objects
 - ✅ `SensitiveDataEnricher` - Secondary protection layer
 - ✅ Auto-detects and masks: `apikey`, `api_key`, `password`, `token`, `secret`, `credential`, `authorization`, `connectionstring`
@@ -8596,6 +9820,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Works at destructuring level (object properties) and enricher level
 
 #### Remaining Work
+
 - [ ] Log file configuration settings (stored in SystemSettings, UI integration)
 - [ ] Unit tests for sensitive data masking verification
 - [ ] Correlation ID for request tracing
@@ -8614,15 +9839,18 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `src/Shortboxerr.Infrastructure/Shortboxerr.Infrastructure.csproj` | Add Serilog packages |
 
 ### Test Results
+
 - Build: ✅ Successful
 - Runtime: ✅ Logging operational (needs runtime verification)
 
 ---
 
 ## Iteration 050 (2026-02-04)
+
 **EPIC 9.12: Series Status Accuracy - COMPLETED**
 
 ### Commits
+
 1. `feat: add StatusSource field to Series entity (EPIC 9.12)`
 2. `feat: implement series status determination logic (EPIC 9.12)`
 3. `feat: add series status override API endpoints (EPIC 9.12)`
@@ -8631,11 +9859,13 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 ### Deliverables
 
 #### Database Changes
+
 - ✅ Added `StatusSource` enum: Auto, ComicVine, Manual
 - ✅ Added `StatusSource` column to Series table
 - ✅ Migration: `AddSeriesStatusSource`
 
 #### Status Determination Logic
+
 - ✅ `SeriesStatusDeterminer` class with configurable thresholds
 - ✅ Default threshold: 2 years since last issue = Ended
 - ✅ Mini-series detection: 4-12 issues with no recent activity
@@ -8644,16 +9874,19 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Returns status, source, and reasons list for transparency
 
 #### Metadata Sync Integration
+
 - ✅ `AddSeriesByComicVineIdAsync` uses new status logic
 - ✅ `RefreshSeriesMetadataAsync` updates status (respects manual override)
 - ✅ `GetIssueReleaseDateAsync` helper for fetching issue dates
 
 #### API Endpoints
+
 - ✅ `PUT /api/v1/series/{id}/status` - Set status manually
 - ✅ `DELETE /api/v1/series/{id}/status/override` - Reset to auto
 - ✅ `StatusSource` exposed in `SeriesDto`
 
 #### Unit Tests
+
 - ✅ 14 tests for `SeriesStatusDeterminer`
 - ✅ Tests cover: recent activity, old series, mini-series, manual override
 - ✅ Tests cover: end year, missing data, boundary conditions
@@ -8670,46 +9903,55 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `tests/Shortboxerr.Tests/SeriesStatusDeterminerTests.cs` | 14 new tests |
 
 ### Test Results
+
 - Backend: 691 tests passing (14 new)
 - All status determination tests pass
 
 ---
 
 ## Iteration 049 (2026-02-04)
+
 **EPIC 9.11: Series Detail Page - Issues Display - COMPLETED**
 
 ### Commits
+
 1. `fix: add Status property to IssueDto for frontend display`
 2. `feat: add action buttons to series detail page issues (EPIC 9.11)`
 
 ### Deliverables
 
 #### Backend Fixes
+
 - ✅ Added `Status` property to `IssueDto` (was missing, causing issues to not display correctly)
 - ✅ Mapped from `Issue.Status` enum in `FromEntity` method
 
 #### Frontend Enhancements
+
 - ✅ Issue status update mutations using `bulkUpdateIssueStatus` API
 - ✅ Action handlers: `handleMarkAsWanted`, `handleMarkAsOwned`, `handleMarkAsSkipped`
 - ✅ Bulk action handlers for selected issues
 
 #### Cover View
+
 - ✅ Hover actions overlay with Wanted/Owned/Skip buttons
 - ✅ Status indicator badges (corner badge showing current status)
 - ✅ Click to select for bulk actions
 
 #### List View  
+
 - ✅ Inline action buttons per row
 - ✅ Status-aware button visibility (don't show "Wanted" if already wanted)
 - ✅ Checkbox selection for bulk operations
 
 #### Bulk Actions
+
 - ✅ Selection counter showing selected count
 - ✅ Bulk Wanted/Owned/Skip buttons
 - ✅ Clear selection button
 - ✅ Disabled state during API calls
 
 #### CSS Enhancements
+
 - ✅ Action buttons container styling
 - ✅ Issue card hover actions overlay
 - ✅ Bulk action button variants (primary, success, muted)
@@ -8724,6 +9966,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `ui/src/App.css` | Add action button styles, spinning animation |
 
 ### Test Results
+
 - Backend: 677 tests passing
 - Frontend: Build successful
 - API tested via curl: Issues endpoint returns data correctly
@@ -8731,14 +9974,17 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 ---
 
 ## Iteration 048 (2026-02-04)
+
 **EPIC 11.6: Mylar3 Settings Import - COMPLETED**
 
 ### Commits
+
 1. `feat: add Mylar3 pull list settings import (EPIC 11.6)`
 
 ### Deliverables
 
 #### Pull List Settings Parsing
+
 - ✅ `Mylar3PullListSettings` model added to `IMylar3ConfigImporter`
 - ✅ Parse pull list settings from config.ini General section
 - ✅ Parse pull list settings from dedicated WeeklyPull/PullList sections
@@ -8746,6 +9992,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Track unmapped pull list settings
 
 #### Settings Mapped
+
 - Weekly export: folder, format, enabled
 - Default monitoring mode: all, future, manual, first, none
 - Auto-add settings: auto_add, include_annuals, include_specials
@@ -8754,6 +10001,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - Week start day
 
 #### Series Monitoring Mode Import
+
 - ✅ `Mylar3Series.Monitor` field for storing Mylar3 monitoring mode
 - ✅ `Mylar3Series.IsComplete` field for series status
 - ✅ `DeriveMonitoringMode()` helper to infer mode from status/ignored
@@ -8763,18 +10011,21 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Monitoring mode applied during series creation/update
 
 #### API Endpoints
+
 - ✅ `POST /api/v1/mylar3/pulllist/parse` - Parse pull list settings from config content
 - ✅ `POST /api/v1/mylar3/pulllist/parse-file` - Parse from file path
 - ✅ `POST /api/v1/mylar3/pulllist/import` - Import parsed settings
 - ✅ `POST /api/v1/mylar3/pulllist/import-from-file` - Quick import from file
 
 #### Import Features
+
 - ✅ Overwrite existing settings option
 - ✅ Track imported vs skipped vs unmapped settings
 - ✅ Warnings for unknown values
 - ✅ Detailed import result
 
 ### Unit Tests (7 new tests)
+
 - ✅ ParseConfig_WithPullListSettings_ExtractsPullListSettings
 - ✅ ParseConfig_WithWeeklyPullSection_ExtractsPullListSettings
 - ✅ ParseConfig_WithAlternativeKeyNames_ExtractsPullListSettings
@@ -8795,20 +10046,24 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `tests/Shortboxerr.Tests/Mylar3ConfigImporterTests.cs` | Add 7 new tests, add mock ISettingsService |
 
 ### Test Results
+
 - Total: 677 tests passing (7 new)
 - Build: 0 errors
 
 ---
 
 ## Iteration 047 (2026-02-04)
+
 **EPIC 7: Mylar3 Migration - COMPLETED**
 
 ### Commits
+
 1. `feat: add Mylar3 full database migration service (EPIC 7)`
 
 ### Deliverables
 
 #### Migration Service
+
 - ✅ `IMylar3MigrationService` interface with complete migration API
 - ✅ `Mylar3MigrationService` implementation reading Mylar3 SQLite database
 - ✅ `Mylar3Snapshot` intermediate model for analysis/export
@@ -8816,12 +10071,14 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ `Mylar3MigrationResult` with detailed reporting
 
 #### Database Reading
+
 - ✅ Reads `comics` table (series info, ComicVine IDs, publisher, year)
 - ✅ Reads `issues` table (issue number, status, file location)
 - ✅ Graceful fallback for missing columns
 - ✅ Read-only access to source database
 
 #### Migration Features
+
 - ✅ Dry-run mode for previewing changes
 - ✅ Skip or update existing series option
 - ✅ Import wanted/downloaded status mapping
@@ -8829,12 +10086,14 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Detailed migration report with item-level status
 
 #### API Endpoints
+
 - ✅ `POST /api/v1/mylar3/migration/analyze` - Analyze database
 - ✅ `POST /api/v1/mylar3/migration/export` - Export snapshot to JSON
 - ✅ `POST /api/v1/mylar3/migration/import` - Import from snapshot
 - ✅ `POST /api/v1/mylar3/migration/migrate` - Full migration
 
 ### Unit Tests (10 new tests)
+
 - ✅ AnalyzeDatabaseAsync_ReturnsError_WhenFileNotFound
 - ✅ AnalyzeDatabaseAsync_ReadsComicsTable
 - ✅ AnalyzeDatabaseAsync_ReadsIssuesTable
@@ -8857,20 +10116,24 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `tests/Shortboxerr.Tests/Mylar3MigrationServiceTests.cs` | 10 new tests |
 
 ### Test Results
+
 - Total: 671 tests passing (10 new)
 - Build: 0 errors
 
 ---
 
 ## Iteration 046 (2026-02-04)
+
 **EPIC 12.4: ComicVine API Optimization - Prefetching - COMPLETED**
 
 ### Commits
+
 1. `feat: add prefetching for adjacent weeks (EPIC 12.4)`
 
 ### Deliverables
 
 #### Prefetch Implementation
+
 - ✅ `PrefetchAdjacentWeeksAsync` method in IPullListService
 - ✅ Fire-and-forget background task implementation in PullListService
 - ✅ Prefetches next and previous week's data when viewing current week
@@ -8878,12 +10141,14 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Skips already-cached weeks to avoid redundant work
 
 #### API Integration
+
 - ✅ `prefetch` query parameter on `/week` endpoint (default: true)
 - ✅ `prefetch` query parameter on `/week/{date}` endpoint (default: true)
 - ✅ `prefetch` query parameter on `/discover/week` endpoint (default: true)
 - ✅ `prefetch` query parameter on `/discover/week/{date}` endpoint (default: true)
 
 ### How It Works
+
 1. User requests current week's pull list or discovery data
 2. API returns the data immediately
 3. In background, service prefetches next and previous week's data
@@ -8891,6 +10156,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 5. Prefetch is best-effort - failures don't affect main request
 
 ### Unit Tests (3 new tests)
+
 - ✅ PrefetchAdjacentWeeksAsync_DoesNotThrow
 - ✅ PrefetchAdjacentWeeksAsync_PrefetchesPullList
 - ✅ PrefetchAdjacentWeeksAsync_SkipsAlreadyCachedWeeks
@@ -8905,21 +10171,25 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `tests/Shortboxerr.Tests/PullListServiceTests.cs` | 3 new tests |
 
 ### Test Results
+
 - Total: 661 tests passing (3 new)
 - Build: 0 errors
 
 ---
 
 ## Iteration 045 (2026-02-04)
+
 **EPIC 11.3: Auto-Add to Wanted List - COMPLETED**
 
 ### Commits
+
 1. `feat: add ReleaseDayBackgroundService for auto-add to wanted list (EPIC 11.3)`
 2. `feat: add API endpoints for release day processing (EPIC 11.3)`
 
 ### Deliverables
 
 #### ReleaseDayBackgroundService
+
 - ✅ Background service that runs on release day (default: Wednesday)
 - ✅ Calls `ProcessReleaseDayAsync` to auto-add issues based on monitoring mode
 - ✅ Configurable processing hours (default: 6am, 12pm)
@@ -8927,14 +10197,17 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Sends weekly summary notification on success
 
 #### PullListSettings Enhancements
+
 - ✅ `ReleaseDayProcessingHours` - list of hours when processing is allowed
 - ✅ Existing `AutoAddToWanted` setting controls enable/disable
 
 #### API Endpoints
+
 - ✅ POST /api/v1/pulllist/releaseday/process - trigger manual processing
 - ✅ GET /api/v1/pulllist/releaseday/status - check processing status
 
 ### Unit Tests (6 new tests)
+
 - ✅ TriggerProcessingAsync_ProcessesReleaseDay
 - ✅ TriggerProcessingAsync_UsesTodayWhenDateNotProvided
 - ✅ TriggerProcessingAsync_LogsErrorOnFailure
@@ -8953,36 +10226,43 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `tests/Shortboxerr.Tests/ReleaseDayBackgroundServiceTests.cs` | New 6 tests |
 
 ### Test Results
+
 - Total: 658 tests passing (6 new)
 - Build: 0 errors
 
 ---
 
 ## Iteration 044 (2026-02-03)
+
 **EPIC 12.1: Series/Issue List Caching - COMPLETED**
 
 ### Commits
+
 1. `feat: add server-side caching to SeriesEndpoints (EPIC 12.1)`
 2. `test: add HTTP caching tests for SeriesEndpoints (EPIC 12.1)`
 
 ### Deliverables
 
 #### Server-Side Caching for Series Endpoints
+
 - ✅ Series list endpoint (GET /api/v1/series) - 2-minute TTL
 - ✅ Series detail endpoint (GET /api/v1/series/{id}) - 5-minute TTL
 - ✅ Series issues endpoint (GET /api/v1/series/{id}/issues) - 2-minute TTL
 - ✅ Cache keys include query parameters for proper isolation
 
 #### Cache Invalidation
+
 - ✅ POST /api/v1/series - Invalidates series list cache
 - ✅ PUT /api/v1/series/{id} - Invalidates series list, detail, and issues caches
 - ✅ DELETE /api/v1/series/{id} - Invalidates series list, detail, and issues caches
 
 #### SQLite Compatibility Fix
+
 - ✅ Fixed decimal ordering issue in issues endpoint
 - ✅ Sort in memory for IssueNumber (SQLite limitation)
 
 ### Cache Strategy
+
 | Endpoint | Server Cache TTL | HTTP Cache | Invalidation |
 |----------|------------------|-------------|--------------|
 | Series list | 2 min | 2 min | On CRUD |
@@ -8990,6 +10270,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | Series issues | 2 min | 2 min | On series update/delete |
 
 ### Unit Tests (4 new tests)
+
 - ✅ GetAllSeries_ReturnsCacheControlHeader
 - ✅ GetSeriesById_ReturnsCacheControlAndETagHeaders
 - ✅ GetSeriesById_WithIfNoneMatch_Returns304
@@ -9003,26 +10284,31 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `tests/Shortboxerr.Tests/SeriesEndpointTests.cs` | 4 new tests |
 
 ### Test Results
+
 - Total: 652 tests passing (4 new)
 - Build: 0 errors
 
 ---
 
 ## Iteration 043 (2026-02-03)
+
 **EPIC 12.3: HTTP Response Caching - COMPLETED**
 
 ### Commits
+
 1. `feat: implement HTTP response caching with ETag support (EPIC 12.3)`
 
 ### Deliverables
 
 #### HTTP Caching Infrastructure
+
 - ✅ `HttpCacheEndpointFilter` - Endpoint filter for Cache-Control headers
 - ✅ `HttpCacheSettings` - Configuration class for cache settings
 - ✅ `ETagHelper` - Static helper for ETag generation and validation
 - ✅ Extension methods: `WithHttpCache`, `WithPrivateCache`, `WithNoCache`, `WithLongCache`, `WithImmutableCache`
 
 #### Cache-Control Headers Applied
+
 | Endpoint Type | Max-Age | Notes |
 |--------------|---------|-------|
 | Series list (GET /api/v1/series) | 2 min | Public cache |
@@ -9031,12 +10317,14 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | Cover images (GET /api/v1/covers/*) | 1 day | With ETag + Last-Modified |
 
 #### ETag Support
+
 - ✅ ETag generation from ID + UpdatedAt timestamp
 - ✅ If-None-Match header validation
 - ✅ If-Modified-Since header validation
 - ✅ 304 Not Modified responses for unchanged resources
 
 ### Unit Tests (15 new tests)
+
 - ETag generation tests (5 tests)
 - ETag validation tests (5 tests)
 - If-Modified-Since tests (4 tests)
@@ -9052,15 +10340,18 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `tests/Shortboxerr.Tests/HttpCacheTests.cs` | 15 new tests |
 
 ### Test Results
+
 - Total: 648 tests passing (15 new)
 - Build: 0 errors
 
 ---
 
 ## Iteration 042 (2026-02-03)
+
 **EPIC 12.1: Data Caching Strategy (Partial) - COMPLETED**
 
 ### Commits
+
 1. `feat: migrate PullListService to use ICacheService (EPIC 12.1)`
 2. `feat: add caching to PullListService stats (EPIC 12.1)`
 3. `test: add caching integration tests for PullListService (EPIC 12.1)`
@@ -9068,22 +10359,26 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 ### Deliverables
 
 #### PullListService Migration to ICacheService
+
 - ✅ Replaced IMemoryCache with ICacheService
 - ✅ Discovery caching now uses GetOrCreateAsync
 - ✅ Uses CacheKeys.PullListDiscovery for consistent key generation
 - ✅ 30-minute TTL for discovery data
 
 #### Dashboard Stats Caching
+
 - ✅ GetStatsAsync cached with 1-minute TTL
 - ✅ Uses CacheKeys.DashboardStats key
 
 #### Cache Invalidation
+
 - ✅ InvalidatePullListCache() helper method
 - ✅ Called on UpdateIssueStatusAsync (single status change)
 - ✅ Called on BulkUpdateStatusAsync (bulk changes)
 - ✅ Invalidates: PullListWeek, PullListUpcoming, PullListPast, DashboardStats, DashboardThisWeek
 
 ### Cache Strategy Summary
+
 | Data Type | TTL | Invalidation |
 |-----------|-----|--------------|
 | Discovery (ComicVine) | 30 min | None (external data) |
@@ -9091,6 +10386,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | Pull list week | On-demand | Issue status change |
 
 ### Unit Tests (4 new tests)
+
 - ✅ GetStatsAsync_SecondCallUsesCache
 - ✅ MarkAsOwnedAsync_InvalidatesStatsCache
 - ✅ BulkUpdateStatusAsync_InvalidatesStatsCache
@@ -9105,26 +10401,31 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `tests/Shortboxerr.Tests/PullListConformanceTests.cs` | Updated for ICacheService |
 
 ### Test Results
+
 - Total: 633 tests passing (4 new)
 - Build: 0 errors
 
 ---
 
 ## Iteration 041 (2026-02-03)
+
 **EPIC 12.2: Cache Implementation Patterns - COMPLETED**
 
 ### Commits
+
 1. `feat: implement cache service abstraction (EPIC 12.2)`
 
 ### Deliverables
 
 #### ICacheService Interface
+
 - ✅ Core operations: Get, GetAsync, GetOrCreateAsync, Set, SetAsync, Remove, Exists
 - ✅ Key generation: GenerateKey with prefix and segments
 - ✅ Bulk operations: RemoveByPrefix, Clear
 - ✅ Statistics: GetStatistics, ResetStatistics
 
 #### CacheService Implementation
+
 - ✅ Wraps IMemoryCache with consistent API
 - ✅ Key tracking via ConcurrentDictionary for prefix-based invalidation
 - ✅ Statistics tracking with hit/miss counters
@@ -9132,6 +10433,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Configurable via CacheSettings
 
 #### Cache Settings
+
 | Setting | Type | Default | Purpose |
 |---------|------|---------|---------|
 | `Enabled` | bool | true | Enable/disable caching |
@@ -9145,6 +10447,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `MaxItems` | int | 10000 | Maximum cache items |
 
 #### Well-Known Cache Keys (CacheKeys class)
+
 - `pulllist`, `pulllist:week`, `pulllist:upcoming`, `pulllist:past`, `pulllist:discovery`
 - `series`, `series:list`, `series:detail`
 - `issue`, `issue:list`
@@ -9152,6 +10455,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - `comicvine`, `comicvine:search`, `comicvine:volume`, `comicvine:issue`
 
 #### API Endpoints
+
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
 | `/api/v1/cache/stats` | GET | Get cache statistics |
@@ -9161,6 +10465,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `/api/v1/cache/keys` | GET | List known prefixes |
 
 ### Unit Tests (24 new tests)
+
 - Core operations (7 tests)
 - Key generation (3 tests)
 - Bulk operations (2 tests)
@@ -9180,6 +10485,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `tests/Shortboxerr.Tests/CacheServiceTests.cs` | 24 new tests |
 
 ### Notes
+
 - `CacheService` registered as singleton (maintains statistics state)
 - Existing IMemoryCache usage in ComicVineClient/PullListService not migrated (can be done incrementally)
 - Foundation for EPIC 12.1 (data caching) and EPIC 12.4 (ComicVine optimization)
@@ -9187,19 +10493,23 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 ---
 
 ## Iteration 040 (2026-02-03)
+
 **EPIC 11.4: Pull List Notifications (In-App) - COMPLETED**
 
 ### Commits
+
 1. `feat: implement in-app notification system (EPIC 11.4 partial)`
 
 ### Deliverables
 
 #### Notification Entity
+
 - ✅ `Notification` entity with comprehensive type system
 - ✅ Types: Info, Success, Warning, Error, NewRelease, Grabbed, Downloaded, WeeklySummary, Health, Update
 - ✅ EF Core migration for Notifications table
 
 #### Notification Service
+
 - ✅ `INotificationService` interface with full CRUD operations
 - ✅ `NotificationService` implementation
 - ✅ Create notifications with type, title, message, link, related entities
@@ -9209,6 +10519,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Unread count
 
 #### Specialized Notification Methods
+
 | Method | Purpose |
 |--------|---------|
 | `SendNewReleaseNotificationAsync` | Weekly release notifications |
@@ -9216,6 +10527,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `SendWeeklySummaryAsync` | Weekly summary notifications |
 
 #### Notification Settings
+
 | Setting | Type | Default | Purpose |
 |---------|------|---------|---------|
 | `EnableInApp` | bool | true | Enable/disable in-app notifications |
@@ -9228,6 +10540,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `MaxNotifications` | int | 500 | Max notifications to keep |
 
 #### API Endpoints
+
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
 | `/api/v1/notifications` | GET | List notifications with filtering |
@@ -9241,6 +10554,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `/api/v1/notifications/test` | POST | Create test notification |
 
 ### Unit Tests (20 new tests)
+
 - Notification CRUD operations (8 tests)
 - Filtering and queries (4 tests)
 - Specialized notification creation (5 tests)
@@ -9261,6 +10575,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `tests/Shortboxerr.Tests/NotificationServiceTests.cs` | 20 new tests |
 
 ### Notes
+
 - External notification channels (email, webhook, Pushover) deferred for future iteration
 - UI notification center component deferred for future iteration
 - Integration with pull list processing (auto-send on release day) deferred
@@ -9268,14 +10583,17 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 ---
 
 ## Iteration 039 (2026-02-03)
+
 **EPIC 11.11: ComicVine Sync Parity (Mylar3) - COMPLETED**
 
 ### Commits
+
 1. `feat: implement ComicVine discovery refresh background service (EPIC 11.11)`
 
 ### Deliverables
 
 #### Background Refresh Service
+
 - ✅ `ComicVineRefreshBackgroundService`: Periodic background refresh of discovery data
   - Runs every 15 minutes, checks if refresh is needed
   - 2-minute startup delay to allow application to initialize
@@ -9286,6 +10604,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
   - Persists last refresh time for continuity across restarts
 
 #### Settings Added to ComicVineSettings
+
 | Setting | Type | Default | Purpose |
 |---------|------|---------|---------|
 | `DiscoveryRefreshEnabled` | bool | true | Enable/disable background refresh |
@@ -9294,12 +10613,14 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 | `DiscoveryRefreshWeeksAhead` | int | 4 | Number of weeks to pre-fetch |
 
 #### API Endpoints Added
+
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
 | `/api/v1/pulllist/discovery/refresh` | POST | Trigger manual refresh |
 | `/api/v1/pulllist/discovery/status` | GET | Get refresh status and next scheduled |
 
 #### Response DTO
+
 ```csharp
 public class DiscoveryRefreshStatus
 {
@@ -9313,6 +10634,7 @@ public class DiscoveryRefreshStatus
 ```
 
 ### Unit Tests (7 new tests)
+
 - `TriggerRefreshAsync_WhenDisabled_DoesNotRefresh`
 - `TriggerRefreshAsync_WhenApiNotConfigured_DoesNotRefresh`
 - `TriggerRefreshAsync_WhenEnabled_RefreshesMultipleWeeks`
@@ -9332,6 +10654,7 @@ public class DiscoveryRefreshStatus
 | `tests/Shortboxerr.Tests/ComicVineRefreshBackgroundServiceTests.cs` | New unit tests |
 
 ### Mylar3 Parity Notes
+
 - Mylar3 uses ~4-hour refresh interval for weekly releases (based on community knowledge)
 - Direct config.ini setting names not found in public documentation
 - Our implementation uses 4-hour default to match observed Mylar3 behavior
@@ -9340,15 +10663,18 @@ public class DiscoveryRefreshStatus
 ---
 
 ## Iteration 038 (2026-02-03)
+
 **EPIC 11.10: Weekly Pull List Export (Mylar3 Parity) - COMPLETED**
 
 ### Commits
+
 1. `feat: add weekly pull list export feature (EPIC 11.10)`
 2. `feat(ui): add weekly export settings to Pull List settings tab`
 
 ### Deliverables
 
 #### Pull List Settings Model Enhancements
+
 - ✅ Added export settings to `PullListSettings`:
   - `ExportWeeklyPullList`: Enable/disable export
   - `WeeklyExportDirectory`: Path for export files
@@ -9357,6 +10683,7 @@ public class DiscoveryRefreshStatus
   - `ExportFields`: Optional field selection
 
 #### Export Service Implementation
+
 - ✅ `ExportCurrentWeekAsync()`: Export current week's pull list
 - ✅ `ExportWeekAsync(date)`: Export specific week
 - ✅ `GetExportHistoryAsync()`: List previously exported weeks
@@ -9364,11 +10691,13 @@ public class DiscoveryRefreshStatus
 - ✅ ISO week number calculation for consistent naming
 
 #### Export File Formats
+
 - ✅ **JSON**: Structured data with metadata, issues array, and summary
 - ✅ **Plain Text**: Human-readable list grouped by publisher
 - ✅ **CSV**: Spreadsheet-compatible with header row
 
 #### API Endpoints Added
+
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
 | `/api/v1/pulllist/export` | POST | Export current week |
@@ -9376,6 +10705,7 @@ public class DiscoveryRefreshStatus
 | `/api/v1/pulllist/export/history` | GET | List export history |
 
 #### Settings UI
+
 - ✅ Weekly Export section in Pull List settings tab
 - ✅ Enable/disable toggle with conditional field display
 - ✅ Export directory input with format explanation
@@ -9384,6 +10714,7 @@ public class DiscoveryRefreshStatus
 - ✅ Manual export button with progress and result feedback
 
 ### Export Data Structure (JSON)
+
 ```json
 {
   "metadata": {
@@ -9407,11 +10738,13 @@ public class DiscoveryRefreshStatus
 ```
 
 ### Test Results
+
 ```
 Passed!  - Failed: 0, Passed: 578, Skipped: 0, Total: 578
 ```
 
 ### New Tests (8)
+
 - `ExportCurrentWeekAsync_WhenExportDisabled_ReturnsError`
 - `ExportCurrentWeekAsync_WhenDirectoryNotConfigured_ReturnsError`
 - `ExportWeekAsync_WithValidSettings_CreatesExportFile`
@@ -9422,6 +10755,7 @@ Passed!  - Failed: 0, Passed: 578, Skipped: 0, Total: 578
 - `ExportWeekAsync_CreatesCorrectDirectoryStructure`
 
 ### Files Modified
+
 - `src/Shortboxerr.Core/PullList/IPullListService.cs` (models + interface)
 - `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` (implementation)
 - `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` (endpoints)
@@ -9430,6 +10764,7 @@ Passed!  - Failed: 0, Passed: 578, Skipped: 0, Total: 578
 - `ui/src/pages/SettingsPage.tsx` (Weekly Export settings section)
 
 ### UI Build
+
 ```
 ✓ built in 1.71s
 ```
@@ -9437,14 +10772,17 @@ Passed!  - Failed: 0, Passed: 578, Skipped: 0, Total: 578
 ---
 
 ## Iteration 037 (2026-02-03)
+
 **EPIC 11.9: Pull List UX Improvements**
 
 ### Commits
+
 1. `feat: add Pull List UX improvements (EPIC 11.9)`
 
 ### Deliverables
 
 #### Configuration Status API
+
 - ✅ **New endpoint**: GET /api/v1/pulllist/config-status
   - Returns `PullListConfigStatus` with:
     - `isComicVineConfigured`: Whether API key is set
@@ -9456,6 +10794,7 @@ Passed!  - Failed: 0, Passed: 578, Skipped: 0, Total: 578
     - `actionType`: Enum for UI routing (ConfigureApiKey, AddSeries, MatchSeries, TryAllReleases, None)
 
 #### Empty State Improvements
+
 - ✅ **My Pull List empty states**:
   - ComicVine not configured → "Configure ComicVine" button → Settings page
   - No series → "Add Series" button → Series page + "Try All Releases" button
@@ -9467,22 +10806,26 @@ Passed!  - Failed: 0, Passed: 578, Skipped: 0, Total: 578
   - No releases found → "Refresh from ComicVine" button
 
 #### Configuration Warning Banner
+
 - ✅ **Warning banner** when ComicVine API is not configured
   - Displays at top of Pull List page
   - Links directly to Settings → ComicVine tab
   - Alert styling with warning icon
 
 #### Manual Refresh Controls
+
 - ✅ **Refresh button** with loading spinner animation
 - ✅ **Last refresh timestamp** shown next to button
 - ✅ **Disabled state** while loading
 
 ### API Endpoints Added
+
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
 | `/api/v1/pulllist/config-status` | GET | Get pull list configuration status for UX |
 
 ### Files Modified
+
 - `src/Shortboxerr.Core/PullList/IPullListService.cs` (added interface method + models)
 - `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` (implementation)
 - `src/Shortboxerr.Api/Endpoints/PullListEndpoints.cs` (new endpoint)
@@ -9491,11 +10834,13 @@ Passed!  - Failed: 0, Passed: 578, Skipped: 0, Total: 578
 - `ui/src/App.css` (empty state actions, alert styles)
 
 ### Test Results
+
 ```
 Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
 ```
 
 ### UI Build
+
 ```
 ✓ built in 1.38s
 ```
@@ -9503,14 +10848,17 @@ Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
 ---
 
 ## Iteration 036 (2026-02-03)
+
 **EPIC 11.5: Pull List UI Improvements & Caching**
 
 ### Commits
+
 1. `feat(ui): improve Pull List navigation and caching`
 
 ### Deliverables
 
 #### Pull List UI Navigation Improvements
+
 - ✅ **Consolidated navigation controls**:
   - Combined week navigation (`<` / `>`) with view mode dropdown
   - Dropdown includes: This Week, +/-N Weeks, Upcoming (4 weeks), Past (4 weeks)
@@ -9529,6 +10877,7 @@ Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
   - Sort icons indicate current sort state
 
 #### Caching & Data Freshness Fixes
+
 - ✅ **Fixed stale data bug when navigating weeks**:
   - Issue: React Query showed cached data from previous week when navigating back
   - Root cause: Using `isLoading` (only true on initial load) instead of `isFetching`
@@ -9546,17 +10895,20 @@ Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
   - React Query handles client-side caching appropriately
 
 ### Technical Details
+
 - Added `useMemo` for weekDate calculation to ensure stable query key
 - Queries use `{ queryKey }` parameter in queryFn for reliable date access
 - Frontend cache TTL matches backend's 30-minute ComicVine cache
 - Rationale: Comic release schedules are set weeks in advance and rarely change
 
 ### Files Modified
+
 - `ui/src/pages/PullListPage.tsx` (navigation, sorting, caching fixes)
 - `ui/src/api/client.ts` (Cache-Control header)
 - `ui/src/App.css` (sortable header styles)
 
 ### Backlog Updates
+
 - Added EPIC 11.10: Weekly Pull Directory Organization (Mylar3 Parity)
 - Added EPIC 11.11: ComicVine Sync Parity (Mylar3)
 - Updated EPIC 11.5 with completed navigation and caching improvements
@@ -9565,14 +10917,17 @@ Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
 ---
 
 ## Iteration 035 (2026-02-03)
+
 **EPIC 11.8: This Week Discovery (Mylar3 Parity) - COMPLETED**
 
 ### Commits
+
 1. `feat: add This Week Discovery feature for Mylar3 parity (EPIC 11.8)`
 
 ### Deliverables
 
 #### EPIC 11.8: This Week Discovery
+
 - ✅ **All Releases Discovery Mode**:
   - Fetches all ComicVine releases for the week (not just monitored series)
   - Shows issues from unmonitored series alongside monitored ones
@@ -9606,6 +10961,7 @@ Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
   - Add Series modal with monitoring mode selection
 
 ### API Endpoints Added
+
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
 | `/api/v1/pulllist/discover/week` | GET | Get all ComicVine releases this week |
@@ -9614,6 +10970,7 @@ Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
 | `/api/v1/pulllist/discover/add-series` | POST | Add series from discovery with monitoring mode |
 
 ### Files Created/Modified
+
 - `src/Shortboxerr.Core/ComicVine/IComicVineClient.cs` (added GetIssuesByStoreDateAsync)
 - `src/Shortboxerr.Infrastructure/ComicVine/ComicVineClient.cs` (implemented GetIssuesByStoreDateAsync)
 - `src/Shortboxerr.Core/PullList/IPullListService.cs` (added discovery models and methods)
@@ -9626,6 +10983,7 @@ Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
 - `tests/Shortboxerr.Tests/PullListConformanceTests.cs` (updated constructor)
 
 ### Test Results
+
 ```
 Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
 ```
@@ -9633,9 +10991,11 @@ Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
 ---
 
 ## Iteration 034 (2026-02-03)
+
 **EPIC 11.6 & 11.7: Pull List Configuration & Conformance Tests - COMPLETED**
 
 ### Commits
+
 1. `feat: add Pull List settings API and service (EPIC 11.6)`
 2. `feat: add Pull List settings UI (EPIC 11.6)`
 3. `test: add Pull List conformance tests (EPIC 11.7)`
@@ -9643,6 +11003,7 @@ Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
 ### Deliverables
 
 #### EPIC 11.6: Pull List Configuration
+
 - ✅ PullListSettings Model:
   - WeekStartDay, ReleaseDay (DayOfWeek)
   - DefaultMonitoringMode (SeriesMonitoringMode)
@@ -9665,6 +11026,7 @@ Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
 - ✅ 6 unit tests for settings operations
 
 #### EPIC 11.7: Pull List Conformance Tests
+
 - ✅ 23 Conformance Tests:
   - Week boundary calculations (5 tests)
   - Release date grouping (4 tests)
@@ -9674,6 +11036,7 @@ Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
   - Additional edge cases (2 tests)
 
 ### API Endpoints Added
+
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
 | `/api/v1/pulllist/settings` | GET | Get pull list settings |
@@ -9682,23 +11045,28 @@ Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
 | `/api/v1/pulllist/series/{id}/settings` | PUT | Update series-specific settings |
 
 ### Test Results
+
 ```
 Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
 ```
 
 ### New Files
+
 - `tests/Shortboxerr.Tests/PullListConformanceTests.cs` (23 tests)
 
 ---
 
 ## Iteration 033 (2026-02-03)
+
 **EPIC 11.5: Pull List UI - COMPLETED**
 
 ### Commits
+
 1. `feat: add Pull List UI page (EPIC 11.5)`
 2. `feat: add This Week and Coming Soon dashboard widgets (EPIC 11.5)`
 
 ### Deliverables
+
 - ✅ PullListPage Component:
   - This Week/Upcoming/Past view tabs
   - Week navigation (previous/next/today)
@@ -9735,6 +11103,7 @@ Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
   - Responsive grid layout
 
 ### UI Features
+
 | Feature | Description |
 |---------|-------------|
 | Week View | Shows releases for current or selected week |
@@ -9747,6 +11116,7 @@ Passed!  - Failed: 0, Passed: 570, Skipped: 0, Total: 570
 | Dashboard | This Week and Coming Soon widgets |
 
 ### Test Results
+
 ```
 Passed!  - Failed: 0, Passed: 541, Skipped: 0, Total: 541
 ```
@@ -9754,13 +11124,16 @@ Passed!  - Failed: 0, Passed: 541, Skipped: 0, Total: 541
 ---
 
 ## Iteration 032 (2026-02-03)
+
 **EPIC 11.1 & 11.2: Weekly Pull List - COMPLETED**
 
 ### Commits
+
 1. `fix: enable all ComicVine integration tests (EPIC 9.10)`
 2. `feat: implement weekly pull list service (EPIC 11.1, 11.2)`
 
 ### Deliverables
+
 - ✅ IPullListService interface with full pull list functionality
 - ✅ PullListService implementation with:
   - Week boundary calculations (Sunday start)
@@ -9779,6 +11152,7 @@ Passed!  - Failed: 0, Passed: 541, Skipped: 0, Total: 541
 - ✅ 15 unit tests for PullListService
 
 ### API Endpoints
+
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
 | `/api/v1/pulllist/week` | GET | This week's releases |
@@ -9795,23 +11169,28 @@ Passed!  - Failed: 0, Passed: 541, Skipped: 0, Total: 541
 | `/api/v1/pulllist/stats` | GET | Pull list statistics |
 
 ### Test Results
+
 ```
 Passed!  - Failed: 0, Passed: 541, Skipped: 0, Total: 541
 ```
 
 ### Bug Fixes
+
 - Fixed duplicate endpoint names (RefreshSeriesMetadata, RefreshEditionMetadata)
 - Fixed all 10 ComicVine integration tests now passing
 
 ---
 
 ## Iteration 031 (2026-02-03)
+
 **EPIC 9.10: ComicVine Integration Tests - COMPLETED**
 
 ### Commits
+
 1. `feat: add ComicVine integration tests (EPIC 9.10)`
 
 ### Deliverables
+
 - ✅ ComicVineIntegrationTests with 10 tests:
   - Full Flow Tests:
     - FullFlow_SearchMatchSyncMetadata_CompletesSuccessfully
@@ -9829,6 +11208,7 @@ Passed!  - Failed: 0, Passed: 541, Skipped: 0, Total: 541
     - CoverFlow_AddSeriesFromComicVine_StoresCoverUrl (skipped)
 
 ### Test Coverage
+
 - Full flow: search → match → sync metadata
 - Cover download and caching validation
 - Refresh cycle with stale/fresh series
@@ -9836,28 +11216,34 @@ Passed!  - Failed: 0, Passed: 541, Skipped: 0, Total: 541
 - Partial failure handling in bulk operations
 
 ### Test Results
+
 ```
 Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ```
 
 ### New/Modified Files
+
 | File | Purpose |
 |------|---------|
 | `tests/Shortboxerr.Tests/ComicVineIntegrationTests.cs` | 10 integration tests |
 
 ### Notes
+
 - All 10 tests passing
 - EPIC 9.10 and EPIC 9 now FULLY COMPLETE
 
 ---
 
 ## Iteration 030 (2026-02-03)
+
 **EPIC 9.8: Mylar3 ComicVine Settings Import - COMPLETED**
 
 ### Commits
+
 1. `feat: implement Mylar3 ComicVine settings import (EPIC 9.8)`
 
 ### Deliverables
+
 - ✅ IMylar3ComicVineImporter interface:
   - ParseComicVineSettings: Parse config.ini content
   - ParseComicVineSettingsFileAsync: Parse from file path
@@ -9885,6 +11271,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 - ✅ 12 unit tests for Mylar3ComicVineImporter
 
 ### New/Modified Files
+
 | File | Purpose |
 |------|---------|
 | `src/Shortboxerr.Core/ComicVine/IMylar3ComicVineImporter.cs` | Interface + DTOs |
@@ -9893,6 +11280,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | `tests/Shortboxerr.Tests/Mylar3ComicVineImporterTests.cs` | 12 unit tests |
 
 ### Notes
+
 - Uses Microsoft.Data.Sqlite for reading Mylar3 SQLite databases
 - Boolean parsing supports: 1/true/yes formats
 - Preserves raw settings for user reference
@@ -9901,12 +11289,15 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 029 (2026-02-03)
+
 **EPIC 9.7: Metadata Refresh - COMPLETED**
 
 ### Commits
+
 1. `feat: implement metadata refresh service (EPIC 9.7)`
 
 ### Deliverables
+
 - ✅ IMetadataRefreshService interface:
   - RefreshSeriesAsync: Refresh single series metadata
   - RefreshAllSeriesAsync: Refresh all matched series
@@ -9949,6 +11340,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 - ✅ 14 unit tests for MetadataRefreshService
 
 ### New/Modified Files
+
 | File | Purpose |
 |------|---------|
 | `src/Shortboxerr.Core/ComicVine/IMetadataRefreshService.cs` | Interface + DTOs |
@@ -9960,6 +11352,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | `tests/Shortboxerr.Tests/MetadataRefreshServiceTests.cs` | 14 unit tests |
 
 ### Notes
+
 - Background service starts 5 minutes after app start
 - Scheduled refresh only runs in allowed hours
 - UI buttons for refresh deferred to future iteration
@@ -9967,12 +11360,15 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 028 (2026-02-03)
+
 **EPIC 9.6: Auto-Matching & Import Integration - COMPLETED**
 
 ### Commits
+
 1. `feat: implement auto-matching and bulk matching service (EPIC 9.6)`
 
 ### Deliverables
+
 - ✅ IAutoMatchService interface:
   - AutoMatchStagedItemAsync: Auto-match on import
   - AutoMatchAllUnmatchedSeriesAsync: Bulk series matching
@@ -10005,6 +11401,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 - ✅ 13 unit tests for AutoMatchService
 
 ### New/Modified Files
+
 | File | Purpose |
 |------|---------|
 | `src/Shortboxerr.Core/ComicVine/IAutoMatchService.cs` | Interface + DTOs |
@@ -10015,6 +11412,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | `tests/Shortboxerr.Tests/AutoMatchServiceTests.cs` | 13 unit tests |
 
 ### Notes
+
 - Auto-match uses configurable confidence threshold (default 85%)
 - Low-confidence matches queued for manual review
 - Bulk operations support progress reporting via IProgress<>
@@ -10023,12 +11421,15 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 027 (2026-02-03)
+
 **EPIC 9.5: Collection/TPB Metadata - COMPLETED**
 
 ### Commits
+
 1. `feat: implement Collection/TPB metadata service (EPIC 9.5)`
 
 ### Deliverables
+
 - ✅ IEditionMetadataService interface:
   - SearchEditionsAsync: Search ComicVine for collected editions
   - GetEditionByComicVineIdAsync: Get preview by volume ID
@@ -10057,6 +11458,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 - ✅ 15 unit tests for EditionMetadataService
 
 ### New/Modified Files
+
 | File | Purpose |
 |------|---------|
 | `src/Shortboxerr.Core/ComicVine/IEditionMetadataService.cs` | Interface + DTOs |
@@ -10067,6 +11469,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | `tests/Shortboxerr.Tests/EditionMetadataServiceTests.cs` | 15 unit tests |
 
 ### Notes
+
 - Edition type detection uses regex patterns for Omnibus, Absolute, Hardcover, etc.
 - Content sync maps ComicVine issues to local EditionContent entities
 - Cover art handled by existing CoverService with edition support
@@ -10074,12 +11477,15 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 026 (2026-02-03)
+
 **EPIC 9.10: ComicVine Conformance Tests - COMPLETED**
 
 ### Commits
+
 1. `test: add ComicVine conformance tests (EPIC 9.10)`
 
 ### Deliverables
+
 - ✅ ComicVineClientTests (22 tests):
   - Test connection with/without API key
   - Volume and issue search tests
@@ -10104,12 +11510,14 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
   - Auto-match returns confidence score
 
 ### New/Modified Files
+
 | File | Purpose |
 |------|---------|
 | `tests/Shortboxerr.Tests/ComicVineClientTests.cs` | New: API client conformance tests |
 | `tests/Shortboxerr.Tests/SeriesMatchingAlgorithmTests.cs` | New: Matching algorithm tests |
 
 ### Notes
+
 - 34 tests total, all passing
 - Uses Moq for HTTP mocking
 - Uses in-memory database for service tests
@@ -10119,12 +11527,15 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 025 (2026-02-03)
+
 **EPIC 9.9: Collection/Edition Detail Page - COMPLETED**
 
 ### Commits
+
 1. `feat: implement Collection/Edition detail page with contents`
 
 ### Deliverables
+
 - ✅ EditionTitle Entity Enhancements:
   - CoverImageUrl: cover image for edition
   - ComicVineId: ComicVine ID when matched
@@ -10150,6 +11561,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
   - Year extracted from release date
 
 ### New/Modified Files
+
 | File | Purpose |
 |------|---------|
 | `src/Shortboxerr.Core/Entities/EditionTitle.cs` | Added cover/ComicVine fields |
@@ -10163,6 +11575,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | `src/Shortboxerr.Infrastructure/Persistence/Migrations/...AddEditionCoverAndComicVineFields.cs` | DB migration |
 
 ### Notes
+
 - Contents grouped by series for better readability
 - Fallback placeholder for editions without cover images
 - Edition type displayed as friendly label (TPB, Hardcover, etc.)
@@ -10170,12 +11583,15 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 024 (2026-02-03)
+
 **EPIC 9.9: Issue Display Enhancements - COMPLETED**
 
 ### Commits
+
 1. `feat(ui): implement issue display enhancements with cover/list view toggle`
 
 ### Deliverables
+
 - ✅ Cover View:
   - Grid layout of issue covers (120px min width)
   - Status indicator overlays (owned ✓, wanted ⏰, edition 📖, skipped ✗)
@@ -10214,6 +11630,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
   - Status sorting option added to API
 
 ### New/Modified Files
+
 | File | Purpose |
 |------|---------|
 | `ui/src/pages/SeriesDetailPage.tsx` | Enhanced with view toggle, sorting, filtering |
@@ -10223,6 +11640,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | Include StoryArcs, add status sorting |
 
 ### Notes
+
 - View preference persists across sessions via UI settings
 - Both views show identical information in different layouts
 - Bulk actions UI is present but action handlers are deferred
@@ -10230,12 +11648,15 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 023 (2026-02-03)
+
 **EPIC 9.4: Cover Art - COMPLETED**
 
 ### Commits
+
 1. `feat: add cover service with caching and fallback (EPIC 9.4)`
 
 ### Deliverables
+
 - ✅ ICoverService Interface:
   - GetSeriesCoverAsync: get series cover with caching
   - GetIssueCoverAsync: get issue cover with fallback
@@ -10274,6 +11695,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
   - Size-specific URL generation
 
 ### New Files
+
 | File | Purpose |
 |------|---------|
 | `src/Shortboxerr.Core/Services/ICoverService.cs` | Interface, enums, DTOs |
@@ -10282,15 +11704,18 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | `tests/Shortboxerr.Tests/CoverServiceTests.cs` | Unit tests |
 
 ### Modified Files
+
 | File | Purpose |
 |------|---------|
 | `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register CoverService |
 | `src/Shortboxerr.Api/Program.cs` | Map CoverEndpoints |
 
 ### Test Results
+
 - 440 backend tests passing (17 new)
 
 ### Cover Size Mapping
+
 | CoverSize | ComicVine URL Segment | Usage |
 |-----------|----------------------|-------|
 | Thumb | scale_avatar | Thumbnails, lists |
@@ -10301,12 +11726,15 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 022 (2026-02-03)
+
 **EPIC 9.3: Issue Metadata - COMPLETED**
 
 ### Commits
+
 1. `feat: add issue metadata service with story arcs and special detection (EPIC 9.3)`
 
 ### Deliverables
+
 - ✅ IssueStoryArc Entity:
   - Links issues to ComicVine story arcs
   - Fields: ComicVineStoryArcId, Name, ComicVineUrl, Position
@@ -10344,6 +11772,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
   - RefreshSeriesIssuesMetadataAsync_RefreshesAllMatchedIssues
 
 ### New Files
+
 | File | Purpose |
 |------|---------|
 | `src/Shortboxerr.Core/Entities/IssueStoryArc.cs` | Story arc association entity |
@@ -10354,6 +11783,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | `*.cs (migration)` | AddIssueMetadataFields migration |
 
 ### Modified Files
+
 | File | Purpose |
 |------|---------|
 | `src/Shortboxerr.Core/Entities/Issue.cs` | Added IsAnnual, IsSpecial, SpecialType |
@@ -10362,23 +11792,28 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | `src/Shortboxerr.Api/Program.cs` | Map endpoints |
 
 ### Test Results
+
 - 423 backend tests passing (16 new)
 - All existing tests continue to pass
 
 ### Deferred Items
+
 - Character/team appearances (optional feature, not priority for Mylar3 parity)
 - Variant cover detection (optional, complex)
 
 ---
 
 ## Iteration 021 (2026-02-03)
+
 **EPIC 9.9: Series Detail Page - COMPLETED**
 
 ### Commits
+
 1. `feat: enhance series/issue DTOs with ComicVine fields and add issues endpoint`
 2. `feat: add Series Detail page with issues grid (EPIC 9.9)`
 
 ### Deliverables
+
 - ✅ Backend Enhancements:
   - SeriesDto: added ComicVineId, CoverImageUrl, ComicVineUrl, TotalIssueCount, MetadataLastRefreshed
   - New IssueDto with full metadata support
@@ -10405,12 +11840,14 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
   - New types: SeriesDetail, Issue
 
 ### New Files
+
 | File | Purpose |
 |------|---------|
 | `ui/src/pages/SeriesDetailPage.tsx` | Series detail page component |
 | `src/Shortboxerr.Api/Dtos/IssueDto.cs` | Issue data transfer object |
 
 ### Modified Files
+
 | File | Purpose |
 |------|---------|
 | `src/Shortboxerr.Api/Dtos/SeriesDto.cs` | Added ComicVine fields |
@@ -10421,6 +11858,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | `ui/src/App.css` | Series detail and issues grid styles |
 
 ### Test Results
+
 - 407 backend tests passing
 - UI TypeScript compilation passes
 - Production build successful
@@ -10428,14 +11866,17 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 020 (2026-02-03)
+
 **EPIC 9.9: ComicVine UI - Add Series Modal - COMPLETED**
 
 ### Commits
+
 1. `fix: correct API response mapping for paged results in UI`
 2. `chore: update BACKLOG.md with API response mapping bug fix`
 3. `feat: add Add Series modal with ComicVine search (EPIC 9.9)`
 
 ### Deliverables
+
 - ✅ Add Series Modal:
   - "Add Series" button opens modal on Series page
   - Debounced search input (400ms delay)
@@ -10464,6 +11905,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
   - Series and Collections pages display correctly
 
 ### Modified Files
+
 | File | Purpose |
 |------|---------|
 | `ui/src/api/client.ts` | Added series metadata API functions and types |
@@ -10471,6 +11913,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | `ui/src/App.css` | Modal and search result styles |
 
 ### Test Results
+
 - 407 backend tests passing
 - UI TypeScript compilation passes
 - Production build successful
@@ -10478,13 +11921,16 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 019 (2026-02-03)
+
 **EPIC 9.2: Series Metadata - COMPLETED**
 
 ### Commits
+
 1. `feat: add series metadata service and ComicVine matching (EPIC 9.2)`
 2. `test: add series metadata service tests (EPIC 9.2)`
 
 ### Deliverables
+
 - ✅ Series Search:
   - Search ComicVine by series name with optional filters
   - Filter by publisher, year range
@@ -10529,6 +11975,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
   - ConfidenceScore_ExactTitleMatch_GivesHighScore
 
 ### New Files
+
 | File | Purpose |
 |------|---------|
 | `src/Shortboxerr.Core/ComicVine/ISeriesMetadataService.cs` | Interface and result types |
@@ -10537,6 +11984,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | `tests/Shortboxerr.Tests/SeriesMetadataServiceTests.cs` | Unit tests |
 
 ### Modified Files
+
 | File | Purpose |
 |------|---------|
 | `src/Shortboxerr.Core/Entities/Series.cs` | Added ComicVine metadata fields |
@@ -10546,6 +11994,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | `src/Shortboxerr.Api/Program.cs` | Map endpoints |
 
 ### Confidence Scoring
+
 | Factor | Points | Description |
 |--------|--------|-------------|
 | Exact title match | +40 | Normalized title equals query |
@@ -10559,6 +12008,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | Base score | 50 | Starting confidence |
 
 ### Notes
+
 - Confidence threshold configurable via ComicVine settings
 - Series monitoring modes: AllIssues, FutureIssues, Manual, FirstIssue
 - Issue sync preserves existing issues, updates ComicVine IDs when matched
@@ -10567,14 +12017,17 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 018 (2026-02-03)
+
 **EPIC 9.1: ComicVine API Client - COMPLETED**
 
 ### Commits
+
 1. `feat: add ComicVine API client with rate limiting (EPIC 9.1)`
 2. `feat: add ComicVine settings UI (EPIC 9.1)`
 3. `test: add ComicVine client tests (EPIC 9.1)`
 
 ### Deliverables
+
 - ✅ ComicVine API Client:
   - IComicVineClient interface with full API methods
   - ComicVineClient implementation with rate limiting (200 req/hour)
@@ -10616,6 +12069,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
   - TestConnectionAsync_WithRateLimitResponse_ThrowsRateLimitException
 
 ### New Files
+
 | File | Purpose |
 |------|---------|
 | `src/Shortboxerr.Core/ComicVine/IComicVineClient.cs` | Interface and models |
@@ -10624,6 +12078,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | `tests/Shortboxerr.Tests/ComicVineClientTests.cs` | Unit tests |
 
 ### Modified Files
+
 | File | Purpose |
 |------|---------|
 | `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Register ComicVine client |
@@ -10632,6 +12087,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | `ui/src/pages/SettingsPage.tsx` | ComicVine settings tab |
 
 ### Notes
+
 - Rate limiting tracks requests per hour with automatic window reset
 - Caching prevents redundant API calls (1h for search, 24h for details, 7d for publishers)
 - Settings stored via ISettingsService with key "comicvine"
@@ -10640,15 +12096,18 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 017 (2026-02-02)
+
 **EPIC 6: API Key Management - COMPLETED**
 
 ### Commits
+
 1. `feat: add API key management backend (EPIC 6)`
 2. `feat: add API key management UI (EPIC 6)`
 3. `test: add API key endpoint tests (EPIC 6)`
 4. `docs: update API.md and complete iteration 017`
 
 ### Deliverables
+
 - ✅ API Key Generation:
   - Cryptographically secure key generation using RandomNumberGenerator
   - Format: `sk_live_{32 hex characters}` (40 chars total)
@@ -10675,6 +12134,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
   - ApiKey_MaskedFormat_CorrectStructure
 
 ### New/Modified Files
+
 | File | Purpose |
 |------|---------|
 | `src/Shortboxerr.Core/Services/ISettingsService.cs` | Added ApiKeyInfo, Get/Regenerate/Validate methods |
@@ -10686,6 +12146,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | `docs/API.md` | API key endpoint documentation |
 
 ### Notes
+
 - Full API key only returned on explicit request or regenerate (security)
 - Regenerate shows confirmation dialog warning about invalidation
 - Copy triggers browser clipboard API with success feedback
@@ -10694,13 +12155,16 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 016 (2026-02-02)
+
 **EPIC 6: Settings Persistence & UI Enhancements - PARTIAL**
 
 ### Commits
+
 1. `feat: add settings persistence with theme support (EPIC 6)`
 2. `test: add settings endpoint tests (14 new tests)`
 
 ### Deliverables
+
 - ✅ Settings Service:
   - ISettingsService interface with key-value storage
   - SettingsService implementation using SystemSetting entity
@@ -10734,6 +12198,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 - ✅ 373 tests passing (14 new settings tests)
 
 ### New/Modified Files
+
 | File | Purpose |
 |------|---------|
 | `src/Shortboxerr.Core/Services/ISettingsService.cs` | Settings service interface |
@@ -10746,20 +12211,24 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | `docs/API.md` | Settings endpoint documentation |
 
 ### Additional Commits (Bug Fixes)
+
 3. `fix: use relative API URLs to support Vite proxy`
-4. `fix: add CORS support for development`
-5. `feat: add naming format token helper UI (EPIC 6)`
+2. `fix: add CORS support for development`
+3. `feat: add naming format token helper UI (EPIC 6)`
 
 ### Naming Format Token Helper (Complete)
+
 - ✅ Clickable token pills below each format input
 - ✅ Clicking a token inserts it at cursor position
 - ✅ Live preview with sample data (Batman, Issue 001, TPB Vol. 01)
 - ✅ Tokens loaded from API endpoint
 
 ### Remaining in EPIC 6
+
 - API key management (display, copy, regenerate)
 
 ### Notes
+
 - Theme changes are saved to database and apply immediately
 - Light theme uses CSS variables for colors (invertable)
 - Folder settings support partial updates for flexibility
@@ -10769,13 +12238,16 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 015 (2026-02-02)
+
 **EPIC 4.5: DDL UI (Arr-Style) - COMPLETED**
 
 ### Commits
+
 1. `feat: add DDL provider UI with list, add/edit modal, and test`
 2. `feat: add DDL activity feed to Activity page`
 
 ### Deliverables
+
 - ✅ DDL Provider List Page:
   - Table with name, type, status badge, priority
   - Enable/disable toggle with instant feedback
@@ -10808,6 +12280,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
   - Enable/disable and reorder functions
 
 ### New/Modified Files
+
 | File | Purpose |
 |------|---------|
 | `ui/src/pages/SettingsPage.tsx` | DDL provider management UI |
@@ -10815,11 +12288,13 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | `ui/src/api/client.ts` | Provider API functions |
 
 ### Tests
+
 - 359 backend tests passing
 - UI TypeScript compilation passes
 - Production build successful
 
 ### Notes
+
 - EPIC 4 is now 100% complete
 - DDL activity feed ready for real data when DDL endpoints are implemented
 - Provider test endpoint already existed in backend
@@ -10827,12 +12302,15 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 014 (2026-02-02)
+
 **EPIC 5: UI (ARR-LIKE UI) - COMPLETED**
 
 ### Commits
+
 1. `feat: add React UI shell with Arr-style navigation`
 
 ### Deliverables
+
 - ✅ React SPA Setup:
   - Vite + React 18 + TypeScript
   - React Query for data fetching
@@ -10883,6 +12361,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
   - SPA fallback routing in ASP.NET
 
 ### New Files
+
 | File | Purpose |
 |------|---------|
 | `ui/` | React frontend project |
@@ -10901,15 +12380,18 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | `src/Shortboxerr.Api/wwwroot/` | Built UI assets |
 
 ### Dependencies Added
+
 - `react-router-dom` - Client-side routing
 - `@tanstack/react-query` - Data fetching and caching
 - `lucide-react` - Icon library
 - `clsx` - Class name utility
 
 ### Assumptions Made
+
 - None new (used existing assumptions from docs/ASSUMPTIONS.md)
 
 ### Notes
+
 - UI connects to backend API at :8585 (configurable via VITE_API_URL)
 - Dark theme only for now (light theme can be added later)
 - Settings page is UI-only (no backend persistence yet)
@@ -10918,12 +12400,15 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 013 (2026-02-02)
+
 **EPIC 4.6: Generic Indexer/Download Client Support - COMPLETED**
 
 ### Commits
+
 1. `feat: add RSS indexer and HTTP download client`
 
 ### Deliverables
+
 - ✅ RSS/Atom Indexer Adapter:
   - `IRssIndexer` interface extending `IIndexerProvider`
   - `RssIndexer` implementation using `System.ServiceModel.Syndication`
@@ -10952,6 +12437,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 - ✅ 359 tests passing (22 new tests)
 
 ### New Files
+
 | File | Purpose |
 |------|---------|
 | `src/Shortboxerr.Core/Indexers/IRssIndexer.cs` | RSS indexer interface and models |
@@ -10963,13 +12449,16 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | `tests/Shortboxerr.Tests/HttpDownloadClientTests.cs` | HTTP client tests |
 
 ### Dependencies Added
+
 - `System.ServiceModel.Syndication` - RSS/Atom feed parsing
 - `Moq` - Mocking framework for tests
 
 ### Assumptions Made
+
 - None new (used existing assumptions from docs/ASSUMPTIONS.md)
 
 ### Notes
+
 - RSS indexer converts feed items to Candidates using existing FilenameParser
 - HTTP client supports all common download scenarios
 - Torrent interface is ready for future implementation (qBittorrent, Transmission, etc.)
@@ -10977,12 +12466,15 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 012 (2026-02-02)
+
 **EPIC 4.7: DDL Parser Enhancements (Mylar3 Parity) - COMPLETED**
 
 ### Commits
+
 1. `feat: enhance DDL release parser for Mylar3 parity`
 
 ### Deliverables
+
 - ✅ Publisher extraction improvement:
   - Extract publisher from parentheses when followed by year
   - Handle multiple parenthetical metadata groups in any order
@@ -11005,6 +12497,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 - ✅ 337 tests passing (5 new parser tests)
 
 ### Technical Details
+
 - Added `NormalizeSeparators()` preprocessing step
 - Protected decimal issue numbers (1.5) during normalization
 - Added `YearAnywhereRegex` for scene-style year positions
@@ -11014,6 +12507,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 - Reordered extraction pipeline: quality extraction now before issue extraction
 
 ### Mylar3 Parity Status
+
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Publisher in parens | ✅ PASS | `(Marvel)` extracted correctly |
@@ -11023,9 +12517,11 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | Hyphen subtitles | ✅ PASS | Preserved in series title |
 
 ### Assumptions Made
+
 - None new (used existing assumptions from docs/ASSUMPTIONS.md)
 
 ### Notes
+
 - All parser enhancements backward-compatible with existing tests
 - Scene-style naming (Aquaman.001.2023.Digital.cbz) now fully supported
 - DDL parser now achieves 100% Mylar3 parity for documented cases
@@ -11033,14 +12529,17 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 011 (2026-02-02)
+
 **EPIC 4.4: DDL Conformance Tests (Mylar3 Parity) - COMPLETED**
 
 ### Commits
+
 1. `feat: expand DDL parsing and filtering golden test fixtures`
 2. `feat: add required words filtering test cases`
 3. `chore: update docs for iteration 011 completion`
 
 ### Deliverables
+
 - ✅ DDL Parsing Fixture Tests:
   - 24 comprehensive golden test cases for release title parsing
   - Covers: singles, collections, TPB, HC, Omnibus, Deluxe, Compendium
@@ -11072,6 +12571,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 - ✅ 332 tests passing (65 new conformance tests)
 
 ### Test Coverage Summary
+
 | Category | Test Count | Description |
 |----------|------------|-------------|
 | Parsing | 24 | Release title parsing |
@@ -11080,6 +12580,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | Integration | 17 | End-to-end scenarios |
 
 ### Mylar3 Parity Status
+
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Basic release parsing | ✅ | Series, issue, year, format |
@@ -11094,13 +12595,16 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 010 (2026-02-02)
+
 **EPIC 4.3: DDL Configuration & Mylar3 Import - COMPLETED**
 
 ### Commits
+
 1. `feat: add Mylar3 config import and DDL provider settings (EPIC 4.3)`
 2. `chore: update docs for iteration 010 completion`
 
 ### Deliverables
+
 - ✅ DDL Provider Settings:
   - DdlProviderSettings: Comprehensive DDL-specific configuration
   - Site type, rate limits, timeouts, retries
@@ -11128,6 +12632,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 - ✅ 266 tests passing (19 new)
 
 ### Mylar3 Import Features
+
 | Feature | Description |
 |---------|-------------|
 | INI Parsing | Standard config.ini format |
@@ -11139,6 +12644,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | Unmapped Tracking | Report unsupported settings |
 
 ### Site Type Defaults
+
 | Site | Rate Limit | Timeout | Retries |
 |------|------------|---------|---------|
 | GettyComics | 10/min | 30s | 3 |
@@ -11149,13 +12655,16 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 009 (2026-02-02)
+
 **EPIC 4.2.4: DDL → Import Handoff - COMPLETED**
 
 ### Commits
+
 1. `feat: add DDL import service with auto-match and manual review (EPIC 4.2.4)`
 2. `chore: update docs for iteration 009 completion`
 
 ### Deliverables
+
 - ✅ Import Service Interface:
   - IDdlImportService: Post-download processing and import handoff
   - ProcessDownloadAsync: Full pipeline from download to import
@@ -11199,6 +12708,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 - ✅ 247 tests passing (18 new)
 
 ### Import States
+
 | State | Value | Description |
 |-------|-------|-------------|
 | Pending | 0 | Initial state |
@@ -11215,6 +12725,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 | Rejected | 30 | Rejected by user |
 
 ### File Format Detection
+
 | Format | Magic Bytes | Supported |
 |--------|-------------|-----------|
 | CBZ/ZIP | 50 4B | ✅ |
@@ -11226,13 +12737,16 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 008 (2026-02-02)
+
 **EPIC 4.2.3: DDL Download Execution - COMPLETED**
 
 ### Commits
+
 1. `feat: add DDL download service with retry logic (EPIC 4.2.3)`
 2. `chore: update docs for iteration 008 completion`
 
 ### Deliverables
+
 - ✅ Download Service:
   - IDdlDownloadService: Download operations interface
   - DdlDownloadService: Full HTTP download implementation
@@ -11260,6 +12774,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 - ✅ 229 tests passing (15 new)
 
 ### Failure Reasons
+
 | Code | Reason | Retryable |
 |------|--------|-----------|
 | 10 | Timeout | Yes |
@@ -11276,13 +12791,16 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 007 (2026-02-02)
+
 **EPIC 4.2.1: DDL Discovery & Search - COMPLETED**
 
 ### Commits
+
 1. `feat: add DDL site adapters and search service (EPIC 4.2.1)`
 2. `chore: update docs for iteration 007 completion`
 
 ### Deliverables
+
 - ✅ Site Adapter System:
   - IDdlSiteAdapter: Interface for site-specific adapters
   - BaseDdlSiteAdapter: Common HTTP client, rate limiting, configuration
@@ -11307,6 +12825,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 - ✅ 214 tests passing (31 new)
 
 ### Site Adapters
+
 | Adapter | Site Type | Rate Limit | Auth Required |
 |---------|-----------|------------|---------------|
 | MockDdlSiteAdapter | MockDdl | 60/min | No |
@@ -11315,14 +12834,17 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 006 (2026-02-02)
+
 **EPIC 4.2.2: DDL Candidate Normalization - COMPLETED**
 
 ### Commits
+
 1. `feat: add DDL candidate normalization (EPIC 4.2.2)`
 2. `test: add golden test fixtures for DDL parsing (EPIC 4.2.2)`
 3. `chore: update docs for iteration 006 completion`
 
 ### Deliverables
+
 - ✅ Core Models:
   - DdlCandidate (release candidate with DDL-specific fields)
   - DdlParsedInfo (structured metadata from release titles)
@@ -11355,6 +12877,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 - ✅ 183 tests passing (86 new DDL tests)
 
 ### DDL Link Types
+
 | Type | Value | Description |
 |------|-------|-------------|
 | Direct | 0 | Direct download to file |
@@ -11365,13 +12888,16 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 005 (2026-02-02)
+
 **EPIC 4.1: Provider Abstractions - COMPLETED**
 
 ### Commits
+
 1. `feat: add provider abstractions and CRUD endpoints (EPIC 4.1)`
 2. `chore: update docs for iteration 005 completion (EPIC 4.1)`
 
 ### Deliverables
+
 - ✅ Core Interfaces:
   - IProvider (base abstraction)
   - IIndexerProvider (search/discovery)
@@ -11407,6 +12933,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 - ✅ 97 tests passing (14 new provider tests)
 
 ### Enums Defined
+
 | Enum | Values |
 |------|--------|
 | ProviderType | Ddl, Rss, Newznab, Torznab, HttpDownload, Torrent, Usenet |
@@ -11417,14 +12944,17 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 004 (2026-02-02)
+
 **EPIC 3: DecisionEngine - COMPLETED**
 
 ### Commits
+
 1. `feat: add DecisionEngine with candidate evaluation and ranking (EPIC 3)`
 2. `test: add golden test harness for DecisionEngine (EPIC 3)`
 3. `chore: update docs for iteration 004 completion`
 
 ### Deliverables
+
 - ✅ Core Models:
   - Candidate (release candidate with metadata)
   - CandidateEvaluation (evaluation result with score)
@@ -11460,6 +12990,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 - ✅ 83 passing tests (38 new DecisionEngine tests)
 
 ### Configuration (DecisionEngineSettings)
+
 | Setting | Default | Description |
 |---------|---------|-------------|
 | AutoGrabThreshold | 80 | Min score for auto-grab |
@@ -11472,9 +13003,11 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 003 (2026-02-02)
+
 **EPIC 2: Import Pipeline - COMPLETED**
 
 ### Commits
+
 1. `chore: change default port from 7878 to 8585`
 2. `chore: update CI workflow port from 7878 to 8585`
 3. `feat: add staging folder service and manual import endpoints (EPIC 2)`
@@ -11482,6 +13015,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 5. `chore: update docs for iteration 003 completion`
 
 ### Deliverables
+
 - ✅ Core Models:
   - StagedItem (file in staging folder)
   - ParsedComicInfo (metadata from filename)
@@ -11505,15 +13039,18 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 ---
 
 ## Iteration 002 (2026-02-02)
+
 **EPIC 1: Domain + Persistence - COMPLETED**
 
 ### Commits
+
 1. `chore: verify EPIC 0 hygiene (Makefile + commit-msg hook)`
 2. `feat: add domain entities for EPIC 1`
 3. `feat: add CRUD endpoints for Series and Editions`
 4. `chore: update docs for iteration 002 completion`
 
 ### Deliverables
+
 - ✅ Domain Entities:
   - Series (comic book series with metadata)
   - Issue (single issues with release tracking)
@@ -11532,15 +13069,18 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 - ✅ 16 passing tests (12 new endpoint tests)
 
 ### EPIC 0 Hygiene Verification
+
 - ✅ Makefile functional (`make build`, `make test`)
 - ✅ commit-msg hook enforcing conventional commits
 
 ---
 
 ## Iteration 001 (2026-02-02)
+
 **EPIC 0: Repo Skeleton - COMPLETED**
 
 ### Commits
+
 1. `feat: create .NET solution with project structure`
 2. `feat: add health endpoint, Swagger, and system status API`
 3. `feat: add EF Core SQLite migrations scaffold`
@@ -11550,6 +13090,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 7. `chore: update docs for iteration 001 completion`
 
 ### Deliverables
+
 - ✅ .NET solution: Shortboxerr.sln
   - src/Shortboxerr.Api (ASP.NET Core Web API)
   - src/Shortboxerr.Core (domain entities)
@@ -11568,13 +13109,16 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 - ✅ 4 passing integration tests
 
 ### Assumptions Made
+
 - None new (used existing assumptions from docs/ASSUMPTIONS.md)
 
 ### Notes
+
 - Dev Container verified working (dotnet 8.0.417)
 - All development done inside container as per protocol
 
 ---
 
 ## Iteration 000
+
 - Seeded repo docs and churn protocol.
