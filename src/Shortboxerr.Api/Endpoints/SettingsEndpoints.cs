@@ -814,8 +814,36 @@ public static class SettingsEndpoints
         });
     }
 
+    // Denylist for the generic key-value settings endpoints.
+    // Sensitive keys (security.*, metron, comicvine, providers, etc.) are blocked —
+    // use their dedicated typed endpoints instead.
+    private static readonly HashSet<string> DeniedGenericKeyPrefixes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Security:",
+        "Metron:",
+        "ComicVine:",
+        "Providers:",
+        "Api:",
+    };
+
+    private static bool IsAllowedGenericKey(string key)
+    {
+        // Block keys that start with sensitive prefixes
+        foreach (var prefix in DeniedGenericKeyPrefixes)
+        {
+            if (key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+        return true;
+    }
+
     private static async Task<IResult> GetSetting(string key, ISettingsService settingsService, CancellationToken cancellationToken)
     {
+        if (!IsAllowedGenericKey(key))
+        {
+            return Results.NotFound(new { error = $"Setting '{key}' not found." });
+        }
+
         var value = await settingsService.GetAsync(key, cancellationToken);
         if (value == null)
         {
@@ -830,12 +858,22 @@ public static class SettingsEndpoints
         ISettingsService settingsService,
         CancellationToken cancellationToken)
     {
+        if (!IsAllowedGenericKey(key))
+        {
+            return Results.BadRequest(new { error = $"Setting '{key}' cannot be modified via this endpoint. Use the dedicated settings endpoint." });
+        }
+
         await settingsService.SetAsync(key, request.Value, cancellationToken);
         return Results.Ok(new SettingResponse { Key = key, Value = request.Value });
     }
 
     private static async Task<IResult> DeleteSetting(string key, ISettingsService settingsService, CancellationToken cancellationToken)
     {
+        if (!IsAllowedGenericKey(key))
+        {
+            return Results.NotFound(new { error = $"Setting '{key}' not found." });
+        }
+
         var value = await settingsService.GetAsync(key, cancellationToken);
         if (value == null)
         {
