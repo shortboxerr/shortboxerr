@@ -229,6 +229,7 @@ The following paths and patterns **must never be committed** to the repo. They a
 | Pattern | Reason |
 |--------|--------|
 | `.cursor/agent-transcripts/` | Agent chat transcripts may contain context you do not want in repo history. |
+| `.devcontainer/local-secrets/` | Local PAT files (e.g. `github_token`) used by `.cursor/github-mcp.sh`; never commit. |
 | `.cursor/**/env`, `.cursor/**/*.env` | MCP or tool config may hold API keys/tokens; use global Cursor config (e.g. `~/.cursor/mcp.json`) for tokens. |
 | `.aider*` | Aider AI editor state. |
 | `.continue/` | Continue.dev state and config. |
@@ -240,3 +241,8 @@ The following paths and patterns **must never be committed** to the repo. They a
 - **Before committing:** Ensure no blocklisted file is staged. If you use Cursor MCP with a GitHub token, store it only in **global** config (e.g. `~/.cursor/mcp.json`), not in the project’s `.cursor/mcp.json` (see `.cursor/README.md`).
 - **If you accidentally committed a secret:** Revoke the credential immediately (e.g. GitHub token), then remove it from history (e.g. `git filter-repo` or BFG) and force-push. Document the incident in this file or `docs/DECISIONS.md` if significant.
 - **Audit:** Periodically run `git log --all --name-only --pretty=format:''` and check for any blocklisted path; if found, fix history and update `.gitignore`/this section.
+- **History spot-check (Iteration 234, 2026-03-28):** `git log` over `.cursor/agent-transcripts/`, `.env` / `.env.local`, and `*.secrets.json` patterns showed **no** commits touching those paths in this repository. No history rewrite required.
+
+### Committed MCP config (verification)
+
+The repo’s **`.cursor/mcp.json`** must stay **token-free** (launcher only, e.g. `bash` + `.cursor/github-mcp.sh`). Tokens are supplied via global Cursor config, process env (`GITHUB_PERSONAL_ACCESS_TOKEN` / `GH_TOKEN`), `gh auth token`, or gitignored `.devcontainer/local-secrets/github_token` — see `.cursor/README.md`.

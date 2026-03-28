@@ -1,41 +1,38 @@
-# Self-Check: Iteration 233
+# Self-Check: Iteration 234
 
 ## Build Status
 
 - [x] `dotnet build` succeeds
-- [x] `npm run build` succeeds (`ui/`)
+- [x] `npm audit` — `ui/`: 0 vulnerabilities; `tests/e2e/`: 0 vulnerabilities
 
 ## Test Status
 
-- **Before:** 2610 passed, 0 failed (Iteration 232 baseline)
-- **After:** 2610 passed, 0 failed
-- [x] No NEW test failures introduced
-
-## Supply chain
-
-- [x] `dotnet list package --vulnerable --include-transitive` — no vulnerable packages
+- [x] `dotnet test --no-build --verbosity quiet` — 2610 passed, 0 failed
 
 ## Lint Status
 
-- [x] No new lint errors on changed files (docs/csproj only)
+- [x] No new lint issues on edited files (YAML, markdown, gitignore)
 
 ## Files Changed
 
 | File | Type |
 |------|------|
-| `Directory.Build.props` | new |
-| `*.csproj` (Api, Infrastructure, Core, Tests) | security version bumps |
-| `.github/workflows/ci.yml` | NuGet vulnerability gate |
-| `docs/SECURITY.md` | policy + supply chain |
-| `docs/BACKLOG.md` | 14.28–14.31 |
-| `docs/WORKLOG.md` | Iteration 233 |
+| `.github/dependabot.yml` | Dependabot version updates |
+| `.github/workflows/ci.yml` | npm audit + Gitleaks |
+| `.gitignore` | local-secrets |
+| `ui/package-lock.json` | npm audit fix (high-severity dev deps) |
+| `src/Shortboxerr.Api/wwwroot/**` | post-build hashes |
+| `docs/SECURITY.md` | blocklist + audit + MCP |
+| `docs/CONTRIBUTING.md` | security section |
+| `docs/BACKLOG.md` | 14.27, 14.29, 14.31 |
+| `docs/WORKLOG.md` | Iteration 234 |
 | `docs/SELF_CHECK.md` | this file |
 
 ## Commits
 
-1. `fix(security): NuGet remediation, CI vulnerable check, SECURITY docs`
-2. `chore: refresh wwwroot asset hashes after ui build` (post `npm run build` gate)
+1. `chore(security): Dependabot, CI audits, Gitleaks, ui lockfile, docs`
+2. `chore: refresh wwwroot after ui build`
 
 ## Summary
 
-Resolved security-audit NuGet findings via 8.0.11 framework bumps, `Directory.Build.props` pins, test legacy package overrides, and documented policies; CI fails if new advisories appear.
+Hardened supply chain and secret hygiene: automated dependency PRs, high-severity npm audit in CI, Gitleaks on full history; backlog 14.27 and 14.29 complete; 14.31 tooling goals done except optional threat-model doc.

@@ -1,5 +1,30 @@
 # Worklog
 
+## Iteration 234 (2026-03-28)
+
+**chore(security): Dependabot, CI npm audit + Gitleaks, complete 14.27/14.29**
+
+### Summary
+
+Security iteration: **14.27** closed — `.gitignore` now includes **`.devcontainer/local-secrets/`** (PAT path for `github-mcp.sh`); `git log` spot-check on agent-transcripts / `.env*` / secrets patterns found no history issues; **`.cursor/mcp.json`** verified token-free (bash + wrapper); **CONTRIBUTING.md** links blocklist, MCP, CI checks. **14.29** closed — **Gitleaks** (`gitleaks/gitleaks-action@v2`, `fetch-depth: 0`) added to CI for full-history secret scan. **14.31** partially closed — **Dependabot** for NuGet, npm (`ui`, `tests/e2e`), and GitHub Actions; **npm audit** job matrix for UI and E2E (`--audit-level=high`). **docker-build** now `needs` **npm-audit** and **secret-scan** as well as **build-and-test**. Ran **`npm audit fix`** in **`ui/`** so **`npm audit --audit-level=high`** is clean (required for new CI job).
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `.github/dependabot.yml` | new |
+| `.github/workflows/ci.yml` | npm-audit + secret-scan jobs; docker needs |
+| `.gitignore` | `.devcontainer/local-secrets/` |
+| `docs/SECURITY.md` | blocklist row, history note, MCP verification |
+| `docs/CONTRIBUTING.md` | security bullets |
+| `docs/BACKLOG.md` | 14.27, 14.29, 14.31 |
+| `docs/WORKLOG.md` | this entry |
+| `docs/SELF_CHECK.md` | Iteration 234 |
+| `ui/package-lock.json` | `npm audit fix` so CI `npm audit --audit-level=high` passes |
+| `src/Shortboxerr.Api/wwwroot/**` | refreshed after `npm run build` |
+
+---
+
 ## Iteration 233 (2026-03-28)
 
 **fix(security): NuGet vulnerability remediation, CI check, SECURITY backlog**

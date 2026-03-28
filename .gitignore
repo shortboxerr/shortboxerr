@@ -55,6 +55,9 @@ Thumbs.db
 # Runtime data
 **/covers/
 
+# Dev container local PAT / secrets (see .cursor/github-mcp.sh)
+.devcontainer/local-secrets/
+
 # AI / dev tooling – do not commit (see docs/SECURITY.md)
 .cursor/agent-transcripts/
 .cursor/**/env

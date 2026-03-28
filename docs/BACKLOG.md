@@ -461,16 +461,16 @@ Enable automated AI code review for pull requests on the shortboxerr repo using 
 
 **Effort:** S | **Priority:** P3
 
-#### 14.27 Prevent Committing AI-Related / Sensitive Dev Files 📋 PLANNED
+#### 14.27 Prevent Committing AI-Related / Sensitive Dev Files ✅ COMPLETED (Iteration 234)
 Ensure the repo does not commit files that should stay local (AI tooling state, secrets, dev-only config with credentials). If such files are already in history, remove them and fix history.
 
 **Goals:**
-- [ ] **Define blocklist:** Document which paths/patterns must never be committed (e.g. Cursor agent transcripts, MCP config containing tokens, `.aider*`, `.continue/`, local API key files, user-specific Cursor state).
-- [ ] **Verify MCP / Cursor config in repo:** Confirm committed `.cursor/mcp.json` (and similar) use a token-free launcher or placeholders only—raw PATs belong in user/global config or env (`GITHUB_PERSONAL_ACCESS_TOKEN` / `GH_TOKEN`), per `docs/SECURITY.md`.
-- [ ] **Update .gitignore:** Add entries so these patterns are ignored by default (e.g. `.cursor/agent-transcripts/`, `.cursor/**/env` or equivalent; any file that might hold secrets).
-- [ ] **Audit git history:** Run an audit (e.g. `git log -p --all -- <paths>` or search for known secret patterns) to see if any blocklisted files or credentials were ever committed.
-- [ ] **Fix history if needed:** If anything sensitive or unwanted is found, remove from history (e.g. `git filter-repo` or BFG), force-push with care, and document in `docs/SECURITY.md` or `docs/DECISIONS.md` what was removed and when.
-- [ ] **Document policy:** Add a short note (e.g. in `docs/CONTRIBUTING.md` or `docs/SECURITY.md`) that AI-related and credential-bearing dev files must not be committed, with a pointer to the blocklist/.gitignore.
+- [x] **Define blocklist:** `docs/SECURITY.md` *AI and Dev Tooling* table (authoritative); aligned with `.gitignore`.
+- [x] **Verify MCP / Cursor config in repo:** `.cursor/mcp.json` uses token-free `bash` + `.cursor/github-mcp.sh` only; documented under SECURITY *Committed MCP config*.
+- [x] **Update .gitignore:** Added `.devcontainer/local-secrets/` (PAT file path used by `github-mcp.sh`); existing `.cursor/` and env patterns retained.
+- [x] **Audit git history:** Spot-check `git log` on `.cursor/agent-transcripts/`, `.env*`, `*.secrets.json` — no hits (documented in SECURITY).
+- [x] **Fix history if needed:** N/A (no blocklisted paths found in history).
+- [x] **Document policy:** `docs/CONTRIBUTING.md` expanded with blocklist pointer, MCP, local-secrets, CI security checks.
 
 **Acceptance:** (1) .gitignore and docs clearly define what must not be committed; (2) history is audited; (3) any past commits containing such files are rewritten so they no longer appear in history; (4) policy is documented.
 
@@ -491,12 +491,12 @@ Ensure the repo does not commit files that should stay local (AI tooling state, 
 
 **Effort:** M | **Priority:** P2
 
-#### 14.29 Build output: no secrets in `wwwroot` / UI bundles 📋 PLANNED
+#### 14.29 Build output: no secrets in `wwwroot` / UI bundles ✅ COMPLETED (Iteration 234)
 Treat `wwwroot` and Vite `dist` as build artifacts only. Ensure CI and docs guard against injecting API keys or other credentials at build time; optional follow-up: secret scanning on produced JS (e.g. gitleaks patterns) if automation is desired.
 
 **Goals:**
 - [x] Document in `docs/SECURITY.md` or build docs that frontend bundles must never embed runtime secrets; review env-based `define` usage (Iteration 233: "Build output" under Frontend Security).
-- [ ] Optionally add a CI step or pre-release checklist that scans dist/wwwroot for high-risk patterns (beyond normal code review).
+- [x] CI **Gitleaks** scans full git history (including tracked `wwwroot` assets) on push/PR — catches accidental committed secrets; complements docs/policy (Iteration 234).
 
 **Effort:** S | **Priority:** P3
 
@@ -513,9 +513,9 @@ Treat `wwwroot` and Vite `dist` as build artifacts only. Ensure CI and docs guar
 The Mar 2026 security audit was lightweight (grep, `docs/SECURITY.md`, package vulnerability list). Schedule deeper work when warranted.
 
 **Goals:**
-- [ ] Enable or tune **Dependabot** (NuGet + npm) for the repo; align with branch protection.
-- [x] Add a recurring **`dotnet list package --vulnerable`** (and/or `npm audit`) step in CI with non-zero exit on high/critical (policy TBD) — **NuGet:** CI step added Iteration 233; **npm:** still optional for `ui/` / e2e in CI.
-- [ ] Evaluate **OSV**, **Semgrep**, or **gitleaks** (or GitHub secret scanning) on PRs.
+- [x] Enable or tune **Dependabot** (NuGet + npm for `ui/` and `tests/e2e`, GitHub Actions) — `.github/dependabot.yml` added Iteration 234; tune branch/labels in repo settings as needed.
+- [x] Add a recurring **`dotnet list package --vulnerable`** (and/or `npm audit`) step in CI — **NuGet** Iteration 233; **npm audit** (`ui` + `e2e`, `--audit-level=high`) Iteration 234.
+- [x] **Gitleaks** in CI (Iteration 234). **OSV / Semgrep:** still optional for a future pass.
 - [ ] Optional: short **threat model** or data-flow note for API key handling, encryption at rest, and reverse-proxy deployment.
 
 **Effort:** L | **Priority:** P3
