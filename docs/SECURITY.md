@@ -182,6 +182,33 @@ When adding or changing accepted warnings in `eslint.config.js`, re-check that t
 - `tests/e2e/` has its own `package.json` and `node_modules`. It is **not** shipped in release images; keep it that way.
 - Periodically run `npm audit` in `tests/e2e/` (e.g. when touching Playwright or adding e2e deps).
 
+## Lightweight threat model (data flow and deployment)
+
+Short, informal model for operators and reviewers (not a formal STRIDE exercise). **Update this section** when authentication, storage, or deployment assumptions change.
+
+### Trust boundaries
+
+| Zone | Role |
+|------|------|
+| **Operator browser** | Loads the SPA from the app host; talks to `/api/*` via the UI. Must not persist indexer/service credentials in browser storage (see Frontend Security). |
+| **Application host** | Runs Shortboxerr (Kestrel or container). Holds SQLite DB, log files, cover cache, and decrypted credentials **in process memory** while handling requests. |
+| **SQLite database** | Stores settings; sensitive fields use **encryption at rest** (`ENC:1:`). A copied DB file is not enough to recover secrets on another machine (machine-bound key). |
+| **External services** | ComicVine, Metron, indexers, download clients, etc. Outbound calls use credentials the user configured; treat those providers as separate trust zones. |
+
+### API access control
+
+- **`/api/*`** (except documented exemptions such as `/health`, `/ping`, `/swagger`, `/signalr`, `/api/v1/setup`) can require an **API key** when the operator enables API key authentication in settings. Keys are sent via **`X-Api-Key`** or **`apikey`** query parameter (see `ApiKeyMiddleware`). When auth is **disabled**, `/api/*` is open to anyone who can reach the host (**LAN-wide exposure risk**).
+- **Static UI** (`/`, assets under `wwwroot`) is served without API key checks; the SPA obtains data by calling `/api/*` (with key when enabled).
+
+### Transport and exposure
+
+- **TLS:** Terminate HTTPS at a **reverse proxy** (nginx, Traefik, Caddy, cloud LB) for any deployment reachable beyond a single trusted machine. Plain HTTP is only appropriate on loopback or an isolated management network.
+- **Network:** Prefer binding to localhost or a private interface unless the deployment model requires LAN access; combine with firewall rules and optional API key auth.
+
+### Automated checks (CI)
+
+On push/PR, CI runs **vulnerable NuGet** listing, **`npm audit`** (high+) for `ui/` and `tests/e2e`, and **Gitleaks** on full history. See `.github/workflows/ci.yml` and `docs/CONTRIBUTING.md`. Deeper static analysis (e.g. Semgrep, OSV beyond NuGet advisory DB) remains optional.
+
 ## Code Review Checklist
 
 When reviewing code that handles credentials, verify:

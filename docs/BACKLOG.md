@@ -509,14 +509,14 @@ Treat `wwwroot` and Vite `dist` as build artifacts only. Ensure CI and docs guar
 
 **Effort:** S | **Priority:** P3
 
-#### 14.31 Deeper security posture (tooling & threat model) 📋 PLANNED
+#### 14.31 Deeper security posture (tooling & threat model) ✅ COMPLETED (Iteration 235)
 The Mar 2026 security audit was lightweight (grep, `docs/SECURITY.md`, package vulnerability list). Schedule deeper work when warranted.
 
 **Goals:**
 - [x] Enable or tune **Dependabot** (NuGet + npm for `ui/` and `tests/e2e`, GitHub Actions) — `.github/dependabot.yml` added Iteration 234; tune branch/labels in repo settings as needed.
 - [x] Add a recurring **`dotnet list package --vulnerable`** (and/or `npm audit`) step in CI — **NuGet** Iteration 233; **npm audit** (`ui` + `e2e`, `--audit-level=high`) Iteration 234.
-- [x] **Gitleaks** in CI (Iteration 234). **OSV / Semgrep:** still optional for a future pass.
-- [ ] Optional: short **threat model** or data-flow note for API key handling, encryption at rest, and reverse-proxy deployment.
+- [x] **Gitleaks** in CI (Iteration 234). **OSV / Semgrep:** optional follow-up if a future iteration wants extra static analysis.
+- [x] Short **threat model** / data-flow note — `docs/SECURITY.md` *Lightweight threat model* (Iteration 235): trust boundaries, optional API key, TLS/reverse proxy, CI summary.
 
 **Effort:** L | **Priority:** P3
 
@@ -989,7 +989,7 @@ Migrate from direct `dev` pushes to a PR-first workflow targeting `main`, with b
 ### 22.8 Security/Compliance for Release Automation 📋 PLANNED
 - [ ] Scope and rotate GitHub tokens/secrets for release jobs.
 - [ ] Ensure no secrets leak in logs/artifacts.
-- [ ] Gate dependency/license/security scans as required or advisory before release.
+- [x] Gate dependency/license/security scans as required or advisory before release — **partial (Iteration 235):** `main`/`dev` **CI** already runs NuGet vulnerability check, npm audit (high+), and Gitleaks; Dependabot opens update PRs. Dedicated **release** workflow gates still TBD when EPIC 22 automates releases.
 
 **Acceptance:** Release automation follows least-privilege and existing security policy.
 

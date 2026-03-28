@@ -1,5 +1,26 @@
 # Worklog
 
+## Iteration 235 (2026-03-28)
+
+**docs(security): lightweight threat model; close BACKLOG 14.31**
+
+### Summary
+
+Repeated security-focused iteration: added **`docs/SECURITY.md` → *Lightweight threat model (data flow and deployment)*** — trust boundaries (browser, host, SQLite, externals), optional **API key** behavior on `/api/*`, TLS/reverse-proxy guidance, and CI security gate summary. Marked **14.31** complete. **EPIC 22.8** third bullet partially checked: CI on `main`/`dev` already enforces NuGet/npm/Gitleaks; release-workflow-specific gates deferred with note.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `docs/SECURITY.md` | threat model section |
+| `docs/BACKLOG.md` | 14.31, 22.8 |
+| `docs/WORKLOG.md` | this entry |
+| `docs/SELF_CHECK.md` | Iteration 235 |
+
+**Commit:** `docs(security): threat model and complete backlog 14.31`
+
+---
+
 ## Iteration 234 (2026-03-28)
 
 **chore(security): Dependabot, CI npm audit + Gitleaks, complete 14.27/14.29**
