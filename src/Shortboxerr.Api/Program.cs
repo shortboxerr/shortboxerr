@@ -60,17 +60,22 @@ Log.Debug("Configuration sources loaded: {Sources}",
     string.Join(", ", builder.Configuration.AsEnumerable().Select(c => c.Key).Take(10)));
 
 // Add CORS for development (with credentials for SignalR)
+// Extra origins can be added via SHORTBOXERR_CORS_ORIGINS (comma-separated)
+var extraOrigins = (Environment.GetEnvironmentVariable("SHORTBOXERR_CORS_ORIGINS") ?? "")
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+var corsOrigins = new[]
+{
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:8585",
+}.Concat(extraOrigins).ToArray();
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:3000", 
-                "http://localhost:5173",
-                "http://localhost:8585",
-                "http://172.16.11.63:8585",
-                "http://172.16.11.63:5052"
-            )
+        policy.WithOrigins(corsOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials(); // Required for SignalR
@@ -157,6 +162,13 @@ app.UseCors(); // Enable CORS for development
 // Add correlation ID middleware (must be before request logging)
 app.UseCorrelationId();
 
+// API key authentication (after correlation ID, before request logging)
+// Skip in Testing environment to allow tests to run without API keys
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    app.UseApiKeyAuthentication();
+}
+
 // Add Serilog request logging with sensitive data masking
 app.UseSerilogRequestLogging(options =>
 {
@@ -199,12 +211,16 @@ app.UseSerilogRequestLogging(options =>
     };
 });
 
-app.UseSwagger();
-app.UseSwaggerUI(c =>
+// Only expose Swagger in development / debug / testing mode
+if (app.Environment.IsDevelopment() || isDebug || app.Environment.IsEnvironment("Testing"))
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Shortboxerr API v1");
-    c.RoutePrefix = "swagger";
-});
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Shortboxerr API v1");
+        c.RoutePrefix = "swagger";
+    });
+}
 
 // Serve static files from wwwroot (React UI)
 app.UseDefaultFiles();
