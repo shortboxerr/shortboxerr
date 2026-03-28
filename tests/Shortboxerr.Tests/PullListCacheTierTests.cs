@@ -24,7 +24,7 @@ public class PullListCacheTierTests : IClassFixture<CustomWebApplicationFactory>
     public async Task GetWeeklyReleases_IncludesCacheMetadata()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _factory.CreateAuthenticatedClient();
 
         // Act - /api/v1/pulllist/week is the current week endpoint
         var response = await client.GetAsync("/api/v1/pulllist/week");
@@ -50,7 +50,7 @@ public class PullListCacheTierTests : IClassFixture<CustomWebApplicationFactory>
     public async Task GetWeeklyDiscovery_IncludesCacheMetadata()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _factory.CreateAuthenticatedClient();
 
         // Act - /api/v1/pulllist/discover/week is the current week discovery endpoint
         var response = await client.GetAsync("/api/v1/pulllist/discover/week");
@@ -75,7 +75,7 @@ public class PullListCacheTierTests : IClassFixture<CustomWebApplicationFactory>
     public async Task GetPastWeek_ShouldReturnHistoricalTier()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _factory.CreateAuthenticatedClient();
         var pastDate = DateTime.Today.AddDays(-14).ToString("yyyy-MM-dd");
 
         // Act
@@ -98,7 +98,7 @@ public class PullListCacheTierTests : IClassFixture<CustomWebApplicationFactory>
     public async Task GetPullListSettings_ReturnsCacheTierSettings()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _factory.CreateAuthenticatedClient();
 
         // Act
         var response = await client.GetAsync("/api/v1/pulllist/settings");
@@ -129,7 +129,7 @@ public class PullListCacheTierTests : IClassFixture<CustomWebApplicationFactory>
     public async Task UpdateCacheSettings_PersistsCorrectly()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _factory.CreateAuthenticatedClient();
         
         // First get current settings
         var getResponse = await client.GetAsync("/api/v1/pulllist/settings");

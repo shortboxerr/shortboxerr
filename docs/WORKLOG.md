@@ -1,5 +1,37 @@
 # Worklog
 
+## Iteration 227 (2026-03-28)
+**fix(tests): integration clients and Settings API key test isolation**
+
+### Summary
+Full `dotnet test` was failing with widespread `401 Unauthorized` on `/api/*` routes. Root causes: some integration tests used an unauthenticated `HttpClient`; `SettingsEndpointTests` shared one client whose `X-Api-Key` no longer matched the DB after `regenerate`, and tests in that class ran in parallel against the same fixture. Assertions also assumed production `sk_live_*` keys while the factory seeds `sbxr_test_*` for scanner safety.
+
+### Changes
+- **PullListCacheTierTests / SystemEndpointsTests:** Use `CreateAuthenticatedClient()` (and `CustomWebApplicationFactory` where needed) so API key middleware accepts requests.
+- **CustomWebApplicationFactory:** `ResetApiKeyToTestDefault()` restores `security.apiKey` after regenerate tests.
+- **BaseEndpointTest:** Expose `Factory` for tests that need factory helpers.
+- **SettingsEndpointTests:** `[Collection]` with `DisableParallelization`; `try`/`finally` reset after regenerate; relaxed full-key and masked-key assertions for seeded test key shape.
+- **SettingsEndpointTestsCollection.cs:** Collection definition for serialized settings tests.
+- **wwwroot:** Rebuilt UI assets from `npm run build`.
+
+### Classification
+Test bug / fixture isolation — not application auth logic.
+
+### Files Changed
+| File | Type |
+|------|------|
+| `tests/Shortboxerr.Tests/PullListCacheTierTests.cs` | authenticated client |
+| `tests/Shortboxerr.Tests/SystemEndpointsTests.cs` | authenticated client + factory fixture |
+| `tests/Shortboxerr.Tests/BaseEndpointTest.cs` | `Factory` |
+| `tests/Shortboxerr.Tests/CustomWebApplicationFactory.cs` | reset API key helper |
+| `tests/Shortboxerr.Tests/SettingsEndpointTests.cs` | collection, reset, assertions |
+| `tests/Shortboxerr.Tests/SettingsEndpointTestsCollection.cs` | new |
+| `src/Shortboxerr.Api/wwwroot/**` | UI build output |
+| `docs/WORKLOG.md` | Iteration 227 |
+| `docs/SELF_CHECK.md` | Iteration 227 |
+
+---
+
 ## Iteration 226 (2026-03-23)
 **EPIC 9.14: ComicVine enablement gating by validated API key**
 

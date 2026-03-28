@@ -5,6 +5,7 @@ using Shortboxerr.Core.Services;
 
 namespace Shortboxerr.Tests;
 
+[Collection(nameof(SettingsEndpointTestsCollection))]
 public class SettingsEndpointTests : BaseEndpointTest
 {
     public SettingsEndpointTests(CustomWebApplicationFactory factory) : base(factory)
@@ -274,10 +275,12 @@ public class SettingsEndpointTests : BaseEndpointTest
         var result = await response.Content.ReadFromJsonAsync<ApiKeyResponse>();
         Assert.NotNull(result);
         Assert.NotNull(result.FullKey);
-        // Full key should start with "sk_live_"
-        Assert.StartsWith("sk_live_", result.FullKey);
-        // Full key should be 40 chars (8 prefix + 32 hex)
-        Assert.Equal(40, result.FullKey.Length);
+        // Seeded integration key uses sbxr_test_* (scanner-safe); regenerate uses sk_live_*.
+        Assert.True(
+            result.FullKey.StartsWith("sk_live_", StringComparison.Ordinal)
+            || result.FullKey.StartsWith("sbxr_test_", StringComparison.Ordinal),
+            $"Unexpected API key prefix: {result.FullKey[..Math.Min(12, result.FullKey.Length)]}…");
+        Assert.InRange(result.FullKey.Length, 40, 64);
         // Masked key should also be present
         Assert.NotEmpty(result.MaskedKey);
     }
@@ -285,38 +288,52 @@ public class SettingsEndpointTests : BaseEndpointTest
     [Fact]
     public async Task RegenerateApiKey_CreatesNewKey()
     {
-        // Get the current key
-        var currentResponse = await _client.GetAsync("/api/v1/settings/apikey/full");
-        var currentKey = await currentResponse.Content.ReadFromJsonAsync<ApiKeyResponse>();
-        Assert.NotNull(currentKey?.FullKey);
+        try
+        {
+            // Get the current key
+            var currentResponse = await _client.GetAsync("/api/v1/settings/apikey/full");
+            var currentKey = await currentResponse.Content.ReadFromJsonAsync<ApiKeyResponse>();
+            Assert.NotNull(currentKey?.FullKey);
 
-        // Regenerate
-        var regenerateResponse = await _client.PostAsync("/api/v1/settings/apikey/regenerate", null);
-        regenerateResponse.EnsureSuccessStatusCode();
+            // Regenerate
+            var regenerateResponse = await _client.PostAsync("/api/v1/settings/apikey/regenerate", null);
+            regenerateResponse.EnsureSuccessStatusCode();
 
-        var newKey = await regenerateResponse.Content.ReadFromJsonAsync<ApiKeyResponse>();
-        Assert.NotNull(newKey);
-        Assert.NotNull(newKey.FullKey);
-        Assert.True(newKey.IsNewKey);
-        
-        // New key should be different from old key
-        Assert.NotEqual(currentKey.FullKey, newKey.FullKey);
-        // New key should have proper format
-        Assert.StartsWith("sk_live_", newKey.FullKey);
+            var newKey = await regenerateResponse.Content.ReadFromJsonAsync<ApiKeyResponse>();
+            Assert.NotNull(newKey);
+            Assert.NotNull(newKey.FullKey);
+            Assert.True(newKey.IsNewKey);
+
+            // New key should be different from old key
+            Assert.NotEqual(currentKey.FullKey, newKey.FullKey);
+            // New key should have proper format
+            Assert.StartsWith("sk_live_", newKey.FullKey);
+        }
+        finally
+        {
+            Factory.ResetApiKeyToTestDefault();
+        }
     }
 
     [Fact]
     public async Task RegenerateApiKey_ResetslastUsedAt()
     {
-        var response = await _client.PostAsync("/api/v1/settings/apikey/regenerate", null);
-        response.EnsureSuccessStatusCode();
+        try
+        {
+            var response = await _client.PostAsync("/api/v1/settings/apikey/regenerate", null);
+            response.EnsureSuccessStatusCode();
 
-        var result = await response.Content.ReadFromJsonAsync<ApiKeyResponse>();
-        Assert.NotNull(result);
-        // Last used should be null for a newly generated key
-        Assert.Null(result.LastUsedAt);
-        // Created date should be recent
-        Assert.True((DateTime.UtcNow - result.CreatedAt).TotalMinutes < 1);
+            var result = await response.Content.ReadFromJsonAsync<ApiKeyResponse>();
+            Assert.NotNull(result);
+            // Last used should be null for a newly generated key
+            Assert.Null(result.LastUsedAt);
+            // Created date should be recent
+            Assert.True((DateTime.UtcNow - result.CreatedAt).TotalMinutes < 1);
+        }
+        finally
+        {
+            Factory.ResetApiKeyToTestDefault();
+        }
     }
 
     [Fact]
@@ -327,10 +344,10 @@ public class SettingsEndpointTests : BaseEndpointTest
 
         var result = await response.Content.ReadFromJsonAsync<ApiKeyResponse>();
         Assert.NotNull(result);
-        
-        // Format should be: sk_live_...xxxx (prefix + "..." + last 4)
-        Assert.StartsWith("sk_live_", result.MaskedKey);
+
+        // MaskApiKey uses first 8 characters + "..." + last 4 (works for sk_live_* and sbxr_test_* seeds).
         Assert.Contains("...", result.MaskedKey);
+        Assert.InRange(result.MaskedKey.Length, 13, 64);
     }
 
     // ========== Metron Settings Tests ==========
