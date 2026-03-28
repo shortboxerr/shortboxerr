@@ -17,6 +17,7 @@ Before opening a PR:
 
 - `dotnet build`
 - `dotnet test`
+- `cd ui && npm run lint` (zero warnings enforced)
 - `cd ui && npm run build`
 
 Run commands inside the [development container](https://github.com/shortboxerr/shortboxerr/blob/main/README.md#development-dev-container) when applicable.
