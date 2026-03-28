@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
 namespace Shortboxerr.Tests;
@@ -8,15 +7,10 @@ namespace Shortboxerr.Tests;
 /// <summary>
 /// Integration tests for Wanted API endpoints.
 /// </summary>
-public class WantedEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
+public class WantedEndpointsTests : BaseEndpointTest
 {
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly HttpClient _client;
-
-    public WantedEndpointsTests(WebApplicationFactory<Program> factory)
+    public WantedEndpointsTests(CustomWebApplicationFactory factory) : base(factory)
     {
-        _factory = factory;
-        _client = _factory.CreateClient();
     }
 
     #region GET /api/v1/wanted/issues
