@@ -1,22 +1,22 @@
-# Self-Check: Iteration 231
+# Self-Check: Iteration 232
 
 ## Build Status
 
-- [x] `dotnet build` not required (docs only)
-- [x] `npx markdownlint-cli2 docs/WORKLOG.md docs/SELF_CHECK.md` — 0 errors
+- [x] `dotnet build` succeeds
+- [x] `dotnet test` — 2610 passed
 
 ## Summary
 
-`markdownlint-cli2 --fix` cleared MD058 table spacing across the worklog;
-SELF_CHECK line length and spacing aligned with markdownlint defaults.
+`CacheEventPublisherTests` runs non-parallel to avoid thread-pool starvation on
+`Task.Run` cache event publishes (CI flake after PR #2 merge).
 
 ## Files Changed
 
-| File                 | Type                         |
-| -------------------- | ---------------------------- |
-| `docs/WORKLOG.md`    | MD058 + iteration 231        |
-| `docs/SELF_CHECK.md` | MD013, spacing, this file    |
+- `tests/Shortboxerr.Tests/CacheEventPublisherTestsCollection.cs` — new
+- `tests/Shortboxerr.Tests/CacheEventPublisherTests.cs` — `[Collection]`
+- `docs/WORKLOG.md` — iteration 232
+- `docs/SELF_CHECK.md` — this file
 
 ## Commits
 
-1. `chore(docs): markdownlint MD058 for WORKLOG and SELF_CHECK` — (this iteration)
+1. `fix(tests): serialize CacheEventPublisherTests for CI` — (this iteration)

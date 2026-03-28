@@ -1,5 +1,24 @@
 # Worklog
 
+## Iteration 232 (2026-03-28)
+
+**fix(tests): serialize CacheEventPublisherTests for CI**
+
+### Summary
+
+After merging PR #2 into `dev`, CI failed once with `CacheService_Remove_PublishesKeyRemovedEvent`: only one cache event within 10s (expected two). `CacheService` publishes via `Task.Run`; under heavy xUnit parallelism the pool can starve follow-up publishes. Run `CacheEventPublisherTests` in an xUnit collection with `DisableParallelization`.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `tests/Shortboxerr.Tests/CacheEventPublisherTestsCollection.cs` | new |
+| `tests/Shortboxerr.Tests/CacheEventPublisherTests.cs` | `[Collection]` |
+| `docs/WORKLOG.md` | this entry |
+| `docs/SELF_CHECK.md` | Iteration 232 |
+
+---
+
 ## Iteration 231 (2026-03-28)
 
 **chore(docs): markdownlint MD058 across WORKLOG; tidy SELF_CHECK**
@@ -12212,7 +12231,7 @@ Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
 
 ### Additional Commits (Bug Fixes)
 
-3. `fix: use relative API URLs to support Vite proxy`
+1. `fix: use relative API URLs to support Vite proxy`
 2. `fix: add CORS support for development`
 3. `feat: add naming format token helper UI (EPIC 6)`
 

@@ -11,6 +11,7 @@ namespace Shortboxerr.Tests;
 /// <summary>
 /// Unit tests for cache event publishing infrastructure.
 /// </summary>
+[Collection(nameof(CacheEventPublisherTestsCollection))]
 public class CacheEventPublisherTests
 {
     /// <summary>
