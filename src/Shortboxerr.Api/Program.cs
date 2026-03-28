@@ -163,11 +163,7 @@ app.UseCors(); // Enable CORS for development
 app.UseCorrelationId();
 
 // API key authentication (after correlation ID, before request logging)
-// Skip in Testing environment to allow tests to run without API keys
-if (!app.Environment.IsEnvironment("Testing"))
-{
-    app.UseApiKeyAuthentication();
-}
+app.UseApiKeyAuthentication();
 
 // Add Serilog request logging with sensitive data masking
 app.UseSerilogRequestLogging(options =>
