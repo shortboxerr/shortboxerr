@@ -1,31 +1,12 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
-
-export type ToastType = 'success' | 'error' | 'warning' | 'info';
+import { ToastContext, type ToastContextType, type ToastType } from './toastContext';
 
 interface Toast {
   id: string;
   message: string;
   type: ToastType;
   duration?: number;
-}
-
-interface ToastContextType {
-  showToast: (message: string, type?: ToastType, duration?: number) => void;
-  success: (message: string, duration?: number) => void;
-  error: (message: string, duration?: number) => void;
-  warning: (message: string, duration?: number) => void;
-  info: (message: string, duration?: number) => void;
-}
-
-const ToastContext = createContext<ToastContextType | null>(null);
-
-export function useToast() {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error('useToast must be used within ToastProvider');
-  }
-  return context;
 }
 
 const TOAST_DURATION = 3000;
@@ -117,10 +98,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const contextValue: ToastContextType = {
     showToast,
-    success: (message, duration) => showToast(message, 'success', duration),
-    error: (message, duration) => showToast(message, 'error', duration),
-    warning: (message, duration) => showToast(message, 'warning', duration),
-    info: (message, duration) => showToast(message, 'info', duration),
+    success: (message: string, duration?: number) => showToast(message, 'success', duration),
+    error: (message: string, duration?: number) => showToast(message, 'error', duration),
+    warning: (message: string, duration?: number) => showToast(message, 'warning', duration),
+    info: (message: string, duration?: number) => showToast(message, 'info', duration),
   };
 
   return (

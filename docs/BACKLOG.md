@@ -404,20 +404,15 @@ Additional performance optimizations deferred from EPIC 20. All sub-items are **
 
 **Effort:** L | **Priority:** P3
 
-#### 14.23 ESLint: Address UI Lint Warnings 🔄 IN PROGRESS
+#### 14.23 ESLint: Address UI Lint Warnings ✅ COMPLETED (Iteration 237)
 Resolve or formally accept ESLint warnings so the UI lint run is clean (zero warnings) or exceptions are documented.
 
-- [x] **Document accepted warnings** (Iteration 217): Added block comment in `ui/eslint.config.js` listing each downgraded rule and rationale (set-state-in-effect, only-export-components, no-explicit-any, static-components).
-- [ ] Reduce warnings to zero or keep as documented warns (Iteration 236: **15** warnings remain).
+- [x] **Document accepted warnings** (Iteration 217): `ui/eslint.config.js` describes rule levels and policy.
+- [x] **Zero warnings:** `npm run lint` uses `eslint . --max-warnings 0` (Iteration 237). CI runs ESLint on the UI matrix job.
 
-**Current warnings (Iteration 236, `npm run lint`):**
-- **react-refresh/only-export-components:** App.tsx, Toast.tsx. Documented in config.
-- **react-hooks/set-state-in-effect:** Layout, PullListPage, SeriesDetailPage (view mode from settings), WantedPage. Documented in config.
-- **@typescript-eslint/no-explicit-any:** api/client.ts (9 locations). Documented in config.
-- **react-hooks/static-components:** (none in current lint output; rule still warn in config.)
-- **Addressed Iteration 236:** ManualImportPage (derived selection + `key`, no effect); SeriesDetailPage stable `useMemo` for issue/upcoming lists; exhaustive-deps cleared there; pagination reset uses targeted disable; LogsPage useVirtualizer uses targeted disable (`incompatible-library`).
+**Iteration 237 changes:** `useTheme` → `theme/ThemeContext.tsx` + `theme/ThemeProvider.tsx`; toast hook → `components/toast/useToast.ts` + `ToastProvider.tsx` (fast-refresh clean). **Layout:** `queueMicrotask` + NavLink `onClick` for sidebar close. **PullListPage / SeriesDetailPage:** display/view mode derived from settings + mutation `variables` (no sync effects). **WantedPage:** tab derived from URL. **client.ts:** typed API stubs replace `any` on flagged lines. **SeriesDetailPage:** pagination reset via `queueMicrotask`. **LogsPage:** one line-level disable for TanStack `useVirtualizer` (`incompatible-library`).
 
-**Acceptance:** Either zero warnings, or an eslint.config.js / docs note that lists accepted warnings and rationale. (Documentation done; zero warnings optional.)
+**Acceptance:** Either zero warnings, or an eslint.config.js / docs note that lists accepted warnings and rationale.
 
 **Effort:** M | **Priority:** P2
 

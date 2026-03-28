@@ -160,7 +160,7 @@ The UI uses `ui/eslint.config.js` with some rules downgraded to `warn`. These we
 |------|-----------------------------|
 | **react-hooks/set-state-in-effect** | State is synced from URL or API (theme, tab, view mode). React escapes by default; we do not inject URL or API strings into `dangerouslySetInnerHTML`. No credentials in URL. **Accepted.** |
 | **react-refresh/only-export-components** | Co-location of hooks (e.g. `useTheme`) with components. No impact on credentials or injection. **Accepted.** |
-| **@typescript-eslint/no-explicit-any** | Used in `api/client.ts` for generated/callback types. Backend DTOs must never expose secrets (see API Responses above). When touching those call sites, prefer proper types or `unknown` + guards to avoid masking sensitive response shapes. **Accepted with caveat.** |
+| **@typescript-eslint/no-explicit-any** | Prefer typed API response interfaces in `api/client.ts` (see Iteration 237). New endpoints should use explicit DTO types, not `any`. Backend DTOs must never expose secrets (see API Responses above). |
 | **react-hooks/static-components** | Inline component definitions; affects correctness/performance, not credentials or XSS. **Accepted.** |
 
 When adding or changing accepted warnings in `eslint.config.js`, re-check that the pattern does not weaken credential handling, logging, or injection defenses, and update this section if needed.

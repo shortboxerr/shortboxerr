@@ -1,17 +1,13 @@
 /**
  * ESLint config for Shortboxerr UI.
  *
- * Accepted warnings (downgraded from error; see BACKLOG 14.23):
- * - react-hooks/set-state-in-effect: Syncing state from URL/API in effects (Layout, pages).
- *   Refactor to derive-in-render where feasible; until then kept as warn.
- * - react-refresh/only-export-components: App.tsx (useTheme), Toast.tsx export hooks + components.
- *   Co-location is intentional; prefer extracting to separate files if adding more exports.
- * - @typescript-eslint/no-explicit-any: api/client.ts uses any in generated/callback types.
- *   Replace with proper types or unknown + guards when touching those call sites.
- * - react-hooks/static-components: Prefer declaring components at module scope (e.g. TriStateCheckbox).
- *   Remaining inline helpers kept as warn until refactor.
- * - Line-level disables (see code): LogsPage TanStack useVirtualizer (incompatible-library);
- *   SeriesDetailPage pagination reset (set-state-in-effect). Iteration 236.
+ * `npm run lint` uses `--max-warnings 0` (zero warnings required in CI).
+ *
+ * Some rules stay at `warn` so new code gets flagged without failing the whole graph until fixed:
+ * - react-hooks/set-state-in-effect, react-refresh/only-export-components,
+ *   @typescript-eslint/no-explicit-any, react-hooks/static-components
+ *
+ * Targeted eslint-disable-next-line is allowed for third-party patterns (e.g. TanStack useVirtualizer).
  */
 import js from '@eslint/js'
 import globals from 'globals'

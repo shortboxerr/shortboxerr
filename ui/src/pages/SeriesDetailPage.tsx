@@ -12,7 +12,7 @@ import type { Issue, IssueStatus, SeriesPullListSettingsDto, SeriesMatchCandidat
 
 const EMPTY_ISSUES: Issue[] = [];
 const EMPTY_UPCOMING: UpcomingRelease[] = [];
-import { useToast } from '../components/Toast';
+import { useToast } from '../components/toast/useToast';
 
 type ViewMode = 'cover' | 'list';
 type SortKey = 'issueNumber' | 'releaseDate' | 'status' | 'title';
@@ -33,8 +33,6 @@ export function SeriesDetailPage() {
     queryFn: () => api.getUiSettings(),
   });
 
-  // View state - initialize from settings
-  const [viewMode, setViewMode] = useState<ViewMode>('cover');
   const [sortKey, setSortKey] = useState<SortKey>('issueNumber');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -71,13 +69,6 @@ export function SeriesDetailPage() {
     },
   });
 
-  // Sync view mode from settings when loaded
-  useEffect(() => {
-    if (uiSettings?.issueViewMode) {
-      setViewMode(uiSettings.issueViewMode);
-    }
-  }, [uiSettings?.issueViewMode]);
-
   // Save view preference mutation
   const saveViewPreference = useMutation({
     mutationFn: async (newViewMode: ViewMode) => {
@@ -88,9 +79,13 @@ export function SeriesDetailPage() {
     },
   });
 
-  // Handle view mode change with persistence
+  const settingsViewMode: ViewMode = uiSettings?.issueViewMode ?? 'cover';
+  const viewMode: ViewMode =
+    saveViewPreference.isPending && saveViewPreference.variables !== undefined
+      ? saveViewPreference.variables
+      : settingsViewMode;
+
   const handleViewModeChange = (newMode: ViewMode) => {
-    setViewMode(newMode);
     saveViewPreference.mutate(newMode);
   };
 
@@ -380,8 +375,7 @@ export function SeriesDetailPage() {
 
   // Reset to page 1 when filters change (sync local pagination with filter state).
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate UX reset when filter deps change
-    setCurrentPage(1);
+    queueMicrotask(() => setCurrentPage(1));
   }, [statusFilter, sortKey, sortDir, pageSize]);
 
   // Page navigation handlers

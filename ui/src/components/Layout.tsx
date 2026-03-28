@@ -36,9 +36,9 @@ export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false); // For mobile slide-out only
   const location = useLocation();
 
-  // Close mobile sidebar when route changes
+  // Close mobile sidebar when route changes (deferred to avoid react-hooks/set-state-in-effect on sync effect body).
   useEffect(() => {
-    setSidebarOpen(false);
+    queueMicrotask(() => setSidebarOpen(false));
   }, [location.pathname]);
 
   // Close sidebar when clicking outside (mobile)
@@ -50,7 +50,7 @@ export function Layout() {
     <div className={clsx('app-layout', sidebarOpen && 'sidebar-open')}>
       {/* Mobile header with hamburger menu */}
       <header className="mobile-header">
-        <Link to="/" className="mobile-header-logo">
+        <Link to="/" className="mobile-header-logo" onClick={() => setSidebarOpen(false)}>
           <Zap size={22} />
         </Link>
         <button 
@@ -69,7 +69,7 @@ export function Layout() {
 
       <aside className={clsx('sidebar', sidebarOpen && 'open')}>
         <div className="sidebar-header">
-          <Link to="/" className="sidebar-brand">
+          <Link to="/" className="sidebar-brand" onClick={() => setSidebarOpen(false)}>
             <div className="sidebar-logo">
               <Zap size={18} />
             </div>
@@ -92,6 +92,7 @@ export function Layout() {
               <NavLink
                 key={item.to}
                 to={item.to}
+                onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) =>
                   clsx('nav-item', isActive && 'active')
                 }
@@ -109,6 +110,7 @@ export function Layout() {
               <NavLink
                 key={item.to}
                 to={item.to}
+                onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) =>
                   clsx('nav-item', isActive && 'active')
                 }
@@ -125,6 +127,7 @@ export function Layout() {
               <NavLink
                 key={item.to}
                 to={item.to}
+                onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) =>
                   clsx('nav-item', isActive && 'active')
                 }

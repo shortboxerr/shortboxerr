@@ -70,6 +70,10 @@ jobs:
           npm ci
           npm audit --audit-level=high
 
+      - name: ESLint (UI, zero warnings)
+        if: matrix.name == 'UI'
+        run: npm run lint
+
   secret-scan:
     runs-on: ubuntu-latest
     steps:

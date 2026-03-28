@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Calendar, 
@@ -107,7 +107,6 @@ export function PullListPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<ViewMode>('week');
-  const [displayMode, setDisplayMode] = useState<DisplayMode>('list');
   const [weekOffset, setWeekOffset] = useState(0);
   const [addSeriesIssue, setAddSeriesIssue] = useState<DiscoverableIssue | null>(null);
   const [pullListFilter, setPullListFilter] = useState<PullListFilter>('all');
@@ -121,13 +120,6 @@ export function PullListPage() {
     queryFn: () => api.getUiSettings(),
   });
 
-  // Sync display mode from settings when loaded
-  useEffect(() => {
-    if (uiSettings?.pullListDisplayMode) {
-      setDisplayMode(uiSettings.pullListDisplayMode);
-    }
-  }, [uiSettings?.pullListDisplayMode]);
-
   // Save display mode preference mutation
   const saveDisplayModePreference = useMutation({
     mutationFn: async (newDisplayMode: DisplayMode) => {
@@ -138,9 +130,13 @@ export function PullListPage() {
     },
   });
 
-  // Handle display mode change with persistence
+  const settingsDisplayMode: DisplayMode = uiSettings?.pullListDisplayMode ?? 'list';
+  const displayMode: DisplayMode =
+    saveDisplayModePreference.isPending && saveDisplayModePreference.variables !== undefined
+      ? saveDisplayModePreference.variables
+      : settingsDisplayMode;
+
   const handleDisplayModeChange = (newMode: DisplayMode) => {
-    setDisplayMode(newMode);
     saveDisplayModePreference.mutate(newMode);
   };
 

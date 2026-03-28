@@ -1,5 +1,35 @@
 # Worklog
 
+## Iteration 237 (2026-03-28)
+
+**fix(ui): zero ESLint warnings; enforce in CI**
+
+### Summary
+
+Achieved **zero** `eslint` warnings: extracted **`useTheme`** to `theme/ThemeContext.tsx` / `ThemeProvider.tsx`, **`useToast`** + **`ToastProvider`** to `components/toast/` (removed hook exports from `App.tsx` / old `Toast.tsx`). **Layout** closes mobile sidebar via `queueMicrotask` + NavLink `onClick`. **PullListPage** / **SeriesDetailPage** derive list/view mode from `uiSettings` plus pending mutation `variables` (removed settings-sync effects). **WantedPage** tab is URL-derived. **`api/client.ts`:** added typed JSON interfaces for system status, activity rows, log files, wanted list, staged import (replaced `any`). **SeriesDetailPage** pagination reset uses `queueMicrotask`. **LogsPage** keeps one `incompatible-library` disable for `useVirtualizer`. **`package.json`:** `lint` = `eslint . --max-warnings 0`. **CI:** ESLint step on UI matrix job. **BACKLOG 14.23** complete; **SECURITY.md** ESLint table updated.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `ui/src/App.tsx` | slim; QueryClient import fix |
+| `ui/src/theme/*` | new |
+| `ui/src/components/toast/*` | new; delete `Toast.tsx` |
+| `ui/src/pages/*`, `Layout.tsx` | sync patterns |
+| `ui/src/api/client.ts` | API JSON types |
+| `ui/package.json` | `--max-warnings 0` |
+| `ui/eslint.config.js` | header |
+| `.github/workflows/ci.yml` | ESLint step |
+| `docs/SECURITY.md` | ESLint row |
+| `docs/BACKLOG.md` | 14.23 |
+| `src/Shortboxerr.Api/wwwroot/**` | Vite output |
+| `docs/WORKLOG.md` | this entry |
+| `docs/SELF_CHECK.md` | Iteration 237 |
+
+**Commit:** `fix(ui): zero ESLint warnings and CI lint gate`
+
+---
+
 ## Iteration 236 (2026-03-28)
 
 **fix(ui): reduce ESLint warnings (14.23 partial)**
