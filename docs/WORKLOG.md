@@ -1,5 +1,22 @@
 # Worklog
 
+## Iteration 229 (2026-03-28)
+**fix: CodeRabbit PR review (MD058, security assertion, reset baseline, masked key)**
+
+### Summary
+Addressed CodeRabbit review on PR #3: markdownlint MD058 blank lines before `### Files Changed` tables across `docs/WORKLOG.md`; removed API key fragments from test failure messages; `ResetApiKeyToTestDefault` also restores `security.apiKeyEnabled`; tightened masked-key assertion to match `MaskApiKey` shape (`^.{8}...{4}$`).
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `docs/WORKLOG.md` | MD058 + this entry |
+| `tests/Shortboxerr.Tests/SettingsEndpointTests.cs` | assertion hygiene + regex |
+| `tests/Shortboxerr.Tests/CustomWebApplicationFactory.cs` | reset enabled flag |
+| `docs/SELF_CHECK.md` | Iteration 229 |
+
+---
+
 ## Iteration 228 (2026-03-28)
 **chore(devcontainer): GitHub MCP token resolution and host env forwarding**
 
@@ -15,6 +32,7 @@ Cursor often does not pass `remoteEnv` into MCP subprocesses, so `@modelcontextp
 - **.cursor/rules/dev-container.mdc:** Document token forwarding and macOS/Cursor.app gotchas.
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `.devcontainer/devcontainer.json` | env + postCreate |
@@ -46,6 +64,7 @@ Full `dotnet test` was failing with widespread `401 Unauthorized` on `/api/*` ro
 Test bug / fixture isolation — not application auth logic.
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `tests/Shortboxerr.Tests/PullListCacheTierTests.cs` | authenticated client |
@@ -77,6 +96,7 @@ ComicVine can no longer be enabled unless an API key is configured and the key p
 - **docs/BACKLOG.md:** Marked 9.14 complete.
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `src/Shortboxerr.Api/Endpoints/ComicVineEndpoints.cs` | enablement validation + test gate |
@@ -100,6 +120,7 @@ Add Series is now a full page at `/series/add`. Series page "Add Series" buttons
 - **SeriesPage:** Removed AddSeriesModal and inline search/result components; "Add Series" → navigate('/series/add'). Restored X, AlertCircle, Loader2 for other modals.
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `ui/src/components/AddSeriesContent.tsx` | new |
@@ -123,6 +144,7 @@ Documented that we rely on native `loading="lazy"` for cover images and do not a
 - **docs/BACKLOG.md:** Marked "Intersection observer for images" complete (Iteration 224).
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `docs/DECISIONS.md` | image lazy-loading decision |
@@ -145,6 +167,7 @@ Added SQLite FTS5 for the series list search. When the database is SQLite and th
 - **docs/BACKLOG.md:** 14.17 Full-text search (Series) marked complete.
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `src/Shortboxerr.Infrastructure/Persistence/Migrations/20260311240000_AddSeriesFts5.cs` | new migration |
@@ -170,6 +193,7 @@ Added SQLite FTS5 for the series list search. When the database is SQLite and th
 - **docs/BACKLOG.md:** 14.16 Graceful fallback to polling marked complete.
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `tests/Shortboxerr.Tests/LibraryOrganizationServiceTests.cs` | test fix |
@@ -192,6 +216,7 @@ Single-series organize is now atomic: if any file move fails, all already-moved 
 - **LibraryOrganizationServiceTests:** Added `ExecuteSeriesRename_WhenOneFileFails_RollsBackSuccessfulMovesAndDoesNotUpdateDb` – two files, second move fails (destination exists); assert rollback and DB unchanged.
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `src/Shortboxerr.Infrastructure/Services/LibraryOrganizationService.cs` | atomic rollback |
@@ -212,6 +237,7 @@ Add Series modal now has optional quick filters: Publisher (text) and Year range
 - **SeriesPage.tsx (AddSeriesModal):** Added state for publisherFilter, yearStartFilter, yearEndFilter. Included in useQuery key and passed to api.searchSeriesFromComicVine. Added a filter row with Publisher input and Year From/To number inputs.
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `ui/src/pages/SeriesPage.tsx` | quick filters UI + query params |
@@ -233,6 +259,7 @@ Edition/collection ComicVine search endpoint now accepts a ComicVine volume ID (
 - **EditionMetadataServiceTests:** GetEditionByComicVineIdAsync_WhenQueryIsVolumeId_ReturnsEditionForDirectLookup.
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `src/Shortboxerr.Core/ComicVine/IEditionMetadataService.cs` | EditionSearchResult + Query, IsDirectLookup |
@@ -257,6 +284,7 @@ Reviewed each accepted ESLint rule in ui/eslint.config.js for security and app s
 - **docs/BACKLOG.md:** 14.25 complete.
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `docs/SECURITY.md` | ESLint security subsection |
@@ -277,6 +305,7 @@ Added a block comment at the top of `ui/eslint.config.js` that lists all accepte
 - **docs/BACKLOG.md:** 14.23 in progress; “Document accepted warnings” task complete.
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `ui/eslint.config.js` | docs block |
@@ -299,6 +328,7 @@ Ran `npm audit` in `ui/`, applied `npm audit fix`. All 3 vulnerabilities (ajv mo
 - **docs/SELF_CHECK.md:** Iteration 216 self-check.
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `ui/package-lock.json` | audit fix |
@@ -326,6 +356,7 @@ Series search now accepts ComicVine issue IDs (4000-xxxxx): looks up the issue's
 - `GetSeriesByComicVineIssueIdAsync_WithValidIssueId_ReturnsVolumeCandidate` – mocks GetIssueAsync (issue with Volume.Id) and GetVolumeAsync, asserts candidate returned.
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `src/Shortboxerr.Core/ComicVine/ISeriesMetadataService.cs` | +GetSeriesByComicVineIssueIdAsync |
@@ -352,6 +383,7 @@ Added placeholder text in Add Series search box to hint at ComicVine ID search (
 - Updated Add Series modal search input placeholder from "Search for a series (e.g., Batman, Spider-Man, Saga)..." to "Search by title or ComicVine ID (e.g. Batman, 4050-12345)...".
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `ui/src/pages/SeriesPage.tsx` | placeholder text |
@@ -379,6 +411,7 @@ Added batched pull list discovery endpoint: one call returns multiple consecutiv
 - `GetWeeklyDiscoveryBatchAsync_ReturnsRequestedNumberOfWeeks` – asserts count and 7-day spacing of WeekStart.
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `src/Shortboxerr.Core/PullList/IPullListService.cs` | +GetWeeklyDiscoveryBatchAsync |
@@ -405,6 +438,7 @@ Added edge case test: Metron 429 rate limit falls back to volume cover URL.
 - `GetCoverByCvIdAsync_WhenMetronReturns429_FallsBackToVolumeCover` – when Metron returns 429, service returns volume cover URL (no further Metron calls).
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `tests/Shortboxerr.Tests/CoverFallbackServiceTests.cs` | +1 test |
@@ -429,6 +463,7 @@ Documented refactoring candidates for issue/cover pipeline in BACKLOG (from ISSU
 - Marked 14.7.4 complete.
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `docs/BACKLOG.md` | 14.7.4 + candidates list |
@@ -450,6 +485,7 @@ Added unit tests for cover cache behavior: issue cache clear and discovery path 
 - `GetDiscoveryCoverAsync_FilePath_MatchesDiscoveryCacheLayout` – discovery path contains discovery/{id}/medium.jpg.
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `tests/Shortboxerr.Tests/CoverServiceTests.cs` | +2 tests |
@@ -477,6 +513,7 @@ Added tests that verify cover source order and discovery cache key alignment wit
 - `GetCoverByCvIdAsync_ReturnsMetronCover_WhenFoundViaVolumeIdAndNumber` – verifies fallback order: when CV issue ID lookup fails, Metron by CV volume ID + issue number is used before volume URL.
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `tests/Shortboxerr.Tests/CoverServiceTests.cs` | +2 tests |
@@ -511,6 +548,7 @@ Documented the architecture of the issue data and cover acquisition pipeline for
 - Documented dev container commands for build/test (docker compose -f docker-compose.dev.yml run --rm dev \<command\>)
 
 ### Files Changed
+
 | File | Type |
 |------|------|
 | `docs/research/ISSUE_COVER_ARCHITECTURE.md` | New - architecture doc |
@@ -547,6 +585,7 @@ Added monitored, hasFile, and editionType filters to the edition list endpoint.
 - `FilterBySeriesAndEditionType_CombinesFilters`
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Api/Endpoints/EditionEndpoints.cs` | Add filters |
@@ -577,6 +616,7 @@ Added release date sorting options to the series list endpoint.
 - `SortByLatestRelease_WithReleaseDate_FallsBackCorrectly`
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | Add sort options |
@@ -611,6 +651,7 @@ Added publisher, release date range, and edition type filters to the wanted issu
 - `GetWantedCollections_SupportsCombinedFilters`
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Api/Endpoints/WantedEndpoints.cs` | Add new filters |
@@ -648,6 +689,7 @@ Added text search filtering to the edition list API endpoint.
 - `SortByVolumeNumber_Ascending_SortsCorrectly`
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Api/Endpoints/EditionEndpoints.cs` | Add search parameter |
@@ -680,6 +722,7 @@ Added text search filtering to the series list API endpoint.
 - `SearchByTitle_WithPublisherFilter_CombinesFilters`
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | Add search parameter |
@@ -715,6 +758,7 @@ Added automatic cover re-enrichment trigger when the calendar week transitions (
 - `GetWeekStart_WeekTransitionDetection_WorksCorrectly` - Verifies week boundaries
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Infrastructure/BackgroundServices/DiscoveryCoverEnrichmentService.cs` | Week transition detection |
@@ -753,6 +797,7 @@ Wired up background services to broadcast real-time notifications via SignalR.
 - Tests verify Type property, required fields, and timestamps
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Infrastructure/BackgroundServices/DdlImportBackgroundService.cs` | Add SignalR broadcasting |
@@ -790,6 +835,7 @@ Added SignalR hub infrastructure for real-time push notifications (*arr parity).
 - Wire up background services to broadcast events
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/SignalR/IMessageBroadcaster.cs` | New - Interface and message types |
@@ -827,6 +873,7 @@ Fixed 3 failing integration tests by replacing them with properly mocked unit te
   - Uploaded: 403 → AuthenticationRequired, 404 → FileNotFound
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `tests/Shortboxerr.Tests/MegaResolverTests.cs` | Added TestableMegaResolver, MockHttpMessageHandler, 2 mocked tests |
@@ -865,6 +912,7 @@ Added build-time version injection to frontend and enhanced system status endpoi
 - Graceful fallback to "unknown" if git unavailable
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `ui/vite.config.ts` | Add define config for version injection |
@@ -902,6 +950,7 @@ All "Deferred" items had documented reasons (working alternatives exist):
 These were moved to **EPIC 14.17 Performance Enhancements** as nice-to-have future items.
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `docs/BACKLOG.md` | Mark EPIC 20 complete, add 14.17, update notes |
@@ -951,6 +1000,7 @@ manualChunks: {
 | SettingsPage | (included) | 180 KB (lazy) | On-demand |
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `ui/vite.config.ts` | Add visualizer + manual chunks |
@@ -1009,6 +1059,7 @@ This pauses polling when the browser tab is not visible, saving bandwidth and re
 - Batched API endpoints for multiple weeks
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `PullListPage.tsx` | Parallel week fetching |
@@ -1065,6 +1116,7 @@ After: Uses database aggregation queries:
 - `AverageAsync`, `MinAsync`, `MaxAsync` for statistics
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `DdlImportBackgroundService.cs` | Parallel processing + setting |
@@ -1098,6 +1150,7 @@ Established a verified test baseline at 2541 tests and added automated regressio
   - Test count drops below baseline (2541)
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `docs/TEST_BASELINE.md` | Created - baseline documentation |
@@ -1138,6 +1191,7 @@ After:  ReleaseGroup = "DC-Empire", Publisher = "DC Comics", PublisherHint = "DC
 - "Image-Empire" → "Image Comics" (was incorrectly "Image")
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Ddl/DdlReleaseParser.cs` | Fix regex + reorder pipeline |
@@ -1176,6 +1230,7 @@ Restored 6 methods lost during the V2 rename (commit `a6192fe`) and 12 deleted t
 - Test count: 2529 → 2541
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Infrastructure/Ddl/GetComicsAdapter.cs` | Added 6 methods + helpers |
@@ -1269,6 +1324,7 @@ Fixed all 45 failing tests, bringing the test suite to 2529 passing tests with 0
 | Golden Tests | 1 | "Absolute" edition not recognized as collection | Update fixture expectation |
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Api/Endpoints/DdlEndpoints.cs` | Remove duplicate DTOs, use shared Dtos |
@@ -1317,6 +1373,7 @@ Added UI feedback for issues using volume fallback covers and a manual trigger t
 - Button triggers force cover enrichment (bypasses 7-day cooldown)
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/PullList/IPullListService.cs` | Added `IsVolumeFallbackCover` field |
@@ -1368,6 +1425,7 @@ Added a table-based list view as the default (toggleable to grid):
 - Series removed from selection after successful add
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `ui/src/pages/SeriesPage.tsx` | New list view, multi-select, batch add logic |
@@ -1408,6 +1466,7 @@ Applied React.memo to list item components that render frequently to prevent unn
 - Moved status icon/color lookups to module-level constants
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `ui/src/pages/SeriesPage.tsx` | Memoized SeriesSearchResult |
@@ -1443,6 +1502,7 @@ Added performance indexes to the database for commonly-used query patterns. Thes
 - Series filtering (`WHERE Monitored = true`)
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Infrastructure/Persistence/ShortboxerrDbContext.cs` | Added index definitions |
@@ -1493,6 +1553,7 @@ Added new properties to `SeriesSearchResult`:
 - `PageSize`: Alias for `Limit` (API consistency)
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/ComicVine/ComicVineIdParser.cs` | New - ID parsing utility |
@@ -1537,6 +1598,7 @@ Implemented virtual scrolling for the LogsPage to efficiently render large log f
 - Positioned rows absolutely with transform for performance
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `ui/package.json` | Added @tanstack/react-virtual dependency |
@@ -1595,6 +1657,7 @@ Refactored `GetHistory` method in `HistoryEndpoints.cs`:
 | History pagination | Accurate total counts, more efficient data fetching |
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `SeriesEndpoints.cs` | Added AsSplitQuery (2 locations), fixed Count sorting |
@@ -1643,6 +1706,7 @@ Fixed duplicate endpoint name conflict from Iteration 180:
 - Fixed 94 test failures caused by the naming conflict
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `SeriesDetailPage.tsx` | Added lazy loading (3 locations) |
@@ -1715,6 +1779,7 @@ Implemented cache event publishing infrastructure to support future multi-instan
 - Operation without publisher (graceful handling)
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `ICacheEventPublisher.cs` | New - Interface and event models |
@@ -6108,6 +6173,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 | Detected Issues | 1 | Reports consecutive failures |
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Ddl/ISiteHealthService.cs` | New - Interface and models |
@@ -6170,6 +6236,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 | Magic Bytes | 4 | ZIP, RAR, 7z, GZip |
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Services/IArchiveExtractor.cs` | New - Interface and DTOs |
@@ -6222,6 +6289,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 | Filter Options | 2 | Distinct publishers, status counts |
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | Added filter/sort params and filter-options endpoint |
@@ -6285,6 +6353,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 | ActivitySummary | 3 | Speed display, status flags |
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Activity/IActivityService.cs` | New - Interface and models |
@@ -6360,6 +6429,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 | Supporting Classes | 10 | Weights, groups, ranges, components, breakdown |
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Search/ISearchResultScorer.cs` | New - Interface and DTOs |
@@ -6426,6 +6496,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 | Settings | 12 | Port, URL, SSL, defaults |
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Torrent/ITorrentClient.cs` | New - Interface and models |
@@ -6492,6 +6563,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 | MARK/BAD | Failed |
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `tests/Shortboxerr.Tests/NzbgetClientTests.cs` | New - 75 unit tests |
@@ -6568,6 +6640,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 - `SearchSettings_Default_HasCorrectIgnoreWords`
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Search/SearchSettings.cs` | New - Search settings model |
@@ -6658,6 +6731,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 | **Enabled by Default** | ✅ | ✅ |
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Infrastructure/Ddl/GetComicsAdapter.cs` | Added publisher methods |
@@ -6719,6 +6793,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 | DetectHomepageAsync | ❌ | ✅ |
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `ReadComicOnlineAdapter.cs` | Added RSS methods |
@@ -6774,6 +6849,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 | Accent danger | 5.1:1 ✓ | 5.4:1 ✓ |
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `App.css` | Complete theme system rewrite |
@@ -6839,6 +6915,7 @@ Identified 4 pre-existing DDL search test failures unrelated to this iteration (
 | Move to failed | 1 |
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `ManualImportEndpoints.cs` | Modified - new endpoints |
@@ -6910,6 +6987,7 @@ With this iteration, **EPIC 5 Manual Import** is now **COMPLETE**:
 | Template presets | 3 |
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `CorrelationIdMiddleware.cs` | New |
@@ -6986,6 +7064,7 @@ With this iteration, **EPIC 13.1 File-Based Logging** is now **COMPLETE**:
 | Theory data (inline data) | 7 |
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `ShortSourceContextEnricher.cs` | New |
@@ -7048,6 +7127,7 @@ With this iteration, **EPIC 13.1 File-Based Logging** is now **COMPLETE**:
 - Total: 1207 tests
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `tests/Shortboxerr.Tests/SensitiveDataMaskingTests.cs` | Expanded - comprehensive tests |
@@ -7102,6 +7182,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - Total: 1185 tests (unchanged)
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `ui/src/pages/SettingsPage.tsx` | Modified - UI clarification |
@@ -7161,6 +7242,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - Total: 1185 tests
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Infrastructure/Ddl/ReadComicOnlineAdapter.cs` | New - DDL adapter |
@@ -7232,6 +7314,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - Total: 1160 tests
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Nzb/ISabnzbdClient.cs` | Modified - SabnzbdSettings with Port, EffectivePort, BaseUrl |
@@ -7306,6 +7389,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - Total: 1140 tests
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Infrastructure/Ddl/Resolvers/OneFichierResolver.cs` | New - 1fichier resolver |
@@ -7377,6 +7461,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - Total: 1100 tests
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `tests/Shortboxerr.Tests/DdlEndToEndIntegrationTests.cs` | New - integration tests |
@@ -7435,6 +7520,7 @@ These tests verify the critical security requirement from EPIC 13.1:
   - `GetComicsAdapterRssTests` (11 tests) - RSS/category integration
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Ddl/IRssFeedService.cs` | New - interface and models |
@@ -7503,6 +7589,7 @@ These tests verify the critical security requirement from EPIC 13.1:
   - Category filtering tests
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Nzb/INzbImportService.cs` | New - interface and models |
@@ -7571,6 +7658,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ Tests cover parsing, quality scoring, filtering, sorting
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Nzb/INzbReleaseParser.cs` | New |
@@ -7619,6 +7707,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ Tests cover settings parsing with valid/empty/invalid JSON
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Infrastructure/Providers/SabnzbdDownloadProvider.cs` | New - Provider implementation |
@@ -7656,6 +7745,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ Configuration status indicator
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `ui/src/pages/SettingsPage.tsx` | Added NzbSettings component |
@@ -7695,6 +7785,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ `GET /api/v1/nzb/search` - Aggregated search
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Api/Endpoints/NzbEndpoints.cs` | New endpoints |
@@ -7739,6 +7830,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ Size/speed parsing utilities
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Nzb/INzbDownloadClient.cs` | New interface + models |
@@ -7783,6 +7875,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ Comic category IDs (7030, 7000)
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Nzb/INewznabClient.cs` | New interface + models |
@@ -7819,6 +7912,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ Per-site isolation (limits don't affect other sites)
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Ddl/IDdlRateLimiter.cs` | New interface |
@@ -7869,6 +7963,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ Filename extraction from resolver response
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Ddl/IDownloadHostResolver.cs` | New interface + result types |
@@ -7919,6 +8014,7 @@ These tests verify the critical security requirement from EPIC 13.1:
 - ✅ Conservative rate limiting (10 requests/minute)
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Infrastructure/Ddl/GetComicsAdapter.cs` | New adapter implementation |
@@ -7953,6 +8049,7 @@ The `PrefetchAdjacentWeeksAsync` feature was causing `ObjectDisposedException` e
 The adjacent week prefetching is now redundant and was removed to eliminate errors.
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/PullList/IPullListService.cs` | Remove `PrefetchAdjacentWeeksAsync` interface method |
@@ -7999,6 +8096,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Skip historical refresh if recent enough
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/PullList/IPullListService.cs` | Add CacheTier, PullListCacheMetadata, cache tier settings |
@@ -8037,6 +8135,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Save button with status feedback
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Api/Endpoints/SettingsEndpoints.cs` | Add logging settings endpoints |
@@ -8080,6 +8179,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Unhealthy below threshold, degraded below 2x threshold
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Infrastructure/BackgroundServices/HealthCheckBackgroundService.cs` | New service |
@@ -8119,6 +8219,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Log file list with download/delete buttons
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Api/Endpoints/SystemEndpoints.cs` | Add log content endpoints |
@@ -8159,6 +8260,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ ReleaseDayBackgroundService
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Infrastructure/BackgroundServices/MetadataRefreshBackgroundService.cs` | Enhanced logging |
@@ -8204,6 +8306,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Rejection reasons logged
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Infrastructure/Services/StagingService.cs` | Add comprehensive pipeline logging |
@@ -8238,6 +8341,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Normalized title for matching
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Infrastructure/Ddl/DdlDownloadService.cs` | Add download logging |
@@ -8277,6 +8381,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Unexpected HTML response detection
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Infrastructure/ComicVine/ComicVineClient.cs` | Add comprehensive logging |
@@ -8314,6 +8419,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Masked query string
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Api/Program.cs` | Add UseSerilogRequestLogging with custom config |
@@ -8363,6 +8469,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Tests now run faster without background service delays
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Api/Program.cs` | Add comprehensive lifecycle logging |
@@ -8394,6 +8501,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ DbContext configured conditionally based on debug mode
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Infrastructure/DependencyInjection.cs` | Add debug mode parameter and EF Core logging |
@@ -8434,6 +8542,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Tests verify: required fields, memory info, uptime validity
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Api/Endpoints/SystemEndpoints.cs` | New endpoint file |
@@ -8477,6 +8586,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - [ ] Configurable log directory via settings
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Api/Program.cs` | Integrate Serilog configuration |
@@ -8532,6 +8642,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Tests cover: end year, missing data, boundary conditions
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Entities/Series.cs` | Add StatusSource enum and field |
@@ -8587,6 +8698,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ Bulk action button variants (primary, success, muted)
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Api/Dtos/IssueDto.cs` | Add Status property |
@@ -8655,6 +8767,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ (All existing Mylar3ConfigImporter tests still pass)
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Ddl/IMylar3ConfigImporter.cs` | Add `Mylar3PullListSettings`, `Mylar3PullListImportResult`, `ImportPullListSettingsAsync` |
@@ -8717,6 +8830,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ MigrateAsync_PerformsFullMigration
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Mylar3Migration/IMylar3MigrationService.cs` | New interface + models |
@@ -8765,6 +8879,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ PrefetchAdjacentWeeksAsync_SkipsAlreadyCachedWeeks
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/PullList/IPullListService.cs` | Add PrefetchAdjacentWeeksAsync |
@@ -8811,6 +8926,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ TriggerProcessingAsync_WithCustomDate_ProcessesThatDate
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Infrastructure/BackgroundServices/ReleaseDayBackgroundService.cs` | New |
@@ -8863,6 +8979,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ GetSeriesIssues_ReturnsCacheControlHeader
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Api/Endpoints/SeriesEndpoints.cs` | Added ICacheService + invalidation |
@@ -8909,6 +9026,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - HttpCacheSettings defaults test (1 test)
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Api/Caching/HttpCacheEndpointFilter.cs` | New file |
@@ -8962,6 +9080,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - ✅ GetWeeklyDiscoveryAsync_UsesCache
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Infrastructure/PullList/PullListService.cs` | Migrated to ICacheService |
@@ -9033,6 +9152,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - Complex object handling (2 tests)
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Caching/ICacheService.cs` | New interface + models |
@@ -9111,6 +9231,7 @@ The adjacent week prefetching is now redundant and was removed to eliminate erro
 - Max notifications enforcement (1 test)
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/Entities/Notification.cs` | New entity |
@@ -9184,6 +9305,7 @@ public class DiscoveryRefreshStatus
 - `TriggerRefreshAsync_ContinuesOnPartialFailure`
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
 | `src/Shortboxerr.Core/ComicVine/IComicVineClient.cs` | Added discovery refresh settings |

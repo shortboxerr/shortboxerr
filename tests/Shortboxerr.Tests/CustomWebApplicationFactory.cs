@@ -116,14 +116,22 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IDisp
     public void ResetApiKeyToTestDefault()
     {
         const string apiKeyValueKey = "security.apiKey";
+        const string apiKeyEnabledKey = "security.apiKeyEnabled";
 
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ShortboxerrDbContext>();
-        var row = db.SystemSettings.FirstOrDefault(s => s.Key == apiKeyValueKey);
-        if (row != null)
-            row.Value = TestApiKey;
-        else
-            db.SystemSettings.Add(new SystemSetting { Key = apiKeyValueKey, Value = TestApiKey });
+
+        void Upsert(string key, string value)
+        {
+            var row = db.SystemSettings.FirstOrDefault(s => s.Key == key);
+            if (row != null)
+                row.Value = value;
+            else
+                db.SystemSettings.Add(new SystemSetting { Key = key, Value = value });
+        }
+
+        Upsert(apiKeyValueKey, TestApiKey);
+        Upsert(apiKeyEnabledKey, "true");
 
         db.SaveChanges();
     }

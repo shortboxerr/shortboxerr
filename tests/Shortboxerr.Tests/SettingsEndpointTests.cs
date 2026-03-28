@@ -279,7 +279,7 @@ public class SettingsEndpointTests : BaseEndpointTest
         Assert.True(
             result.FullKey.StartsWith("sk_live_", StringComparison.Ordinal)
             || result.FullKey.StartsWith("sbxr_test_", StringComparison.Ordinal),
-            $"Unexpected API key prefix: {result.FullKey[..Math.Min(12, result.FullKey.Length)]}…");
+            "Unexpected API key prefix. Expected 'sk_live_' or 'sbxr_test_'.");
         Assert.InRange(result.FullKey.Length, 40, 64);
         // Masked key should also be present
         Assert.NotEmpty(result.MaskedKey);
@@ -346,8 +346,7 @@ public class SettingsEndpointTests : BaseEndpointTest
         Assert.NotNull(result);
 
         // MaskApiKey uses first 8 characters + "..." + last 4 (works for sk_live_* and sbxr_test_* seeds).
-        Assert.Contains("...", result.MaskedKey);
-        Assert.InRange(result.MaskedKey.Length, 13, 64);
+        Assert.Matches(@"^.{8}\.\.\..{4}$", result.MaskedKey);
     }
 
     // ========== Metron Settings Tests ==========
