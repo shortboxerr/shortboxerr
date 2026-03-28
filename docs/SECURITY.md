@@ -212,7 +212,7 @@ Short, informal model for operators and reviewers (not a formal STRIDE exercise)
 | `dotnet list package --vulnerable --include-transitive` | Fails if NuGet advisory DB reports known issues in the solution graph. |
 | **`npm audit`** (`ui/`, `tests/e2e`, `--audit-level=high`) | Fails on high/critical npm advisories for those trees. |
 | **`npm run lint`** (UI only, `--max-warnings 0`) | Blocks new ESLint warnings (includes hooks/refresh rules relevant to safe React patterns). |
-| **Gitleaks** (full history) | Detects accidentally committed secrets. |
+| **Gitleaks** (full history) | Detects accidentally committed secrets. For repos under a **GitHub Organization**, the action requires a **`GITLEAKS_LICENSE`** GitHub Actions secret (free [Starter](https://gitleaks.io/products.html) tier covers one repo); the workflow passes it as `env.GITLEAKS_LICENSE`. |
 | **Docker build** (after above) | Ensures the release image still builds; image runs the API as a **non-root** user (see below). |
 
 Workflow: `.github/workflows/ci.yml`. Contributor expectations: `docs/CONTRIBUTING.md`. **Vulnerability disclosure:** `.github/SECURITY.md`.
