@@ -4,20 +4,19 @@ using System.Text.Json;
 
 namespace Shortboxerr.Tests;
 
-public class ManualImportEndpointTests : IClassFixture<CustomWebApplicationFactory>
+public class ManualImportEndpointTests : BaseEndpointTest
 {
-    private readonly CustomWebApplicationFactory _factory;
+    
 
-    public ManualImportEndpointTests(CustomWebApplicationFactory factory)
+    public ManualImportEndpointTests(CustomWebApplicationFactory factory) : base(factory)
     {
-        _factory = factory;
     }
 
     [Fact]
     public async Task ScanStagingFolder_ReturnsOk()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
 
         // Act
         var response = await client.GetAsync("/api/v1/manualimport");
@@ -33,7 +32,7 @@ public class ManualImportEndpointTests : IClassFixture<CustomWebApplicationFacto
     public async Task GetImportPreview_WithNonExistentFile_ReturnsCannotImport()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         var request = new
         {
             sourcePath = "/nonexistent/file.cbz",
@@ -57,7 +56,7 @@ public class ManualImportEndpointTests : IClassFixture<CustomWebApplicationFacto
     public async Task GetImportPreview_WithInvalidSeriesId_ReturnsCannotImport()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         
         // Create a temp file to test with
         var tempFile = Path.GetTempFileName();
@@ -92,7 +91,7 @@ public class ManualImportEndpointTests : IClassFixture<CustomWebApplicationFacto
     public async Task ExecuteImport_WithNonExistentFile_ReturnsBadRequest()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         var request = new
         {
             sourcePath = "/nonexistent/file.cbz"
@@ -112,7 +111,7 @@ public class ManualImportEndpointTests : IClassFixture<CustomWebApplicationFacto
     public async Task Swagger_IncludesManualImportEndpoints()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
 
         // Act
         var response = await client.GetAsync("/swagger/v1/swagger.json");
@@ -128,7 +127,7 @@ public class ManualImportEndpointTests : IClassFixture<CustomWebApplicationFacto
     public async Task ScanStagingFolder_StagedAlias_ReturnsOk()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
 
         // Act - test the /staged alias endpoint
         var response = await client.GetAsync("/api/v1/manualimport/staged");
@@ -144,7 +143,7 @@ public class ManualImportEndpointTests : IClassFixture<CustomWebApplicationFacto
     public async Task BulkImport_WithEmptyFiles_ReturnsOk()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         var request = new
         {
             files = Array.Empty<string>()
@@ -164,7 +163,7 @@ public class ManualImportEndpointTests : IClassFixture<CustomWebApplicationFacto
     public async Task BulkImport_WithNonExistentFiles_ReturnsPartialFailure()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         var request = new
         {
             files = new[] { "/nonexistent/file1.cbz", "/nonexistent/file2.cbz" }
@@ -185,7 +184,7 @@ public class ManualImportEndpointTests : IClassFixture<CustomWebApplicationFacto
     public async Task RejectFile_WithNonExistentFile_ReturnsBadRequest()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         var request = new
         {
             sourcePath = "/nonexistent/file.cbz",
@@ -206,7 +205,7 @@ public class ManualImportEndpointTests : IClassFixture<CustomWebApplicationFacto
     public async Task RejectFile_WithValidFile_ReturnsOk()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         
         // Create a temp file in staging folder simulation
         var stagingFolder = Path.Combine(Path.GetTempPath(), "shortboxerr-staging-test");
@@ -249,7 +248,7 @@ public class ManualImportEndpointTests : IClassFixture<CustomWebApplicationFacto
     public async Task UpdateMatch_ReturnsOk()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         var request = new
         {
             sourcePath = "/some/file.cbz",
@@ -272,7 +271,7 @@ public class ManualImportEndpointTests : IClassFixture<CustomWebApplicationFacto
     public async Task UpdateMatch_ClearMatch_ReturnsOk()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         var request = new
         {
             sourcePath = "/some/file.cbz",
@@ -295,7 +294,7 @@ public class ManualImportEndpointTests : IClassFixture<CustomWebApplicationFacto
     public async Task MoveToFailed_WithValidRequest_EndpointExists()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         var request = new
         {
             sourcePath = "/nonexistent/file.cbz",

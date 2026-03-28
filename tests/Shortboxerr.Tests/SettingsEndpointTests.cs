@@ -5,13 +5,10 @@ using Shortboxerr.Core.Services;
 
 namespace Shortboxerr.Tests;
 
-public class SettingsEndpointTests : IClassFixture<CustomWebApplicationFactory>
+public class SettingsEndpointTests : BaseEndpointTest
 {
-    private readonly HttpClient _client;
-
-    public SettingsEndpointTests(CustomWebApplicationFactory factory)
+    public SettingsEndpointTests(CustomWebApplicationFactory factory) : base(factory)
     {
-        _client = factory.CreateClient();
     }
 
     // ========== UI Settings Tests ==========

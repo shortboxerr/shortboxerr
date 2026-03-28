@@ -4,20 +4,19 @@ using System.Text.Json;
 
 namespace Shortboxerr.Tests;
 
-public class EditionEndpointTests : IClassFixture<CustomWebApplicationFactory>
+public class EditionEndpointTests : BaseEndpointTest
 {
-    private readonly CustomWebApplicationFactory _factory;
+    
 
-    public EditionEndpointTests(CustomWebApplicationFactory factory)
+    public EditionEndpointTests(CustomWebApplicationFactory factory) : base(factory)
     {
-        _factory = factory;
     }
 
     [Fact]
     public async Task GetAllEditions_ReturnsPagedResult()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
 
         // Act
         var response = await client.GetAsync("/api/v1/editions");
@@ -35,7 +34,7 @@ public class EditionEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task CreateEdition_ReturnsCreated()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         var request = new
         {
             title = "Test TPB " + Guid.NewGuid().ToString("N")[..8],
@@ -59,7 +58,7 @@ public class EditionEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task CreateEdition_WithInvalidSeriesId_ReturnsBadRequest()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         var request = new
         {
             title = "Test Edition",
@@ -77,7 +76,7 @@ public class EditionEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task GetEditionById_NotFound_Returns404()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
 
         // Act
         var response = await client.GetAsync("/api/v1/editions/99999");
@@ -90,7 +89,7 @@ public class EditionEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task UpdateEdition_ReturnsUpdated()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         var createRequest = new
         {
             title = "Edition To Update " + Guid.NewGuid().ToString("N")[..8],
@@ -120,7 +119,7 @@ public class EditionEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task DeleteEdition_ReturnsNoContent()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         var createRequest = new
         {
             title = "Edition To Delete " + Guid.NewGuid().ToString("N")[..8]
@@ -145,7 +144,7 @@ public class EditionEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task CreateEdition_WithSeries_LinksCorrectly()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
 
         // Create a series first
         var seriesRequest = new { title = "Series for Edition " + Guid.NewGuid().ToString("N")[..8] };

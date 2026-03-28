@@ -4,24 +4,23 @@ using System.Text.Json;
 
 namespace Shortboxerr.Tests;
 
-public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
+public class ProviderEndpointTests : BaseEndpointTest
 {
-    private readonly CustomWebApplicationFactory _factory;
+    
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
 
-    public ProviderEndpointTests(CustomWebApplicationFactory factory)
+    public ProviderEndpointTests(CustomWebApplicationFactory factory) : base(factory)
     {
-        _factory = factory;
     }
 
     [Fact]
     public async Task GetAllProviders_ReturnsEmptyList()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
 
         // Act
         var response = await client.GetAsync("/api/v1/providers");
@@ -36,7 +35,7 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task GetIndexers_ReturnsEmptyList()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
 
         // Act
         var response = await client.GetAsync("/api/v1/providers/indexers");
@@ -52,7 +51,7 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task GetDownloadClients_ReturnsEmptyList()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
 
         // Act
         var response = await client.GetAsync("/api/v1/providers/downloadclients");
@@ -68,7 +67,7 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task GetImplementations_ReturnsAvailableTypes()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
 
         // Act
         var response = await client.GetAsync("/api/v1/providers/implementations");
@@ -92,7 +91,7 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task CreateIndexer_ReturnsCreated()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         var request = new
         {
             name = "Test RSS Indexer",
@@ -119,7 +118,7 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task CreateIndexer_WithInvalidImplementation_ReturnsBadRequest()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         var request = new
         {
             name = "Invalid Provider",
@@ -140,7 +139,7 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
         // Note: HTTP Download Client is now a built-in service, not a user-configurable provider.
         // External download clients (torrent, usenet) are planned for EPIC 10+.
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         var request = new
         {
             name = "Test Download Client",
@@ -159,7 +158,7 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task GetProviderById_NotFound_Returns404()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
 
         // Act
         var response = await client.GetAsync("/api/v1/providers/999");
@@ -172,7 +171,7 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task UpdateProvider_ReturnsUpdated()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         
         // First create a provider
         var createRequest = new
@@ -211,7 +210,7 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task DeleteProvider_ReturnsNoContent()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         
         // First create a provider
         var createRequest = new
@@ -242,7 +241,7 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task TestProvider_ReturnsTestResult()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         
         // First create a provider
         var createRequest = new
@@ -275,7 +274,7 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task TestNewProvider_WithoutSaving_ReturnsTestResult()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         var request = new
         {
             name = "Unsaved Provider",
@@ -298,7 +297,7 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task SetProviderEnabled_TogglesStatus()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         
         // Create provider
         var createRequest = new
@@ -332,7 +331,7 @@ public class ProviderEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task Swagger_IncludesProviderEndpoints()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
 
         // Act
         var response = await client.GetAsync("/swagger/v1/swagger.json");

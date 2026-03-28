@@ -3,20 +3,19 @@ using System.Text.Json;
 
 namespace Shortboxerr.Tests;
 
-public class HealthEndpointTests : IClassFixture<CustomWebApplicationFactory>
+public class HealthEndpointTests : BaseEndpointTest
 {
-    private readonly CustomWebApplicationFactory _factory;
+    
 
-    public HealthEndpointTests(CustomWebApplicationFactory factory)
+    public HealthEndpointTests(CustomWebApplicationFactory factory) : base(factory)
     {
-        _factory = factory;
     }
 
     [Fact]
     public async Task Health_ReturnsHealthyStatus()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
 
         // Act
         var response = await client.GetAsync("/health");
@@ -32,7 +31,7 @@ public class HealthEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task Ping_ReturnsPong()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
 
         // Act
         var response = await client.GetAsync("/ping");
@@ -47,7 +46,7 @@ public class HealthEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task SystemStatus_ReturnsAppInfo()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
 
         // Act
         var response = await client.GetAsync("/api/v1/system/status");
@@ -65,7 +64,7 @@ public class HealthEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task Swagger_ReturnsSwaggerJson()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
 
         // Act
         var response = await client.GetAsync("/swagger/v1/swagger.json");

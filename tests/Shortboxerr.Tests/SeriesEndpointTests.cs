@@ -4,24 +4,23 @@ using System.Text.Json;
 
 namespace Shortboxerr.Tests;
 
-public class SeriesEndpointTests : IClassFixture<CustomWebApplicationFactory>
+public class SeriesEndpointTests : BaseEndpointTest
 {
-    private readonly CustomWebApplicationFactory _factory;
+    
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
 
-    public SeriesEndpointTests(CustomWebApplicationFactory factory)
+    public SeriesEndpointTests(CustomWebApplicationFactory factory) : base(factory)
     {
-        _factory = factory;
     }
 
     [Fact]
     public async Task GetAllSeries_ReturnsPagedResult()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
 
         // Act
         var response = await client.GetAsync("/api/v1/series");
@@ -40,7 +39,7 @@ public class SeriesEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task CreateSeries_ReturnsCreated()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         var request = new
         {
             title = "Test Series " + Guid.NewGuid().ToString("N")[..8],
@@ -64,7 +63,7 @@ public class SeriesEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task GetSeriesById_NotFound_Returns404()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
 
         // Act
         var response = await client.GetAsync("/api/v1/series/99999");
@@ -77,7 +76,7 @@ public class SeriesEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task UpdateSeries_ReturnsUpdated()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         var createRequest = new
         {
             title = "Series To Update " + Guid.NewGuid().ToString("N")[..8],
@@ -107,7 +106,7 @@ public class SeriesEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task DeleteSeries_ReturnsOkWithDeletionInfo()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         var createRequest = new
         {
             title = "Series To Delete " + Guid.NewGuid().ToString("N")[..8]
@@ -136,7 +135,7 @@ public class SeriesEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task GetAllSeries_ReturnsCacheControlHeader()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
 
         // Act
         var response = await client.GetAsync("/api/v1/series");
@@ -151,7 +150,7 @@ public class SeriesEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task GetSeriesById_ReturnsCacheControlAndETagHeaders()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         
         // Create a series first
         var createRequest = new
@@ -178,7 +177,7 @@ public class SeriesEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task GetSeriesById_WithIfNoneMatch_Returns304()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         
         // Create a series first
         var createRequest = new
@@ -207,7 +206,7 @@ public class SeriesEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task GetSeriesIssues_ReturnsCacheControlHeader()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _client;
         
         // Create a series first
         var createRequest = new
