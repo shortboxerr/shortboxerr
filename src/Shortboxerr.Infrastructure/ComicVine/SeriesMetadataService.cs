@@ -1312,6 +1312,7 @@ public class SeriesMetadataService : ISeriesMetadataService
         var normalizedQuery = NormalizeTitle(searchQuery);
         var normalizedTitle = NormalizeTitle(volume.Name);
 
+        // TITLE MATCHING (0-40 points)
         // Exact title match
         if (normalizedTitle.Equals(normalizedQuery, StringComparison.OrdinalIgnoreCase))
         {
@@ -1324,7 +1325,7 @@ public class SeriesMetadataService : ISeriesMetadataService
             score += 25;
             reasons.Add("Title starts with query (+25)");
         }
-        // Title contains query
+        // Title contains query (but not at start)
         else if (normalizedTitle.Contains(normalizedQuery, StringComparison.OrdinalIgnoreCase))
         {
             score += 15;
@@ -1337,36 +1338,126 @@ public class SeriesMetadataService : ISeriesMetadataService
             reasons.Add("Alias exact match (+35)");
         }
 
-        // Publisher match
+        // PUBLISHER MATCHING (0-20 points)
+        // Exact publisher match
         if (!string.IsNullOrEmpty(filterPublisher) && 
-            volume.Publisher?.Name?.Contains(filterPublisher, StringComparison.OrdinalIgnoreCase) == true)
+            !string.IsNullOrEmpty(volume.Publisher?.Name))
         {
-            score += 10;
-            reasons.Add("Publisher match (+10)");
+            var normalizedFilterPublisher = NormalizeTitle(filterPublisher);
+            var normalizedVolumePublisher = NormalizeTitle(volume.Publisher.Name);
+            
+            if (normalizedVolumePublisher.Equals(normalizedFilterPublisher, StringComparison.OrdinalIgnoreCase))
+            {
+                score += 20;
+                reasons.Add("Publisher exact match (+20)");
+            }
+            else if (normalizedVolumePublisher.Contains(normalizedFilterPublisher, StringComparison.OrdinalIgnoreCase))
+            {
+                score += 10;
+                reasons.Add("Publisher partial match (+10)");
+            }
         }
 
-        // Year match
+        // YEAR MATCHING (0-15 points)
+        // Year exact match
         if (filterYear.HasValue && volume.StartYear == filterYear)
         {
-            score += 10;
-            reasons.Add("Year exact match (+10)");
+            score += 15;
+            reasons.Add("Year exact match (+15)");
         }
-        else if (filterYear.HasValue && volume.StartYear.HasValue &&
-                 Math.Abs(volume.StartYear.Value - filterYear.Value) <= 2)
+        // Year close match (±2 years for reboots/relaunches)
+        else if (filterYear.HasValue && volume.StartYear.HasValue)
         {
-            score += 5;
-            reasons.Add("Year close match (+5)");
+            var yearDiff = Math.Abs(volume.StartYear.Value - filterYear.Value);
+            if (yearDiff <= 2)
+            {
+                score += 10;
+                reasons.Add($"Year close match (±{yearDiff} year(s)) (+10)");
+            }
+            else if (yearDiff <= 5)
+            {
+                score += 5;
+                reasons.Add($"Year within 5 years (+5)");
+            }
         }
 
-        // Issue count bonus (more issues = more established series)
-        if (volume.IssueCount > 50)
+        // VARIANT DETECTION (penalty or bonus)
+        // Known reboot patterns - penalize if query doesn't specify year but volume is much older/newer
+        if (filterYear.HasValue && volume.StartYear.HasValue)
         {
-            score += 5;
-            reasons.Add("Large issue count (+5)");
+            var yearDiff = Math.Abs(volume.StartYear.Value - filterYear.Value);
+            
+            // Large year gap might indicate different continuity (e.g., "Batman 2011" vs "Batman 1939")
+            if (yearDiff > 10 && !HasYearInQuery(searchQuery))
+            {
+                score -= 15;
+                reasons.Add("Year mismatch suggests different continuity (-15)");
+            }
         }
 
-        // Cap at 100
-        return Math.Min(100, score);
+        // Penalize if query has variant prefixes but title doesn't match exactly
+        var hasVariantPrefix = HasVariantPrefix(searchQuery);
+        if (hasVariantPrefix && !HasVariantPrefix(volume.Name) && 
+            !normalizedTitle.Equals(normalizedQuery, StringComparison.OrdinalIgnoreCase))
+        {
+            score -= 10;
+            reasons.Add("Query has variant prefix but title doesn't match (-10)");
+        }
+
+        // BONUS: Established series (more issues = more likely correct match)
+        if (volume.IssueCount >= 50)
+        {
+            score += 5;
+            reasons.Add("Large issue count indicates established series (+5)");
+        }
+        else if (volume.IssueCount >= 20)
+        {
+            score += 2;
+            reasons.Add("Moderate issue count (+2)");
+        }
+
+        // Cap at 100, floor at 0
+        return Math.Max(0, Math.Min(100, score));
+    }
+
+    /// <summary>
+    /// Checks if a title has a variant prefix (All-New, Ultimate, Marvel NOW, etc.)
+    /// </summary>
+    private bool HasVariantPrefix(string? title)
+    {
+        if (string.IsNullOrEmpty(title))
+            return false;
+
+        var variantPrefixes = new[]
+        {
+            "all-new", "all new",
+            "ultimate",
+            "marvel now", "marvel now!",
+            "now",
+            "2099",
+            "max",
+            "x-",
+            "the amazing",
+            "the incredible",
+            "the spectacular",
+            "new",
+            "annual",
+            "special"
+        };
+
+        var normalized = NormalizeTitle(title);
+        return variantPrefixes.Any(prefix => normalized.StartsWith(prefix));
+    }
+
+    /// <summary>
+    /// Checks if query contains a year (e.g., "Batman 2011", "Superman (2016)")
+    /// </summary>
+    private bool HasYearInQuery(string? query)
+    {
+        if (string.IsNullOrEmpty(query))
+            return false;
+
+        return System.Text.RegularExpressions.Regex.IsMatch(query, @"\b(19|20)\d{2}\b");
     }
 
     private void ApplyVolumeMetadataToSeries(Series series, ComicVineVolume volume)
