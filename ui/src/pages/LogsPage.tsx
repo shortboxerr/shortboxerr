@@ -170,6 +170,9 @@ export default function LogsPage() {
 
   // Virtualizer for efficient rendering of large log files
   const lines = logContent?.lines ?? [];
+  // TanStack Virtual returns unstable function refs; React Compiler / eslint-plugin-react-hooks
+  // flags this — intentional (see BACKLOG 14.23, docs/SECURITY.md ESLint section).
+  // eslint-disable-next-line react-hooks/incompatible-library -- useVirtualizer by design
   const rowVirtualizer = useVirtualizer({
     count: lines.length,
     getScrollElement: () => logContainerRef.current,

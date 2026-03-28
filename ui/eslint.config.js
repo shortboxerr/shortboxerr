@@ -10,6 +10,8 @@
  *   Replace with proper types or unknown + guards when touching those call sites.
  * - react-hooks/static-components: Prefer declaring components at module scope (e.g. TriStateCheckbox).
  *   Remaining inline helpers kept as warn until refactor.
+ * - Line-level disables (see code): LogsPage TanStack useVirtualizer (incompatible-library);
+ *   SeriesDetailPage pagination reset (set-state-in-effect). Iteration 236.
  */
 import js from '@eslint/js'
 import globals from 'globals'

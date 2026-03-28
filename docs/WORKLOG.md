@@ -1,5 +1,30 @@
 # Worklog
 
+## Iteration 236 (2026-03-28)
+
+**fix(ui): reduce ESLint warnings (14.23 partial)**
+
+### Summary
+
+Continue-dev iteration: cleared **7** ESLint warnings (22 → 15). **ManualImportPage** `EditMatchModal`: `key={editingFile.path}`, stable `seriesList` / `suggestedMatch` via `useMemo`, `userOverride` + derived selection (removed sync `useEffect`). **SeriesDetailPage:** stable empty-array constants and `useMemo` for `upcomingReleases`, `allIssues`, `allAnnuals` (fixes exhaustive-deps); line-level disable for pagination reset `setCurrentPage(1)`. **LogsPage:** line-level disable for TanStack `useVirtualizer` (`incompatible-library`). Updated **BACKLOG 14.23** counts; **eslint.config.js** header notes line-level disables. Refreshed **wwwroot** from `npm run build`.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `ui/src/pages/ManualImportPage.tsx` | EditMatchModal refactor |
+| `ui/src/pages/SeriesDetailPage.tsx` | useMemo + disables |
+| `ui/src/pages/LogsPage.tsx` | incompatible-library disable |
+| `ui/eslint.config.js` | comment |
+| `docs/BACKLOG.md` | 14.23 |
+| `src/Shortboxerr.Api/wwwroot/**` | build output |
+| `docs/WORKLOG.md` | this entry |
+| `docs/SELF_CHECK.md` | Iteration 236 |
+
+**Commit:** `fix(ui): reduce ESLint warnings for 14.23`
+
+---
+
 ## Iteration 235 (2026-03-28)
 
 **docs(security): lightweight threat model; close BACKLOG 14.31**

@@ -405,18 +405,17 @@ Additional performance optimizations deferred from EPIC 20. All sub-items are **
 **Effort:** L | **Priority:** P3
 
 #### 14.23 ESLint: Address UI Lint Warnings 🔄 IN PROGRESS
-Resolve or formally accept the 22 current ESLint warnings so the UI lint run is clean (zero warnings) or exceptions are documented.
+Resolve or formally accept ESLint warnings so the UI lint run is clean (zero warnings) or exceptions are documented.
 
 - [x] **Document accepted warnings** (Iteration 217): Added block comment in `ui/eslint.config.js` listing each downgraded rule and rationale (set-state-in-effect, only-export-components, no-explicit-any, static-components).
-- [ ] Reduce warnings to zero or keep as documented warns; address exhaustive-deps / incompatible-library if desired.
+- [ ] Reduce warnings to zero or keep as documented warns (Iteration 236: **15** warnings remain).
 
-**Current warnings (as of backlog entry):**
-- **react-refresh/only-export-components:** App.tsx (useTheme), Toast.tsx (toast helpers). Documented in config.
-- **react-hooks/set-state-in-effect:** Layout, ManualImportPage, PullListPage, SeriesDetailPage, WantedPage. Documented in config.
+**Current warnings (Iteration 236, `npm run lint`):**
+- **react-refresh/only-export-components:** App.tsx, Toast.tsx. Documented in config.
+- **react-hooks/set-state-in-effect:** Layout, PullListPage, SeriesDetailPage (view mode from settings), WantedPage. Documented in config.
 - **@typescript-eslint/no-explicit-any:** api/client.ts (9 locations). Documented in config.
-- **react-hooks/static-components:** Documented in config.
-- **react-hooks/exhaustive-deps:** ManualImportPage, SeriesDetailPage (useMemo deps). Option: wrap in useMemo or disable with comment.
-- **react-hooks/incompatible-library:** LogsPage (TanStack useVirtualizer). Option: document or suppress.
+- **react-hooks/static-components:** (none in current lint output; rule still warn in config.)
+- **Addressed Iteration 236:** ManualImportPage (derived selection + `key`, no effect); SeriesDetailPage stable `useMemo` for issue/upcoming lists; exhaustive-deps cleared there; pagination reset uses targeted disable; LogsPage useVirtualizer uses targeted disable (`incompatible-library`).
 
 **Acceptance:** Either zero warnings, or an eslint.config.js / docs note that lists accepted warnings and rationale. (Documentation done; zero warnings optional.)
 

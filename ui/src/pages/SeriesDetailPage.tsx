@@ -8,7 +8,10 @@ import {
   FolderSync
 } from 'lucide-react';
 import { api } from '../api/client';
-import type { Issue, IssueStatus, SeriesPullListSettingsDto, SeriesMatchCandidate } from '../api/client';
+import type { Issue, IssueStatus, SeriesPullListSettingsDto, SeriesMatchCandidate, UpcomingRelease } from '../api/client';
+
+const EMPTY_ISSUES: Issue[] = [];
+const EMPTY_UPCOMING: UpcomingRelease[] = [];
 import { useToast } from '../components/Toast';
 
 type ViewMode = 'cover' | 'list';
@@ -269,10 +272,20 @@ export function SeriesDetailPage() {
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
-  const upcomingReleases = showUpcoming ? (upcomingData?.releases ?? []) : [];
+  const upcomingReleases = useMemo(
+    () => (showUpcoming ? (upcomingData?.releases ?? EMPTY_UPCOMING) : EMPTY_UPCOMING),
+    [showUpcoming, upcomingData?.releases],
+  );
 
-  const allIssues = issuesData?.items ?? [];
-  const allAnnuals = annualsData?.annuals ?? [];
+  const allIssues = useMemo(
+    () => issuesData?.items ?? EMPTY_ISSUES,
+    [issuesData?.items],
+  );
+
+  const allAnnuals = useMemo(
+    () => annualsData?.annuals ?? EMPTY_ISSUES,
+    [annualsData?.annuals],
+  );
   const linkedAnnualSeriesCount = annualsData?.linkedAnnualSeriesCount ?? 0;
 
   // Type for unified display of both regular issues and upcoming releases
@@ -365,8 +378,9 @@ export function SeriesDetailPage() {
     return regularIssues.slice(startIndex, startIndex + pageSize);
   }, [regularIssues, currentPage, pageSize]);
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when filters change (sync local pagination with filter state).
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate UX reset when filter deps change
     setCurrentPage(1);
   }, [statusFilter, sortKey, sortDir, pageSize]);
 
