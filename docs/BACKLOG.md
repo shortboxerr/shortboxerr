@@ -26,6 +26,7 @@
 | ✅ | EPIC 19 | Auto-Matching Robustness | [Archive](./COMPLETED.md#epic-19-auto-matching-robustness) |
 | ✅ | [EPIC 20](#epic-20-performance-optimization--completed) | Performance Optimization | Completed |
 | ✅ | [EPIC 21](#epic-21-test-stabilization--quality-gates--high-priority) | Test Stabilization | Completed |
+| 📋 | [EPIC 22](#epic-22-git-flow-pr-governance--semver-releases--planned) | PR Governance & Releases | Planned |
 
 **Legend:** ✅ Completed | 🔄 In Progress | 📋 Planned | 🔴 High Priority
 
@@ -850,6 +851,104 @@ Result: ReleaseGroup = "DC-Empire", Publisher = "DC Comics", PublisherHint = "DC
 - [x] Test expectations restored ("DC Comics", "Image Comics")
 
 **Effort:** S | **Priority:** P2 (quality improvement)
+
+---
+
+## EPIC 22: Git Flow, PR Governance & SemVer Releases 📋 PLANNED
+
+Migrate from direct `dev` pushes to a PR-first workflow targeting `main`, with branch protections and semantic-versioned releases.
+
+### 22.1 Branch Strategy Migration (`dev` -> `main`) 📋 PLANNED
+- [ ] Decide and document target flow:
+  - short-lived feature branches from `main`
+  - PRs merge into `main`
+  - no direct commits to protected branches
+- [ ] Create/sync `main` from current stable tip and set as default branch on GitHub.
+- [ ] Update local and CI references that currently assume `dev` as default branch.
+- [ ] Keep `dev` as temporary compatibility branch or retire it with documented cutover date.
+
+**Acceptance:** `main` is default branch; active development branches PR into `main`; `dev` no longer required for day-to-day work.
+
+**Effort:** M | **Priority:** P1
+
+### 22.2 PR Governance & Branch Protection 📋 PLANNED
+- [ ] Enable branch protection on `main`:
+  - require pull request before merge
+  - require up-to-date branch before merge
+  - require status checks to pass
+  - restrict force-push/deletion
+- [ ] Require at least one review (CODEOWNERS optional but recommended).
+- [ ] Define allowed merge strategy (squash vs merge commit) and enforce it.
+- [ ] Add PR template with sections for summary, test plan, risk, rollback notes.
+
+**Acceptance:** No direct pushes to `main`; all merges happen through reviewed PRs with passing checks.
+
+**Effort:** S | **Priority:** P1
+
+### 22.3 CI as Required Status Checks 📋 PLANNED
+- [ ] Ensure CI workflow names are stable and suitable for required checks.
+- [ ] Required checks include at least:
+  - backend build
+  - backend tests
+  - frontend build
+- [ ] Add optional non-blocking checks (lint, docs validation, dependency scan) as advisory.
+- [ ] Document expected check runtime and troubleshooting steps.
+
+**Acceptance:** PR merge is blocked until required CI checks pass.
+
+**Effort:** S | **Priority:** P1
+
+### 22.4 Conventional Commits + SemVer Rules 📋 PLANNED
+- [ ] Formalize mapping from commit type to version bump:
+  - `fix` -> patch
+  - `feat` -> minor
+  - `BREAKING CHANGE`/`!` -> major
+- [ ] Ensure commit/PR title conventions are compatible with automated release tooling.
+- [ ] Document examples and edge cases (revert, docs-only, chore-only).
+
+**Acceptance:** Version bump logic is deterministic and documented for maintainers.
+
+**Effort:** S | **Priority:** P1
+
+### 22.5 Automated Release Pipeline (Tags + Notes) 📋 PLANNED
+- [ ] Add release workflow (on merge to `main` or manual dispatch) that:
+  - computes next SemVer
+  - creates git tag (`vX.Y.Z`)
+  - generates changelog/release notes from commits/PRs
+  - publishes GitHub Release
+- [ ] Prevent duplicate/parallel release runs.
+- [ ] Include dry-run mode for validation.
+
+**Acceptance:** Merging release-worthy PRs to `main` reliably produces tagged SemVer releases with notes.
+
+**Effort:** M | **Priority:** P1
+
+### 22.6 Version Surfacing in App/API 📋 PLANNED
+- [ ] Ensure release version is injected into backend/frontend build metadata.
+- [ ] Expose release version in system status endpoint and UI footer consistently.
+- [ ] Add tests or smoke checks for version presence.
+
+**Acceptance:** Running app clearly shows the released SemVer and commit metadata.
+
+**Effort:** S | **Priority:** P2
+
+### 22.7 Release Operations & Rollback Playbook 📋 PLANNED
+- [ ] Document release checklist (preflight, deploy, verification, rollback).
+- [ ] Define hotfix flow (`hotfix/*` from `main`) and patch release process.
+- [ ] Add incident guidance for bad release recovery and tag correction policy.
+
+**Acceptance:** Maintainers can execute and recover releases without tribal knowledge.
+
+**Effort:** S | **Priority:** P2
+
+### 22.8 Security/Compliance for Release Automation 📋 PLANNED
+- [ ] Scope and rotate GitHub tokens/secrets for release jobs.
+- [ ] Ensure no secrets leak in logs/artifacts.
+- [ ] Gate dependency/license/security scans as required or advisory before release.
+
+**Acceptance:** Release automation follows least-privilege and existing security policy.
+
+**Effort:** S | **Priority:** P2
 
 ---
 
