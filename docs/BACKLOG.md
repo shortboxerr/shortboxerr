@@ -26,7 +26,7 @@
 | ✅ | EPIC 19 | Auto-Matching Robustness | [Archive](./COMPLETED.md#epic-19-auto-matching-robustness) |
 | ✅ | [EPIC 20](#epic-20-performance-optimization--completed) | Performance Optimization | Completed |
 | ✅ | [EPIC 21](#epic-21-test-stabilization--quality-gates--high-priority) | Test Stabilization | Completed |
-| 📋 | [EPIC 22](#epic-22-git-flow-pr-governance--semver-releases--planned) | PR Governance & Releases | Planned |
+| 🔄 | [EPIC 22](#epic-22-git-flow-pr-governance--semver-releases--in-progress) | PR Governance & Releases | In Progress |
 
 **Legend:** ✅ Completed | 🔄 In Progress | 📋 Planned | 🔴 High Priority
 
@@ -854,17 +854,17 @@ Result: ReleaseGroup = "DC-Empire", Publisher = "DC Comics", PublisherHint = "DC
 
 ---
 
-## EPIC 22: Git Flow, PR Governance & SemVer Releases 📋 PLANNED
+## EPIC 22: Git Flow, PR Governance & SemVer Releases 🔄 IN PROGRESS
 
 Migrate from direct `dev` pushes to a PR-first workflow targeting `main`, with branch protections and semantic-versioned releases.
 
-### 22.1 Branch Strategy Migration (`dev` -> `main`) 📋 PLANNED
-- [ ] Decide and document target flow:
+### 22.1 Branch Strategy Migration (`dev` -> `main`) 🔄 IN PROGRESS
+- [x] Decide and document target flow:
   - short-lived feature branches from `main`
   - PRs merge into `main`
   - no direct commits to protected branches
-- [ ] Create/sync `main` from current stable tip and set as default branch on GitHub.
-- [ ] Update local and CI references that currently assume `dev` as default branch.
+- [x] Create/sync `main` from current stable tip and set as default branch on GitHub.
+- [x] Update local and CI references that currently assume `dev` as default branch.
 - [ ] Keep `dev` as temporary compatibility branch or retire it with documented cutover date.
 
 **Acceptance:** `main` is default branch; active development branches PR into `main`; `dev` no longer required for day-to-day work.
