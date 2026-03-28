@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -10,8 +11,25 @@ namespace Shortboxerr.Tests;
 /// <summary>
 /// Unit tests for cache event publishing infrastructure.
 /// </summary>
+[Collection(nameof(CacheEventPublisherTestsCollection))]
 public class CacheEventPublisherTests
 {
+    /// <summary>
+    /// CacheService publishes via <c>Task.Run</c>; CI runners may need more than a fixed sleep.
+    /// </summary>
+    private static void WaitForAtLeastEventCount(LocalCacheEventPublisher publisher, int minCount, int timeoutMs = 10_000)
+    {
+        var sw = Stopwatch.StartNew();
+        while (sw.ElapsedMilliseconds < timeoutMs)
+        {
+            if (publisher.GetRecentEvents(100).Count >= minCount)
+                return;
+            Thread.Sleep(15);
+        }
+
+        Assert.Fail($"Expected at least {minCount} cache events within {timeoutMs}ms; got {publisher.GetRecentEvents(100).Count}.");
+    }
+
     #region LocalCacheEventPublisher Tests
 
     [Fact]
@@ -155,9 +173,7 @@ public class CacheEventPublisherTests
 
         // Act
         service.Set("test:key", "value");
-        
-        // Wait for async event publishing
-        Thread.Sleep(50);
+        WaitForAtLeastEventCount(publisher, 1);
 
         // Assert
         var events = publisher.GetRecentEvents(10);
@@ -180,11 +196,11 @@ public class CacheEventPublisherTests
 
         // Act - set initial value
         service.Set("test:key", "value1");
-        Thread.Sleep(50);
-        
+        WaitForAtLeastEventCount(publisher, 1);
+
         // Update value
         service.Set("test:key", "value2");
-        Thread.Sleep(50);
+        WaitForAtLeastEventCount(publisher, 2);
 
         // Assert
         var events = publisher.GetRecentEvents(10);
@@ -206,11 +222,11 @@ public class CacheEventPublisherTests
             publisher);
 
         service.Set("test:key", "value");
-        Thread.Sleep(50);
+        WaitForAtLeastEventCount(publisher, 1);
 
         // Act
         service.Remove("test:key");
-        Thread.Sleep(50);
+        WaitForAtLeastEventCount(publisher, 2);
 
         // Assert
         var events = publisher.GetRecentEvents(10);
@@ -233,11 +249,11 @@ public class CacheEventPublisherTests
         service.Set("series:1", "value1");
         service.Set("series:2", "value2");
         service.Set("other:1", "value3");
-        Thread.Sleep(50);
+        WaitForAtLeastEventCount(publisher, 3);
 
         // Act
         service.RemoveByPrefix("series");
-        Thread.Sleep(50);
+        WaitForAtLeastEventCount(publisher, 4);
 
         // Assert
         var events = publisher.GetRecentEvents(10);
@@ -262,11 +278,11 @@ public class CacheEventPublisherTests
         service.Set("key1", "value1");
         service.Set("key2", "value2");
         service.Set("key3", "value3");
-        Thread.Sleep(50);
+        WaitForAtLeastEventCount(publisher, 3);
 
         // Act
         service.Clear();
-        Thread.Sleep(50);
+        WaitForAtLeastEventCount(publisher, 4);
 
         // Assert
         var events = publisher.GetRecentEvents(10);

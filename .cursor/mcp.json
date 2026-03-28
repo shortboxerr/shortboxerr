@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "github": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"]
+      "command": "bash",
+      "args": [".cursor/github-mcp.sh"]
     }
   }
 }

@@ -1,19 +1,18 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
 namespace Shortboxerr.Tests;
 
-public class SystemEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
+public class SystemEndpointsTests : IClassFixture<CustomWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly CustomWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
-    public SystemEndpointsTests(WebApplicationFactory<Program> factory)
+    public SystemEndpointsTests(CustomWebApplicationFactory factory)
     {
         _factory = factory;
-        _client = _factory.CreateClient();
+        _client = _factory.CreateAuthenticatedClient();
     }
 
     [Fact]

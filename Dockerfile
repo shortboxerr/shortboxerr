@@ -8,8 +8,8 @@ COPY src/Shortboxerr.Api/Shortboxerr.Api.csproj src/Shortboxerr.Api/
 COPY src/Shortboxerr.Core/Shortboxerr.Core.csproj src/Shortboxerr.Core/
 COPY src/Shortboxerr.Infrastructure/Shortboxerr.Infrastructure.csproj src/Shortboxerr.Infrastructure/
 
-# Restore dependencies
-RUN dotnet restore
+# Restore dependencies for the published app only (solution includes tests; test project is not copied into this image).
+RUN dotnet restore src/Shortboxerr.Api/Shortboxerr.Api.csproj
 
 # Copy source code
 COPY src/ src/

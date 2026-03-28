@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Shortboxerr.Core.Entities;
 using Shortboxerr.Infrastructure.Persistence;
+using System.Linq;
 
 namespace Shortboxerr.Tests;
 
@@ -106,6 +107,33 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IDisp
         var client = CreateClient();
         client.DefaultRequestHeaders.Add("X-Api-Key", TestApiKey);
         return client;
+    }
+
+    /// <summary>
+    /// Restores the stored API key to <see cref="TestApiKey"/> after tests that call regenerate.
+    /// The shared HTTP client keeps sending <see cref="TestApiKey"/> in <c>X-Api-Key</c>.
+    /// </summary>
+    public void ResetApiKeyToTestDefault()
+    {
+        const string apiKeyValueKey = "security.apiKey";
+        const string apiKeyEnabledKey = "security.apiKeyEnabled";
+
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ShortboxerrDbContext>();
+
+        void Upsert(string key, string value)
+        {
+            var row = db.SystemSettings.FirstOrDefault(s => s.Key == key);
+            if (row != null)
+                row.Value = value;
+            else
+                db.SystemSettings.Add(new SystemSetting { Key = key, Value = value });
+        }
+
+        Upsert(apiKeyValueKey, TestApiKey);
+        Upsert(apiKeyEnabledKey, "true");
+
+        db.SaveChanges();
     }
 
     protected override void Dispose(bool disposing)

@@ -6,10 +6,12 @@ namespace Shortboxerr.Tests;
 /// </summary>
 public abstract class BaseEndpointTest : IClassFixture<CustomWebApplicationFactory>
 {
+    protected readonly CustomWebApplicationFactory Factory;
     protected readonly HttpClient _client;
 
     protected BaseEndpointTest(CustomWebApplicationFactory factory)
     {
+        Factory = factory;
         _client = factory.CreateAuthenticatedClient();
     }
 }

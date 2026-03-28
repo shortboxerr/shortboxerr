@@ -1,29 +1,22 @@
-# Self-Check: Iteration 226
+# Self-Check: Iteration 232
 
 ## Build Status
+
 - [x] `dotnet build` succeeds
-- [x] `npm run build` succeeds
-
-## Test Status
-- **Before**: 2608 passed, 0 failed
-- **After**: 2610 passed, 0 failed
-- [x] No NEW test failures introduced
-
-## Lint Status
-- [x] No new lint errors on changed files
-
-## Files Changed
-| File | Type |
-|------|------|
-| `src/Shortboxerr.Api/Endpoints/ComicVineEndpoints.cs` | validation logic |
-| `tests/Shortboxerr.Tests/SettingsEndpointTests.cs` | +2 ComicVine tests |
-| `docs/BACKLOG.md` | 9.14 done |
-| `docs/WORKLOG.md` | Iteration 226 |
-| `docs/SELF_CHECK.md` | Iteration 226 |
-| `docs/ASSUMPTIONS.md` | environment note |
-
-## Commits
-1. `fix(comicvine): require validated API key before enabling` - (pending)
+- [x] `dotnet test` — 2610 passed
 
 ## Summary
-ComicVine enablement now requires a configured API key plus a successful connection test before `Enabled=true` is persisted.
+
+`CacheEventPublisherTests` runs non-parallel to avoid thread-pool starvation on
+`Task.Run` cache event publishes (CI flake after PR #2 merge).
+
+## Files Changed
+
+- `tests/Shortboxerr.Tests/CacheEventPublisherTestsCollection.cs` — new
+- `tests/Shortboxerr.Tests/CacheEventPublisherTests.cs` — `[Collection]`
+- `docs/WORKLOG.md` — iteration 232
+- `docs/SELF_CHECK.md` — this file
+
+## Commits
+
+1. `fix(tests): serialize CacheEventPublisherTests for CI` — (this iteration)

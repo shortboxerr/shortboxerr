@@ -10,6 +10,10 @@ services:
       - .:/workspaces/shortboxerr:cached
       - shortboxerr-nuget:/home/vscode/.nuget/packages
     working_dir: /workspaces/shortboxerr
+    environment:
+      # Forward from host when set (Dev Container also injects via devcontainer.json localEnv).
+      GH_TOKEN: ${GH_TOKEN:-}
+      GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_PERSONAL_ACCESS_TOKEN:-}
     command: sleep infinity
 
 volumes:
