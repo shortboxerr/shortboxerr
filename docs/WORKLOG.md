@@ -20,7 +20,7 @@ Expanded **trunk** documentation so future work matches **branch protection** an
 | `docs/WORKLOG.md` | this entry |
 | `.cursor/rules.md` | agent PR-to-main |
 
-**Commits:** _(after push)_
+**Commits:** `docs: PR-to-main workflow (CONTRIBUTING, CONTINUE, agents, backlog)` (59fb61f); merged via **PR #19** (8fdf879).
 
 ---
 
