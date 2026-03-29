@@ -1,5 +1,50 @@
 # Worklog
 
+## Iteration 242 (2026-03-28)
+
+**feat(metron): MetronLookupMiss diagnostic warnings (backlog 14.12)**
+
+### Summary
+
+Closed **14.12** optional *Debug Metron lookup failures*: **`MetronClient`** now emits structured **`Warning`** logs prefixed with **`MetronLookupMiss`** when lookups yield no entity—reason codes (`empty_results`, `unparseable_or_null_body`, `http_not_found`, `unparseable_detail_or_empty`), `Operation`, relative **`MetronApiPath`** (no base URL, no auth), and ComicVine / Metron IDs as applicable. Response bodies and credentials are not logged (security). XML summary on the client class documents the prefix for grep. **Tests:** `MetronClientTests` verifies warnings on empty CV issue list, JSON `null` body, and issue-by-id HTTP 404. Full suite (**2612** tests) + UI gates passed; `docker` unavailable (host `dotnet` / `npm`).
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `src/Shortboxerr.Infrastructure/Metron/MetronClient.cs` | MetronLookupMiss warnings |
+| `tests/Shortboxerr.Tests/MetronClientTests.cs` | logging assertions + cases |
+| `docs/BACKLOG.md` | 14.12 optional item complete |
+| `docs/WORKLOG.md` | this entry |
+| `docs/SELF_CHECK.md` | Iteration 242 |
+| `docs/ASSUMPTIONS.md` | Iteration 242 gates |
+
+**Commits:** `feat(metron): MetronLookupMiss diagnostic warnings` (c59ed54); `docs(worklog): record Iteration 242 commit SHA (c59ed54)` (e1689bd)
+
+---
+
+## Iteration 241 (2026-03-28)
+
+**docs: CodeRabbit PR review (14.26); close redundant 14.12 automatch item**
+
+### Summary
+
+Documented **CodeRabbit** as the adopted **free** AI PR review path: new subsection in **`docs/CONTRIBUTING.md`** (*Automated PR review*) links the GitHub App, describes **`.coderabbit.yaml`**, and where to change install vs file config. **BACKLOG 14.26** marked complete with chosen solution and goals checked. **BACKLOG 14.12** optional *Lower confidence threshold for future issues* closed as redundant with **EPIC 19.4** / **Iteration 176** (`LowConfidenceThreshold`, settings API, UI). Quality gates: `dotnet build` / `dotnet test` (2610 passed); `npm run lint` / `npm run build` (UI). Docker CLI unavailable in this environment; gates run with host `dotnet` / `npm`.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `docs/CONTRIBUTING.md` | CodeRabbit subsection |
+| `docs/BACKLOG.md` | 14.26 complete; 14.12 optional closed |
+| `docs/WORKLOG.md` | this entry |
+| `docs/SELF_CHECK.md` | Iteration 241 |
+| `docs/ASSUMPTIONS.md` | Iteration 241 gates / 14.26 install note |
+
+**Commits:** `docs: CodeRabbit in CONTRIBUTING, complete backlog 14.26` (af55ab5); `docs(worklog): record Iteration 241 commit SHA (af55ab5)` (fa03ccc)
+
+---
+
 ## Iteration 240 (2026-03-28)
 
 **chore(security): OSV-Scanner in CI, release docs, PR template**

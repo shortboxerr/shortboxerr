@@ -35,3 +35,13 @@ When running "repeat until nothing remains", the agent re-reads CONTINUE.md afte
 - **OSV vs npm audit:** Both run in CI; OSV uses the OSV.dev database and locked versions in `package-lock.json`, while `npm audit` uses the npm advisory feed. Redundancy is intentional for defense in depth; occasional disagreement between databases is acceptable—resolve by bumping dependencies until both pass.
 - **.NET / NuGet:** OSV job scans **npm lockfiles only** (no repo-root `packages.lock.json`). NuGet remains covered by **NuGet Audit** in `Directory.Build.props`.
 - **Quality gates:** `docker compose` was unavailable in this environment; `dotnet build` / `dotnet test` / `npm run lint` / `npm run build` were run in the workspace shell (no `wwwroot` commit; build embeds volatile git metadata).
+
+## Iteration 241: CodeRabbit documentation
+
+- **Quality gates:** Same as Iteration 240 — `docker` CLI unavailable; gates run in workspace with host `dotnet` / `npm`.
+- **14.26 acceptance:** CodeRabbit automated comments depend on the GitHub App being installed on the org/repo; the repo documents config (`.coderabbit.yaml`) and contributor expectations. Install state is outside the git tree.
+
+## Iteration 242: Metron diagnostics
+
+- **Quality gates:** `docker` CLI unavailable; `dotnet build` / `dotnet test` / `npm run lint` / `npm run build` run on the workspace host.
+- **MetronLookupMiss:** Warnings are intentionally concise; if production shows a wrong `MetronApiPath` or ID mismatch, fix the caller or mapping in a follow-up (not guessed here without failing samples).

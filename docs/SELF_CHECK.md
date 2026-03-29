@@ -1,4 +1,4 @@
-# Self-Check: Iteration 240
+# Self-Check: Iteration 242
 
 ## Build Status
 
@@ -8,7 +8,7 @@
 ## Test Status
 
 - **Before**: 2610 passed, 0 failed
-- **After**: 2610 passed, 0 failed
+- **After**: 2612 passed, 0 failed (2 new MetronClientTests; 1 existing test now asserts `MetronLookupMiss`)
 - [x] No NEW test failures introduced
 
 ## Lint Status
@@ -19,22 +19,18 @@
 
 | File | Type |
 |------|------|
-| `.github/workflows/ci.yml` | `osv-scan` job; `docker-build` needs |
-| `.github/pull_request_template.md` | Security impact section |
-| `docs/SECURITY.md` | OSV row; Actions secrets / release |
-| `docs/CONTRIBUTING.md` | OSV in CI bullets |
-| `docs/BACKLOG.md` | 22.2, 22.3, 22.8, 14.31 |
-| `docs/ASSUMPTIONS.md` | OSV vs npm audit |
-| `docs/WORKLOG.md` | Iteration 240 |
+| `src/Shortboxerr.Infrastructure/Metron/MetronClient.cs` | MetronLookupMiss warnings |
+| `tests/Shortboxerr.Tests/MetronClientTests.cs` | tests + Verify helper |
+| `docs/BACKLOG.md` | 14.12 Metron diagnostics |
+| `docs/WORKLOG.md` | Iteration 242 |
 | `docs/SELF_CHECK.md` | this file |
+| `docs/ASSUMPTIONS.md` | Iteration 242 |
 
 ## Commits
 
-1. `chore(security): OSV-Scanner in CI, release docs, backlog 22.x` — 66f3ef0
-2. `docs(worklog): record Iteration 240 commit SHA` — 041727a
-3. `docs: note gate execution env for Iteration 240` — 79491c2
-4. `docs(worklog): list all Iteration 240 commits` — 503f4b8
+1. `feat(metron): MetronLookupMiss diagnostic warnings` — c59ed54
+2. `docs(worklog): record Iteration 242 commit SHA (c59ed54)` — e1689bd
 
 ## Summary
 
-Added **OSV-Scanner** to CI for both npm lockfiles; documented **token/scoping/rotation** for future release workflows; extended **PR template** and **BACKLOG** (EPIC 22.2 / 22.3 / 22.8, 14.31 OSV note). No application code or test code changes.
+**MetronClient** diagnostic warnings for missed lookups; backlog **14.12** optional item done; tests assert `MetronLookupMiss` is logged.

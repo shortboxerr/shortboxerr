@@ -23,6 +23,9 @@ namespace Shortboxerr.Infrastructure.Metron;
 /// 2. Circuit breaker that stops requests when rate limited
 /// 3. Exponential backoff on consecutive errors
 /// 4. Detection of HTML rate limit pages (API returns 200 OK but HTML content)
+///
+/// Diagnostics: lookups that return no usable entity log <c>Warning</c> with prefix <c>MetronLookupMiss</c>
+/// (structured fields: Reason, Operation, MetronApiPath, and relevant IDs). Those lines omit credentials and response bodies.
 /// </summary>
 public class MetronClient : IMetronClient
 {
@@ -182,6 +185,14 @@ public class MetronClient : IMetronClient
             if (apiResponse == null || apiResponse.Results.Count == 0)
             {
                 RecordSuccess();
+                var reason = apiResponse == null ? "unparseable_or_null_body" : "empty_results";
+                var path = $"issue/?cv_id={comicVineIssueId}";
+                _logger?.LogWarning(
+                    "MetronLookupMiss: {Reason}; Operation={Operation}; MetronApiPath={MetronApiPath}; ComicVineIssueId={ComicVineIssueId}",
+                    reason,
+                    nameof(GetIssueByCvIdAsync),
+                    path,
+                    comicVineIssueId);
                 var notFoundResult = MetronIssueResult.NotFound($"No issue found with CV ID {comicVineIssueId}");
                 // Cache not-found results for a shorter time
                 _cache.Set(cacheKey, notFoundResult, TimeSpan.FromHours(4));
@@ -284,6 +295,14 @@ public class MetronClient : IMetronClient
             if (apiResponse == null || apiResponse.Results.Count == 0)
             {
                 RecordSuccess();
+                var reason = apiResponse == null ? "unparseable_or_null_body" : "empty_results";
+                var path = $"series/?cv_id={comicVineVolumeId}";
+                _logger?.LogWarning(
+                    "MetronLookupMiss: {Reason}; Operation={Operation}; MetronApiPath={MetronApiPath}; ComicVineVolumeId={ComicVineVolumeId}",
+                    reason,
+                    nameof(GetSeriesByCvIdAsync),
+                    path,
+                    comicVineVolumeId);
                 var notFoundResult = MetronSeriesResult.NotFound($"No series found with CV ID {comicVineVolumeId}");
                 _cache.Set(cacheKey, notFoundResult, TimeSpan.FromHours(4));
                 return notFoundResult;
@@ -390,6 +409,15 @@ public class MetronClient : IMetronClient
             if (apiResponse == null || apiResponse.Results.Count == 0)
             {
                 RecordSuccess();
+                var reason = apiResponse == null ? "unparseable_or_null_body" : "empty_results";
+                _logger?.LogWarning(
+                    "MetronLookupMiss: {Reason}; Operation={Operation}; MetronApiPath={MetronApiPath}; MetronSeriesId={MetronSeriesId}; IssueNumberRaw={IssueNumberRaw}; IssueNumberNormalized={IssueNumberNormalized}",
+                    reason,
+                    nameof(GetIssueBySeriesIdAsync),
+                    url,
+                    metronSeriesId,
+                    issueNumber ?? "",
+                    normalizedNumber);
                 var notFoundResult = MetronIssueResult.NotFound(
                     $"No issue found for series {metronSeriesId} issue {issueNumber}");
                 _cache.Set(cacheKey, notFoundResult, TimeSpan.FromHours(4));
@@ -508,6 +536,16 @@ public class MetronClient : IMetronClient
 
             var apiResponse = JsonSerializer.Deserialize<MetronApiListResponse>(content!, JsonOptions);
 
+            if (apiResponse == null)
+            {
+                _logger?.LogWarning(
+                    "MetronLookupMiss: unparseable_or_null_body; Operation={Operation}; MetronApiPath={MetronApiPath}; SeriesName={SeriesName}; IssueNumber={IssueNumber}",
+                    nameof(SearchIssueAsync),
+                    url,
+                    seriesName,
+                    issueNumber);
+            }
+
             RecordSuccess();
             var result = new MetronSearchResult
             {
@@ -583,6 +621,11 @@ public class MetronClient : IMetronClient
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
                 RecordSuccess();
+                _logger?.LogWarning(
+                    "MetronLookupMiss: http_not_found; Operation={Operation}; MetronApiPath={MetronApiPath}; MetronSeriesId={MetronSeriesId}",
+                    nameof(GetSeriesIssueListAsync),
+                    url,
+                    metronSeriesId);
                 var notFoundResult = MetronIssueListResult.NotFound(metronSeriesId, $"Series {metronSeriesId} not found");
                 _cache.Set(cacheKey, notFoundResult, TimeSpan.FromHours(4));
                 return notFoundResult;
@@ -611,6 +654,11 @@ public class MetronClient : IMetronClient
             if (apiResponse == null)
             {
                 RecordSuccess();
+                _logger?.LogWarning(
+                    "MetronLookupMiss: unparseable_or_null_body; Operation={Operation}; MetronApiPath={MetronApiPath}; MetronSeriesId={MetronSeriesId}",
+                    nameof(GetSeriesIssueListAsync),
+                    url,
+                    metronSeriesId);
                 var emptyResult = MetronIssueListResult.Found(metronSeriesId, new List<MetronIssue>(), 0);
                 _cache.Set(cacheKey, emptyResult, TimeSpan.FromHours(settings.CacheTtlHours));
                 return emptyResult;
@@ -692,6 +740,11 @@ public class MetronClient : IMetronClient
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
                 RecordSuccess();
+                _logger?.LogWarning(
+                    "MetronLookupMiss: http_not_found; Operation={Operation}; MetronApiPath={MetronApiPath}; MetronIssueId={MetronIssueId}",
+                    nameof(GetIssueByIdAsync),
+                    url,
+                    metronIssueId);
                 var notFoundResult = MetronIssueResult.NotFound($"Issue {metronIssueId} not found");
                 _cache.Set(cacheKey, notFoundResult, TimeSpan.FromHours(4));
                 return notFoundResult;
@@ -719,6 +772,11 @@ public class MetronClient : IMetronClient
             if (apiIssue == null)
             {
                 RecordSuccess();
+                _logger?.LogWarning(
+                    "MetronLookupMiss: unparseable_detail_or_empty; Operation={Operation}; MetronApiPath={MetronApiPath}; MetronIssueId={MetronIssueId}",
+                    nameof(GetIssueByIdAsync),
+                    url,
+                    metronIssueId);
                 var notFoundResult = MetronIssueResult.NotFound($"Issue {metronIssueId} not found");
                 _cache.Set(cacheKey, notFoundResult, TimeSpan.FromHours(4));
                 return notFoundResult;
@@ -1000,8 +1058,8 @@ public class MetronClient : IMetronClient
             (content.TrimStart().StartsWith('<') || content.Contains("<!DOCTYPE", StringComparison.OrdinalIgnoreCase)))
         {
             _logger?.LogWarning(
-                "Metron returned HTML instead of JSON - likely rate limited. Response starts with: {Preview}",
-                content.Length > 100 ? content[..100] + "..." : content);
+                "Metron returned HTML instead of JSON - likely rate limited (content length {ContentLength} bytes; body not logged).",
+                content.Length);
             return (content, true);
         }
         
