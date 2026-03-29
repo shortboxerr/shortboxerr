@@ -153,7 +153,7 @@ After fix:
 ## Examples of Unnecessary Commits
 
 From today's work (visible in git log above):
-```
+```text
 92cbf0f chore(deps): merge main into batch Dependabot PR
 af1f143 chore: record merged PR #25 in AUTO_MERGE_LOG (#26)
 f7fc628 fix(ci): use AUTO_MERGE_LOG_PAT for merge-log PR create/merge (#25)
