@@ -1,11 +1,11 @@
 # Append a row to docs/AUTO_MERGE_LOG.md when a PR merges to main.
 #
-# Direct push to `main` is usually blocked by rulesets ("changes must be made through
-# a pull request"). This workflow commits on branch `merge-log/pr-*`, opens a PR, then
-# merges it after checks pass (GITHUB_TOKEN: contents + pull-requests write).
+# 1) Push branch merge-log/pr-* (GITHUB_TOKEN; direct push to main is ruleset-blocked).
+# 2) Open and merge a PR into main. Many orgs disable "Allow GitHub Actions to create
+#    pull requests"; then repository secret AUTO_MERGE_LOG_PAT (fine-grained PAT, this
+#    repo, contents + pull requests) must be set for the PR create/merge API step.
 #
-# PRs whose head branch starts with `merge-log/` are skipped so recording merges do
-# not recurse.
+# PRs whose head starts with merge-log/ are skipped (no recursion).
 name: Record merged PR
 
 on:
@@ -83,11 +83,13 @@ jobs:
         if: steps.push.outputs.pushed == 'true'
         uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.AUTO_MERGE_LOG_PAT }}
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const head = process.env.HEAD_BRANCH;
             const sourcePr = process.env.SOURCE_PR;
+            const htmlBase = process.env.HTML_BASE || 'https://github.com';
             const { data: pr } = await github.rest.pulls.create({
               owner,
               repo,
@@ -95,7 +97,7 @@ jobs:
               head,
               base: 'main',
               body:
-                `Automated update to [docs/AUTO_MERGE_LOG.md](${context.server_url}/${owner}/${repo}/blob/main/docs/AUTO_MERGE_LOG.md) for the merge of #${sourcePr}.`,
+                `Automated update to [docs/AUTO_MERGE_LOG.md](${htmlBase}/${owner}/${repo}/blob/main/docs/AUTO_MERGE_LOG.md) for the merge of #${sourcePr}.`,
             });
             const pull_number = pr.number;
             core.info(`Opened PR #${pull_number}`);
@@ -131,3 +133,4 @@ jobs:
         env:
           HEAD_BRANCH: ${{ steps.push.outputs.branch }}
           SOURCE_PR: ${{ github.event.pull_request.number }}
+          HTML_BASE: ${{ github.server_url }}

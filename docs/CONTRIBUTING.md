@@ -26,9 +26,11 @@
 
 ### Record merged PR — maintainer notes
 
-The workflow [`.github/workflows/record-merged-pr.yml`](../.github/workflows/record-merged-pr.yml) updates [`docs/AUTO_MERGE_LOG.md`](./AUTO_MERGE_LOG.md) by pushing a branch `merge-log/pr-*`, opening a **pull request** into `main`, and merging it after checks pass. That matches rulesets that require changes through a PR (direct push to `main` is not used).
+The workflow [`.github/workflows/record-merged-pr.yml`](../.github/workflows/record-merged-pr.yml) updates [`docs/AUTO_MERGE_LOG.md`](./AUTO_MERGE_LOG.md) by pushing a branch `merge-log/pr-*`, opening a **pull request** into `main`, and merging it after checks pass (rulesets usually block direct push to `main`).
 
-If a run fails at **Open and merge logging PR**, check **branch protection** for `main`: **GitHub Actions** must be allowed to open and merge PRs (`pull-requests: write` is already set on the job). If **required reviewers** block bot merges, add a narrow bypass for **GitHub Actions** or merge the pending `merge-log/*` PR manually. The repository secret **`AUTO_MERGE_LOG_PAT`** is **not** used by the current workflow; you may remove it from repo secrets if you added it only for this job.
+**Repository secret `AUTO_MERGE_LOG_PAT`:** If the workflow fails with *GitHub Actions is not permitted to create or approve pull requests*, your org/repo has disabled Actions-created PRs. Set **`AUTO_MERGE_LOG_PAT`** to a [fine-grained PAT](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token) scoped to **this repository** with **Contents** (read/write) and **Pull requests** (read/write) so the job can open and merge the logging PR as you. Alternatively, enable **Allow GitHub Actions to create and approve pull requests** under **Settings → Actions → General** (if your org allows) and point the *Open and merge logging PR* step at `GITHUB_TOKEN` instead of this secret.
+
+If merge still fails, check **required reviewers** on `main` or merge the pending `merge-log/*` PR manually.
 
 ## Commits
 
