@@ -31,6 +31,8 @@
 ## Commits
 
 1. `chore(security): OSV-Scanner in CI, release docs, backlog 22.x` — 66f3ef0
+2. `docs(worklog): record Iteration 240 commit SHA` — 041727a
+3. `docs: note gate execution env for Iteration 240` — 79491c2
 
 ## Summary
 

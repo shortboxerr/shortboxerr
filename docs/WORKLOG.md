@@ -21,7 +21,7 @@ Security-focused continue-dev: added **`osv-scan`** job to **`.github/workflows/
 | `docs/WORKLOG.md` | this entry |
 | `docs/SELF_CHECK.md` | Iteration 240 |
 
-**Commit:** `chore(security): OSV-Scanner in CI, release docs, backlog 22.x` (66f3ef0)
+**Commits:** `chore(security): OSV-Scanner in CI, release docs, backlog 22.x` (66f3ef0); `docs(worklog): record Iteration 240 commit SHA` (041727a); `docs: note gate execution env for Iteration 240` (79491c2).
 
 ---
 
