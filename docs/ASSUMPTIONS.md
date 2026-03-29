@@ -55,5 +55,5 @@ When running "repeat until nothing remains", the agent re-reads CONTINUE.md afte
 
 ## Record merged PR workflow
 
-- **Credential:** Optional repo secret **`AUTO_MERGE_LOG_PAT`** (fine-grained PAT, contents write, single repo) when **`GITHUB_TOKEN`** cannot push to protected `main`. Documented in **`docs/CONTRIBUTING.md`** (*Record merged PR — maintainer setup*).
-- **Failure to push:** If the workflow still cannot push after configuring the secret or a ruleset bypass, fix repository settings before the next merge so the log stays current.
+- **Mechanism:** After a PR merges to **`main`**, the workflow appends a row locally, pushes branch **`merge-log/pr-*`**, opens a PR, and merges it (skips when the merged PR’s head already starts with **`merge-log/`**). See **`docs/CONTRIBUTING.md`** (*Record merged PR — maintainer notes*).
+- **Failures:** If the logging PR cannot be merged automatically (e.g. required human reviewers), merge it manually or adjust rules / bypass for **GitHub Actions**.

@@ -1,10 +1,11 @@
 # Append a row to docs/AUTO_MERGE_LOG.md when a PR merges to main.
 #
-# Branch protection: `GITHUB_TOKEN` often cannot push to protected `main`. Prefer
-# repository secret **AUTO_MERGE_LOG_PAT** — fine-grained PAT, this repo only,
-# Contents: Read and write, no org/admin scopes. Passed to actions/checkout
-# `token:` so `git push` uses the same credential. Alternatively, add a ruleset
-# bypass for GitHub Actions / `github-actions[bot]` on `main`.
+# Direct push to `main` is usually blocked by rulesets ("changes must be made through
+# a pull request"). This workflow commits on branch `merge-log/pr-*`, opens a PR, then
+# merges it after checks pass (GITHUB_TOKEN: contents + pull-requests write).
+#
+# PRs whose head branch starts with `merge-log/` are skipped so recording merges do
+# not recurse.
 name: Record merged PR
 
 on:
@@ -18,17 +19,17 @@ concurrency:
 
 jobs:
   append-log:
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true && !startsWith(github.event.pull_request.head.ref, 'merge-log/')
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - name: Checkout main
         uses: actions/checkout@v6
         with:
           ref: main
           fetch-depth: 0
-          token: ${{ secrets.AUTO_MERGE_LOG_PAT || github.token }}
 
       - name: Append merge row (idempotent)
         uses: actions/github-script@v7
@@ -56,18 +57,77 @@ jobs:
             if (!body.endsWith('\n')) body += '\n';
             fs.writeFileSync(logPath, body + line);
 
-      - name: Commit and push
+      - name: Create branch, commit, push
+        id: push
+        env:
+          PR_NUM: ${{ github.event.pull_request.number }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/AUTO_MERGE_LOG.md
           if git diff --staged --quiet; then
-            echo "Nothing to commit."
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          git commit -m "chore: record merged PR #${{ github.event.pull_request.number }} in AUTO_MERGE_LOG"
-          git pull --rebase origin main
-          if ! git push origin HEAD:main; then
-            echo "::error::Push to main was rejected. Add repo secret AUTO_MERGE_LOG_PAT (fine-grained PAT, contents write, this repo only) or allow github-actions to bypass branch rules. See docs/CONTRIBUTING.md (Record merged PR — maintainer setup)."
-            exit 1
-          fi
+          SHA7="${MERGE_SHA:0:7}"
+          BRANCH="merge-log/pr-${PR_NUM}-${SHA7}"
+          git checkout -b "$BRANCH"
+          git commit -m "chore: record merged PR #${PR_NUM} in AUTO_MERGE_LOG"
+          git push origin "HEAD:refs/heads/${BRANCH}"
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+          echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
+
+      - name: Open and merge logging PR
+        if: steps.push.outputs.pushed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const head = process.env.HEAD_BRANCH;
+            const sourcePr = process.env.SOURCE_PR;
+            const { data: pr } = await github.rest.pulls.create({
+              owner,
+              repo,
+              title: `chore: record merged PR #${sourcePr} in AUTO_MERGE_LOG`,
+              head,
+              base: 'main',
+              body:
+                `Automated update to [docs/AUTO_MERGE_LOG.md](${context.server_url}/${owner}/${repo}/blob/main/docs/AUTO_MERGE_LOG.md) for the merge of #${sourcePr}.`,
+            });
+            const pull_number = pr.number;
+            core.info(`Opened PR #${pull_number}`);
+            const methods = ['squash', 'merge'];
+            for (let i = 0; i < 36; i++) {
+              if (i > 0) await new Promise((r) => setTimeout(r, 10000));
+              for (const merge_method of methods) {
+                try {
+                  await github.rest.pulls.merge({
+                    owner,
+                    repo,
+                    pull_number,
+                    merge_method,
+                  });
+                  core.info(`Merged PR #${pull_number} (${merge_method})`);
+                  return;
+                } catch (e) {
+                  const retry =
+                    e.status === 405 || e.status === 422 || e.status === 409;
+                  if (retry) {
+                    core.info(
+                      `Merge not ready (${merge_method}, attempt ${i + 1}): ${e.message}`,
+                    );
+                    continue;
+                  }
+                  throw e;
+                }
+              }
+            }
+            core.setFailed(
+              'Could not merge logging PR after retries; merge it manually or adjust branch protection.',
+            );
+        env:
+          HEAD_BRANCH: ${{ steps.push.outputs.branch }}
+          SOURCE_PR: ${{ github.event.pull_request.number }}
