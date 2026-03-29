@@ -14,7 +14,7 @@ Aligned **Commit** / **Commits** footers for iterations **232–238** to one for
 |------|------|
 | `docs/WORKLOG.md` | commit footers + this entry |
 
-**Commit:** `docs(worklog): standardize commit footers with short SHAs` (627356e)
+**Commits:** `docs(worklog): standardize commit footers with short SHAs` (627356e); `docs(worklog): add Iteration 239 commit footer` (2466467).
 
 ---
 
