@@ -19,7 +19,7 @@ Closed **14.12** optional *Debug Metron lookup failures*: **`MetronClient`** now
 | `docs/SELF_CHECK.md` | Iteration 242 |
 | `docs/ASSUMPTIONS.md` | Iteration 242 gates |
 
-**Commits:** _(record after commit)_
+**Commits:** `feat(metron): MetronLookupMiss diagnostic warnings` (c59ed54)
 
 ---
 
