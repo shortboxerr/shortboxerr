@@ -27,7 +27,7 @@
 
 ## Commits
 
-_(record SHA after commit — `docs: CodeRabbit CONTRIBUTING, backlog 14.26` or similar)_
+1. `docs: CodeRabbit in CONTRIBUTING, complete backlog 14.26` — af55ab5
 
 ## Summary
 
