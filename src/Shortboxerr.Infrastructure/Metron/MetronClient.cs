@@ -25,7 +25,7 @@ namespace Shortboxerr.Infrastructure.Metron;
 /// 4. Detection of HTML rate limit pages (API returns 200 OK but HTML content)
 ///
 /// Diagnostics: lookups that return no usable entity log <c>Warning</c> with prefix <c>MetronLookupMiss</c>
-/// (structured fields: Reason, Operation, MetronApiPath, and relevant IDs). Credentials and response bodies are not logged.
+/// (structured fields: Reason, Operation, MetronApiPath, and relevant IDs). Those lines omit credentials and response bodies.
 /// </summary>
 public class MetronClient : IMetronClient
 {
@@ -1058,8 +1058,8 @@ public class MetronClient : IMetronClient
             (content.TrimStart().StartsWith('<') || content.Contains("<!DOCTYPE", StringComparison.OrdinalIgnoreCase)))
         {
             _logger?.LogWarning(
-                "Metron returned HTML instead of JSON - likely rate limited. Response starts with: {Preview}",
-                content.Length > 100 ? content[..100] + "..." : content);
+                "Metron returned HTML instead of JSON - likely rate limited (content length {ContentLength} bytes; body not logged).",
+                content.Length);
             return (content, true);
         }
         
