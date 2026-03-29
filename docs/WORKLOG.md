@@ -1,5 +1,32 @@
 # Worklog
 
+## Iteration 245 (2026-03-28)
+
+**docs: batch before PR; AUTO_MERGE_LOG + Record merged PR workflow**
+
+### Summary
+
+Documented **batching** (complete slice + iteration docs on **one** branch before opening a PR) in **`docs/CONTRIBUTING.md`**, **`docs/ITERATION_PROTOCOL.md`**, **`docs/PROMPTS/CONTINUE.md`**, **`docs/ASSUMPTIONS.md`**, **`.cursor/rules.md`**, and **PR template** checklist. **WORKLOG** guidance: prefer **`**Pull request:** #NN`** over chains of short SHAs; **no micro-PRs** for footers. Added **`docs/AUTO_MERGE_LOG.md`** and **`.github/workflows/record-merged-pr.yml`** to append a row on each merge to **`main`** (idempotent by merge SHA). **`docs/SECURITY.md`** CI table notes the workflow and bot-push caveat.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `docs/CONTRIBUTING.md` | batching + WORKLOG + AUTO_MERGE_LOG |
+| `docs/ITERATION_PROTOCOL.md` | batch before PR |
+| `docs/PROMPTS/CONTINUE.md` | batch + merge log pointer |
+| `docs/ASSUMPTIONS.md` | batching + workflow failure note |
+| `docs/SECURITY.md` | CI row Record merged PR |
+| `docs/AUTO_MERGE_LOG.md` | new (seed table) |
+| `.github/workflows/record-merged-pr.yml` | new |
+| `.github/pull_request_template.md` | batch checklist |
+| `.cursor/rules.md` | agent batch + PR# / AUTO_MERGE_LOG |
+| `docs/WORKLOG.md` | this entry |
+
+**Pull request:** _(number assigned when PR is opened)_
+
+---
+
 ## Iteration 244 (2026-03-28)
 
 **docs: document PR-to-main workflow (CONTRIBUTING, agents, backlog)**

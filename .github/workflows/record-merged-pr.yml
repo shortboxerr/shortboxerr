@@ -1,0 +1,67 @@
+# Append a row to docs/AUTO_MERGE_LOG.md when a PR merges to main.
+#
+# Branch protection: if `git push` fails with "refusing to allow ... to push",
+# add a ruleset exception for `github-actions[bot]` (or use a fine-grained PAT
+# with contents:write in a repo secret and pass it to actions/checkout `token:`).
+name: Record merged PR
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+concurrency:
+  group: record-merge-log
+  cancel-in-progress: false
+
+jobs:
+  append-log:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Append merge row (idempotent)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const pr = context.payload.pull_request;
+            const sha = pr.merge_commit_sha;
+            if (!sha) {
+              core.setFailed('No merge_commit_sha on payload');
+              return;
+            }
+            const logPath = 'docs/AUTO_MERGE_LOG.md';
+            let body = fs.readFileSync(logPath, 'utf8');
+            if (body.includes(sha)) {
+              core.info('Merge already recorded; skipping.');
+              return;
+            }
+            const ts = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+            const title = (pr.title || '')
+              .replace(/\|/g, '/')
+              .replace(/\r?\n/g, ' ')
+              .slice(0, 120);
+            const line = `| ${ts} | #${pr.number} | ${title} | \`${sha}\` |\n`;
+            if (!body.endsWith('\n')) body += '\n';
+            fs.writeFileSync(logPath, body + line);
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/AUTO_MERGE_LOG.md
+          if git diff --staged --quiet; then
+            echo "Nothing to commit."
+            exit 0
+          fi
+          git commit -m "chore: record merged PR #${{ github.event.pull_request.number }} in AUTO_MERGE_LOG"
+          git pull --rebase origin main
+          git push origin HEAD:main

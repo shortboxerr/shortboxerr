@@ -9,13 +9,22 @@
 
 ### Typical workflow (merge to `main`)
 
-`main` is **protected**: integrate only through a **pull request** with required status checks passing (same pattern as [PR #19](https://github.com/shortboxerr/shortboxerr/pull/19) for a policy-only change).
+`main` is **protected**: integrate only through a **pull request** with required status checks passing.
+
+**Batch before you open the PR.** Put the **whole slice** on one branch: implementation, tests, and doc updates that belong together (`docs/WORKLOG.md`, `docs/BACKLOG.md`, `docs/SELF_CHECK.md` when following the iteration protocol, plus any other docs). Avoid landing code in PR #1 and a separate tiny PR only for worklog footers or SHA lines.
 
 1. `git fetch origin && git checkout main && git pull origin main`
 2. `git checkout -b chore/your-topic` (or `feat/…`, `fix/…`)
-3. Make commits; `git push -u origin chore/your-topic`
-4. Open a PR **into `main`** (UI or `gh pr create --base main`). Wait for CI; fix failures; address review comments (including CodeRabbit) as appropriate.
-5. Merge when checks are green. Locally: `git checkout main && git pull origin main`, then `git branch -d chore/your-topic` (or `-D` if Git complains—only after you know the commits are on `main`).
+3. Implement and commit until the slice is complete (including iteration docs on the **same** branch).
+4. Run [quality gates](#quality-gates) (or CI-equivalent in the dev container).
+5. `git push -u origin chore/your-topic`
+6. Open **one** PR **into `main`** (UI or `gh pr create --base main`). Optional: add a **final commit on the same branch** with the PR number in WORKLOG, e.g. `**Pull request:** #NN`, then push again—still a single PR.
+7. Wait for CI; fix failures; address review comments (including CodeRabbit) as appropriate. Merge when green.
+8. Locally: `git checkout main && git pull origin main`, then `git branch -d chore/your-topic` (or `-D` only if you are sure commits are on `main`).
+
+**WORKLOG and commit SHAs:** Do not open follow-up PRs whose only purpose is listing 7-character SHAs. Prefer **`**Pull request:** #NN`** (and/or the GitHub compare URL) in the iteration entry. After merge, an append-only machine log is updated automatically: [`docs/AUTO_MERGE_LOG.md`](./AUTO_MERGE_LOG.md) (see [`.github/workflows/record-merged-pr.yml`](../.github/workflows/record-merged-pr.yml)).
+
+If the **Record merged PR** workflow fails on `git push` (branch rules), a repository admin may need to allow **`github-actions[bot]`** to push to `main` for that workflow, or use a carefully scoped PAT secret—see workflow file comments.
 
 ## Commits
 

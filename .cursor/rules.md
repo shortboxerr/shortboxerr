@@ -26,7 +26,7 @@ If assumptions are needed:
   - how to test (in commit body if non-trivial)
 - Never squash. Keep history granular.
 - **Never leave uncommitted files.** Before ending an iteration or session, run `git status`. If anything is staged or untracked (that belongs in the repo), commit it in the same session. If you unstage files to make a focused commit, commit the rest in the next commit immediately—do not leave them for later.
-- **Integrate via PR to `main`:** push a topic branch and open a pull request into **`main`** (branch protection blocks direct pushes). See **`docs/CONTRIBUTING.md`** (*Typical workflow*).
+- **Integrate via one PR to `main`:** push a topic branch and open a **single** pull request into **`main`** (branch protection blocks direct pushes). **Batch** implementation + `docs/WORKLOG.md` / `docs/BACKLOG.md` / `docs/SELF_CHECK.md` on that branch **before** opening the PR—no follow-up micro-PRs for worklog-only edits. See **`docs/CONTRIBUTING.md`** (*Typical workflow*). Prefer **`**Pull request:** #NN`** in WORKLOG over lists of short SHAs; merge history is mirrored in **`docs/AUTO_MERGE_LOG.md`** by automation.
 
 ## Output requirements (every iteration)
 - Update docs/WORKLOG.md (append)

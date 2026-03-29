@@ -218,8 +218,9 @@ Short, informal model for operators and reviewers (not a formal STRIDE exercise)
 | **Gitleaks** (full history) | Detects accidentally committed secrets. For repos under a **GitHub Organization**, the action requires a **`GITLEAKS_LICENSE`** GitHub Actions secret (free [Starter](https://gitleaks.io/products.html) tier covers one repo); the workflow passes it as `env.GITLEAKS_LICENSE`. |
 | **OSV-Scanner** (`ui/package-lock.json`, `tests/e2e/package-lock.json`) | Second opinion vs [OSV.dev](https://osv.dev/) for locked npm dependencies (complements `npm audit`). |
 | **Docker build** (after above) | Ensures the release image still builds; image runs the API as a **non-root** user (see below). |
+| **Record merged PR** (on PR merge to `main`) | Appends [`docs/AUTO_MERGE_LOG.md`](./AUTO_MERGE_LOG.md) for a merge audit; uses `contents: write`. If pushes are blocked by branch rules, adjust rules or bot bypass per workflow header. |
 
-Workflow: `.github/workflows/ci.yml`. Contributor expectations: `docs/CONTRIBUTING.md`. **Vulnerability disclosure:** `.github/SECURITY.md`.
+Workflow: `.github/workflows/ci.yml` and `.github/workflows/record-merged-pr.yml`. Contributor expectations: `docs/CONTRIBUTING.md`. **Vulnerability disclosure:** `.github/SECURITY.md`.
 
 **Semgrep** or other custom static analysis remains optional if you want additional rules beyond the above.
 
