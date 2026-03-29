@@ -216,11 +216,22 @@ Short, informal model for operators and reviewers (not a formal STRIDE exercise)
 | **`npm audit`** (`ui/`, `tests/e2e`, `--audit-level=high`) | Fails on high/critical npm advisories for those trees. |
 | **`npm run lint`** (UI only, `--max-warnings 0`) | Blocks new ESLint warnings (includes hooks/refresh rules relevant to safe React patterns). |
 | **Gitleaks** (full history) | Detects accidentally committed secrets. For repos under a **GitHub Organization**, the action requires a **`GITLEAKS_LICENSE`** GitHub Actions secret (free [Starter](https://gitleaks.io/products.html) tier covers one repo); the workflow passes it as `env.GITLEAKS_LICENSE`. |
+| **OSV-Scanner** (`ui/package-lock.json`, `tests/e2e/package-lock.json`) | Second opinion vs [OSV.dev](https://osv.dev/) for locked npm dependencies (complements `npm audit`). |
 | **Docker build** (after above) | Ensures the release image still builds; image runs the API as a **non-root** user (see below). |
 
 Workflow: `.github/workflows/ci.yml`. Contributor expectations: `docs/CONTRIBUTING.md`. **Vulnerability disclosure:** `.github/SECURITY.md`.
 
-Deeper static analysis (e.g. Semgrep, OSV beyond NuGet advisory DB) remains optional for a future iteration.
+**Semgrep** or other custom static analysis remains optional if you want additional rules beyond the above.
+
+### GitHub Actions secrets and future release workflows
+
+Applies when adding or changing workflows that publish releases, images, or packages (**EPIC 22**).
+
+- **Least privilege:** Prefer the default **`GITHUB_TOKEN`** with the narrowest workflow **permissions** (`permissions:` block). Use a **fine-grained PAT** or **GitHub App** only when `GITHUB_TOKEN` cannot perform the required API calls; scope to the single repo (or fewer) and minimum permissions.
+- **Storage:** Define secrets in **GitHub Actions secrets** or **environments** (use [environments](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment) with required reviewers for production release jobs when appropriate).
+- **Logs and artifacts:** Do not print secret values or base64-encoded credentials in `run:` scripts. Avoid uploading untrusted build logs that might contain env dumps. (Routine CI today avoids echoing secrets; extend the same discipline to release jobs.)
+- **Rotation:** Rotate PATs when maintainers leave, after suspected leak, or on a regular calendar. Revoke old tokens in GitHub **Settings → Developer settings** (or org **Personal access tokens**).
+- **NuGet/npm coverage:** .NET packages are enforced via **NuGet Audit** on restore/build; npm via **`npm audit`** and **OSV-Scanner** on lockfiles. Keep lockfiles committed so scans stay deterministic.
 
 ### Docker image
 

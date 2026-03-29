@@ -29,3 +29,8 @@ When running "repeat until nothing remains", the agent re-reads CONTINUE.md afte
 ## Iteration 226: Environment execution detail
 
 - `docker` CLI was unavailable in this session, so required quality gates were run directly in the dev-container workspace shell (`dotnet build`, `dotnet test`, `npm run build`). This still satisfies the "run in container" rule.
+
+## Iteration 240: OSV-Scanner in CI
+
+- **OSV vs npm audit:** Both run in CI; OSV uses the OSV.dev database and locked versions in `package-lock.json`, while `npm audit` uses the npm advisory feed. Redundancy is intentional for defense in depth; occasional disagreement between databases is acceptable—resolve by bumping dependencies until both pass.
+- **.NET / NuGet:** OSV job scans **npm lockfiles only** (no repo-root `packages.lock.json`). NuGet remains covered by **NuGet Audit** in `Directory.Build.props`.

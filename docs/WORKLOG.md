@@ -1,5 +1,28 @@
 # Worklog
 
+## Iteration 240 (2026-03-28)
+
+**chore(security): OSV-Scanner in CI, release-secrets docs, PR template**
+
+### Summary
+
+Security-focused continue-dev: added **`osv-scan`** job to **`.github/workflows/ci.yml`** (pinned **OSV-Scanner v2.3.5**, scans `ui/package-lock.json` and `tests/e2e/package-lock.json`; **`docker-build`** now `needs` it). Documented **GitHub Actions / release secret** practices (least privilege, environments, logs, rotation) and **OSV** in **`docs/SECURITY.md`**; **`docs/CONTRIBUTING.md`** CI bullets updated. **`.github/pull_request_template.md`:** *Security impact* section. **BACKLOG:** **22.8** token-scoping checkbox closed via documentation + apply note; **22.2** PR template item complete; **22.3** partial doc for job names; **14.31** goals reference OSV-Scanner. **`docs/ASSUMPTIONS.md`:** OSV vs npm audit / NuGet scope.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `.github/workflows/ci.yml` | `osv-scan` job; docker `needs` |
+| `.github/pull_request_template.md` | Security impact |
+| `docs/SECURITY.md` | OSV row; Actions secrets subsection |
+| `docs/CONTRIBUTING.md` | OSV in CI list |
+| `docs/BACKLOG.md` | 22.2, 22.3, 22.8, 14.31 |
+| `docs/ASSUMPTIONS.md` | Iteration 240 |
+| `docs/WORKLOG.md` | this entry |
+| `docs/SELF_CHECK.md` | Iteration 240 |
+
+---
+
 ## Iteration 239 (2026-03-28)
 
 **docs: standardize WORKLOG commit lines (message + short SHA)**

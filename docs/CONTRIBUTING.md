@@ -28,4 +28,4 @@ Run commands inside the [development container](https://github.com/shortboxerr/s
 - Do not commit secrets, API keys, or local AI tool state. Authoritative blocklist and policy: [SECURITY.md](./SECURITY.md) (section *AI and Dev Tooling: Do Not Commit*). Ignored patterns: root `.gitignore`.
 - **Cursor / MCP:** Keep `.cursor/mcp.json` free of tokens; use `~/.cursor/mcp.json` or env for PATs. See [.cursor/README.md](../.cursor/README.md).
 - **Dev container:** Never commit `.devcontainer/local-secrets/` (gitignored); used only for optional local GitHub token file.
-- CI runs `npm audit` (UI and E2E), **NuGet Audit** (fails restore/build on high/critical advisories), and **Gitleaks** on full history; fix findings before merging.
+- CI runs `npm audit` (UI and E2E), **OSV-Scanner** on both `package-lock.json` files, **NuGet Audit** (fails restore/build on high/critical advisories), and **Gitleaks** on full history; fix findings before merging.

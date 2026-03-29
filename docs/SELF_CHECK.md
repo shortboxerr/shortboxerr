@@ -1,18 +1,37 @@
-# Self-Check: Iteration 238
+# Self-Check: Iteration 240
 
-## Build / tests
+## Build Status
 
-- [x] `dotnet build` / `dotnet test` — 2610 passed
-- [x] `cd ui && npm run lint` — 0 warnings
+- [x] `dotnet build` succeeds
+- [x] `npm run build` succeeds (UI → `wwwroot`)
 
-## Scope
+## Test Status
 
-Documentation and policy only (no application code).
+- **Before**: 2610 passed, 0 failed
+- **After**: 2610 passed, 0 failed
+- [x] No NEW test failures introduced
+
+## Lint Status
+
+- [x] `npm run lint` (UI) clean
+
+## Files Changed
+
+| File | Type |
+|------|------|
+| `.github/workflows/ci.yml` | `osv-scan` job; `docker-build` needs |
+| `.github/pull_request_template.md` | Security impact section |
+| `docs/SECURITY.md` | OSV row; Actions secrets / release |
+| `docs/CONTRIBUTING.md` | OSV in CI bullets |
+| `docs/BACKLOG.md` | 22.2, 22.3, 22.8, 14.31 |
+| `docs/ASSUMPTIONS.md` | OSV vs npm audit |
+| `docs/WORKLOG.md` | Iteration 240 |
+| `docs/SELF_CHECK.md` | this file |
 
 ## Commits
 
-1. `docs(security): GitHub policy, CI and Docker security notes`
+1. `chore(security): OSV-Scanner in CI, release docs, backlog 22.x`
 
 ## Summary
 
-Public-facing security policy and deeper operator docs for CI + Docker; backlog 14.32 and partial 22.8.
+Added **OSV-Scanner** to CI for both npm lockfiles; documented **token/scoping/rotation** for future release workflows; extended **PR template** and **BACKLOG** (EPIC 22.2 / 22.3 / 22.8, 14.31 OSV note). No application code or test code changes.
