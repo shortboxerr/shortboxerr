@@ -7,3 +7,4 @@ Append-only table maintained by GitHub Actions ([`.github/workflows/record-merge
 | 2026-03-29T01:35:27Z | #21 | docs(ci): batch PRs before open; AUTO_MERGE_LOG on merge | `3b30a661dfcf69f4b2c6d471dbb4e7d658bbf8f9` |
 | 2026-03-29T02:31:57Z | #23 | fix(ci): use AUTO_MERGE_LOG_PAT for Record merged PR workflow | `d907869a0712581015e5c985932016fbc090b486` |
 | 2026-03-29T02:40:16Z | #24 | fix(ci): record AUTO_MERGE_LOG via PR (ruleset-safe) | `2f36c23f72a18d1db2153aeaf35d06c8a535fd80` |
+| 2026-03-29T02:45:34Z | #25 | fix(ci): PAT for merge-log PR API (org blocks Actions PRs) | `f7fc628c162ac513fb15967752bb9cc4c57e31fe` |
