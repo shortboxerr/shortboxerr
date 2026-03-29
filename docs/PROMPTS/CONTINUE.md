@@ -2,6 +2,8 @@
 
 Run the next iteration strictly per `docs/ITERATION_PROTOCOL.md`. Do not ask questions. Pull the next READY items from `docs/BACKLOG.md`. Implement a vertical slice with code+tests+docs. Update `docs/WORKLOG.md`, `docs/BACKLOG.md`, `docs/SELF_CHECK.md`. If blocked, assume defaults and log them in `docs/ASSUMPTIONS.md`. Reference `docs/METRON_API_DOC.yaml` for Metron API details. Respect `docs/SECURITY.md` requirements. Commit after every logical breakpoint.
 
+**Git:** Integrate via **pull request to `main`** (not direct push). Workflow steps: `docs/CONTRIBUTING.md` → *Typical workflow (merge to `main`)*.
+
 **Repeat:** Re-read this file (CONTINUE.md) after every iteration. Continue until no READY or implementable backlog items remain. Do not stop until the backlog is exhausted (all items either done or explicitly deferred with reason in BACKLOG).
 
 ---

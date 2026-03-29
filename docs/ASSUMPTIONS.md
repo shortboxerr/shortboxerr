@@ -45,3 +45,8 @@ When running "repeat until nothing remains", the agent re-reads CONTINUE.md afte
 
 - **Quality gates:** `docker` CLI unavailable; `dotnet build` / `dotnet test` / `npm run lint` / `npm run build` run on the workspace host.
 - **MetronLookupMiss:** Warnings are intentionally concise; if production shows a wrong `MetronApiPath` or ID mismatch, fix the caller or mapping in a follow-up (not guessed here without failing samples).
+
+## Git integration (trunk)
+
+- **Default integration branch:** `main`. Changes reach `main` through a **GitHub pull request** with required CI checks (maintainers merge when green).
+- **No long-lived shared integration branch** after retirement of `dev`; topic branches are short-lived off up-to-date `main`. Documented in **`docs/CONTRIBUTING.md`** with PR #19 as the reference pattern for policy-only merges.

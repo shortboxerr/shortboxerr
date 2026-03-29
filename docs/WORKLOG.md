@@ -1,5 +1,29 @@
 # Worklog
 
+## Iteration 244 (2026-03-28)
+
+**docs: document PR-to-main workflow (CONTRIBUTING, agents, backlog)**
+
+### Summary
+
+Expanded **trunk** documentation so future work matches **branch protection** and **PR #19**: **`docs/CONTRIBUTING.md`** *Typical workflow (merge to `main`)* with numbered steps and link to PR #19; **`docs/ITERATION_PROTOCOL.md`**, **`docs/PROMPTS/CONTINUE.md`**, **`docs/ASSUMPTIONS.md`**, and **`.cursor/rules.md`** state integration via **pull request to `main`**. **BACKLOG 22.1** note references **PR #17** / **PR #19**; **22.2** partial checkbox for PR + required checks (Mar 2026).
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `docs/CONTRIBUTING.md` | Typical workflow → `main` |
+| `docs/ITERATION_PROTOCOL.md` | PR to `main` |
+| `docs/PROMPTS/CONTINUE.md` | CONTINUE git line |
+| `docs/ASSUMPTIONS.md` | Trunk assumption |
+| `docs/BACKLOG.md` | 22.1 / 22.2 |
+| `docs/WORKLOG.md` | this entry |
+| `.cursor/rules.md` | agent PR-to-main |
+
+**Commits:** _(after push)_
+
+---
+
 ## Iteration 243 (2026-03-28)
 
 **chore: retire `dev` branch — trunk workflow on `main`**

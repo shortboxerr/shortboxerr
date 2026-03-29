@@ -910,18 +910,17 @@ Migrate from direct `dev` pushes to a PR-first workflow targeting `main`, with b
   - no direct commits to protected branches
 - [x] Create/sync `main` from current stable tip and set as default branch on GitHub.
 - [x] Update local and CI references that currently assume `dev` as default branch.
-- [x] Retire **`dev`:** CI runs on **`main` only** (push + `pull_request`); **`docs/CONTRIBUTING.md`** documents trunk workflow; **`.github/SECURITY.md`** supported-versions wording updated. Delete remote **`dev`** in GitHub after open `dev` → `main` PRs are merged.
+- [x] Retire **`dev`:** CI runs on **`main` only** (push + `pull_request`); **`docs/CONTRIBUTING.md`** documents trunk workflow; **`.github/SECURITY.md`** supported-versions wording updated. Remote **`dev`** deleted after bulk merge (**PR #17**); remaining policy commits land via **PR #19** (`chore/trunk-workflow-iteration-243` → `main`) as the documented “PR to `main`” pattern.
 
 **Acceptance:** `main` is default branch; active development branches PR into `main`; `dev` no longer required for day-to-day work.
 
 **Effort:** M | **Priority:** P1
 
 ### 22.2 PR Governance & Branch Protection 📋 PLANNED
-- [ ] Enable branch protection on `main`:
-  - require pull request before merge
-  - require up-to-date branch before merge
-  - require status checks to pass
-  - restrict force-push/deletion
+- [x] Enable branch protection on `main` — **partial (Mar 2026):** PR required before merge; required status checks enforced (direct push to `main` rejected).
+- [ ] Branch protection — remaining items:
+  - require up-to-date branch before merge (if not already)
+  - restrict force-push/deletion (verify org settings)
 - [ ] Require at least one review (CODEOWNERS optional but recommended).
 - [ ] Define allowed merge strategy (squash vs merge commit) and enforce it.
 - [x] Add PR template with sections for summary, test plan, risk, rollback notes — **`.github/pull_request_template.md`** (Iteration 240: *Security impact* subsection for auth/deps/CI changes).
