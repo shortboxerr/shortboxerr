@@ -215,7 +215,7 @@ Fix issue where future weeks show volume/series images instead of actual issue c
   - Added `coverSource`, `enrichmentStatus`, `isVolumeFallbackCover` to TS interface
 
 **Optional / Ready when needed:**
-- [ ] **Debug Metron lookup failures** 📋 Ready (S) – When production logs or sample failing IDs are available; add logging/diagnostics and fix lookup path.
+- [x] **Debug Metron lookup failures** ✅ COMPLETED (Iteration 242) – `MetronClient` logs structured **Warning** lines prefixed with `MetronLookupMiss` (Reason, Operation, MetronApiPath, relevant IDs). No credentials or response bodies. Use logs + IDs to open follow-up issues if the API path or mapping is wrong.
 - [x] **Lower confidence threshold for future issues** ✅ CLOSED (Iteration 241) – Already shipped as `AutoMatchSettings.LowConfidenceThreshold` (default 70), API `PUT /api/settings/automatch`, and Settings UI (*Match Verification*); see Iteration 176 / EPIC 19.4. This backlog line was redundant.
 - [x] Auto re-enrich on week transition (background service enhancement) ✅ Iteration 202
 

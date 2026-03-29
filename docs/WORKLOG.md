@@ -1,5 +1,28 @@
 # Worklog
 
+## Iteration 242 (2026-03-28)
+
+**feat(metron): MetronLookupMiss diagnostic warnings (backlog 14.12)**
+
+### Summary
+
+Closed **14.12** optional *Debug Metron lookup failures*: **`MetronClient`** now emits structured **`Warning`** logs prefixed with **`MetronLookupMiss`** when lookups yield no entity—reason codes (`empty_results`, `unparseable_or_null_body`, `http_not_found`, `unparseable_detail_or_empty`), `Operation`, relative **`MetronApiPath`** (no base URL, no auth), and ComicVine / Metron IDs as applicable. Response bodies and credentials are not logged (security). XML summary on the client class documents the prefix for grep. **Tests:** `MetronClientTests` verifies warnings on empty CV issue list, JSON `null` body, and issue-by-id HTTP 404. Full suite (**2612** tests) + UI gates passed; `docker` unavailable (host `dotnet` / `npm`).
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `src/Shortboxerr.Infrastructure/Metron/MetronClient.cs` | MetronLookupMiss warnings |
+| `tests/Shortboxerr.Tests/MetronClientTests.cs` | logging assertions + cases |
+| `docs/BACKLOG.md` | 14.12 optional item complete |
+| `docs/WORKLOG.md` | this entry |
+| `docs/SELF_CHECK.md` | Iteration 242 |
+| `docs/ASSUMPTIONS.md` | Iteration 242 gates |
+
+**Commits:** _(record after commit)_
+
+---
+
 ## Iteration 241 (2026-03-28)
 
 **docs: CodeRabbit PR review (14.26); close redundant 14.12 automatch item**

@@ -40,3 +40,8 @@ When running "repeat until nothing remains", the agent re-reads CONTINUE.md afte
 
 - **Quality gates:** Same as Iteration 240 — `docker` CLI unavailable; gates run in workspace with host `dotnet` / `npm`.
 - **14.26 acceptance:** CodeRabbit automated comments depend on the GitHub App being installed on the org/repo; the repo documents config (`.coderabbit.yaml`) and contributor expectations. Install state is outside the git tree.
+
+## Iteration 242: Metron diagnostics
+
+- **Quality gates:** `docker` CLI unavailable; `dotnet build` / `dotnet test` / `npm run lint` / `npm run build` run on the workspace host.
+- **MetronLookupMiss:** Warnings are intentionally concise; if production shows a wrong `MetronApiPath` or ID mismatch, fix the caller or mapping in a follow-up (not guessed here without failing samples).

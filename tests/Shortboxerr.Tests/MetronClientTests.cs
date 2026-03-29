@@ -57,6 +57,18 @@ public class MetronClientTests
         return new MetronClient(mockFactory.Object, _cache, mockScopeFactory.Object, _loggerMock.Object);
     }
 
+    private void VerifyMetronLookupMissLogged()
+    {
+        _loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("MetronLookupMiss", StringComparison.Ordinal)),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.AtLeastOnce);
+    }
+
     private static HttpClient CreateMockHttpClient(HttpStatusCode statusCode, string? content = null)
     {
         var handlerMock = new Mock<HttpMessageHandler>();
@@ -173,6 +185,33 @@ public class MetronClientTests
 
         Assert.False(result.Success);
         Assert.Contains("No issue found", result.Error);
+        VerifyMetronLookupMissLogged();
+    }
+
+    [Fact]
+    public async Task GetIssueByCvIdAsync_ReturnsNotFound_WhenBodyIsJsonNull()
+    {
+        var httpClient = CreateMockHttpClient(HttpStatusCode.OK, "null");
+        var client = CreateClient(httpClient);
+
+        var result = await client.GetIssueByCvIdAsync(42);
+
+        Assert.False(result.Success);
+        Assert.Contains("No issue found", result.Error);
+        VerifyMetronLookupMissLogged();
+    }
+
+    [Fact]
+    public async Task GetIssueByIdAsync_ReturnsNotFound_OnHttp404()
+    {
+        var httpClient = CreateMockHttpClient(HttpStatusCode.NotFound);
+        var client = CreateClient(httpClient);
+
+        var result = await client.GetIssueByIdAsync(999001);
+
+        Assert.False(result.Success);
+        Assert.Contains("not found", result.Error);
+        VerifyMetronLookupMissLogged();
     }
 
     [Fact]

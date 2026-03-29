@@ -1,4 +1,4 @@
-# Self-Check: Iteration 241
+# Self-Check: Iteration 242
 
 ## Build Status
 
@@ -8,7 +8,7 @@
 ## Test Status
 
 - **Before**: 2610 passed, 0 failed
-- **After**: 2610 passed, 0 failed
+- **After**: 2612 passed, 0 failed (2 new MetronClientTests; 1 existing test now asserts `MetronLookupMiss`)
 - [x] No NEW test failures introduced
 
 ## Lint Status
@@ -19,17 +19,17 @@
 
 | File | Type |
 |------|------|
-| `docs/CONTRIBUTING.md` | CodeRabbit / automated PR review |
-| `docs/BACKLOG.md` | 14.26 complete; 14.12 optional item closed |
-| `docs/WORKLOG.md` | Iteration 241 |
+| `src/Shortboxerr.Infrastructure/Metron/MetronClient.cs` | MetronLookupMiss warnings |
+| `tests/Shortboxerr.Tests/MetronClientTests.cs` | tests + Verify helper |
+| `docs/BACKLOG.md` | 14.12 Metron diagnostics |
+| `docs/WORKLOG.md` | Iteration 242 |
 | `docs/SELF_CHECK.md` | this file |
-| `docs/ASSUMPTIONS.md` | Iteration 241 |
+| `docs/ASSUMPTIONS.md` | Iteration 242 |
 
 ## Commits
 
-1. `docs: CodeRabbit in CONTRIBUTING, complete backlog 14.26` — af55ab5
-2. `docs(worklog): record Iteration 241 commit SHA (af55ab5)` — fa03ccc
+_(record after commit)_
 
 ## Summary
 
-Documentation-only iteration: **14.26** (CodeRabbit + CONTRIBUTING); backlog hygiene for **14.12** optional line (LowConfidence already in product). No application code changes.
+**MetronClient** diagnostic warnings for missed lookups; backlog **14.12** optional item done; tests assert `MetronLookupMiss` is logged.
