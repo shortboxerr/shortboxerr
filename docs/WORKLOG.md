@@ -23,7 +23,7 @@ Documented **batching** (complete slice + iteration docs on **one** branch befor
 | `.cursor/rules.md` | agent batch + PR# / AUTO_MERGE_LOG |
 | `docs/WORKLOG.md` | this entry |
 
-**Pull request:** _(number assigned when PR is opened)_
+**Pull request:** [#21](https://github.com/shortboxerr/shortboxerr/pull/21)
 
 ---
 
