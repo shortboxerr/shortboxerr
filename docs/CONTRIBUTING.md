@@ -24,11 +24,11 @@
 
 **WORKLOG and commit SHAs:** Do not open follow-up PRs whose only purpose is listing 7-character SHAs. Prefer **`**Pull request:** #NN`** (and/or the GitHub compare URL) in the iteration entry. After merge, an append-only machine log is updated automatically: [`docs/AUTO_MERGE_LOG.md`](./AUTO_MERGE_LOG.md) (see [`.github/workflows/record-merged-pr.yml`](../.github/workflows/record-merged-pr.yml)).
 
-### Record merged PR — maintainer setup
+### Record merged PR — maintainer notes
 
-The workflow [`.github/workflows/record-merged-pr.yml`](../.github/workflows/record-merged-pr.yml) commits to `main`. If **`GITHUB_TOKEN`** is blocked by branch protection, add repository secret **`AUTO_MERGE_LOG_PAT`**: a [fine-grained personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token) scoped to **this repository only**, permission **Contents: Read and write**, no org or admin scopes. The workflow passes it to `actions/checkout` so the subsequent `git push` succeeds. **Rotate** the PAT if it leaks; treat it like any write credential.
+The workflow [`.github/workflows/record-merged-pr.yml`](../.github/workflows/record-merged-pr.yml) updates [`docs/AUTO_MERGE_LOG.md`](./AUTO_MERGE_LOG.md) by pushing a branch `merge-log/pr-*`, opening a **pull request** into `main`, and merging it after checks pass. That matches rulesets that require changes through a PR (direct push to `main` is not used).
 
-Alternative: adjust **branch rules / rulesets** so **GitHub Actions** or **`github-actions[bot]`** may push to `main` for this automation (narrow bypass if your org allows it).
+If a run fails at **Open and merge logging PR**, check **branch protection** for `main`: **GitHub Actions** must be allowed to open and merge PRs (`pull-requests: write` is already set on the job). If **required reviewers** block bot merges, add a narrow bypass for **GitHub Actions** or merge the pending `merge-log/*` PR manually. The repository secret **`AUTO_MERGE_LOG_PAT`** is **not** used by the current workflow; you may remove it from repo secrets if you added it only for this job.
 
 ## Commits
 
