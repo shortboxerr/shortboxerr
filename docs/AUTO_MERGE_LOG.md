@@ -4,3 +4,4 @@ Append-only table maintained by GitHub Actions ([`.github/workflows/record-merge
 
 | Merged (UTC) | PR | Title | Merge commit |
 |--------------|----|-------|----------------|
+| 2026-03-29T01:35:27Z | #21 | docs(ci): batch PRs before open; AUTO_MERGE_LOG on merge | `3b30a661dfcf69f4b2c6d471dbb4e7d658bbf8f9` |

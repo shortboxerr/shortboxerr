@@ -1,8 +1,10 @@
 # Append a row to docs/AUTO_MERGE_LOG.md when a PR merges to main.
 #
-# Branch protection: if `git push` fails with "refusing to allow ... to push",
-# add a ruleset exception for `github-actions[bot]` (or use a fine-grained PAT
-# with contents:write in a repo secret and pass it to actions/checkout `token:`).
+# Branch protection: `GITHUB_TOKEN` often cannot push to protected `main`. Prefer
+# repository secret **AUTO_MERGE_LOG_PAT** — fine-grained PAT, this repo only,
+# Contents: Read and write, no org/admin scopes. Passed to actions/checkout
+# `token:` so `git push` uses the same credential. Alternatively, add a ruleset
+# bypass for GitHub Actions / `github-actions[bot]` on `main`.
 name: Record merged PR
 
 on:
@@ -26,6 +28,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+          token: ${{ secrets.AUTO_MERGE_LOG_PAT || github.token }}
 
       - name: Append merge row (idempotent)
         uses: actions/github-script@v7
@@ -64,4 +67,7 @@ jobs:
           fi
           git commit -m "chore: record merged PR #${{ github.event.pull_request.number }} in AUTO_MERGE_LOG"
           git pull --rebase origin main
-          git push origin HEAD:main
+          if ! git push origin HEAD:main; then
+            echo "::error::Push to main was rejected. Add repo secret AUTO_MERGE_LOG_PAT (fine-grained PAT, contents write, this repo only) or allow github-actions to bypass branch rules. See docs/CONTRIBUTING.md (Record merged PR — maintainer setup)."
+            exit 1
+          fi
