@@ -55,4 +55,6 @@ When running "repeat until nothing remains", the agent re-reads CONTINUE.md afte
 
 ## Record merged PR workflow
 
-- **Failure to push:** If `.github/workflows/record-merged-pr.yml` cannot push to `main`, repository rules may need to allow **GitHub Actions** (or `github-actions[bot]`) to bypass or use a token with `contents: write`—see workflow file header.
+- **Mechanism:** After a PR merges to **`main`**, the workflow appends a row locally, pushes branch **`merge-log/pr-*`**, opens a PR, and merges it (skips when the merged PR’s head already starts with **`merge-log/`**). See **`docs/CONTRIBUTING.md`** (*Record merged PR — maintainer notes*).
+- **PAT:** Repo secret **`AUTO_MERGE_LOG_PAT`** is used for **create/merge pull request** API calls when the org disallows Actions from opening PRs; it needs **Contents** and **Pull requests** on this repo.
+- **Failures:** If the logging PR cannot be merged automatically (e.g. required human reviewers), merge it manually or adjust rules.

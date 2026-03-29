@@ -24,7 +24,13 @@
 
 **WORKLOG and commit SHAs:** Do not open follow-up PRs whose only purpose is listing 7-character SHAs. Prefer **`**Pull request:** #NN`** (and/or the GitHub compare URL) in the iteration entry. After merge, an append-only machine log is updated automatically: [`docs/AUTO_MERGE_LOG.md`](./AUTO_MERGE_LOG.md) (see [`.github/workflows/record-merged-pr.yml`](../.github/workflows/record-merged-pr.yml)).
 
-If the **Record merged PR** workflow fails on `git push` (branch rules), a repository admin may need to allow **`github-actions[bot]`** to push to `main` for that workflow, or use a carefully scoped PAT secret—see workflow file comments.
+### Record merged PR — maintainer notes
+
+The workflow [`.github/workflows/record-merged-pr.yml`](../.github/workflows/record-merged-pr.yml) updates [`docs/AUTO_MERGE_LOG.md`](./AUTO_MERGE_LOG.md) by pushing a branch `merge-log/pr-*`, opening a **pull request** into `main`, and merging it after checks pass (rulesets usually block direct push to `main`).
+
+**Repository secret `AUTO_MERGE_LOG_PAT`:** If the workflow fails with *GitHub Actions is not permitted to create or approve pull requests*, your org/repo has disabled Actions-created PRs. Set **`AUTO_MERGE_LOG_PAT`** to a [fine-grained PAT](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token) scoped to **this repository** with **Contents** (read/write) and **Pull requests** (read/write) so the job can open and merge the logging PR as you. Alternatively, enable **Allow GitHub Actions to create and approve pull requests** under **Settings → Actions → General** (if your org allows) and point the *Open and merge logging PR* step at `GITHUB_TOKEN` instead of this secret.
+
+If merge still fails, check **required reviewers** on `main` or merge the pending `merge-log/*` PR manually.
 
 ## Commits
 
