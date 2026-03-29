@@ -9,10 +9,10 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import type { Issue, IssueStatus, SeriesPullListSettingsDto, SeriesMatchCandidate, UpcomingRelease } from '../api/client';
+import { useToast } from '../components/toast/useToast';
 
 const EMPTY_ISSUES: Issue[] = [];
 const EMPTY_UPCOMING: UpcomingRelease[] = [];
-import { useToast } from '../components/toast/useToast';
 
 type ViewMode = 'cover' | 'list';
 type SortKey = 'issueNumber' | 'releaseDate' | 'status' | 'title';
@@ -375,6 +375,8 @@ export function SeriesDetailPage() {
 
   // Reset to page 1 when filters change (sync local pagination with filter state).
   useEffect(() => {
+    // Defer to the next microtask so we don't call setState synchronously inside the effect body
+    // (eslint react-hooks/set-state-in-effect); direct setCurrentPage(1) triggers that rule here.
     queueMicrotask(() => setCurrentPage(1));
   }, [statusFilter, sortKey, sortDir, pageSize]);
 

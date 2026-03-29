@@ -16,7 +16,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [systemTheme, setSystemTheme] = useState<'dark' | 'light'>(() => getSystemTheme());
 
   const { data: uiSettings } = useQuery({
-    queryKey: ['uiSettings'],
+    queryKey: ['settings', 'ui'],
     queryFn: api.getUiSettings,
     staleTime: Infinity,
   });
@@ -39,12 +39,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme]);
 
   const setTheme = async (newTheme: Theme) => {
+    const previousTheme = userThemeOverride;
     setUserThemeOverride(newTheme);
     try {
       await api.updateUiSettings({ theme: newTheme });
-      queryClient.invalidateQueries({ queryKey: ['uiSettings'] });
+      queryClient.invalidateQueries({ queryKey: ['settings', 'ui'] });
     } catch (e) {
       console.error('Failed to save theme preference:', e);
+      setUserThemeOverride(previousTheme);
     }
   };
 

@@ -160,7 +160,7 @@ The UI uses `ui/eslint.config.js` with some rules downgraded to `warn`. These we
 |------|-----------------------------|
 | **react-hooks/set-state-in-effect** | State is synced from URL or API (theme, tab, view mode). React escapes by default; we do not inject URL or API strings into `dangerouslySetInnerHTML`. No credentials in URL. **Accepted.** |
 | **react-refresh/only-export-components** | Co-location of hooks (e.g. `useTheme`) with components. No impact on credentials or injection. **Accepted.** |
-| **@typescript-eslint/no-explicit-any** | Prefer typed API response interfaces in `api/client.ts` (see Iteration 237). New endpoints should use explicit DTO types, not `any`. Backend DTOs must never expose secrets (see API Responses above). |
+| **@typescript-eslint/no-explicit-any** | **Required** for new/changed API shapes: explicit request/response interfaces in `api/client.ts` (see Iteration 237), not `any`. **Narrow exceptions:** third-party typings you do not control, or a single escape hatch for truly dynamic JSON with a short comment and follow-up issue. Backend DTOs must never expose secrets (see API Responses above). |
 | **react-hooks/static-components** | Inline component definitions; affects correctness/performance, not credentials or XSS. **Accepted.** |
 
 When adding or changing accepted warnings in `eslint.config.js`, re-check that the pattern does not weaken credential handling, logging, or injection defenses, and update this section if needed.
@@ -175,7 +175,7 @@ When adding or changing accepted warnings in `eslint.config.js`, re-check that t
 
 - **Pinned transitive packages:** `Directory.Build.props` at the repo root adds direct references so known-vulnerable transitive versions (e.g. `Microsoft.Extensions.Caching.Memory`, `System.Text.Json`, `System.Text.Encodings.Web`) resolve to patched releases. The test project also pins legacy `System.Net.Http` / `System.Text.RegularExpressions` where the graph still pulled 4.3.0.
 - **Framework alignment:** Application packages (`Microsoft.AspNetCore.*`, `Microsoft.EntityFrameworkCore.*`, etc.) should stay on a consistent **8.0.x** line (patch bumps together when upgrading). Individual `Microsoft.Extensions.*` packages do not always publish every patch number; use NuGet version lists rather than assuming `8.0.11` exists for all extension packages.
-- **Verification:** Run `dotnet list package --vulnerable --include-transitive` in the dev container after dependency changes. CI runs the same check (see `.github/workflows/ci.yml`).
+- **Verification:** `dotnet restore` / `dotnet build` enforce **NuGet Audit** (high/critical transitive and direct) via root `Directory.Build.props`; failures surface as `NU1901`–`NU1904`. Optionally run `dotnet list package --vulnerable --include-transitive` locally for a readable report (exit code is not relied on in CI).
 
 ## E2E test dependencies
 
@@ -197,7 +197,10 @@ Short, informal model for operators and reviewers (not a formal STRIDE exercise)
 
 ### API access control
 
-- **`/api/*`** (except documented exemptions such as `/health`, `/ping`, `/swagger`, `/signalr`, `/api/v1/setup`) can require an **API key** when the operator enables API key authentication in settings. Keys are sent via **`X-Api-Key`** or **`apikey`** query parameter (see `ApiKeyMiddleware`). When auth is **disabled**, `/api/*` is open to anyone who can reach the host (**LAN-wide exposure risk**).
+- **`/api/*`** (except documented exemptions such as `/health`, `/ping`, `/swagger`, `/signalr`, `/api/v1/setup`) can require an **API key** when the operator enables API key authentication in settings (see `ApiKeyMiddleware`).
+  - **Preferred:** send the key with the **`X-Api-Key`** header.
+  - **Legacy compatibility only:** `apikey` query parameter. Do **not** use query strings for new clients—URLs appear in logs, proxies, browser history, and monitoring. Do not put API keys in `localStorage` or bookmarkable links; prefer the header (or HTTPS request body where the API allows it).
+  - When auth is **disabled**, `/api/*` is open to anyone who can reach the host (**LAN-wide exposure risk**).
 - **Static UI** (`/`, assets under `wwwroot`) is served without API key checks; the SPA obtains data by calling `/api/*` (with key when enabled).
 
 ### Transport and exposure
@@ -209,7 +212,7 @@ Short, informal model for operators and reviewers (not a formal STRIDE exercise)
 
 | Job / step | Purpose |
 |------------|---------|
-| `dotnet list package --vulnerable --include-transitive` | Fails if NuGet advisory DB reports known issues in the solution graph. |
+| **NuGet Audit** (restore/build, via `Directory.Build.props`) | Treats high/critical advisory matches as **errors** (`NU1901`–`NU1904`), including transitive packages. |
 | **`npm audit`** (`ui/`, `tests/e2e`, `--audit-level=high`) | Fails on high/critical npm advisories for those trees. |
 | **`npm run lint`** (UI only, `--max-warnings 0`) | Blocks new ESLint warnings (includes hooks/refresh rules relevant to safe React patterns). |
 | **Gitleaks** (full history) | Detects accidentally committed secrets. For repos under a **GitHub Organization**, the action requires a **`GITLEAKS_LICENSE`** GitHub Actions secret (free [Starter](https://gitleaks.io/products.html) tier covers one repo); the workflow passes it as `env.GITLEAKS_LICENSE`. |
@@ -235,7 +238,7 @@ When reviewing code that handles credentials, verify:
 - [ ] No `console.log` with credential values
 - [ ] URLs with credentials in query strings are not logged
 - [ ] Error messages don't include credential values
-- [ ] New dependencies: no new high/critical NuGet advisories without mitigation (`dotnet list package --vulnerable`)
+- [ ] New dependencies: no new high/critical NuGet advisories without mitigation (restore/build must succeed with NuGet Audit enabled)
 - [ ] Frontend build does not embed secrets in `wwwroot` bundles
 - [ ] Undisclosed security issues are **not** discussed in public issues before fix (use `.github/SECURITY.md`)
 
@@ -283,7 +286,9 @@ The following paths and patterns **must never be committed** to the repo. They a
 - **Before committing:** Ensure no blocklisted file is staged. If you use Cursor MCP with a GitHub token, store it only in **global** config (e.g. `~/.cursor/mcp.json`), not in the project’s `.cursor/mcp.json` (see `.cursor/README.md`).
 - **If you accidentally committed a secret:** Revoke the credential immediately (e.g. GitHub token), then remove it from history (e.g. `git filter-repo` or BFG) and force-push. Document the incident in this file or `docs/DECISIONS.md` if significant.
 - **Audit:** Periodically run `git log --all --name-only --pretty=format:''` and check for any blocklisted path; if found, fix history and update `.gitignore`/this section.
-- **History spot-check (Iteration 234, 2026-03-28):** `git log` over `.cursor/agent-transcripts/`, `.env` / `.env.local`, and `*.secrets.json` patterns showed **no** commits touching those paths in this repository. No history rewrite required.
+- **History spot-check (how to verify):** From the repo root, inspect whether blocklisted paths ever entered history, and record any finding in `docs/DECISIONS.md` or the worklog rather than asserting a one-time pass in this file. Example commands:
+  - `git log --all --oneline -- .cursor/agent-transcripts/`
+  - `git log --all --oneline -- .env .env.local ':(glob)*.secrets.json'`
 
 ### Committed MCP config (verification)
 

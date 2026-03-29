@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Calendar, 
@@ -140,12 +140,12 @@ export function PullListPage() {
     saveDisplayModePreference.mutate(newMode);
   };
 
-  // Calculate week date based on offset - memoized to ensure stable reference
-  const weekDate = useMemo(() => {
+  // Calculate week date based on offset (deterministic string per weekOffset for queryKey).
+  const weekDate = (() => {
     const date = new Date();
-    date.setDate(date.getDate() + (weekOffset * 7));
+    date.setDate(date.getDate() + weekOffset * 7);
     return date.toISOString().split('T')[0];
-  }, [weekOffset]);
+  })();
 
   // Discovery query - always fetch all releases, filter client-side
   // Short stale time ensures cover enrichment updates are picked up quickly

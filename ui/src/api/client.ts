@@ -2240,8 +2240,8 @@ export const api = {
         items: response.items.map((item) => ({
           id: item.id,
           type: params.type === 'collections' ? 'collection' : 'issue',
-          title: item.title ?? '',
-          series: item.series ?? '',
+          title: item.title?.trim() || 'Unknown title',
+          series: item.series?.trim() || 'Unknown series',
           seriesId: item.seriesId,
           issueNumber: item.issueNumber,
           issueNumberText: item.issueNumberText,

@@ -25,9 +25,6 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
 
-    - name: Check for vulnerable NuGet packages
-      run: dotnet list package --vulnerable --include-transitive
-
     - name: Build
       run: dotnet build --no-restore --configuration Release
 
