@@ -24,7 +24,11 @@
 
 **WORKLOG and commit SHAs:** Do not open follow-up PRs whose only purpose is listing 7-character SHAs. Prefer **`**Pull request:** #NN`** (and/or the GitHub compare URL) in the iteration entry. After merge, an append-only machine log is updated automatically: [`docs/AUTO_MERGE_LOG.md`](./AUTO_MERGE_LOG.md) (see [`.github/workflows/record-merged-pr.yml`](../.github/workflows/record-merged-pr.yml)).
 
-If the **Record merged PR** workflow fails on `git push` (branch rules), a repository admin may need to allow **`github-actions[bot]`** to push to `main` for that workflow, or use a carefully scoped PAT secret—see workflow file comments.
+### Record merged PR — maintainer setup
+
+The workflow [`.github/workflows/record-merged-pr.yml`](../.github/workflows/record-merged-pr.yml) commits to `main`. If **`GITHUB_TOKEN`** is blocked by branch protection, add repository secret **`AUTO_MERGE_LOG_PAT`**: a [fine-grained personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token) scoped to **this repository only**, permission **Contents: Read and write**, no org or admin scopes. The workflow passes it to `actions/checkout` so the subsequent `git push` succeeds. **Rotate** the PAT if it leaks; treat it like any write credential.
+
+Alternative: adjust **branch rules / rulesets** so **GitHub Actions** or **`github-actions[bot]`** may push to `main` for this automation (narrow bypass if your org allows it).
 
 ## Commits
 
