@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   FolderInput, RefreshCw, Check, X, Edit, ChevronRight, 
@@ -31,6 +31,8 @@ interface StagedFile {
   } | null;
   status: 'pending' | 'matched' | 'unmatched' | 'error';
 }
+
+const EMPTY_SERIES_LIST: Series[] = [];
 
 export function ManualImportPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -357,6 +359,7 @@ export function ManualImportPage() {
       {/* Edit Match Modal */}
       {editingFile && (
         <EditMatchModal
+          key={editingFile.path}
           file={editingFile}
           onClose={() => setEditingFile(null)}
           onSelect={(seriesId) => {
@@ -395,7 +398,7 @@ function EditMatchModal({
   isPending: boolean;
 }) {
   const [searchTerm, setSearchTerm] = useState(file.parsed.series ?? '');
-  const [selectedSeries, setSelectedSeries] = useState<Series | null>(null);
+  const [userOverride, setUserOverride] = useState<Series | null>(null);
 
   const { data: searchResults, isLoading: isSearching } = useQuery({
     queryKey: ['series-search', searchTerm],
@@ -404,17 +407,18 @@ function EditMatchModal({
     staleTime: 30000,
   });
 
-  const series = searchResults?.items ?? [];
+  const seriesList = useMemo(() => {
+    if (!searchResults?.items) return EMPTY_SERIES_LIST;
+    return searchResults.items;
+  }, [searchResults?.items]);
 
-  useEffect(() => {
-    // Pre-select if there's a current match
-    if (file.match?.seriesId) {
-      const match = series.find(s => s.id === file.match?.seriesId);
-      if (match) {
-        setSelectedSeries(match);
-      }
-    }
-  }, [file.match?.seriesId, series]);
+  const suggestedMatch = useMemo(() => {
+    const id = file.match?.seriesId;
+    if (id == null) return null;
+    return seriesList.find(s => s.id === id) ?? null;
+  }, [file.match?.seriesId, seriesList]);
+
+  const selectedSeries = userOverride ?? suggestedMatch;
 
   const handleConfirm = () => {
     onSelect(selectedSeries?.id ?? null);
@@ -475,15 +479,15 @@ function EditMatchModal({
               <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
                 Enter at least 2 characters to search
               </div>
-            ) : series.length === 0 ? (
+            ) : seriesList.length === 0 ? (
               <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
                 No series found matching "{searchTerm}"
               </div>
             ) : (
-              series.map(s => (
+              seriesList.map(s => (
                 <div
                   key={s.id}
-                  onClick={() => setSelectedSeries(s)}
+                  onClick={() => setUserOverride(s)}
                   style={{
                     padding: '12px 16px',
                     cursor: 'pointer',

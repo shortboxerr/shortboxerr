@@ -1,5 +1,202 @@
 # Worklog
 
+## Iteration 240 (2026-03-28)
+
+**chore(security): OSV-Scanner in CI, release docs, PR template**
+
+### Summary
+
+Security-focused continue-dev: added **`osv-scan`** job to **`.github/workflows/ci.yml`** (pinned **OSV-Scanner v2.3.5**, scans `ui/package-lock.json` and `tests/e2e/package-lock.json`; **`docker-build`** now `needs` it). Documented **GitHub Actions / release secret** practices (least privilege, environments, logs, rotation) and **OSV** in **`docs/SECURITY.md`**; **`docs/CONTRIBUTING.md`** CI bullets updated. **`.github/pull_request_template.md`:** *Security impact* section. **BACKLOG:** **22.8** token-scoping checkbox closed via documentation + apply note; **22.2** PR template item complete; **22.3** partial doc for job names; **14.31** goals reference OSV-Scanner. **`docs/ASSUMPTIONS.md`:** OSV vs npm audit / NuGet scope.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `.github/workflows/ci.yml` | `osv-scan` job; docker `needs` |
+| `.github/pull_request_template.md` | Security impact |
+| `docs/SECURITY.md` | OSV row; Actions secrets subsection |
+| `docs/CONTRIBUTING.md` | OSV in CI list |
+| `docs/BACKLOG.md` | 22.2, 22.3, 22.8, 14.31 |
+| `docs/ASSUMPTIONS.md` | Iteration 240 |
+| `docs/WORKLOG.md` | this entry |
+| `docs/SELF_CHECK.md` | Iteration 240 |
+
+**Commits:** `chore(security): OSV-Scanner in CI, release docs, backlog 22.x` (66f3ef0); `docs(worklog): record Iteration 240 commit SHA` (041727a); `docs: note gate execution env for Iteration 240` (79491c2); `docs(worklog): list all Iteration 240 commits` (503f4b8).
+
+---
+
+## Iteration 239 (2026-03-28)
+
+**docs: standardize WORKLOG commit lines (message + short SHA)**
+
+### Summary
+
+Aligned **Commit** / **Commits** footers for iterations **232–238** to one format: full conventional subject plus **(7-char SHA)**. Corrected iteration **238** subject to match `f61cfe6`. Iteration **233** lists all three related commits (including doc follow-up **ea0f945**); **234** and **237** include doc follow-up commits previously omitted from the footer.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `docs/WORKLOG.md` | commit footers + this entry |
+
+**Commits:** `docs(worklog): standardize commit footers with short SHAs` (627356e); `docs(worklog): add Iteration 239 commit footer` (2466467).
+
+---
+
+## Iteration 238 (2026-03-28)
+
+**docs(security): GitHub SECURITY policy, CI table, Docker notes**
+
+### Summary
+
+Security-focused continue-dev: added **`.github/SECURITY.md`** for vulnerability reporting (private reporting / advisories, not public issues), links to **`docs/SECURITY.md`** and CI. Expanded **`docs/SECURITY.md`** with a **CI checks table** (NuGet, npm audit, ESLint, Gitleaks, Docker gate) and a **Docker / container** subsection (multi-stage build, non-root user, no baked secrets). **`docs/CONTRIBUTING.md`** links reporters to `.github/SECURITY.md`. **BACKLOG 14.32** complete; **EPIC 22.8** “secrets in logs/artifacts” partially addressed via documentation.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `.github/SECURITY.md` | new |
+| `docs/SECURITY.md` | CI table, Docker, checklist |
+| `docs/CONTRIBUTING.md` | reporting link |
+| `docs/BACKLOG.md` | 14.32, 22.8 |
+| `docs/WORKLOG.md` | this entry |
+| `docs/SELF_CHECK.md` | Iteration 238 |
+
+**Commit:** `docs(security): disclosure policy, CI checklist, backlog 14.32` (f61cfe6)
+
+---
+
+## Iteration 237 (2026-03-28)
+
+**fix(ui): zero ESLint warnings; enforce in CI**
+
+### Summary
+
+Achieved **zero** `eslint` warnings: extracted **`useTheme`** to `theme/ThemeContext.tsx` / `ThemeProvider.tsx`, **`useToast`** + **`ToastProvider`** to `components/toast/` (removed hook exports from `App.tsx` / old `Toast.tsx`). **Layout** closes mobile sidebar via `queueMicrotask` + NavLink `onClick`. **PullListPage** / **SeriesDetailPage** derive list/view mode from `uiSettings` plus pending mutation `variables` (removed settings-sync effects). **WantedPage** tab is URL-derived. **`api/client.ts`:** added typed JSON interfaces for system status, activity rows, log files, wanted list, staged import (replaced `any`). **SeriesDetailPage** pagination reset uses `queueMicrotask`. **LogsPage** keeps one `incompatible-library` disable for `useVirtualizer`. **`package.json`:** `lint` = `eslint . --max-warnings 0`. **CI:** ESLint step on UI matrix job. **BACKLOG 14.23** complete; **SECURITY.md** ESLint table updated.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `ui/src/App.tsx` | slim; QueryClient import fix |
+| `ui/src/theme/*` | new |
+| `ui/src/components/toast/*` | new; delete `Toast.tsx` |
+| `ui/src/pages/*`, `Layout.tsx` | sync patterns |
+| `ui/src/api/client.ts` | API JSON types |
+| `ui/package.json` | `--max-warnings 0` |
+| `ui/eslint.config.js` | header |
+| `.github/workflows/ci.yml` | ESLint step |
+| `docs/SECURITY.md` | ESLint row |
+| `docs/BACKLOG.md` | 14.23 |
+| `src/Shortboxerr.Api/wwwroot/**` | Vite output |
+| `docs/WORKLOG.md` | this entry |
+| `docs/SELF_CHECK.md` | Iteration 237 |
+
+**Commits:** `fix(ui): zero ESLint warnings and CI lint gate` (3c124e8); `docs: add ui lint to CONTRIBUTING quality gates` (24853db); `docs: note second commit in WORKLOG/SELF_CHECK 237` (533018e).
+
+---
+
+## Iteration 236 (2026-03-28)
+
+**fix(ui): reduce ESLint warnings (14.23 partial)**
+
+### Summary
+
+Continue-dev iteration: cleared **7** ESLint warnings (22 → 15). **ManualImportPage** `EditMatchModal`: `key={editingFile.path}`, stable `seriesList` / `suggestedMatch` via `useMemo`, `userOverride` + derived selection (removed sync `useEffect`). **SeriesDetailPage:** stable empty-array constants and `useMemo` for `upcomingReleases`, `allIssues`, `allAnnuals` (fixes exhaustive-deps); line-level disable for pagination reset `setCurrentPage(1)`. **LogsPage:** line-level disable for TanStack `useVirtualizer` (`incompatible-library`). Updated **BACKLOG 14.23** counts; **eslint.config.js** header notes line-level disables. Refreshed **wwwroot** from `npm run build`.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `ui/src/pages/ManualImportPage.tsx` | EditMatchModal refactor |
+| `ui/src/pages/SeriesDetailPage.tsx` | useMemo + disables |
+| `ui/src/pages/LogsPage.tsx` | incompatible-library disable |
+| `ui/eslint.config.js` | comment |
+| `docs/BACKLOG.md` | 14.23 |
+| `src/Shortboxerr.Api/wwwroot/**` | build output |
+| `docs/WORKLOG.md` | this entry |
+| `docs/SELF_CHECK.md` | Iteration 236 |
+
+**Commit:** `fix(ui): reduce ESLint warnings for 14.23` (4ba22f4)
+
+---
+
+## Iteration 235 (2026-03-28)
+
+**docs(security): lightweight threat model; close BACKLOG 14.31**
+
+### Summary
+
+Repeated security-focused iteration: added **`docs/SECURITY.md` → *Lightweight threat model (data flow and deployment)*** — trust boundaries (browser, host, SQLite, externals), optional **API key** behavior on `/api/*`, TLS/reverse-proxy guidance, and CI security gate summary. Marked **14.31** complete. **EPIC 22.8** third bullet partially checked: CI on `main`/`dev` already enforces NuGet/npm/Gitleaks; release-workflow-specific gates deferred with note.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `docs/SECURITY.md` | threat model section |
+| `docs/BACKLOG.md` | 14.31, 22.8 |
+| `docs/WORKLOG.md` | this entry |
+| `docs/SELF_CHECK.md` | Iteration 235 |
+
+**Commit:** `docs(security): threat model and complete backlog 14.31` (0dd7175)
+
+---
+
+## Iteration 234 (2026-03-28)
+
+**chore(security): Dependabot, CI npm audit + Gitleaks, complete 14.27/14.29**
+
+### Summary
+
+Security iteration: **14.27** closed — `.gitignore` now includes **`.devcontainer/local-secrets/`** (PAT path for `github-mcp.sh`); `git log` spot-check on agent-transcripts / `.env*` / secrets patterns found no history issues; **`.cursor/mcp.json`** verified token-free (bash + wrapper); **CONTRIBUTING.md** links blocklist, MCP, CI checks. **14.29** closed — **Gitleaks** (`gitleaks/gitleaks-action@v2`, `fetch-depth: 0`) added to CI for full-history secret scan. **14.31** partially closed — **Dependabot** for NuGet, npm (`ui`, `tests/e2e`), and GitHub Actions; **npm audit** job matrix for UI and E2E (`--audit-level=high`). **docker-build** now `needs` **npm-audit** and **secret-scan** as well as **build-and-test**. Ran **`npm audit fix`** in **`ui/`** so **`npm audit --audit-level=high`** is clean (required for new CI job).
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `.github/dependabot.yml` | new |
+| `.github/workflows/ci.yml` | npm-audit + secret-scan jobs; docker needs |
+| `.gitignore` | `.devcontainer/local-secrets/` |
+| `docs/SECURITY.md` | blocklist row, history note, MCP verification |
+| `docs/CONTRIBUTING.md` | security bullets |
+| `docs/BACKLOG.md` | 14.27, 14.29, 14.31 |
+| `docs/WORKLOG.md` | this entry |
+| `docs/SELF_CHECK.md` | Iteration 234 |
+| `ui/package-lock.json` | `npm audit fix` so CI `npm audit --audit-level=high` passes |
+| `src/Shortboxerr.Api/wwwroot/**` | refreshed after `npm run build` |
+
+**Commits:** `chore(security): Dependabot, CI npm audit and Gitleaks, backlog 14.27/29` (a6f1544); `docs: align SELF_CHECK and WORKLOG 234 with single security commit` (8e35bf7); `docs: list both iteration 234 commits in WORKLOG and SELF_CHECK` (bb785d3).
+
+---
+
+## Iteration 233 (2026-03-28)
+
+**fix(security): NuGet vulnerability remediation, CI check, SECURITY backlog**
+
+### Summary
+
+Security-focused continue-dev: cleared all `dotnet list package --vulnerable --include-transitive` findings. Bumped ASP.NET Core / EF Core packages from 8.0.0 to **8.0.11**; aligned `Microsoft.Extensions.Options` (8.0.2) and `Microsoft.Extensions.Hosting.Abstractions` (8.0.1) because 8.0.11 is not published for those on NuGet. Added repo-root **`Directory.Build.props`** with direct references to **Microsoft.Extensions.Caching.Memory** 8.0.1, **System.Text.Json** 8.0.6, **System.Text.Encodings.Web** 8.0.0 (clears critical GHSA-ghhp-997w-qr28 on transitive 4.5.0). Test project pins **System.Net.Http** 4.3.4 and **System.Text.RegularExpressions** 4.3.1. CI runs **`dotnet list package --vulnerable --include-transitive`** after restore. Documented NuGet pins, `wwwroot` secret policy, and e2e audit/release boundary in **`docs/SECURITY.md`**. Marked BACKLOG **14.28** and **14.30** complete; **14.29** doc goal done; **14.31** NuGet CI sub-goal done.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `Directory.Build.props` | new — transitive security pins |
+| `src/Shortboxerr.Api/Shortboxerr.Api.csproj` | package versions |
+| `src/Shortboxerr.Infrastructure/Shortboxerr.Infrastructure.csproj` | package versions |
+| `src/Shortboxerr.Core/Shortboxerr.Core.csproj` | package versions |
+| `tests/Shortboxerr.Tests/Shortboxerr.Tests.csproj` | package versions + legacy overrides |
+| `.github/workflows/ci.yml` | vulnerable package check |
+| `docs/SECURITY.md` | supply chain, wwwroot, e2e, checklist |
+| `docs/BACKLOG.md` | 14.28–14.31 status |
+| `docs/WORKLOG.md` | this entry |
+| `docs/SELF_CHECK.md` | Iteration 233 |
+| `src/Shortboxerr.Api/wwwroot/**` | quality gate: `npm run build` refreshed hashed bundles |
+
+**Commits:** `fix(security): NuGet remediation, CI vulnerable check, docs` (95bd682); `chore: refresh wwwroot asset hashes after ui build` (1e5ee46); `docs: note wwwroot refresh commit in WORKLOG 233 and SELF_CHECK` (ea0f945).
+
+---
+
 ## Iteration 232 (2026-03-28)
 
 **fix(tests): serialize CacheEventPublisherTests for CI**
@@ -16,6 +213,8 @@ After merging PR #2 into `dev`, CI failed once with `CacheService_Remove_Publish
 | `tests/Shortboxerr.Tests/CacheEventPublisherTests.cs` | `[Collection]` |
 | `docs/WORKLOG.md` | this entry |
 | `docs/SELF_CHECK.md` | Iteration 232 |
+
+**Commit:** `fix(tests): serialize CacheEventPublisherTests for CI` (ce472e6)
 
 ---
 

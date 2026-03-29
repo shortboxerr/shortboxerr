@@ -97,6 +97,83 @@ interface SystemStatus {
   queuedDownloads: number;
 }
 
+/** Loose JSON from GET /api/v1/system/status */
+interface SystemStatusApiJson {
+  version?: string;
+  seriesCount?: number;
+  collectionsCount?: number;
+  issuesCount?: number;
+  filesCount?: number;
+  databaseStatus?: string;
+  indexerStatus?: string;
+  enabledIndexers?: number;
+  queuedDownloads?: number;
+}
+
+interface HistoryActivityApiRow {
+  id: number;
+  description?: string;
+  sourceTitle?: string;
+  eventType?: string;
+  timestamp?: string;
+}
+
+interface LogFilesApiResponse {
+  logDirectory: string;
+  files: LogFileApiRow[];
+}
+
+interface LogFileApiRow {
+  fileName: string;
+  filePath: string;
+  sizeBytes: number;
+  sizeFormatted: string;
+  lastModified: string;
+  created: string;
+}
+
+interface WantedListApiResponse {
+  items: WantedApiRow[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
+
+interface WantedApiRow {
+  id: number;
+  title?: string;
+  series?: string;
+  seriesId?: number;
+  issueNumber?: number;
+  issueNumberText?: string;
+  volumeNumber?: number;
+  editionType?: string;
+  coverImageUrl?: string;
+  comicVineId?: number;
+  comicVineUrl?: string;
+  dateAdded?: string;
+}
+
+interface StagedFileApiRow {
+  path: string;
+  filename: string;
+  size: number;
+  parsedInfo?: {
+    seriesTitle?: string | null;
+    issueNumber?: number | null;
+    year?: number | null;
+    format?: string | null;
+    isCollection?: boolean;
+    editionType?: string | null;
+    confidence?: number;
+  };
+  suggestedSeriesId?: number | null;
+  suggestedSeriesTitle?: string | null;
+  suggestedEditionId?: number | null;
+  parseConfidence?: number;
+}
+
 export interface LogFile {
   fileName: string;
   filePath: string;
@@ -1772,7 +1849,7 @@ export const api = {
   // System
   getSystemStatus: async (): Promise<SystemStatus> => {
     try {
-      const status = await fetchApi<any>('/api/v1/system/status');
+      const status = await fetchApi<SystemStatusApiJson>('/api/v1/system/status');
       return {
         version: status.version ?? '1.0.0',
         seriesCount: status.seriesCount ?? 0,
@@ -1802,12 +1879,12 @@ export const api = {
 
   getRecentActivity: async (limit: number): Promise<Activity[]> => {
     try {
-      const response = await fetchApi<any[]>(`/api/v1/history?pageSize=${limit}`);
-      return response.map((e: any) => ({
+      const response = await fetchApi<HistoryActivityApiRow[]>(`/api/v1/history?pageSize=${limit}`);
+      return response.map((e) => ({
         id: String(e.id),
         title: e.description ?? e.sourceTitle ?? 'Unknown event',
-        type: mapEventType(e.eventType),
-        timestamp: formatTimestamp(e.timestamp),
+        type: mapEventType(e.eventType ?? ''),
+        timestamp: formatTimestamp(e.timestamp ?? ''),
       }));
     } catch {
       return [];
@@ -1817,8 +1894,8 @@ export const api = {
   // Logs
   getLogFiles: async (): Promise<LogFile[]> => {
     try {
-      const response = await fetchApi<{ logDirectory: string; files: any[] }>('/api/v1/system/logs');
-      return response.files.map((f: any) => ({
+      const response = await fetchApi<LogFilesApiResponse>('/api/v1/system/logs');
+      return response.files.map((f) => ({
         fileName: f.fileName,
         filePath: f.filePath,
         sizeBytes: f.sizeBytes,
@@ -2157,20 +2234,14 @@ export const api = {
       : '/api/v1/wanted/issues';
     
     try {
-      const response = await fetchApi<{
-        items: any[];
-        page: number;
-        pageSize: number;
-        totalCount: number;
-        totalPages: number;
-      }>(`${endpoint}?${query}`);
+      const response = await fetchApi<WantedListApiResponse>(`${endpoint}?${query}`);
       
       return {
-        items: response.items.map((item: any) => ({
+        items: response.items.map((item) => ({
           id: item.id,
           type: params.type === 'collections' ? 'collection' : 'issue',
-          title: item.title,
-          series: item.series,
+          title: item.title?.trim() || 'Unknown title',
+          series: item.series?.trim() || 'Unknown series',
           seriesId: item.seriesId,
           issueNumber: item.issueNumber,
           issueNumberText: item.issueNumberText,
@@ -2329,9 +2400,9 @@ export const api = {
   // Staged Files
   getStagedFiles: async (): Promise<PagedResult<StagedFile>> => {
     try {
-      const response = await fetchApi<any[]>('/api/v1/manualimport/staged');
+      const response = await fetchApi<StagedFileApiRow[]>('/api/v1/manualimport/staged');
       return {
-        items: response.map((f: any) => ({
+        items: response.map((f) => ({
           id: f.path,
           filename: f.filename,
           path: f.path,

@@ -38,9 +38,75 @@ jobs:
         name: test-results
         path: '**/test-results.trx'
 
+  npm-audit:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - dir: ui
+            name: UI
+          - dir: tests/e2e
+            name: E2E
+    defaults:
+      run:
+        working-directory: ${{ matrix.dir }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: ${{ matrix.dir }}/package-lock.json
+
+      - name: npm audit (${{ matrix.name }})
+        run: |
+          npm ci
+          npm audit --audit-level=high
+
+      - name: ESLint (UI, zero warnings)
+        if: matrix.name == 'UI'
+        run: npm run lint
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Required for repositories owned by a GitHub Organization (gitleaks/gitleaks-action v2).
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  # OSV.dev cross-check for npm lockfiles (complements npm audit + NuGet Audit). Pin version with OSV_VERSION.
+  osv-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install OSV-Scanner
+        env:
+          OSV_VERSION: v2.3.5
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/osv-scanner" "https://github.com/google/osv-scanner/releases/download/${OSV_VERSION}/osv-scanner_linux_amd64"
+          chmod +x "$RUNNER_TEMP/osv-scanner"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+
+      - name: Scan npm lockfiles (OSV)
+        run: osv-scanner scan source -L ui/package-lock.json -L tests/e2e/package-lock.json
+
   docker-build:
     runs-on: ubuntu-latest
-    needs: build-and-test
+    needs: [build-and-test, npm-audit, secret-scan, osv-scan]
     
     steps:
     - name: Checkout code

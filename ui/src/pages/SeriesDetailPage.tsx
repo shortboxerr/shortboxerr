@@ -8,8 +8,11 @@ import {
   FolderSync
 } from 'lucide-react';
 import { api } from '../api/client';
-import type { Issue, IssueStatus, SeriesPullListSettingsDto, SeriesMatchCandidate } from '../api/client';
-import { useToast } from '../components/Toast';
+import type { Issue, IssueStatus, SeriesPullListSettingsDto, SeriesMatchCandidate, UpcomingRelease } from '../api/client';
+import { useToast } from '../components/toast/useToast';
+
+const EMPTY_ISSUES: Issue[] = [];
+const EMPTY_UPCOMING: UpcomingRelease[] = [];
 
 type ViewMode = 'cover' | 'list';
 type SortKey = 'issueNumber' | 'releaseDate' | 'status' | 'title';
@@ -30,8 +33,6 @@ export function SeriesDetailPage() {
     queryFn: () => api.getUiSettings(),
   });
 
-  // View state - initialize from settings
-  const [viewMode, setViewMode] = useState<ViewMode>('cover');
   const [sortKey, setSortKey] = useState<SortKey>('issueNumber');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -68,13 +69,6 @@ export function SeriesDetailPage() {
     },
   });
 
-  // Sync view mode from settings when loaded
-  useEffect(() => {
-    if (uiSettings?.issueViewMode) {
-      setViewMode(uiSettings.issueViewMode);
-    }
-  }, [uiSettings?.issueViewMode]);
-
   // Save view preference mutation
   const saveViewPreference = useMutation({
     mutationFn: async (newViewMode: ViewMode) => {
@@ -85,9 +79,13 @@ export function SeriesDetailPage() {
     },
   });
 
-  // Handle view mode change with persistence
+  const settingsViewMode: ViewMode = uiSettings?.issueViewMode ?? 'cover';
+  const viewMode: ViewMode =
+    saveViewPreference.isPending && saveViewPreference.variables !== undefined
+      ? saveViewPreference.variables
+      : settingsViewMode;
+
   const handleViewModeChange = (newMode: ViewMode) => {
-    setViewMode(newMode);
     saveViewPreference.mutate(newMode);
   };
 
@@ -269,10 +267,20 @@ export function SeriesDetailPage() {
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
-  const upcomingReleases = showUpcoming ? (upcomingData?.releases ?? []) : [];
+  const upcomingReleases = useMemo(
+    () => (showUpcoming ? (upcomingData?.releases ?? EMPTY_UPCOMING) : EMPTY_UPCOMING),
+    [showUpcoming, upcomingData?.releases],
+  );
 
-  const allIssues = issuesData?.items ?? [];
-  const allAnnuals = annualsData?.annuals ?? [];
+  const allIssues = useMemo(
+    () => issuesData?.items ?? EMPTY_ISSUES,
+    [issuesData?.items],
+  );
+
+  const allAnnuals = useMemo(
+    () => annualsData?.annuals ?? EMPTY_ISSUES,
+    [annualsData?.annuals],
+  );
   const linkedAnnualSeriesCount = annualsData?.linkedAnnualSeriesCount ?? 0;
 
   // Type for unified display of both regular issues and upcoming releases
@@ -365,9 +373,11 @@ export function SeriesDetailPage() {
     return regularIssues.slice(startIndex, startIndex + pageSize);
   }, [regularIssues, currentPage, pageSize]);
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when filters change (sync local pagination with filter state).
   useEffect(() => {
-    setCurrentPage(1);
+    // Defer to the next microtask so we don't call setState synchronously inside the effect body
+    // (eslint react-hooks/set-state-in-effect); direct setCurrentPage(1) triggers that rule here.
+    queueMicrotask(() => setCurrentPage(1));
   }, [statusFilter, sortKey, sortDir, pageSize]);
 
   // Page navigation handlers

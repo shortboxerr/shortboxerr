@@ -1,31 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { Search, RefreshCw, Download, BookOpen, Library, Loader2 } from 'lucide-react';
 import { api } from '../api/client';
-import { useToast } from '../components/Toast';
+import { useToast } from '../components/toast/useToast';
 
 type WantedTab = 'issues' | 'collections';
 
+function tabFromSearchParams(searchParams: URLSearchParams): WantedTab {
+  const t = searchParams.get('type');
+  if (t === 'collections' || t === 'issues') return t;
+  return 'issues';
+}
+
 export function WantedPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const typeFromUrl = searchParams.get('type') as WantedTab | null;
-  const [tab, setTab] = useState<WantedTab>(
-    typeFromUrl === 'collections' ? 'collections' : 'issues'
-  );
+  const tab = tabFromSearchParams(searchParams);
   const [search, setSearch] = useState('');
   const toast = useToast();
 
   const handleTabChange = (newTab: WantedTab) => {
-    setTab(newTab);
     setSearchParams({ type: newTab });
   };
-
-  useEffect(() => {
-    if (typeFromUrl === 'collections' || typeFromUrl === 'issues') {
-      setTab(typeFromUrl);
-    }
-  }, [typeFromUrl]);
 
   const { data: wanted, isLoading, refetch } = useQuery({
     queryKey: ['wanted', tab, search],

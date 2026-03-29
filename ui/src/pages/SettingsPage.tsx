@@ -21,7 +21,7 @@ import type {
   DownloadClientHealthStatus,
   MetronTestResult
 } from '../api/client';
-import { useTheme } from '../App';
+import { useTheme } from '../theme/ThemeContext';
 
 type SettingsTab = 'general' | 'indexers' | 'download' | 'notifications' | 'import' | 'ui' | 'security' | 'comicvine' | 'metron' | 'pulllist' | 'search' | 'annuals' | 'tasks';
 

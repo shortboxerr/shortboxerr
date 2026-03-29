@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Xunit;
 
 namespace Shortboxerr.Tests;
@@ -18,6 +19,24 @@ public class PullListCacheTierTests : IClassFixture<CustomWebApplicationFactory>
     public PullListCacheTierTests(CustomWebApplicationFactory factory)
     {
         _factory = factory;
+    }
+
+    /// <summary>
+    /// Historical discovery weeks often miss in-memory/DB cache and would fetch WalkSoftly (external HTTP).
+    /// The default <see cref="HttpClient.Timeout"/> (100s) caused flaky CI failures when WalkSoftly was slow.
+    /// Disabling WalkSoftly forces the ComicVine path, which returns immediately when no API key is configured.
+    /// </summary>
+    private async Task DisableWalkSoftlyForIntegrationTestAsync(HttpClient client)
+    {
+        var getResponse = await client.GetAsync("/api/v1/pulllist/settings");
+        getResponse.EnsureSuccessStatusCode();
+        var json = await getResponse.Content.ReadAsStringAsync();
+        var root = JsonNode.Parse(json);
+        if (root is not JsonObject obj)
+            throw new InvalidOperationException("Expected JSON object for pull list settings.");
+        obj["useWalkSoftly"] = false;
+        var putResponse = await client.PutAsJsonAsync("/api/v1/pulllist/settings", obj, _jsonOptions);
+        putResponse.EnsureSuccessStatusCode();
     }
 
     [Fact]
@@ -76,6 +95,7 @@ public class PullListCacheTierTests : IClassFixture<CustomWebApplicationFactory>
     {
         // Arrange
         var client = _factory.CreateAuthenticatedClient();
+        await DisableWalkSoftlyForIntegrationTestAsync(client);
         var pastDate = DateTime.Today.AddDays(-14).ToString("yyyy-MM-dd");
 
         // Act

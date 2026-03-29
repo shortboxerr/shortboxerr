@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Calendar, 
@@ -107,7 +107,6 @@ export function PullListPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<ViewMode>('week');
-  const [displayMode, setDisplayMode] = useState<DisplayMode>('list');
   const [weekOffset, setWeekOffset] = useState(0);
   const [addSeriesIssue, setAddSeriesIssue] = useState<DiscoverableIssue | null>(null);
   const [pullListFilter, setPullListFilter] = useState<PullListFilter>('all');
@@ -121,13 +120,6 @@ export function PullListPage() {
     queryFn: () => api.getUiSettings(),
   });
 
-  // Sync display mode from settings when loaded
-  useEffect(() => {
-    if (uiSettings?.pullListDisplayMode) {
-      setDisplayMode(uiSettings.pullListDisplayMode);
-    }
-  }, [uiSettings?.pullListDisplayMode]);
-
   // Save display mode preference mutation
   const saveDisplayModePreference = useMutation({
     mutationFn: async (newDisplayMode: DisplayMode) => {
@@ -138,18 +130,22 @@ export function PullListPage() {
     },
   });
 
-  // Handle display mode change with persistence
+  const settingsDisplayMode: DisplayMode = uiSettings?.pullListDisplayMode ?? 'list';
+  const displayMode: DisplayMode =
+    saveDisplayModePreference.isPending && saveDisplayModePreference.variables !== undefined
+      ? saveDisplayModePreference.variables
+      : settingsDisplayMode;
+
   const handleDisplayModeChange = (newMode: DisplayMode) => {
-    setDisplayMode(newMode);
     saveDisplayModePreference.mutate(newMode);
   };
 
-  // Calculate week date based on offset - memoized to ensure stable reference
-  const weekDate = useMemo(() => {
+  // Calculate week date based on offset (deterministic string per weekOffset for queryKey).
+  const weekDate = (() => {
     const date = new Date();
-    date.setDate(date.getDate() + (weekOffset * 7));
+    date.setDate(date.getDate() + weekOffset * 7);
     return date.toISOString().split('T')[0];
-  }, [weekOffset]);
+  })();
 
   // Discovery query - always fetch all releases, filter client-side
   // Short stale time ensures cover enrichment updates are picked up quickly
