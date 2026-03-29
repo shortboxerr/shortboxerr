@@ -2,7 +2,7 @@
 
 ## Iteration 240 (2026-03-28)
 
-**chore(security): OSV-Scanner in CI, release-secrets docs, PR template**
+**chore(security): OSV-Scanner in CI, release docs, PR template**
 
 ### Summary
 
@@ -21,7 +21,7 @@ Security-focused continue-dev: added **`osv-scan`** job to **`.github/workflows/
 | `docs/WORKLOG.md` | this entry |
 | `docs/SELF_CHECK.md` | Iteration 240 |
 
-**Commits:** `chore(security): OSV-Scanner in CI, release docs, backlog 22.x` (66f3ef0); `docs(worklog): record Iteration 240 commit SHA` (041727a); `docs: note gate execution env for Iteration 240` (79491c2).
+**Commits:** `chore(security): OSV-Scanner in CI, release docs, backlog 22.x` (66f3ef0); `docs(worklog): record Iteration 240 commit SHA` (041727a); `docs: note gate execution env for Iteration 240` (79491c2); `docs(worklog): list all Iteration 240 commits` (503f4b8).
 
 ---
 
