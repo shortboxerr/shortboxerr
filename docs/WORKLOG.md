@@ -19,7 +19,7 @@ Aligned repository practice with **`docs/CONTRIBUTING.md`**: **CI** (`.github/wo
 | `docs/WORKLOG.md` | this entry |
 | `.github/pull_request_template.md` | checklist: target `main` |
 
-**Commits:** `chore: retire dev branch; CI and docs target main only` (66486af); `docs(worklog): record Iteration 243 commit SHA` (08c889a)
+**Commits:** `chore: retire dev branch; CI and docs target main only` (66486af); `docs(worklog): record Iteration 243 commit SHA` (520814f)
 
 ---
 
