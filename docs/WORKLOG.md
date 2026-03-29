@@ -18,7 +18,7 @@ Documented **CodeRabbit** as the adopted **free** AI PR review path: new subsect
 | `docs/SELF_CHECK.md` | Iteration 241 |
 | `docs/ASSUMPTIONS.md` | Iteration 241 gates / 14.26 install note |
 
-**Commits:** `docs: CodeRabbit in CONTRIBUTING, complete backlog 14.26` (af55ab5)
+**Commits:** `docs: CodeRabbit in CONTRIBUTING, complete backlog 14.26` (af55ab5); `docs(worklog): record Iteration 241 commit SHA (af55ab5)` (fa03ccc)
 
 ---
 
