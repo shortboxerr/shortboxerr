@@ -30,7 +30,7 @@
 
 ## Commits
 
-1. `chore(security): OSV-Scanner in CI, release docs, backlog 22.x`
+1. `chore(security): OSV-Scanner in CI, release docs, backlog 22.x` — 66f3ef0
 
 ## Summary
 

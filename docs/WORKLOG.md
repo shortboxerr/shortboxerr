@@ -21,6 +21,8 @@ Security-focused continue-dev: added **`osv-scan`** job to **`.github/workflows/
 | `docs/WORKLOG.md` | this entry |
 | `docs/SELF_CHECK.md` | Iteration 240 |
 
+**Commit:** `chore(security): OSV-Scanner in CI, release docs, backlog 22.x` (66f3ef0)
+
 ---
 
 ## Iteration 239 (2026-03-28)
