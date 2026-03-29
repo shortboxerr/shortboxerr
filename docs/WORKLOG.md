@@ -1,5 +1,21 @@
 # Worklog
 
+## Iteration 239 (2026-03-28)
+
+**docs: standardize WORKLOG commit lines (message + short SHA)**
+
+### Summary
+
+Aligned **Commit** / **Commits** footers for iterations **232–238** to one format: full conventional subject plus **(7-char SHA)**. Corrected iteration **238** subject to match `f61cfe6`. Iteration **233** lists all three related commits (including doc follow-up **ea0f945**); **234** and **237** include doc follow-up commits previously omitted from the footer.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `docs/WORKLOG.md` | commit footers + this entry |
+
+---
+
 ## Iteration 238 (2026-03-28)
 
 **docs(security): GitHub SECURITY policy, CI table, Docker notes**
@@ -19,7 +35,7 @@ Security-focused continue-dev: added **`.github/SECURITY.md`** for vulnerability
 | `docs/WORKLOG.md` | this entry |
 | `docs/SELF_CHECK.md` | Iteration 238 |
 
-**Commit:** `docs(security): GitHub policy, CI and Docker security notes`
+**Commit:** `docs(security): disclosure policy, CI checklist, backlog 14.32` (f61cfe6)
 
 ---
 
@@ -49,7 +65,7 @@ Achieved **zero** `eslint` warnings: extracted **`useTheme`** to `theme/ThemeCon
 | `docs/WORKLOG.md` | this entry |
 | `docs/SELF_CHECK.md` | Iteration 237 |
 
-**Commits:** `fix(ui): zero ESLint warnings and CI lint gate`; `docs: add ui lint to CONTRIBUTING quality gates`.
+**Commits:** `fix(ui): zero ESLint warnings and CI lint gate` (3c124e8); `docs: add ui lint to CONTRIBUTING quality gates` (24853db); `docs: note second commit in WORKLOG/SELF_CHECK 237` (533018e).
 
 ---
 
@@ -74,7 +90,7 @@ Continue-dev iteration: cleared **7** ESLint warnings (22 → 15). **ManualImpor
 | `docs/WORKLOG.md` | this entry |
 | `docs/SELF_CHECK.md` | Iteration 236 |
 
-**Commit:** `fix(ui): reduce ESLint warnings for 14.23`
+**Commit:** `fix(ui): reduce ESLint warnings for 14.23` (4ba22f4)
 
 ---
 
@@ -95,7 +111,7 @@ Repeated security-focused iteration: added **`docs/SECURITY.md` → *Lightweight
 | `docs/WORKLOG.md` | this entry |
 | `docs/SELF_CHECK.md` | Iteration 235 |
 
-**Commit:** `docs(security): threat model and complete backlog 14.31`
+**Commit:** `docs(security): threat model and complete backlog 14.31` (0dd7175)
 
 ---
 
@@ -122,7 +138,7 @@ Security iteration: **14.27** closed — `.gitignore` now includes **`.devcontai
 | `ui/package-lock.json` | `npm audit fix` so CI `npm audit --audit-level=high` passes |
 | `src/Shortboxerr.Api/wwwroot/**` | refreshed after `npm run build` |
 
-**Commits:** `chore(security): Dependabot, CI npm audit and Gitleaks, backlog 14.27/29`; `docs: align SELF_CHECK and WORKLOG 234 with single security commit`.
+**Commits:** `chore(security): Dependabot, CI npm audit and Gitleaks, backlog 14.27/29` (a6f1544); `docs: align SELF_CHECK and WORKLOG 234 with single security commit` (8e35bf7); `docs: list both iteration 234 commits in WORKLOG and SELF_CHECK` (bb785d3).
 
 ---
 
@@ -150,7 +166,7 @@ Security-focused continue-dev: cleared all `dotnet list package --vulnerable --i
 | `docs/SELF_CHECK.md` | Iteration 233 |
 | `src/Shortboxerr.Api/wwwroot/**` | quality gate: `npm run build` refreshed hashed bundles |
 
-**Commits:** `fix(security): NuGet remediation…` (95bd682); `chore: refresh wwwroot asset hashes after ui build` (1e5ee46).
+**Commits:** `fix(security): NuGet remediation, CI vulnerable check, docs` (95bd682); `chore: refresh wwwroot asset hashes after ui build` (1e5ee46); `docs: note wwwroot refresh commit in WORKLOG 233 and SELF_CHECK` (ea0f945).
 
 ---
 
@@ -170,6 +186,8 @@ After merging PR #2 into `dev`, CI failed once with `CacheService_Remove_Publish
 | `tests/Shortboxerr.Tests/CacheEventPublisherTests.cs` | `[Collection]` |
 | `docs/WORKLOG.md` | this entry |
 | `docs/SELF_CHECK.md` | Iteration 232 |
+
+**Commit:** `fix(tests): serialize CacheEventPublisherTests for CI` (ce472e6)
 
 ---
 
