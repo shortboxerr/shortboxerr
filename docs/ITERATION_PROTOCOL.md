@@ -25,7 +25,7 @@ If a tool is needed (dotnet, node, sqlite tooling), add it to the devcontainer i
   - `feat: ...`, `fix: ...`, `chore: ...`, `test: ...`
 - Each iteration should typically produce multiple commits.
 - Never rewrite history during iteration (no squashing).
-- **Landing on `main`:** push a topic branch and open a **pull request to `main`**; direct pushes to `main` are blocked by branch protection. See **`docs/CONTRIBUTING.md`** (*Typical workflow*).
+- **Landing on `main`:** push a topic branch and open **one pull request to `main`**; direct pushes to `main` are blocked by branch protection. **Batch** WORKLOG/BACKLOG/SELF_CHECK updates on that branch **before** opening the PR (no separate micro-PRs for doc footers). See **`docs/CONTRIBUTING.md`** (*Typical workflow*).
 
 ## Iteration deliverables (MANDATORY)
 Each iteration MUST:

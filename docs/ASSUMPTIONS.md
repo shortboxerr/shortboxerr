@@ -49,4 +49,10 @@ When running "repeat until nothing remains", the agent re-reads CONTINUE.md afte
 ## Git integration (trunk)
 
 - **Default integration branch:** `main`. Changes reach `main` through a **GitHub pull request** with required CI checks (maintainers merge when green).
-- **No long-lived shared integration branch** after retirement of `dev`; topic branches are short-lived off up-to-date `main`. Documented in **`docs/CONTRIBUTING.md`** with PR #19 as the reference pattern for policy-only merges.
+- **No long-lived shared integration branch** after retirement of `dev`; topic branches are short-lived off up-to-date `main`. Documented in **`docs/CONTRIBUTING.md`**.
+- **Batching:** Implementation and iteration docs for one slice live on **one** branch; avoid opening a second PR only for WORKLOG/SHA housekeeping.
+- **Merge audit:** [`docs/AUTO_MERGE_LOG.md`](./AUTO_MERGE_LOG.md) is appended by **Record merged PR** workflow when a PR merges; do not rely on chains of short SHAs in WORKLOG for that.
+
+## Record merged PR workflow
+
+- **Failure to push:** If `.github/workflows/record-merged-pr.yml` cannot push to `main`, repository rules may need to allow **GitHub Actions** (or `github-actions[bot]`) to bypass or use a token with `contents: write`—see workflow file header.

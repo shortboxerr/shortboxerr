@@ -17,6 +17,7 @@
 ## Checklist
 
 - [ ] PR targets **`main`** (default integration branch)
+- [ ] **Batched:** implementation + related docs (e.g. WORKLOG/BACKLOG/SELF_CHECK for this slice) are on **this** branch—no separate tiny PR planned for the same work
 - [ ] Tests added or updated where appropriate
 - [ ] No secrets or credentials in code or docs
 - [ ] `dotnet build` / `dotnet test` / `npm run build` (UI) as needed
