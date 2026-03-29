@@ -17,8 +17,9 @@ Aligned repository practice with **`docs/CONTRIBUTING.md`**: **CI** (`.github/wo
 | `.github/SECURITY.md` | fixes land on `main` |
 | `docs/BACKLOG.md` | EPIC 22.1 complete; 22.8 wording |
 | `docs/WORKLOG.md` | this entry |
+| `.github/pull_request_template.md` | checklist: target `main` |
 
-**Commits:** _(after commit)_
+**Commits:** `chore: retire dev branch; CI and docs target main only` (66486af); `docs(worklog): record Iteration 243 commit SHA` (08c889a)
 
 ---
 
