@@ -1,5 +1,52 @@
 # Worklog
 
+## Iteration 244 (2026-03-28)
+
+**docs: document PR-to-main workflow (CONTRIBUTING, agents, backlog)**
+
+### Summary
+
+Expanded **trunk** documentation so future work matches **branch protection** and **PR #19**: **`docs/CONTRIBUTING.md`** *Typical workflow (merge to `main`)* with numbered steps and link to PR #19; **`docs/ITERATION_PROTOCOL.md`**, **`docs/PROMPTS/CONTINUE.md`**, **`docs/ASSUMPTIONS.md`**, and **`.cursor/rules.md`** state integration via **pull request to `main`**. **BACKLOG 22.1** note references **PR #17** / **PR #19**; **22.2** partial checkbox for PR + required checks (Mar 2026).
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `docs/CONTRIBUTING.md` | Typical workflow → `main` |
+| `docs/ITERATION_PROTOCOL.md` | PR to `main` |
+| `docs/PROMPTS/CONTINUE.md` | CONTINUE git line |
+| `docs/ASSUMPTIONS.md` | Trunk assumption |
+| `docs/BACKLOG.md` | 22.1 / 22.2 |
+| `docs/WORKLOG.md` | this entry |
+| `.cursor/rules.md` | agent PR-to-main |
+
+**Commits:** _(after push)_
+
+---
+
+## Iteration 243 (2026-03-28)
+
+**chore: retire `dev` branch — trunk workflow on `main`**
+
+### Summary
+
+Aligned repository practice with **`docs/CONTRIBUTING.md`**: **CI** (`.github/workflows/ci.yml`) runs on **`push` and `pull_request` for `main` only** (removed `dev`). **CONTRIBUTING** now states feature branches from `main`, PRs to `main`, and retiring historical **`dev`**. **`.github/SECURITY.md`** supported-versions line points at **`main`**. **BACKLOG 22.1** marked complete with note to delete remote **`dev`** after pending **`dev` → `main`** merges; **22.8** CI wording uses **`main` only**.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `.github/workflows/ci.yml` | push trigger: `main` only |
+| `docs/CONTRIBUTING.md` | trunk workflow; retire `dev` |
+| `.github/SECURITY.md` | fixes land on `main` |
+| `docs/BACKLOG.md` | EPIC 22.1 complete; 22.8 wording |
+| `docs/WORKLOG.md` | this entry |
+| `.github/pull_request_template.md` | checklist: target `main` |
+
+**Commits:** `chore: retire dev branch; CI and docs target main only` (66486af); `docs(worklog): record Iteration 243 commit SHA` (520814f)
+
+---
+
 ## Iteration 242 (2026-03-28)
 
 **feat(metron): MetronLookupMiss diagnostic warnings (backlog 14.12)**

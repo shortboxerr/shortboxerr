@@ -903,25 +903,24 @@ Result: ReleaseGroup = "DC-Empire", Publisher = "DC Comics", PublisherHint = "DC
 
 Migrate from direct `dev` pushes to a PR-first workflow targeting `main`, with branch protections and semantic-versioned releases.
 
-### 22.1 Branch Strategy Migration (`dev` -> `main`) 🔄 IN PROGRESS
+### 22.1 Branch Strategy Migration (`dev` -> `main`) ✅ COMPLETED (Iteration 243)
 - [x] Decide and document target flow:
   - short-lived feature branches from `main`
   - PRs merge into `main`
   - no direct commits to protected branches
 - [x] Create/sync `main` from current stable tip and set as default branch on GitHub.
 - [x] Update local and CI references that currently assume `dev` as default branch.
-- [ ] Keep `dev` as temporary compatibility branch or retire it with documented cutover date.
+- [x] Retire **`dev`:** CI runs on **`main` only** (push + `pull_request`); **`docs/CONTRIBUTING.md`** documents trunk workflow; **`.github/SECURITY.md`** supported-versions wording updated. Remote **`dev`** deleted after bulk merge (**PR #17**); remaining policy commits land via **PR #19** (`chore/trunk-workflow-iteration-243` → `main`) as the documented “PR to `main`” pattern.
 
 **Acceptance:** `main` is default branch; active development branches PR into `main`; `dev` no longer required for day-to-day work.
 
 **Effort:** M | **Priority:** P1
 
 ### 22.2 PR Governance & Branch Protection 📋 PLANNED
-- [ ] Enable branch protection on `main`:
-  - require pull request before merge
-  - require up-to-date branch before merge
-  - require status checks to pass
-  - restrict force-push/deletion
+- [x] Enable branch protection on `main` — **partial (Mar 2026):** PR required before merge; required status checks enforced (direct push to `main` rejected).
+- [ ] Branch protection — remaining items:
+  - require up-to-date branch before merge (if not already)
+  - restrict force-push/deletion (verify org settings)
 - [ ] Require at least one review (CODEOWNERS optional but recommended).
 - [ ] Define allowed merge strategy (squash vs merge commit) and enforce it.
 - [x] Add PR template with sections for summary, test plan, risk, rollback notes — **`.github/pull_request_template.md`** (Iteration 240: *Security impact* subsection for auth/deps/CI changes).
@@ -989,7 +988,7 @@ Migrate from direct `dev` pushes to a PR-first workflow targeting `main`, with b
 ### 22.8 Security/Compliance for Release Automation 📋 PLANNED
 - [x] **Document** least-privilege scoping and rotation for GitHub tokens/secrets in Actions — **`docs/SECURITY.md`** *GitHub Actions secrets and future release workflows* (Iteration 240). **Apply:** maintainers must create PATs/environments with minimum scope and rotate on schedule or incident when release automation lands.
 - [x] Ensure no secrets leak in logs/artifacts — **partial (Iteration 238):** `docs/SECURITY.md` documents Docker image hygiene (no baked secrets), CI secret scanning (Gitleaks), and contributor reporting via `.github/SECURITY.md`. **Release** workflow log/artifact review still TBD when EPIC 22 adds publish jobs.
-- [x] Gate dependency/license/security scans as required or advisory before release — **partial (Iteration 235 + 240):** `main`/`dev` **CI** runs NuGet Audit, npm audit (high+), **OSV-Scanner** on npm lockfiles, and Gitleaks; Dependabot opens update PRs. Dedicated **release** workflow gates still TBD when EPIC 22 automates releases.
+- [x] Gate dependency/license/security scans as required or advisory before release — **partial (Iteration 235 + 240):** **`main`** **CI** runs NuGet Audit, npm audit (high+), **OSV-Scanner** on npm lockfiles, and Gitleaks; Dependabot opens update PRs. Dedicated **release** workflow gates still TBD when EPIC 22 automates releases.
 
 **Acceptance:** Release automation follows least-privilege and existing security policy.
 

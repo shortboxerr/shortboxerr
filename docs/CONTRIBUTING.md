@@ -5,7 +5,17 @@
 - **Default branch:** `main` (integration and releases).
 - **Work in feature branches** branched from `main` (e.g. `feat/…`, `fix/…`, `chore/…`).
 - **Open pull requests into `main`**, not direct pushes to `main` when branch protection is enabled.
-- The **`dev` branch** may be used temporarily for compatibility or batch integration; prefer short-lived branches + PRs for new work.
+- **Do not use a long-lived `integration` branch:** all changes land via PR to `main`. The historical `dev` branch is retired (remove your local copy after `main` is updated: `git branch -d dev`).
+
+### Typical workflow (merge to `main`)
+
+`main` is **protected**: integrate only through a **pull request** with required status checks passing (same pattern as [PR #19](https://github.com/shortboxerr/shortboxerr/pull/19) for a policy-only change).
+
+1. `git fetch origin && git checkout main && git pull origin main`
+2. `git checkout -b chore/your-topic` (or `feat/…`, `fix/…`)
+3. Make commits; `git push -u origin chore/your-topic`
+4. Open a PR **into `main`** (UI or `gh pr create --base main`). Wait for CI; fix failures; address review comments (including CodeRabbit) as appropriate.
+5. Merge when checks are green. Locally: `git checkout main && git pull origin main`, then `git branch -d chore/your-topic` (or `-D` if Git complains—only after you know the commits are on `main`).
 
 ## Commits
 
