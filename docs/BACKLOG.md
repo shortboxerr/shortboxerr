@@ -216,7 +216,7 @@ Fix issue where future weeks show volume/series images instead of actual issue c
 
 **Optional / Ready when needed:**
 - [ ] **Debug Metron lookup failures** 📋 Ready (S) – When production logs or sample failing IDs are available; add logging/diagnostics and fix lookup path.
-- [ ] **Lower confidence threshold for future issues** 📋 Ready (S) – Add tuning knob in settings; validate with real data when prioritizing.
+- [x] **Lower confidence threshold for future issues** ✅ CLOSED (Iteration 241) – Already shipped as `AutoMatchSettings.LowConfidenceThreshold` (default 70), API `PUT /api/settings/automatch`, and Settings UI (*Match Verification*); see Iteration 176 / EPIC 19.4. This backlog line was redundant.
 - [x] Auto re-enrich on week transition (background service enhancement) ✅ Iteration 202
 
 **Effort:** M | **Priority:** P2
@@ -437,19 +437,15 @@ Validate `ui/eslint.config.js` and the documented accepted warnings to ensure th
 
 **Effort:** S | **Priority:** P2
 
-#### 14.26 AI-Powered PR Review (Free on GitHub) 📋 PLANNED
+#### 14.26 AI-Powered PR Review (Free on GitHub) ✅ COMPLETED (Iteration 241)
 Enable automated AI code review for pull requests on the shortboxerr repo using a **free** GitHub-integrated option.
 
-**Goals:**
-- [ ] Choose a free solution (e.g. GitHub Action–based AI review, or free tier of CodeSpect/Gemini Code Assist/Git AutoReview; avoid paid API keys if possible).
-- [ ] Configure so PRs get automated review comments (summary, potential bugs, style).
-- [ ] Document setup in repo (e.g. `docs/CONTRIBUTING.md` or `.github/README`) so maintainers can adjust.
+**Chosen solution:** [CodeRabbit](https://coderabbit.ai/) GitHub App (free for public repos). Repository config: [`.coderabbit.yaml`](../.coderabbit.yaml) (profile, path filters, auto-review).
 
-**Free options to evaluate:**
-- **GitHub Actions:** e.g. [AI Code Review (Very Powerful)](https://github.com/marketplace/actions/ai-code-review-very-powerfull) or similar (may require free-tier API key).
-- **CodeSpect:** Free for unlimited public repos (PR summaries + AI analysis).
-- **Gemini Code Assist:** Free AI reviews integrated with GitHub.
-- **Git AutoReview:** 10 free reviews/day.
+**Goals:**
+- [x] Choose a free solution — CodeRabbit (no repo API keys required; app install on GitHub).
+- [x] Configure so PRs get automated review comments — via CodeRabbit app + `.coderabbit.yaml` (summary/review behavior).
+- [x] Document setup — `docs/CONTRIBUTING.md` *Automated PR review (CodeRabbit)*.
 
 **Acceptance:** New PRs receive at least one automated AI review comment; solution is free for public repos and documented.
 

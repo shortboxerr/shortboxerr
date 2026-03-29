@@ -1,4 +1,4 @@
-# Self-Check: Iteration 240
+# Self-Check: Iteration 241
 
 ## Build Status
 
@@ -19,22 +19,16 @@
 
 | File | Type |
 |------|------|
-| `.github/workflows/ci.yml` | `osv-scan` job; `docker-build` needs |
-| `.github/pull_request_template.md` | Security impact section |
-| `docs/SECURITY.md` | OSV row; Actions secrets / release |
-| `docs/CONTRIBUTING.md` | OSV in CI bullets |
-| `docs/BACKLOG.md` | 22.2, 22.3, 22.8, 14.31 |
-| `docs/ASSUMPTIONS.md` | OSV vs npm audit |
-| `docs/WORKLOG.md` | Iteration 240 |
+| `docs/CONTRIBUTING.md` | CodeRabbit / automated PR review |
+| `docs/BACKLOG.md` | 14.26 complete; 14.12 optional item closed |
+| `docs/WORKLOG.md` | Iteration 241 |
 | `docs/SELF_CHECK.md` | this file |
+| `docs/ASSUMPTIONS.md` | Iteration 241 |
 
 ## Commits
 
-1. `chore(security): OSV-Scanner in CI, release docs, backlog 22.x` — 66f3ef0
-2. `docs(worklog): record Iteration 240 commit SHA` — 041727a
-3. `docs: note gate execution env for Iteration 240` — 79491c2
-4. `docs(worklog): list all Iteration 240 commits` — 503f4b8
+_(record SHA after commit — `docs: CodeRabbit CONTRIBUTING, backlog 14.26` or similar)_
 
 ## Summary
 
-Added **OSV-Scanner** to CI for both npm lockfiles; documented **token/scoping/rotation** for future release workflows; extended **PR template** and **BACKLOG** (EPIC 22.2 / 22.3 / 22.8, 14.31 OSV note). No application code or test code changes.
+Documentation-only iteration: **14.26** (CodeRabbit + CONTRIBUTING); backlog hygiene for **14.12** optional line (LowConfidence already in product). No application code changes.

@@ -1,5 +1,25 @@
 # Worklog
 
+## Iteration 241 (2026-03-28)
+
+**docs: CodeRabbit PR review (14.26); close redundant 14.12 automatch item**
+
+### Summary
+
+Documented **CodeRabbit** as the adopted **free** AI PR review path: new subsection in **`docs/CONTRIBUTING.md`** (*Automated PR review*) links the GitHub App, describes **`.coderabbit.yaml`**, and where to change install vs file config. **BACKLOG 14.26** marked complete with chosen solution and goals checked. **BACKLOG 14.12** optional *Lower confidence threshold for future issues* closed as redundant with **EPIC 19.4** / **Iteration 176** (`LowConfidenceThreshold`, settings API, UI). Quality gates: `dotnet build` / `dotnet test` (2610 passed); `npm run lint` / `npm run build` (UI). Docker CLI unavailable in this environment; gates run with host `dotnet` / `npm`.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `docs/CONTRIBUTING.md` | CodeRabbit subsection |
+| `docs/BACKLOG.md` | 14.26 complete; 14.12 optional closed |
+| `docs/WORKLOG.md` | this entry |
+| `docs/SELF_CHECK.md` | Iteration 241 |
+| `docs/ASSUMPTIONS.md` | Iteration 241 gates / 14.26 install note |
+
+---
+
 ## Iteration 240 (2026-03-28)
 
 **chore(security): OSV-Scanner in CI, release docs, PR template**

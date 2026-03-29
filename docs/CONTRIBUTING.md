@@ -22,6 +22,13 @@ Before opening a PR:
 
 Run commands inside the [development container](https://github.com/shortboxerr/shortboxerr/blob/main/README.md#development-dev-container) when applicable.
 
+## Automated PR review (CodeRabbit)
+
+This repository uses [CodeRabbit](https://coderabbit.ai/) (GitHub App) for AI-assisted pull request summaries and review comments. For **public** repositories, typical usage is covered by the free offering; install the app from [coderabbitai on GitHub](https://github.com/apps/coderabbitai) on the organization or repository.
+
+- **Repository configuration:** [`.coderabbit.yaml`](../.coderabbit.yaml) at the repo root controls review profile, path filters, and auto-review behavior.
+- **Adjusting behavior:** Change `.coderabbit.yaml` in a branch and merge via PR. App installation, permissions, and which repositories are enabled are managed in GitHub under **Settings → Integrations → Applications** (or the org equivalent).
+
 ## Security
 
 - **Report vulnerabilities:** use private channels — see [`.github/SECURITY.md`](../.github/SECURITY.md) (do not use public issues for undisclosed security bugs).
