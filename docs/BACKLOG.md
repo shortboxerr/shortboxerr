@@ -903,14 +903,14 @@ Result: ReleaseGroup = "DC-Empire", Publisher = "DC Comics", PublisherHint = "DC
 
 Migrate from direct `dev` pushes to a PR-first workflow targeting `main`, with branch protections and semantic-versioned releases.
 
-### 22.1 Branch Strategy Migration (`dev` -> `main`) 🔄 IN PROGRESS
+### 22.1 Branch Strategy Migration (`dev` -> `main`) ✅ COMPLETED (Iteration 243)
 - [x] Decide and document target flow:
   - short-lived feature branches from `main`
   - PRs merge into `main`
   - no direct commits to protected branches
 - [x] Create/sync `main` from current stable tip and set as default branch on GitHub.
 - [x] Update local and CI references that currently assume `dev` as default branch.
-- [ ] Keep `dev` as temporary compatibility branch or retire it with documented cutover date.
+- [x] Retire **`dev`:** CI runs on **`main` only** (push + `pull_request`); **`docs/CONTRIBUTING.md`** documents trunk workflow; **`.github/SECURITY.md`** supported-versions wording updated. Delete remote **`dev`** in GitHub after open `dev` → `main` PRs are merged.
 
 **Acceptance:** `main` is default branch; active development branches PR into `main`; `dev` no longer required for day-to-day work.
 
@@ -989,7 +989,7 @@ Migrate from direct `dev` pushes to a PR-first workflow targeting `main`, with b
 ### 22.8 Security/Compliance for Release Automation 📋 PLANNED
 - [x] **Document** least-privilege scoping and rotation for GitHub tokens/secrets in Actions — **`docs/SECURITY.md`** *GitHub Actions secrets and future release workflows* (Iteration 240). **Apply:** maintainers must create PATs/environments with minimum scope and rotate on schedule or incident when release automation lands.
 - [x] Ensure no secrets leak in logs/artifacts — **partial (Iteration 238):** `docs/SECURITY.md` documents Docker image hygiene (no baked secrets), CI secret scanning (Gitleaks), and contributor reporting via `.github/SECURITY.md`. **Release** workflow log/artifact review still TBD when EPIC 22 adds publish jobs.
-- [x] Gate dependency/license/security scans as required or advisory before release — **partial (Iteration 235 + 240):** `main`/`dev` **CI** runs NuGet Audit, npm audit (high+), **OSV-Scanner** on npm lockfiles, and Gitleaks; Dependabot opens update PRs. Dedicated **release** workflow gates still TBD when EPIC 22 automates releases.
+- [x] Gate dependency/license/security scans as required or advisory before release — **partial (Iteration 235 + 240):** **`main`** **CI** runs NuGet Audit, npm audit (high+), **OSV-Scanner** on npm lockfiles, and Gitleaks; Dependabot opens update PRs. Dedicated **release** workflow gates still TBD when EPIC 22 automates releases.
 
 **Acceptance:** Release automation follows least-privilege and existing security policy.
 

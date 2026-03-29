@@ -1,5 +1,27 @@
 # Worklog
 
+## Iteration 243 (2026-03-28)
+
+**chore: retire `dev` branch — trunk workflow on `main`**
+
+### Summary
+
+Aligned repository practice with **`docs/CONTRIBUTING.md`**: **CI** (`.github/workflows/ci.yml`) runs on **`push` and `pull_request` for `main` only** (removed `dev`). **CONTRIBUTING** now states feature branches from `main`, PRs to `main`, and retiring historical **`dev`**. **`.github/SECURITY.md`** supported-versions line points at **`main`**. **BACKLOG 22.1** marked complete with note to delete remote **`dev`** after pending **`dev` → `main`** merges; **22.8** CI wording uses **`main` only**.
+
+### Files Changed
+
+| File | Type |
+|------|------|
+| `.github/workflows/ci.yml` | push trigger: `main` only |
+| `docs/CONTRIBUTING.md` | trunk workflow; retire `dev` |
+| `.github/SECURITY.md` | fixes land on `main` |
+| `docs/BACKLOG.md` | EPIC 22.1 complete; 22.8 wording |
+| `docs/WORKLOG.md` | this entry |
+
+**Commits:** _(after commit)_
+
+---
+
 ## Iteration 242 (2026-03-28)
 
 **feat(metron): MetronLookupMiss diagnostic warnings (backlog 14.12)**

@@ -16,6 +16,7 @@
 
 ## Checklist
 
+- [ ] PR targets **`main`** (default integration branch)
 - [ ] Tests added or updated where appropriate
 - [ ] No secrets or credentials in code or docs
 - [ ] `dotnet build` / `dotnet test` / `npm run build` (UI) as needed

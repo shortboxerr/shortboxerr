@@ -5,7 +5,7 @@
 - **Default branch:** `main` (integration and releases).
 - **Work in feature branches** branched from `main` (e.g. `feat/…`, `fix/…`, `chore/…`).
 - **Open pull requests into `main`**, not direct pushes to `main` when branch protection is enabled.
-- The **`dev` branch** may be used temporarily for compatibility or batch integration; prefer short-lived branches + PRs for new work.
+- **Do not use a long-lived `integration` branch:** all changes land via PR to `main`. The historical `dev` branch is retired (remove your local copy after `main` is updated: `git branch -d dev`).
 
 ## Commits
 

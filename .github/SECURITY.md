@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Security fixes are applied on the repository’s active development branches (typically `dev` first, then release integration on `main`). Use the latest tagged release or `main` when deploying.
+Security fixes are applied on **`main`** via pull request. Use the latest tagged release or `main` when deploying.
 
 ## Reporting a vulnerability
 
