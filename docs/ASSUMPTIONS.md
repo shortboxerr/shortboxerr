@@ -34,3 +34,4 @@ When running "repeat until nothing remains", the agent re-reads CONTINUE.md afte
 
 - **OSV vs npm audit:** Both run in CI; OSV uses the OSV.dev database and locked versions in `package-lock.json`, while `npm audit` uses the npm advisory feed. Redundancy is intentional for defense in depth; occasional disagreement between databases is acceptable—resolve by bumping dependencies until both pass.
 - **.NET / NuGet:** OSV job scans **npm lockfiles only** (no repo-root `packages.lock.json`). NuGet remains covered by **NuGet Audit** in `Directory.Build.props`.
+- **Quality gates:** `docker compose` was unavailable in this environment; `dotnet build` / `dotnet test` / `npm run lint` / `npm run build` were run in the workspace shell (no `wwwroot` commit; build embeds volatile git metadata).
