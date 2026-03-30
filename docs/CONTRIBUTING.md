@@ -11,26 +11,16 @@
 
 `main` is **protected**: integrate only through a **pull request** with required status checks passing.
 
-**Batch before you open the PR.** Put the **whole slice** on one branch: implementation, tests, and doc updates that belong together (`docs/WORKLOG.md`, `docs/BACKLOG.md`, `docs/SELF_CHECK.md` when following the iteration protocol, plus any other docs). Avoid landing code in PR #1 and a separate tiny PR only for worklog footers or SHA lines.
-
 1. `git fetch origin && git checkout main && git pull origin main`
 2. `git checkout -b chore/your-topic` (or `feat/…`, `fix/…`)
-3. Implement and commit until the slice is complete (including iteration docs on the **same** branch).
+3. Implement and commit until the slice is complete.
 4. Run [quality gates](#quality-gates) (or CI-equivalent in the dev container).
 5. `git push -u origin chore/your-topic`
-6. Open **one** PR **into `main`** (UI or `gh pr create --base main`). Optional: add a **final commit on the same branch** with the PR number in WORKLOG, e.g. `**Pull request:** #NN`, then push again—still a single PR.
+6. Open **one** PR **into `main`** (UI or `gh pr create --base main`).
 7. Wait for CI; fix failures; address review comments (including CodeRabbit) as appropriate. Merge when green.
-8. Locally: `git checkout main && git pull origin main`, then `git branch -d chore/your-topic` (or `-D` only if you are sure commits are on `main`).
+8. Locally: `git checkout main && git pull origin main`, then `git branch -d chore/your-topic`.
 
-**WORKLOG and commit SHAs:** Do not open follow-up PRs whose only purpose is listing 7-character SHAs. Prefer **`**Pull request:** #NN`** (and/or the GitHub compare URL) in the iteration entry. After merge, an append-only machine log is updated automatically: [`docs/AUTO_MERGE_LOG.md`](./AUTO_MERGE_LOG.md) (see [`.github/workflows/record-merged-pr.yml`](../.github/workflows/record-merged-pr.yml)).
-
-### Record merged PR — maintainer notes
-
-The workflow [`.github/workflows/record-merged-pr.yml`](../.github/workflows/record-merged-pr.yml) updates [`docs/AUTO_MERGE_LOG.md`](./AUTO_MERGE_LOG.md) by pushing a branch `merge-log/pr-*`, opening a **pull request** into `main`, and merging it after checks pass (rulesets usually block direct push to `main`).
-
-**Repository secret `AUTO_MERGE_LOG_PAT`:** If the workflow fails with *GitHub Actions is not permitted to create or approve pull requests*, your org/repo has disabled Actions-created PRs. Set **`AUTO_MERGE_LOG_PAT`** to a [fine-grained PAT](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token) scoped to **this repository** with **Contents** (read/write) and **Pull requests** (read/write) so the job can open and merge the logging PR as you. Alternatively, enable **Allow GitHub Actions to create and approve pull requests** under **Settings → Actions → General** (if your org allows) and point the *Open and merge logging PR* step at `GITHUB_TOKEN` instead of this secret.
-
-If merge still fails, check **required reviewers** on `main` or merge the pending `merge-log/*` PR manually.
+**Merge history:** `git log --oneline` and GitHub's PR list are the source of truth. No supplemental logs are maintained.
 
 ## Commits
 
