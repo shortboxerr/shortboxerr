@@ -17,7 +17,7 @@ The GitHub workflow and commit strategy has accumulated unnecessary complexity t
 - **Doubles the PR count** - every feature PR creates a second merge-log PR
 - **Adds latency** - 10-second retry loops add 5-10 minute total merge time
 - **Fragile** - complex retry logic with multiple failure modes
-- **Noise** - clutters GitHub PR history (visible in shortlog above)
+- **Noise** - clutters GitHub PR history with merge-log PRs
 - **Unnecessary** - `git log` already shows full history; AUTO_MERGE_LOG.md duplicates this
 
 **Real value delivered:** Zero
